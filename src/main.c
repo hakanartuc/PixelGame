@@ -7,13 +7,14 @@
 
 // Karakterin TÜM kalıcı durumu tek bir yapıda.
 typedef struct{
-    SDL_FRect rect;   // ekran pozisyonu ve boyutu
-    int facing;       // 0=aşağı, 1=yukarı, 2=yan
-    bool facingLeft;  // true = sola bakıyor, false = sağa bakıyor
-    int animRow;      // o an çizilecek sheet satırı (update yazar, render okur)
-    int currentFrame; // animasyonun hangi karesinde olduğumuz.
-    float animTimer;  // kare ilerleme sayacı
-    int lastRow;      // önceki karenin animRow'u; animasyon değiştiğinde sıfırlamak için
+    SDL_FRect rect;     // DÜNYA konumu + MANTIKSAL boyut (hareket, clamp, ileride çarpışma)
+    float drawW, drawH; // EKRANDA çizim boyutu (sadece render kullanır)
+    int facing;         // 0=aşağı, 1=yukarı, 2=yan
+    bool facingLeft;    // true = sola bakıyor, false = sağa bakıyor
+    int animRow;        // o an çizilecek sheet satırı (update yazar, render okur)
+    int currentFrame;   // animasyonun hangi karesinde olduğumuz.
+    float animTimer;    // kare ilerleme sayacı
+    int lastRow;        // önceki karenin animRow'u; animasyon değiştiğinde sıfırlamak için
 } Player;
 
 #define PLAYER_SPEED   200.0f
@@ -33,23 +34,28 @@ static const int ANIM_ROWS[2][3] = {
 /// -- Harita tanımları ---
 
 #define TILE_SIZE 64          // bir tile ekranda kaç piksel (şimdilik)
-#define MAP_W     12          // harita kaç tile geniş
-#define MAP_H     8           // harita kaç tile yüksek
+#define MAP_W     40          // harita kaç tile geniş
+#define MAP_H     30          // harita kaç tile yüksek
+static int tilemap[MAP_H][MAP_W]; // harita dizisi, her hücre bir tile ID tutar
 
-// Harita: her hücre bir tile ID (0=çimen, 1=toprak yol, 2=su)
-// Dizinin görünümü = haritanın görünümü (toprak çerçeve içinde su gölü)
-static const int tilemap[MAP_H][MAP_W] = {
-    {0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,1,1,1,1,1,1,0,0,0,0},
-    {0,0,1,0,0,0,0,1,0,0,0,0},
-    {0,0,1,0,2,2,0,1,0,0,0,0},
-    {0,0,1,0,2,2,0,1,0,0,0,0},
-    {0,0,1,1,1,1,1,1,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0},
-};
+typedef struct {
+    float x,y; // kameranın dünya uzayındaki sol üst köşesi
+} Camera;
 
-static void tilemap_render(SDL_Renderer *renderer)
+// Basit bir dünya üret: kenarlar su (2), içi çimen (0), biraz da toprak desen
+static void generate_map(void)
+{
+    for (int row = 0; row < MAP_H; row++) {
+        for (int col = 0; col < MAP_W; col++) {
+            if (row == 0 || col == 0 || row == MAP_H-1 || col == MAP_W-1)
+                tilemap[row][col] = 2;        // kenar çerçevesi: su
+            else
+                tilemap[row][col] = 0;        // iç: çimen
+        }
+    }
+}
+
+static void tilemap_render(SDL_Renderer *renderer, const Camera *camera)
 {
     // --- HARİTA RENDER: her hücre için uygun tile'ı çiz ---
     for (int row = 0; row < MAP_H; row++)
@@ -57,7 +63,13 @@ static void tilemap_render(SDL_Renderer *renderer)
         for (int col = 0; col < MAP_W; col++)
         {
             int tileID = tilemap[row][col];
-            SDL_FRect dst = { col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+            SDL_FRect dst = { 
+                col * TILE_SIZE - camera->x, 
+                row * TILE_SIZE - camera->y, 
+                TILE_SIZE, 
+                TILE_SIZE 
+            };
+
             switch (tileID)
             {
                 case 0: // çimen
@@ -111,7 +123,7 @@ static SDL_Texture *load_texture(SDL_Renderer *renderer, const char *path)
 }
 
 // Oyuncuyu çizer - sadece OKUR, değiştirmez.
-static void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture **layers, int layerCount)
+static void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture **layers, int layerCount, const Camera *camera)
 {
     SDL_FRect src = {
         .x = p->currentFrame * FRAME_W,
@@ -119,11 +131,17 @@ static void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture *
         .w = FRAME_W,
         .h = FRAME_H
     };
+    SDL_FRect screen = { // dünya → ekran dönüşümü: kamerayı uygula
+        .x = (p->rect.x + p->rect.w / 2.0f) - p->drawW / 2.0f - camera->x, // yatayda ortala
+        .y = (p->rect.y + p->rect.h) - p->drawH - camera->y, // dikeyde ayak hizası
+        .w = p->drawW,
+        .h = p->drawH
+    };
 
     SDL_FlipMode flip = p->facingLeft ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
     for (int i = 0; i < layerCount; i++)
     {
-        SDL_RenderTextureRotated(renderer, layers[i], &src, &p->rect, 0.0, NULL, flip);
+        SDL_RenderTextureRotated(renderer, layers[i], &src, &screen, 0.0, NULL, flip);
     }
 
 }
@@ -158,10 +176,13 @@ static void player_update(Player *p, const bool *keys, float dt, int winW, int w
     }
 
     // --- KISIT: kutuyu pencere içine geri çek (önce hareket, sonra clamp) ---
+    // clamp artık DÜNYA sınırına göre (pencere değil)
+    float worldW = MAP_W * TILE_SIZE;
+    float worldH = MAP_H * TILE_SIZE;
     if (p->rect.x < 0.0f)         p->rect.x = 0.0f;          // sol kenar
     if (p->rect.y < 0.0f)         p->rect.y = 0.0f;          // üst kenar
-    if (p->rect.x > winW - p->rect.w) p->rect.x = winW - p->rect.w;  // sağ kenar
-    if (p->rect.y > winH - p->rect.h) p->rect.y = winH - p->rect.h;  // alt kenar
+    if (p->rect.x > worldW - p->rect.w) p->rect.x = worldW - p->rect.w;  // sağ kenar
+    if (p->rect.y > worldH - p->rect.h) p->rect.y = worldH - p->rect.h;  // alt kenar
 
     // --- ANİMASYON SATIRI: facing + moving'den satırı TABLODAN oku ---
     p->animRow = ANIM_ROWS[moving][p->facing];
@@ -241,7 +262,8 @@ int main(int argc, char *argv[])
     // Oyuncuyu oluştur + başlangıç durumunu ayarla
     Player player = 
     {
-        .rect = { .x = 300.0f, .y = 300.0f, .w = 256, .h = 256 },
+        .rect = { .x = 300.0f, .y = 300.0f, .w = 48.0f, .h = 64.0f }, // dünya ayak izi (küçük)
+        .drawW = 256.0f, .drawH = 256.0f, // ekranda çizim boyutu (büyük)
         .facing = 0,
         .facingLeft = false,
         .animRow = 0,
@@ -254,6 +276,9 @@ int main(int argc, char *argv[])
 
     // 4) Oyun döngüsü
     bool running = true;
+
+    generate_map(); // haritayı oluştur
+    Camera camera = { .x = 0.0f, .y = 0.0f };
 
     while (running)
     {
@@ -293,8 +318,8 @@ int main(int argc, char *argv[])
 
         SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
         SDL_RenderClear(renderer); // ekranı temizle (arka plan rengini doldur)
-        tilemap_render(renderer); // haritayı çiz
-        player_render(&player, renderer, layers, LAYER_COUNT); // oyuncuyu çiz
+        tilemap_render(renderer, &camera); // haritayı çiz
+        player_render(&player, renderer, layers, LAYER_COUNT, &camera); // oyuncuyu çiz
         SDL_RenderPresent(renderer); // Ekrana bas.
     }
 
