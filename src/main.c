@@ -55,7 +55,7 @@ static const TileType TILE_TYPES[] =
     [0] = { .solid = false, .r = 50,  .g = 200, .b = 50  },  // çimen
     [1] = { .solid = false, .r = 150, .g = 100, .b = 50  },  // toprak yol
     [2] = { .solid = true,  .r = 50,  .g = 50,  .b = 200 },  // su
-
+    [3] = { .solid = true,  .r = 110, .g = 110, .b = 120 },  // taş duvar
 };
 #define TILE_TYPE_COUNT ((int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0])))
 
@@ -80,6 +80,15 @@ static void generate_map(void)
                 tilemap[row][col] = 0;        // iç: çimen
         }
     }
+
+    // Yatay bir taş duvar: row 10, col 5..15 arası
+    for (int col = 5; col <= 15; col++)
+        tilemap[10][col] = 3;   // taş
+
+        // Su gölü: row 15..18, col 20..25 arası dikdörtgen
+    for (int row = 15; row <= 18; row++)
+        for (int col = 20; col <= 25; col++)
+            tilemap[row][col] = 2;   // su
 }
 
 // Bir tile ID'si geçilemez mi?
