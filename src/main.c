@@ -5,10 +5,34 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+// Karakterin TÜM kalıcı durumu tek bir yapıda.
+typedef struct{
+    SDL_FRect rect;   // ekran pozisyonu ve boyutu
+    int facing;       // 0=aşağı, 1=yukarı, 2=yan
+    bool facingLeft;  // true = sola bakıyor, false = sağa bakıyor
+    int animRow;      // o an çizilecek sheet satırı (update yazar, render okur)
+    int currentFrame; // animasyonun hangi karesinde olduğumuz.
+    float animTimer;  // kare ilerleme sayacı
+    int lastRow;      // önceki karenin animRow'u; animasyon değiştiğinde sıfırlamak için
+} Player;
+
+#define PLAYER_SPEED   200.0f
+#define FRAME_W        64
+#define FRAME_H        64
+#define FRAME_DURATION 0.1f
+
+// Animasyon satır tablosu: [hareket durumu][yön] → sheet satırı
+// hareket: 0 = idle, 1 = yürüyüş
+// yön:     0 = aşağı, 1 = yukarı, 2 = yan
+static const int ANIM_ROWS[2][3] = {
+    // aşağı  yukarı  yan
+    {   0,      2,     1  },   // [0] idle
+    {   3,      5,     4  },   // [1] yürüyüş
+};
+
 // Bir PNG'yi yükleyip GPU texture'ına düşüştürür; hata olursa NULL döner.
 // DİKKAT (sahiplik): bu fonksiyon yeni bir texture "yaratır"; onu yok etmek
 // ARTIK ÇAĞIRANIN SORUMLULUĞUNDADIR.
-
 static SDL_Texture *load_texture(SDL_Renderer *renderer, const char *path)
 {
     int w, h, channels;
@@ -36,6 +60,79 @@ static SDL_Texture *load_texture(SDL_Renderer *renderer, const char *path)
 
     SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST); // pikselleri keskin tut, bulanıklaştırma yapma
     return texture;
+
+}
+
+// Oyuncuyu çizer - sadece OKUR, değiştirmez.
+static void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture **layers, int layerCount)
+{
+    SDL_FRect src = {
+        .x = p->currentFrame * FRAME_W,
+        .y = p->animRow * FRAME_H,
+        .w = FRAME_W,
+        .h = FRAME_H
+    };
+
+    SDL_FlipMode flip = p->facingLeft ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+    for (int i = 0; i < layerCount; i++)
+    {
+        SDL_RenderTextureRotated(renderer, layers[i], &src, &p->rect, 0.0, NULL, flip);
+    }
+
+}
+
+// Oyuncuyu günceller
+static void player_update(Player *p, const bool *keys, float dt, int winW, int winH)
+{
+    // --- YÖN: basılı tuşlardan bir yön vektörü (dx, dy) kur ---
+    float dx = 0.0f, dy = 0.0f;
+    if (keys[SDL_SCANCODE_W]) dy -= 1;  // yukarı
+    if (keys[SDL_SCANCODE_S]) dy += 1;  // aşağı
+    if (keys[SDL_SCANCODE_A]) dx -= 1;  // sol
+    if (keys[SDL_SCANCODE_D]) dx += 1;  // sağ
+
+    bool moving = false;
+
+    // --- NORMALİZE: yön vektörünü 1 birim uzunluğa indir ---
+    float length = SDL_sqrtf(dx * dx + dy * dy);
+    if (length > 0) {                    // sıfır kontrolü ŞART: 0/0 = NaN, kutuyu sessizce yok eder
+        dx = dx / length;
+        dy = dy / length;
+        p->rect.x += dx * PLAYER_SPEED * dt;        // mesafe = hız × süre (kare hızından bağımsız)
+        p->rect.y += dy * PLAYER_SPEED * dt;
+        moving = true;
+
+        if (SDL_fabsf(dx) > SDL_fabsf(dy)) {   // yatay baskın → yan
+            p->facing = 2;
+            p->facingLeft = (dx < 0);
+        } else {                                // dikey baskın → yukarı/aşağı
+            p->facing = (dy < 0) ? 1 : 0;          // dy<0 yukarı, değilse aşağı
+        }
+    }
+
+    // --- KISIT: kutuyu pencere içine geri çek (önce hareket, sonra clamp) ---
+    if (p->rect.x < 0.0f)         p->rect.x = 0.0f;          // sol kenar
+    if (p->rect.y < 0.0f)         p->rect.y = 0.0f;          // üst kenar
+    if (p->rect.x > winW - p->rect.w) p->rect.x = winW - p->rect.w;  // sağ kenar
+    if (p->rect.y > winH - p->rect.h) p->rect.y = winH - p->rect.h;  // alt kenar
+
+    // --- ANİMASYON SATIRI: facing + moving'den satırı TABLODAN oku ---
+    p->animRow = ANIM_ROWS[moving][p->facing];
+    int frameCount = 6;
+
+    // --- GEÇİŞ: animasyon değiştiyse baştan başlat (ÖNCE) ---
+    if (p->animRow != p->lastRow) {
+        p->currentFrame = 0;
+        p->animTimer = 0.0f;
+        p->lastRow = p->animRow;
+    }
+
+    // --- SAYAÇ: kareyi zamanla ilerlet (SONRA) ---
+    p->animTimer += dt;
+    if (p->animTimer >= FRAME_DURATION) {
+        p->animTimer -= FRAME_DURATION;
+        p->currentFrame = (p->currentFrame + 1) % frameCount;
+    }
 
 }
 
@@ -94,21 +191,19 @@ int main(int argc, char *argv[])
         }
     }
     
-    SDL_FRect box = {.x = 300.0f, .y = 300.0f, .w = 256.0f, .h = 256.0f};
+    // Oyuncuyu oluştur + başlangıç durumunu ayarla
+    Player player = 
+    {
+        .rect = { .x = 300.0f, .y = 300.0f, .w = 256, .h = 256 },
+        .facing = 0,
+        .facingLeft = false,
+        .animRow = 0,
+        .currentFrame = 0,
+        .animTimer = 0.0f,
+        .lastRow = -1
+    };
+
     Uint64 last = SDL_GetTicks();
-    const float speed = 200.0f;
-
-    // --- ANİMASYON DURUMU ---
-    const int FRAME_W = 64, FRAME_H = 64; // sprite kare boyutu
-    const float FRAME_DURATION = 0.1f;     // her kare 0.1 sn sürer
-
-    int currentFrame = 0; // şu an hangi karedeyiz (0'dan başlar)
-    float animTimer = 0.0f;     // kare değiştirmek için geçen süreyi sayar
-
-    // Karakterin baktığı yön - kalıcı (dururken de korunur). 0=aşağı, 1=yukarı, 2=yan (sol/sağ flip ile)
-    int facing = 0;
-    bool facingLeft = false; // true = sola bakıyor, false = sağa bakıyor
-    int lastDirectionRow = -1;   // önceki karenin animasyonu; -1 = "henüz yok" (ilk karede sıfırlar, zararsız)
 
     // 4) Oyun döngüsü
     bool running = true;
@@ -144,99 +239,14 @@ int main(int argc, char *argv[])
         if (dt > 0.05f) dt = 0.05f;
 
         const bool *keys = SDL_GetKeyboardState(NULL);  // basılı tuşların anlık görüntüsü (SDL'e ait, free etme)
-
-        // --- YÖN: basılı tuşlardan bir yön vektörü (dx, dy) kur ---
-        // Her eksen bağımsız: zıt tuşlar (A+D) birbirini götürür, çapraz ikisini birden set eder.
-        // y AŞAĞI doğru büyür, o yüzden yukarı = NEGATİF y.
-        float dx = 0.0f, dy = 0.0f;
-        if (keys[SDL_SCANCODE_W]) dy -= 1;  // yukarı
-        if (keys[SDL_SCANCODE_S]) dy += 1;  // aşağı
-        if (keys[SDL_SCANCODE_A]) dx -= 1;  // sol
-        if (keys[SDL_SCANCODE_D]) dx += 1;  // sağ
-
-        bool moving = false;
-
-        // --- NORMALİZE: yön vektörünü 1 birim uzunluğa indir ---
-        // Ham vektör tek eksende uzunluk 1, çaprazda √2 → çapraz %41 hızlı olurdu.
-        // length'e bölmek yönü korur, uzunluğu 1 yapar; böylece her yönde hız eşit.
-        float length = SDL_sqrtf(dx * dx + dy * dy);
-        if (length > 0) {                    // sıfır kontrolü ŞART: 0/0 = NaN, kutuyu sessizce yok eder
-            dx = dx / length;
-            dy = dy / length;
-            box.x += dx * speed * dt;        // mesafe = hız × süre (kare hızından bağımsız)
-            box.y += dy * speed * dt;
-            moving = true;
-
-            if (SDL_fabsf(dx) > SDL_fabsf(dy)) {   // yatay baskın → yan
-                facing = 2;
-                facingLeft = (dx < 0);
-            } else {                                // dikey baskın → yukarı/aşağı
-                facing = (dy < 0) ? 1 : 0;          // dy<0 yukarı, değilse aşağı
-            }
-        }
-        // tuş yoksa length=0, blok atlanır, kutu yerinde kalır — ekstra 'else' gerekmez
-
-        // --- KISIT: kutuyu pencere içine geri çek (önce hareket, sonra clamp) ---
-        // Köşe sol-üstte; sağ/alt sınırdan kutunun boyutunu (w/h) çıkar ki gövdesi taşmasın.
         int winW, winH;
-        SDL_GetWindowSize(window, &winW, &winH);
-        if (box.x < 0.0f)         box.x = 0.0f;          // sol kenar
-        if (box.y < 0.0f)         box.y = 0.0f;          // üst kenar
-        if (box.x > winW - box.w) box.x = winW - box.w;  // sağ kenar
-        if (box.y > winH - box.h) box.y = winH - box.h;  // alt kenar
+        SDL_GetWindowSize(window, &winW, &winH); // pencere boyutunu al (dinamik olarak, pencere yeniden boyutlandırılabilir)
 
-        // 4c) RENDER: ekranı temizle -> kutuyu çiz -> bitmiş kareyi göster.
-        SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // RGBA
-        SDL_RenderClear(renderer);     // Renderer'ı temizle
-        
-        // (satır 0 = idle-aşağı, 6 kareli — aşağıdaki FRAME_COUNT ile uyumlu olmalı)
-        int directionRow;
-        int frameCount;
-        if (moving) {
-            // yürüyüş satırları: aşağı=6, yukarı=12, yan=9; hepsi 4 kare
-            if (facing == 1)      directionRow = 5;  // yukarı
-            else if (facing == 2) directionRow = 4;   // yan
-            else                  directionRow = 3;   // aşağı
-            frameCount = 6;
-        } else {
-            // idle de facing'e göre — karakter baktığı yönde dursun
-            if (facing == 1)      directionRow = 2;   // idle yukarı   (oyunda doğrula)
-            else if (facing == 2) directionRow = 1;   // idle yan      (oyunda doğrula)
-            else                  directionRow = 0;   // idle aşağı
-            frameCount = 6;
-        }
+        player_update(&player, keys, dt, winW, winH); // oyuncuyu güncelle
 
-
-         // ANİMASYON DEĞİŞTİ Mİ? Değiştiyse yeni animasyonu baştan başlat.
-        if (directionRow != lastDirectionRow) {
-            currentFrame = 0;       // ilk kareden başla
-            animTimer = 0.0f;       // ilk kare tam süre dursun (yarım kalmasın)
-            lastDirectionRow = directionRow;
-        }
-
-         // --- ANİMASYON: zamanlayıcıyı güncelle ---
-        animTimer += dt;
-        if (animTimer >= FRAME_DURATION) {
-            animTimer -= FRAME_DURATION; // tam süre kadar fazlayı tut, böylece animasyon zamanlaması daha kararlı olur
-            currentFrame = (currentFrame + 1) % frameCount; // sonraki kareye geç, son kareden sonra başa dön
-        }
-
-        // src'yi BİR KEZ hesapla: x = hangi kare, y = hangi yön satırı.
-        // Bu, TÜM katmanlar için aynı — döngünün İÇİNDE değiştirmiyoruz.
-        SDL_FRect src = {
-            .x = currentFrame * FRAME_W,
-            .y = directionRow * FRAME_H,
-            .w = FRAME_W,
-            .h = FRAME_H
-        };
-
-        // Döngü SADECE katmanı değiştirir; src sabit → katmanlar kilitli adımda.
-        SDL_FlipMode flip = facingLeft ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
-        for (int i = 0; i < LAYER_COUNT; i++) {
-            SDL_RenderTextureRotated(renderer, layers[i], &src, &box, 0.0, NULL, flip);
-
-        }
-
+        SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
+        SDL_RenderClear(renderer); // ekranı temizle (arka plan rengini doldur)
+        player_render(&player, renderer, layers, LAYER_COUNT); // oyuncuyu çiz
         SDL_RenderPresent(renderer); // Ekrana bas.
     }
 
