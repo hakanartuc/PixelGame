@@ -251,7 +251,7 @@ static void health_bar_render(const Player *p, SDL_Renderer *renderer)
     float barW = 200.0f, barH = 24.0f; // tam barın boyutu
 
     // 1) Arka plan (boş bar) - koy kırmızı/gri
-    SDL_FRect bg = {barX, barY, barW, barW};
+    SDL_FRect bg = {barX, barY, barW, barH};
     SDL_SetRenderDrawColor(renderer, 60, 20, 20, 255);
     SDL_RenderFillRect(renderer, &bg);
 
