@@ -23,7 +23,19 @@ typedef struct{
     float health;       // anlık can
     float maxHealth;    // maksimum can
 
+    // Saldırı durumu
+    bool attacking;       // şu an saldırı animasyonu/penceresi aktif mi?
+    float attackTimer;    // saldırının kalan süresi (saniye)
+    bool attackHit;       // bu saldırıda dummy'ye değdi mi (tekrar vurmasın)
+
 } Player;
+
+// Geçici test hedefi (ileride genel bir Enemy/Entity olacak).
+typedef struct {
+    SDL_FRect rect;   // dünya konumu + boyut (collision/hurtbox için)
+    float health;
+    bool alive;       // false olunca çizilmez/vurulmaz
+} Dummy;
 
 #define FRAME_W        64
 #define FRAME_H        64
@@ -270,6 +282,45 @@ static void health_bar_render(const Player *p, SDL_Renderer *renderer)
     SDL_RenderRect(renderer, &bg);
 }
 
+// Dummy'yi çizer (şimdilik basit kutu; sprite sonra).
+static void dummy_render(const Dummy *d, SDL_Renderer *renderer, const Camera *camera)
+{
+    if (!d->alive) return;   // ölüyse çizme
+
+    SDL_FRect screen = {
+        d->rect.x - camera->x,
+        d->rect.y - camera->y,
+        d->rect.w,
+        d->rect.h
+    };
+    SDL_SetRenderDrawColor(renderer, 180, 40, 160, 255);  // mor kutu
+    SDL_RenderFillRect(renderer, &screen);
+}
+
+// Oyuncunun saldırı hitbox'ını (baktığı yönde) hesaplar.
+static SDL_FRect attack_hitbox(const Player *p)
+{
+    float w = 40.0f, h = 40.0f;   // hitbox boyutu
+    // Oyuncunun merkezinden başla
+    float cx = p->rect.x + p->rect.w / 2.0f;
+    float cy = p->rect.y + p->rect.h / 2.0f;
+
+    float hx = cx, hy = cy;
+    // Yöne göre hitbox'ı oyuncunun ÖNÜNE kaydır:
+    if (p->facing == 2) {            // yan
+        hx = p->facingLeft ? (p->rect.x - w) : (p->rect.x + p->rect.w);
+        hy = cy - h / 2.0f;
+    } else if (p->facing == 1) {     // yukarı
+        hx = cx - w / 2.0f;
+        hy = p->rect.y - h;
+    } else {                          // aşağı (facing == 0)
+        hx = cx - w / 2.0f;
+        hy = p->rect.y + p->rect.h;
+    }
+    SDL_FRect box = { hx, hy, w, h };
+    return box;
+}
+
 // Oyuncuyu çizer - sadece OKUR, değiştirmez.
 static void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture **layers, int layerCount, const Camera *camera)
 {
@@ -317,11 +368,18 @@ static void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture *
     SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // sarı
     SDL_RenderRect(renderer, &feetScreen);
 
+    if (p->attacking) {
+        SDL_FRect hb = attack_hitbox(p);
+        SDL_FRect hbScreen = { hb.x - camera->x, hb.y - camera->y, hb.w, hb.h };
+        SDL_SetRenderDrawColor(renderer, 0, 150, 255, 255);  // mavi
+        SDL_RenderRect(renderer, &hbScreen);
+    }
+
     #endif
 }
 
 // Oyuncuyu günceller
-static void player_update(Player *p, const bool *keys, float dt)
+static void player_update(Player *p, const bool *keys, bool attackPressed, float dt)
 {
     // --- TILE TEPKİSİ: bastığın tile'ın özelliklerine göre hız/can ayarla ---
     SDL_FRect fb = feet_box(p->rect.x, p->rect.y, p->rect.w, p->rect.h);
@@ -378,8 +436,6 @@ static void player_update(Player *p, const bool *keys, float dt)
         }
     }
 
-    
-
     // --- ANİMASYON SATIRI: facing + moving'den satırı TABLODAN oku ---
     p->animRow = ANIM_ROWS[moving][p->facing];
     int frameCount = 6;
@@ -398,8 +454,19 @@ static void player_update(Player *p, const bool *keys, float dt)
         p->currentFrame = (p->currentFrame + 1) % frameCount;
     }
 
-    SDL_Log("health: %.1f", p->health);
-    SDL_Log("speed: %.1f", p->speed);
+    // --- SALDIRI DURUMU ---
+    // Yeni saldırı başlat (sadece şu an saldırmıyorsa — üst üste binmesin)
+    if (attackPressed && !p->attacking) {
+        p->attacking = true;
+        p->attackTimer = 0.3f;   // saldırı penceresi süresi
+        p->attackHit = false;
+    }
+    // Süreyi azalt, bitince kapat
+    if (p->attacking) {
+        p->attackTimer -= dt;
+        if (p->attackTimer <= 0.0f)
+            p->attacking = false;
+    }
 
 }
 
@@ -495,6 +562,12 @@ int main(int argc, char *argv[])
         .maxHealth = 100.0f
     };
 
+    Dummy dummy = {
+        .rect = { .x = 500.0f, .y = 200.0f, .w = 48.0f, .h = 64.0f },
+        .health = 100.0f,
+        .alive = true
+    };
+
     // Tile texture'ları: TILE_TYPES tablosundaki path'lerden yükle.
     // texturePath == NULL olanlar (örn. taş) texture'sız kalır → render'da renk basılır.
     SDL_Texture *tile_textures[TILE_TYPE_COUNT] = {0};  // hepsi NULL başlar
@@ -515,6 +588,7 @@ int main(int argc, char *argv[])
 
     while (running)
     {
+        bool attackPressed = false;
         // 4a) INPUT: OS'in bu kare için kuyruğa attığı tüm olayları boşalt.
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -528,6 +602,10 @@ int main(int argc, char *argv[])
                 if (event.key.key == SDLK_ESCAPE)
                 {                    // ESC tuşuna basıldı mı?
                     running = false; // Oyun döngüsünden çık
+                }
+                else if(event.key.key == SDLK_SPACE){
+                     // SALDIRI tetiklendi (anlık olay — basılı tutmak tekrar tetiklemez*)
+                    attackPressed = true;
                 }
             }
         }
@@ -547,13 +625,27 @@ int main(int argc, char *argv[])
         int winW, winH;
         SDL_GetWindowSize(window, &winW, &winH); // pencere boyutunu al (dinamik olarak, pencere yeniden boyutlandırılabilir)
 
-        player_update(&player, keys, dt); // oyuncuyu güncelle
+        player_update(&player, keys, attackPressed, dt); // oyuncuyu güncelle
+
+        // --- SALDIRI ÇARPIŞMASI ---
+        if (player.attacking && dummy.alive && !player.attackHit) {
+            SDL_FRect hb = attack_hitbox(&player);
+            if (SDL_HasRectIntersectionFloat(&hb, &dummy.rect)) {
+                dummy.health -= 25.0f;        // bir vuruş = 25 hasar
+                player.attackHit = true;       // bu saldırıda tekrar vurma
+                if (dummy.health <= 0.0f)
+                    dummy.alive = false;       // öldü
+                SDL_Log("Vurdu! Dummy can: %.0f", dummy.health);
+            }
+        }
+
         camera_update(&camera, &player, winW, winH);  // kamerayı güncelle - karakteri takip et
 
         SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
         SDL_RenderClear(renderer); // ekranı temizle (arka plan rengini doldur)
         tilemap_render(renderer, tile_textures, &camera); // haritayı çiz
         player_render(&player, renderer, layers, LAYER_COUNT, &camera); // oyuncuyu 
+        dummy_render(&dummy, renderer, &camera);
         health_bar_render(&player, renderer);
         SDL_RenderPresent(renderer); // Ekrana bas.
     }
