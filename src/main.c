@@ -17,9 +17,14 @@ typedef struct{
     int currentFrame;   // animasyonun hangi karesinde olduğumuz.
     float animTimer;    // kare ilerleme sayacı
     int lastRow;        // önceki karenin animRow'u; animasyon değiştiğinde sıfırlamak için
+
+    // Durum sistemleri
+    float speed;        // anlık hareket hızı
+    float health;       // anlık can
+    float maxHealth;    // maksimum can
+
 } Player;
 
-#define PLAYER_SPEED   500.0f
 #define FRAME_W        64
 #define FRAME_H        64
 #define FRAME_DURATION 0.1f
@@ -29,6 +34,7 @@ typedef struct{
 #define FEET_H 20.0f   // ayak kutusunun yüksekliği
 #define FEET_INSET 8.0f // yanlardan içeri ne kadar daraltılsın
 #define SPRITE_FEET_Y 40 // sprite hücresinde karakterin ayağının olduğu satır, ölçülen değer
+#define PLAYER_SPEED 500.0f
 
 // Animasyon satır tablosu: [hareket durumu][yön] → sheet satırı
 // hareket: 0 = idle, 1 = yürüyüş
@@ -47,14 +53,19 @@ typedef struct
     bool solid;
     Uint8 r, g, b;          // fallback renk (texture yüklenemezse)
     const char *texturePath; // bu tile'ın 16x16 doku dosyası (NULL = sadece renk)
+    float speedMultiplier;   // 1.0 = normal hız; <1 yavaşlatır (bataklık), >1 hızlandırır
+    float damage;            // saniyede verdiği hasar (0 = zararsız)
 } TileType;
 
 // Tile ID -> özellik tablosu. Indeks = tilemap'deki ID, değeri o tile'ın özellikleri.
 static const TileType TILE_TYPES[] = {
-    [0] = { .solid = false, .r = 50,  .g = 200, .b = 50,  .texturePath = "assets/tiles/Grass/Grass_1_Middle.png" },
-    [1] = { .solid = false, .r = 150, .g = 100, .b = 50,  .texturePath = "assets/tiles/Grass/Path_Middle.png" },
-    [2] = { .solid = true,  .r = 50,  .g = 50,  .b = 200, .texturePath = "assets/tiles/Water/Water_Middle.png" },
-    [3] = { .solid = true,  .r = 110, .g = 110, .b = 120, .texturePath = NULL },  // taş: şimdilik renk
+    [0] = { .solid = false, .r = 50,  .g = 200, .b = 50,  .texturePath = "assets/tiles/Grass/Grass_1_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // çimen
+    [1] = { .solid = false, .r = 150, .g = 100, .b = 50,  .texturePath = "assets/tiles/Grass/Path_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // yol
+    [2] = { .solid = true,  .r = 50,  .g = 50,  .b = 200, .texturePath = "assets/tiles/Water/Water_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // su
+    [3] = { .solid = true,  .r = 110, .g = 110, .b = 120, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // taş: şimdilik renk
+    [4] = { .solid = false, .r = 90, .g = 110, .b = 70, .texturePath = NULL, .speedMultiplier = 0.4f, .damage = 0.0f },  // bataklık: yavaşlatır
+    [5] = { .solid = false, .r = 200, .g = 60, .b = 40, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 20.0f },  // diken: saniyede 20 hasar
+
 };
 #define TILE_TYPE_COUNT ((int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0])))
 
@@ -88,6 +99,23 @@ static void generate_map(void)
     for (int row = 15; row <= 18; row++)
         for (int col = 20; col <= 25; col++)
             tilemap[row][col] = 2;   // su
+
+    // Test: bataklık şeridi
+    for (int col = 6; col <= 10; col++) tilemap[6][col] = 4;
+    // Test: diken alanı
+    for (int col = 6; col <= 8; col++) tilemap[8][col] = 5;
+}
+
+// Dünya koordinatındaki bir noktanın hangi tile ID'sinde olduğunu döndürür. Harita dışı ise -1 döner.
+static int tile_at_point(float worldX, float worldY)
+{
+    int col = (int)(worldX / TILE_SIZE);
+    int row = (int)(worldY / TILE_SIZE);
+
+    if (col < 0 || col >= MAP_W || row < 0 || row >= MAP_H)
+        return -1; // harita dışı
+
+    return tilemap[row][col];
 }
 
 // Bir tile ID'si geçilemez mi?
@@ -268,6 +296,24 @@ static void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture *
 // Oyuncuyu günceller
 static void player_update(Player *p, const bool *keys, float dt)
 {
+    // --- TILE TEPKİSİ: bastığın tile'ın özelliklerine göre hız/can ayarla ---
+    SDL_FRect fb = feet_box(p->rect.x, p->rect.y, p->rect.w, p->rect.h);
+    int groundTile = tile_at_point(fb.x + fb.w / 2.0f, fb.y + fb.h / 2.0f);
+
+    if (groundTile >= 0 && groundTile < TILE_TYPE_COUNT) {
+        // hız: temel hız × tile'ın çarpanı (her kare yeniden hesaplanır)
+        p->speed = PLAYER_SPEED * TILE_TYPES[groundTile].speedMultiplier;
+
+        // hasar: tile saniyede 'damage' veriyorsa, dt kadarını uygula
+        if (TILE_TYPES[groundTile].damage > 0.0f)
+            p->health -= TILE_TYPES[groundTile].damage * dt;
+
+    } else {
+        p->speed = PLAYER_SPEED;   // geçersiz tile → normal hız
+    }
+
+        if (p->health < 0.0f) p->health = 0.0f;
+
     // --- YÖN: basılı tuşlardan bir yön vektörü (dx, dy) kur ---
     float dx = 0.0f, dy = 0.0f;
     if (keys[SDL_SCANCODE_W]) dy -= 1;  // yukarı
@@ -285,13 +331,13 @@ static void player_update(Player *p, const bool *keys, float dt)
         moving = true;
 
         // X EKSENİ
-        float newX = p->rect.x + dx * PLAYER_SPEED * dt;
+        float newX = p->rect.x + dx * p->speed * dt;
         SDL_FRect fx = feet_box(newX, p->rect.y, p->rect.w, p->rect.h);
         if (!box_hits_solid(fx))
             p->rect.x = newX;
 
         // Y EKSENİ
-        float newY = p->rect.y + dy * PLAYER_SPEED * dt;
+        float newY = p->rect.y + dy * p->speed * dt;
         SDL_FRect fy = feet_box(p->rect.x, newY, p->rect.w, p->rect.h);
         if (!box_hits_solid(fy))
             p->rect.y = newY;
@@ -304,6 +350,8 @@ static void player_update(Player *p, const bool *keys, float dt)
             p->facing = (dy < 0) ? 1 : 0;          // dy<0 yukarı, değilse aşağı
         }
     }
+
+    
 
     // --- ANİMASYON SATIRI: facing + moving'den satırı TABLODAN oku ---
     p->animRow = ANIM_ROWS[moving][p->facing];
@@ -322,6 +370,9 @@ static void player_update(Player *p, const bool *keys, float dt)
         p->animTimer -= FRAME_DURATION;
         p->currentFrame = (p->currentFrame + 1) % frameCount;
     }
+
+    SDL_Log("health: %.1f", p->health);
+    SDL_Log("speed: %.1f", p->speed);
 
 }
 
@@ -411,7 +462,10 @@ int main(int argc, char *argv[])
         .animRow = 0,
         .currentFrame = 0,
         .animTimer = 0.0f,
-        .lastRow = -1
+        .lastRow = -1,
+        .speed = PLAYER_SPEED,
+        .health = 100.0f,
+        .maxHealth = 100.0f
     };
 
     // Tile texture'ları: TILE_TYPES tablosundaki path'lerden yükle.
