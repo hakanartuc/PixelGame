@@ -30,6 +30,53 @@ static const int ANIM_ROWS[2][3] = {
     {   3,      5,     4  },   // [1] yürüyüş
 };
 
+/// -- Harita tanımları ---
+
+#define TILE_SIZE 64          // bir tile ekranda kaç piksel (şimdilik)
+#define MAP_W     12          // harita kaç tile geniş
+#define MAP_H     8           // harita kaç tile yüksek
+
+// Harita: her hücre bir tile ID (0=çimen, 1=toprak yol, 2=su)
+// Dizinin görünümü = haritanın görünümü (toprak çerçeve içinde su gölü)
+static const int tilemap[MAP_H][MAP_W] = {
+    {0,0,0,0,0,0,0,0,0,0,0,0},
+    {0,0,1,1,1,1,1,1,0,0,0,0},
+    {0,0,1,0,0,0,0,1,0,0,0,0},
+    {0,0,1,0,2,2,0,1,0,0,0,0},
+    {0,0,1,0,2,2,0,1,0,0,0,0},
+    {0,0,1,1,1,1,1,1,0,0,0,0},
+    {0,0,0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0,0,0,0,0},
+};
+
+static void tilemap_render(SDL_Renderer *renderer)
+{
+    // --- HARİTA RENDER: her hücre için uygun tile'ı çiz ---
+    for (int row = 0; row < MAP_H; row++)
+    {
+        for (int col = 0; col < MAP_W; col++)
+        {
+            int tileID = tilemap[row][col];
+            SDL_FRect dst = { col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+            switch (tileID)
+            {
+                case 0: // çimen
+                    SDL_SetRenderDrawColor(renderer, 50, 200, 50, 255);
+                    SDL_RenderFillRect(renderer, &dst);
+                    break;
+                case 1: // toprak yol
+                    SDL_SetRenderDrawColor(renderer, 150, 100, 50, 255);
+                    SDL_RenderFillRect(renderer, &dst);
+                    break;
+                case 2: // su
+                    SDL_SetRenderDrawColor(renderer, 50, 50, 200, 255);
+                    SDL_RenderFillRect(renderer, &dst);
+                    break;
+            }
+        }
+    }
+}
+
 // Bir PNG'yi yükleyip GPU texture'ına düşüştürür; hata olursa NULL döner.
 // DİKKAT (sahiplik): bu fonksiyon yeni bir texture "yaratır"; onu yok etmek
 // ARTIK ÇAĞIRANIN SORUMLULUĞUNDADIR.
@@ -246,6 +293,7 @@ int main(int argc, char *argv[])
 
         SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
         SDL_RenderClear(renderer); // ekranı temizle (arka plan rengini doldur)
+        tilemap_render(renderer); // haritayı çiz
         player_render(&player, renderer, layers, LAYER_COUNT); // oyuncuyu çiz
         SDL_RenderPresent(renderer); // Ekrana bas.
     }
