@@ -5,6 +5,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define DEBUG_DRAW 1
+
 // Karakterin TÜM kalıcı durumu tek bir yapıda.
 typedef struct{
     SDL_FRect rect;     // DÜNYA konumu + MANTIKSAL boyut (hareket, clamp, ileride çarpışma)
@@ -21,6 +23,12 @@ typedef struct{
 #define FRAME_W        64
 #define FRAME_H        64
 #define FRAME_DURATION 0.1f
+
+// Ayak kutusu: rect'in ALT kısmında, dar bir collision alanı.
+// (top-down'da karakter ayağıyla çarpışır, tüm gövdesiyle değil)
+#define FEET_H 20.0f   // ayak kutusunun yüksekliği
+#define FEET_INSET 8.0f // yanlardan içeri ne kadar daraltılsın
+#define SPRITE_FEET_Y 40 // sprite hücresinde karakterin ayağının olduğu satır, ölçülen değer
 
 // Animasyon satır tablosu: [hareket durumu][yön] → sheet satırı
 // hareket: 0 = idle, 1 = yürüyüş
@@ -53,6 +61,55 @@ static void generate_map(void)
                 tilemap[row][col] = 0;        // iç: çimen
         }
     }
+}
+
+// Bir tile ID'si geçilemez mi?
+static bool tile_is_solid(int tileID)
+{
+    switch (tileID)
+    {
+        case 0: return false; // çimen
+        case 1: return false; // toprak yol
+        case 2: return true;  // su
+        default: return true; // bilinmeyen tile'lar geçilemez
+    }
+}
+
+// Verilen DÜNYA kutusu (x, y, w, h) katı bir tile ile çarpışıyor mu?
+static bool box_hits_solid(SDL_FRect box)
+{
+    // Kutunun kapladığı tile aralığı (sütun ve satır olarak)
+    int colL = (int)(box.x / TILE_SIZE); // sol kenar -> ilk sütun
+    int colR = (int)((box.x + box.w -1) / TILE_SIZE); // sağ kenar -> son sütun (-1: kutunun sağ kenarı tam olarak bir tile'ın sol kenarına denk gelirse, o tile'ı da kapsasın)
+    int rowT = (int)(box.y / TILE_SIZE); // üst kenar -> ilk satır
+    int rowB = (int)((box.y + box.h -1) / TILE_SIZE); // alt kenar -> son satır
+
+    // Kutunun kapsadığı tüm tile'ları kontrol et
+    for (int row = rowT; row <= rowB; row++) {
+        for (int col = colL; col <= colR; col++) {
+            // SINIR KONTROLÜ: harita dışı = katı say (oyuncu dünyadan çıkamasın)
+            if (col < 0 || col >= MAP_W || row < 0 || row >= MAP_H)
+                return true; // harita dışı
+
+            if(tile_is_solid(tilemap[row][col])) {
+                return true; // çarpışma bulundu
+            }
+        }
+    }
+
+    return false;
+}
+
+// Verilen rect konumu için ayak kutusunu (collision alanı) hesaplar.
+static SDL_FRect feet_box(float rectX, float rectY, float rectW, float rectH)
+{
+    SDL_FRect f = {
+        rectX + FEET_INSET,
+        rectY + rectH - FEET_H,
+        rectW - FEET_INSET * 2.0f,
+        FEET_H
+    };
+    return f;
 }
 
 static void tilemap_render(SDL_Renderer *renderer, const Camera *camera)
@@ -131,9 +188,14 @@ static void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture *
         .w = FRAME_W,
         .h = FRAME_H
     };
-    SDL_FRect screen = { // dünya → ekran dönüşümü: kamerayı uygula
-        .x = (p->rect.x + p->rect.w / 2.0f) - p->drawW / 2.0f - camera->x, // yatayda ortala
-        .y = (p->rect.y + p->rect.h) - p->drawH - camera->y, // dikeyde ayak hizası
+    
+    // Sprite'ın görsel ayağı (hücrede y=40), rect'in ALTINA hizalanmalı.
+    // Çizim kutusunun altındaki boşluk: (FRAME_H - 40) * ölçek = (64-40) * (drawH/FRAME_H)
+    float scale = p->drawH / (float)FRAME_H;          // 128/64 = 2
+    float footPadding = (FRAME_H - SPRITE_FEET_Y) * scale;       // (64-40)*2 = 48px boşluk
+    SDL_FRect screen = {
+        .x = (p->rect.x + p->rect.w / 2.0f) - p->drawW / 2.0f - camera->x,
+        .y = (p->rect.y + p->rect.h) - p->drawH + footPadding - camera->y,  // +footPadding: çizimi aşağı kaydır
         .w = p->drawW,
         .h = p->drawH
     };
@@ -144,10 +206,31 @@ static void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture *
         SDL_RenderTextureRotated(renderer, layers[i], &src, &screen, 0.0, NULL, flip);
     }
 
+    #if DEBUG_DRAW
+    // --- DEBUG: collision kutularını çiz (dünya → ekran: kamerayı çıkar) ---
+    // 1) rect (tüm ayak izi) — kırmızı çerçeve
+    SDL_FRect rectScreen = {
+        p->rect.x - camera->x,
+        p->rect.y - camera->y,
+        p->rect.w,
+        p->rect.h
+    };
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);   // kırmızı
+    SDL_RenderRect(renderer, &rectScreen);
+
+    // 2) ayak kutusu (gerçek collision) — sarı çerçeve
+    //    feetY = rect.y + rect.h - FEET_H, feetX = rect.x + FEET_INSET, feetW = rect.w - FEET_INSET*2
+    SDL_FRect fb = feet_box(p->rect.x, p->rect.y, p->rect.w, p->rect.h);
+    SDL_FRect feetScreen = { fb.x - camera->x, fb.y - camera->y, fb.w, fb.h };
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // sarı
+    SDL_RenderRect(renderer, &feetScreen);
+
+    #endif
 }
 
 // Oyuncuyu günceller
-static void player_update(Player *p, const bool *keys, float dt, int winW, int winH)
+static void player_update(Player *p, const bool *keys, float dt)
 {
     // --- YÖN: basılı tuşlardan bir yön vektörü (dx, dy) kur ---
     float dx = 0.0f, dy = 0.0f;
@@ -163,9 +246,20 @@ static void player_update(Player *p, const bool *keys, float dt, int winW, int w
     if (length > 0) {                    // sıfır kontrolü ŞART: 0/0 = NaN, kutuyu sessizce yok eder
         dx = dx / length;
         dy = dy / length;
-        p->rect.x += dx * PLAYER_SPEED * dt;        // mesafe = hız × süre (kare hızından bağımsız)
-        p->rect.y += dy * PLAYER_SPEED * dt;
         moving = true;
+
+        // X EKSENİ
+        float newX = p->rect.x + dx * PLAYER_SPEED * dt;
+        SDL_FRect fx = feet_box(newX, p->rect.y, p->rect.w, p->rect.h);
+        if (!box_hits_solid(fx))
+            p->rect.x = newX;
+
+        // Y EKSENİ
+        float newY = p->rect.y + dy * PLAYER_SPEED * dt;
+        SDL_FRect fy = feet_box(p->rect.x, newY, p->rect.w, p->rect.h);
+        if (!box_hits_solid(fy))
+            p->rect.y = newY;
+        
 
         if (SDL_fabsf(dx) > SDL_fabsf(dy)) {   // yatay baskın → yan
             p->facing = 2;
@@ -174,15 +268,6 @@ static void player_update(Player *p, const bool *keys, float dt, int winW, int w
             p->facing = (dy < 0) ? 1 : 0;          // dy<0 yukarı, değilse aşağı
         }
     }
-
-    // --- KISIT: kutuyu pencere içine geri çek (önce hareket, sonra clamp) ---
-    // clamp artık DÜNYA sınırına göre (pencere değil)
-    float worldW = MAP_W * TILE_SIZE;
-    float worldH = MAP_H * TILE_SIZE;
-    if (p->rect.x < 0.0f)         p->rect.x = 0.0f;          // sol kenar
-    if (p->rect.y < 0.0f)         p->rect.y = 0.0f;          // üst kenar
-    if (p->rect.x > worldW - p->rect.w) p->rect.x = worldW - p->rect.w;  // sağ kenar
-    if (p->rect.y > worldH - p->rect.h) p->rect.y = worldH - p->rect.h;  // alt kenar
 
     // --- ANİMASYON SATIRI: facing + moving'den satırı TABLODAN oku ---
     p->animRow = ANIM_ROWS[moving][p->facing];
@@ -335,13 +420,13 @@ int main(int argc, char *argv[])
         int winW, winH;
         SDL_GetWindowSize(window, &winW, &winH); // pencere boyutunu al (dinamik olarak, pencere yeniden boyutlandırılabilir)
 
-        player_update(&player, keys, dt, winW, winH); // oyuncuyu güncelle
+        player_update(&player, keys, dt); // oyuncuyu güncelle
         camera_update(&camera, &player, winW, winH);  // kamerayı güncelle - karakteri takip et
 
         SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
         SDL_RenderClear(renderer); // ekranı temizle (arka plan rengini doldur)
         tilemap_render(renderer, &camera); // haritayı çiz
-        player_render(&player, renderer, layers, LAYER_COUNT, &camera); // oyuncuyu çiz
+        player_render(&player, renderer, layers, LAYER_COUNT, &camera); // oyuncuyu 
         SDL_RenderPresent(renderer); // Ekrana bas.
     }
 
