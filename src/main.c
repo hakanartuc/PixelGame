@@ -243,6 +243,33 @@ static SDL_Texture *load_texture(SDL_Renderer *renderer, const char *path)
 
 }
 
+// Can barını ekranın köşesine çizer. Ekran-uzayına bağlıdır, kamera hareketinden etkilenmez.
+static void health_bar_render(const Player *p, SDL_Renderer *renderer)
+{
+    // Bar ölçüleri (ekran pikseli - doğrudan, kamera yok)
+    float barX = 20.0f, barY = 20.0f;  // sol üst köşeden offset
+    float barW = 200.0f, barH = 24.0f; // tam barın boyutu
+
+    // 1) Arka plan (boş bar) - koy kırmızı/gri
+    SDL_FRect bg = {barX, barY, barW, barW};
+    SDL_SetRenderDrawColor(renderer, 60, 20, 20, 255);
+    SDL_RenderFillRect(renderer, &bg);
+
+    // 2) Dolu kısım- cana oranlı genişlik
+    float ratio = p->health / p->maxHealth; // 0..1
+    // ratio'yu 0..1 arasında sıkıştır (can negatif ya da max'tan büyük olamaz)
+    if(ratio < 0.0f) ratio = 0.0f;
+    if(ratio > 1.0f) ratio = 1.0f;
+
+    SDL_FRect fill = {barX, barY, barW * ratio, barH};  // genişlik oransal
+    SDL_SetRenderDrawColor(renderer, 220, 50, 50, 255); // parlak kırmızı
+    SDL_RenderFillRect(renderer, &fill);
+
+    // 3) Çerçeve - barın kenarı
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderRect(renderer, &bg);
+}
+
 // Oyuncuyu çizer - sadece OKUR, değiştirmez.
 static void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture **layers, int layerCount, const Camera *camera)
 {
@@ -527,6 +554,7 @@ int main(int argc, char *argv[])
         SDL_RenderClear(renderer); // ekranı temizle (arka plan rengini doldur)
         tilemap_render(renderer, tile_textures, &camera); // haritayı çiz
         player_render(&player, renderer, layers, LAYER_COUNT, &camera); // oyuncuyu 
+        health_bar_render(&player, renderer);
         SDL_RenderPresent(renderer); // Ekrana bas.
     }
 
