@@ -41,6 +41,25 @@ static const int ANIM_ROWS[2][3] = {
 
 /// -- Harita tanımları ---
 
+// Bir tile türünün özellikleri
+typedef struct
+{
+    bool solid; // geçilemez mi?
+    Uint8 r, g, b; // tile'ı render etmek için renk (şimdilik)
+
+} TileType;
+
+// Tile ID -> özellik tablosu. Indeks = tilemap'deki ID, değeri o tile'ın özellikleri.
+static const TileType TILE_TYPES[] = 
+{
+    [0] = { .solid = false, .r = 50,  .g = 200, .b = 50  },  // çimen
+    [1] = { .solid = false, .r = 150, .g = 100, .b = 50  },  // toprak yol
+    [2] = { .solid = true,  .r = 50,  .g = 50,  .b = 200 },  // su
+
+};
+#define TILE_TYPE_COUNT ((int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0])))
+
+
 #define TILE_SIZE 64          // bir tile ekranda kaç piksel (şimdilik)
 #define MAP_W     40          // harita kaç tile geniş
 #define MAP_H     30          // harita kaç tile yüksek
@@ -66,13 +85,25 @@ static void generate_map(void)
 // Bir tile ID'si geçilemez mi?
 static bool tile_is_solid(int tileID)
 {
-    switch (tileID)
-    {
-        case 0: return false; // çimen
-        case 1: return false; // toprak yol
-        case 2: return true;  // su
-        default: return true; // bilinmeyen tile'lar geçilemez
+    // SINIR KONTROLÜ: geçersiz ID'ler katı sayılır (oyuncu dünyadan çıkamasın)
+    if (tileID < 0 || tileID >= TILE_TYPE_COUNT)
+        return true;
+
+    return TILE_TYPES[tileID].solid;
+}
+
+// Bir tile ID'sinin rengini tablodan alıp renderer'a set eder.
+static void tile_set_color(SDL_Renderer *renderer, int tileID)
+{
+    // SINIR KONTROLÜ: geçersiz ID'ler siyah sayılır
+    Uint8 r = 0, g = 0, b = 0;
+    if (tileID >= 0 && tileID < TILE_TYPE_COUNT) {
+        r = TILE_TYPES[tileID].r;
+        g = TILE_TYPES[tileID].g;
+        b = TILE_TYPES[tileID].b;
     }
+    SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+    
 }
 
 // Verilen DÜNYA kutusu (x, y, w, h) katı bir tile ile çarpışıyor mu?
@@ -127,21 +158,8 @@ static void tilemap_render(SDL_Renderer *renderer, const Camera *camera)
                 TILE_SIZE 
             };
 
-            switch (tileID)
-            {
-                case 0: // çimen
-                    SDL_SetRenderDrawColor(renderer, 50, 200, 50, 255);
-                    SDL_RenderFillRect(renderer, &dst);
-                    break;
-                case 1: // toprak yol
-                    SDL_SetRenderDrawColor(renderer, 150, 100, 50, 255);
-                    SDL_RenderFillRect(renderer, &dst);
-                    break;
-                case 2: // su
-                    SDL_SetRenderDrawColor(renderer, 50, 50, 200, 255);
-                    SDL_RenderFillRect(renderer, &dst);
-                    break;
-            }
+            tile_set_color(renderer, tileID);
+            SDL_RenderFillRect(renderer, &dst);
         }
     }
 }
