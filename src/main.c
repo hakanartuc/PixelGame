@@ -42,20 +42,19 @@ static const int ANIM_ROWS[2][3] = {
 /// -- Harita tanımları ---
 
 // Bir tile türünün özellikleri
-typedef struct
+typedef struct 
 {
-    bool solid; // geçilemez mi?
-    Uint8 r, g, b; // tile'ı render etmek için renk (şimdilik)
-
+    bool solid;
+    Uint8 r, g, b;          // fallback renk (texture yüklenemezse)
+    const char *texturePath; // bu tile'ın 16x16 doku dosyası (NULL = sadece renk)
 } TileType;
 
 // Tile ID -> özellik tablosu. Indeks = tilemap'deki ID, değeri o tile'ın özellikleri.
-static const TileType TILE_TYPES[] = 
-{
-    [0] = { .solid = false, .r = 50,  .g = 200, .b = 50  },  // çimen
-    [1] = { .solid = false, .r = 150, .g = 100, .b = 50  },  // toprak yol
-    [2] = { .solid = true,  .r = 50,  .g = 50,  .b = 200 },  // su
-    [3] = { .solid = true,  .r = 110, .g = 110, .b = 120 },  // taş duvar
+static const TileType TILE_TYPES[] = {
+    [0] = { .solid = false, .r = 50,  .g = 200, .b = 50,  .texturePath = "assets/tiles/Grass/Grass_1_Middle.png" },
+    [1] = { .solid = false, .r = 150, .g = 100, .b = 50,  .texturePath = "assets/tiles/Grass/Path_Middle.png" },
+    [2] = { .solid = true,  .r = 50,  .g = 50,  .b = 200, .texturePath = "assets/tiles/Water/Water_Middle.png" },
+    [3] = { .solid = true,  .r = 110, .g = 110, .b = 120, .texturePath = NULL },  // taş: şimdilik renk
 };
 #define TILE_TYPE_COUNT ((int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0])))
 
@@ -115,6 +114,22 @@ static void tile_set_color(SDL_Renderer *renderer, int tileID)
     
 }
 
+// Bir tile'ı verilen ekran-diktörgenine çizer. Eğer tile'ın texture'ı yoksa renk basılır.
+static void tile_draw(SDL_Renderer *renderer, SDL_Texture **textures,int tileID, SDL_FRect dst)
+{
+    if (tileID >= 0 && tileID < TILE_TYPE_COUNT) {
+        SDL_Texture *texture = textures[tileID];
+        if (texture != NULL) {
+            SDL_RenderTexture(renderer, texture, NULL, &dst);
+            return;
+        }
+    }
+
+    // Geçersiz ID veya texture yoksa renk bas:
+    tile_set_color(renderer, tileID);
+    SDL_RenderFillRect(renderer, &dst);
+}
+
 // Verilen DÜNYA kutusu (x, y, w, h) katı bir tile ile çarpışıyor mu?
 static bool box_hits_solid(SDL_FRect box)
 {
@@ -152,23 +167,17 @@ static SDL_FRect feet_box(float rectX, float rectY, float rectW, float rectH)
     return f;
 }
 
-static void tilemap_render(SDL_Renderer *renderer, const Camera *camera)
+static void tilemap_render(SDL_Renderer *renderer, SDL_Texture **tileTextures, const Camera *camera)
 {
-    // --- HARİTA RENDER: her hücre için uygun tile'ı çiz ---
-    for (int row = 0; row < MAP_H; row++)
-    {
-        for (int col = 0; col < MAP_W; col++)
-        {
+    for (int row = 0; row < MAP_H; row++) {
+        for (int col = 0; col < MAP_W; col++) {
             int tileID = tilemap[row][col];
-            SDL_FRect dst = { 
-                col * TILE_SIZE - camera->x, 
-                row * TILE_SIZE - camera->y, 
-                TILE_SIZE, 
-                TILE_SIZE 
+            SDL_FRect dst = {
+                col * TILE_SIZE - camera->x,
+                row * TILE_SIZE - camera->y,
+                TILE_SIZE, TILE_SIZE
             };
-
-            tile_set_color(renderer, tileID);
-            SDL_RenderFillRect(renderer, &dst);
+            tile_draw(renderer, tileTextures, tileID, dst);  // renk+switch yerine tek çağrı
         }
     }
 }
@@ -405,6 +414,16 @@ int main(int argc, char *argv[])
         .lastRow = -1
     };
 
+    // Tile texture'ları: TILE_TYPES tablosundaki path'lerden yükle.
+    // texturePath == NULL olanlar (örn. taş) texture'sız kalır → render'da renk basılır.
+    SDL_Texture *tile_textures[TILE_TYPE_COUNT] = {0};  // hepsi NULL başlar
+    for (int i = 0; i < TILE_TYPE_COUNT; i++) {
+        if (TILE_TYPES[i].texturePath != NULL) {
+            tile_textures[i] = load_texture(renderer, TILE_TYPES[i].texturePath);
+            // not: yüklenemezse NULL kalır, render renk fallback'ine düşer — oyunu çökertme
+        }
+    }
+
     Uint64 last = SDL_GetTicks();
 
     // 4) Oyun döngüsü
@@ -452,7 +471,7 @@ int main(int argc, char *argv[])
 
         SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
         SDL_RenderClear(renderer); // ekranı temizle (arka plan rengini doldur)
-        tilemap_render(renderer, &camera); // haritayı çiz
+        tilemap_render(renderer, tile_textures, &camera); // haritayı çiz
         player_render(&player, renderer, layers, LAYER_COUNT, &camera); // oyuncuyu 
         SDL_RenderPresent(renderer); // Ekrana bas.
     }
@@ -461,6 +480,9 @@ int main(int argc, char *argv[])
     // hiçbir destructor bunu kendiliğinden yapmaz.
     for (int i = 0; i < LAYER_COUNT; i++) {
         SDL_DestroyTexture(layers[i]);
+    }
+    for (int i = 0; i < TILE_TYPE_COUNT; i++) {
+        if (tile_textures[i]) SDL_DestroyTexture(tile_textures[i]);  // NULL olanları atla
     }
     SDL_DestroyRenderer(renderer); // Renderer'ı temizle
     SDL_DestroyWindow(window);     // Pencereyi temizle
