@@ -17,7 +17,7 @@ typedef struct{
     int lastRow;        // önceki karenin animRow'u; animasyon değiştiğinde sıfırlamak için
 } Player;
 
-#define PLAYER_SPEED   200.0f
+#define PLAYER_SPEED   500.0f
 #define FRAME_W        64
 #define FRAME_H        64
 #define FRAME_DURATION 0.1f
@@ -204,6 +204,27 @@ static void player_update(Player *p, const bool *keys, float dt, int winW, int w
 
 }
 
+// Kamera karakteri ekranda ortalayacak şekilde ayarlanır. Clamp ile harita dışına çıkmaz.
+static void camera_update(Camera *camera, const Player *p, int winW, int winH)
+{
+    // Karakterin GÖRSEL merkezi (çizim kutusunun ortası)
+    // Çizim, ayak izinin alt-ortasına hizalı; merkezi oradan drawH/2 yukarıda.
+    float centerX = p->rect.x + p->rect.w / 2.0f;
+    float centerY = p->rect.y + p->rect.h / 2.0f;   // ayak izi merkezi — çizim boyutundan BAĞIMSIZ
+
+    // kamera = hedef_merkez - ekran_yarısı -> karakter ekran ortasında görünür.
+    camera->x = centerX - winW / 2.0f;
+    camera->y = centerY - winH / 2.0f; 
+
+    // --- KISIT: kamera görüş alanını harita sınırları içine çek ---
+    float worldW = MAP_W * TILE_SIZE;
+    float worldH = MAP_H * TILE_SIZE;
+    if (camera->x < 0.0f)         camera->x = 0.0f;          // sol kenar
+    if (camera->y < 0.0f)         camera->y = 0.0f;          // üst kenar
+    if (camera->x > worldW - winW) camera->x = worldW - winW;  // sağ kenar
+    if (camera->y > worldH - winH) camera->y = worldH - winH;  // alt kenar
+}
+
 int main(int argc, char *argv[])
 {
     // 1) SDL'in video alt sistemini ayağa kaldır. SDL3 başarılıysa 'true' döner.
@@ -263,7 +284,7 @@ int main(int argc, char *argv[])
     Player player = 
     {
         .rect = { .x = 300.0f, .y = 300.0f, .w = 48.0f, .h = 64.0f }, // dünya ayak izi (küçük)
-        .drawW = 256.0f, .drawH = 256.0f, // ekranda çizim boyutu (büyük)
+        .drawW = 128.0f, .drawH = 128.0f, // ekranda çizim boyutu (büyük)
         .facing = 0,
         .facingLeft = false,
         .animRow = 0,
@@ -315,6 +336,7 @@ int main(int argc, char *argv[])
         SDL_GetWindowSize(window, &winW, &winH); // pencere boyutunu al (dinamik olarak, pencere yeniden boyutlandırılabilir)
 
         player_update(&player, keys, dt, winW, winH); // oyuncuyu güncelle
+        camera_update(&camera, &player, winW, winH);  // kamerayı güncelle - karakteri takip et
 
         SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
         SDL_RenderClear(renderer); // ekranı temizle (arka plan rengini doldur)
