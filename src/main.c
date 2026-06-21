@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h> // platformlar arası 'main' köprülemesi (mobil/web için de gerekli)
 #include <stdbool.h>
+#include "common.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -106,14 +107,7 @@ static const TileType TILE_TYPES[] = {
 #define TILE_TYPE_COUNT ((int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0])))
 
 
-#define TILE_SIZE 64          // bir tile ekranda kaç piksel (şimdilik)
-#define MAP_W     40          // harita kaç tile geniş
-#define MAP_H     30          // harita kaç tile yüksek
 static int tilemap[MAP_H][MAP_W]; // harita dizisi, her hücre bir tile ID tutar
-
-typedef struct {
-    float x,y; // kameranın dünya uzayındaki sol üst köşesi
-} Camera;
 
 // Basit bir dünya üret: kenarlar su (2), içi çimen (0), biraz da toprak desen
 static void generate_map(void)
