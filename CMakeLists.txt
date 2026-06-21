@@ -8,7 +8,10 @@ set(C_MAKE_STANDARD_REQUIRED ON)
 #EXCLUDE_FROM_ALL: SDL'in kendi testlerini/örneklerini boşuna derleme
 add_subdirectory(vendor/SDL EXCLUDE_FROM_ALL)
 
-add_executable(game src/main.c) # 'game' adında çalıştırılabilir, kaynağı src/main.c
+add_executable(game
+    src/main.c
+    src/tilemap.c
+) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle
 
 target_compile_options(game PRIVATE -Wall -Wextra)
