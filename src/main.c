@@ -5,91 +5,8 @@
 #include "tilemap.h"
 #include "player.h"
 #include "enemy.h"
+#include "render.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
-
-// Bir PNG'yi yükleyip GPU texture'ına düşüştürür; hata olursa NULL döner.
-// DİKKAT (sahiplik): bu fonksiyon yeni bir texture "yaratır"; onu yok etmek
-// ARTIK ÇAĞIRANIN SORUMLULUĞUNDADIR.
-static SDL_Texture *load_texture(SDL_Renderer *renderer, const char *path)
-{
-    int w, h, channels;
-    unsigned char *pixels = stbi_load(path, &w, &h, &channels, 4); // 4 = RGBA'ya zorla
-    if(pixels == NULL){
-        SDL_Log("Yüklenemedi: %s", stbi_failure_reason());
-        return NULL;
-    }
-
-    SDL_Surface *surface = SDL_CreateSurfaceFrom(w, h, SDL_PIXELFORMAT_RGBA32, pixels, w * 4);
-    if(surface == NULL){
-        SDL_Log("Surface olusturulamadi: %s %s", path, SDL_GetError());
-        stbi_image_free(pixels);
-        return NULL;
-    }
-
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-    
-    if(texture == NULL){
-        SDL_Log("Texture olusturulamadi: %s %s", path, SDL_GetError());
-        SDL_DestroySurface(surface);
-        stbi_image_free(pixels);
-        return NULL;
-    }
-
-    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST); // pikselleri keskin tut, bulanıklaştırma yapma
-    return texture;
-
-}
-
-// Can barını ekranın köşesine çizer. Ekran-uzayına bağlıdır, kamera hareketinden etkilenmez.
-static void health_bar_render(const Player *p, SDL_Renderer *renderer)
-{
-    // Bar ölçüleri (ekran pikseli - doğrudan, kamera yok)
-    float barX = 20.0f, barY = 20.0f;  // sol üst köşeden offset
-    float barW = 200.0f, barH = 24.0f; // tam barın boyutu
-
-    // 1) Arka plan (boş bar) - koy kırmızı/gri
-    SDL_FRect bg = {barX, barY, barW, barH};
-    SDL_SetRenderDrawColor(renderer, 60, 20, 20, 255);
-    SDL_RenderFillRect(renderer, &bg);
-
-    // 2) Dolu kısım- cana oranlı genişlik
-    float ratio = p->health / p->maxHealth; // 0..1
-    // ratio'yu 0..1 arasında sıkıştır (can negatif ya da max'tan büyük olamaz)
-    if(ratio < 0.0f) ratio = 0.0f;
-    if(ratio > 1.0f) ratio = 1.0f;
-
-    SDL_FRect fill = {barX, barY, barW * ratio, barH};  // genişlik oransal
-    SDL_SetRenderDrawColor(renderer, 220, 50, 50, 255); // parlak kırmızı
-    SDL_RenderFillRect(renderer, &fill);
-
-    // 3) Çerçeve - barın kenarı
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderRect(renderer, &bg);
-}
-
-// Kamera karakteri ekranda ortalayacak şekilde ayarlanır. Clamp ile harita dışına çıkmaz.
-static void camera_update(Camera *camera, const Player *p, int winW, int winH)
-{
-    // Karakterin GÖRSEL merkezi (çizim kutusunun ortası)
-    // Çizim, ayak izinin alt-ortasına hizalı; merkezi oradan drawH/2 yukarıda.
-    float centerX = p->rect.x + p->rect.w / 2.0f;
-    float centerY = p->rect.y + p->rect.h / 2.0f;   // ayak izi merkezi — çizim boyutundan BAĞIMSIZ
-
-    // kamera = hedef_merkez - ekran_yarısı -> karakter ekran ortasında görünür.
-    camera->x = centerX - winW / 2.0f;
-    camera->y = centerY - winH / 2.0f; 
-
-    // --- KISIT: kamera görüş alanını harita sınırları içine çek ---
-    float worldW = MAP_W * TILE_SIZE;
-    float worldH = MAP_H * TILE_SIZE;
-    if (camera->x < 0.0f)         camera->x = 0.0f;          // sol kenar
-    if (camera->y < 0.0f)         camera->y = 0.0f;          // üst kenar
-    if (camera->x > worldW - winW) camera->x = worldW - winW;  // sağ kenar
-    if (camera->y > worldH - winH) camera->y = worldH - winH;  // alt kenar
-}
 
 int main(int argc, char *argv[])
 {
@@ -290,7 +207,8 @@ int main(int argc, char *argv[])
             }
         }
 
-        camera_update(&camera, &player, winW, winH);  // kamerayı güncelle - karakteri takip et
+        camera_update(&camera, player.rect.x + player.rect.w/2.0f,
+                               player.rect.y + player.rect.h/2.0f, winW, winH);  // kamerayı güncelle - karakteri takip et
 
         SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
         SDL_RenderClear(renderer); // ekranı temizle (arka plan rengini doldur)

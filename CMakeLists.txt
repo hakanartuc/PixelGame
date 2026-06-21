@@ -13,6 +13,7 @@ add_executable(game
     src/tilemap.c
     src/player.c
     src/enemy.c
+    src/render.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle
 

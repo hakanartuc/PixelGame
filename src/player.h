@@ -45,5 +45,6 @@ typedef struct{
 SDL_FRect attack_hitbox(const Player *p);
 void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture **layers, int layerCount, const Camera *camera);
 void player_update(Player *p, const bool *keys, bool attackPressed, float dt);
+void health_bar_render(const Player *p, SDL_Renderer *renderer);
 
 #endif // PLAYER_H
