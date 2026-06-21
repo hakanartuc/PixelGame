@@ -33,9 +33,15 @@ typedef struct {
     EnemyState state;         // AI durumu
     float attackCooldown;     // bir sonraki saldırıya kalan süre
     bool attackTriggered;
+    // animasyon
+    int animRow;          // o an çizilen sheet satırı
+    int currentFrame;     // hangi karedeyiz
+    float animTimer;      // kare ilerleme sayacı
+    bool attacking;       // şu an bir saldırı animasyonu oynuyor mu?
+    int lastRow;          // YENİ — animasyon değişince currentFrame sıfırlamak için
 } Enemy;
 
-void enemy_render(const Enemy *d, SDL_Renderer *renderer, const Camera *camera);
+void enemy_render(const Enemy *d, SDL_Renderer *renderer, SDL_Texture *texture, const Camera *camera);
 void enemy_update(Enemy *d, float targetX, float targetY, float dt);
 
 #endif

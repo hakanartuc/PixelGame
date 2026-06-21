@@ -79,6 +79,17 @@ int main(int argc, char *argv[])
         .maxHealth = 100.0f
     };
 
+    SDL_Texture *enemy_texture = load_texture(renderer, "assets/Mobs/Goblins/Goblin_Maceman.png");
+    if (enemy_texture == NULL) 
+    {
+        SDL_Log("Dusman sprite yuklenemedi");
+        SDL_DestroyTexture(enemy_texture);  // sadece yüklenmiş olanları yık
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
     Enemy enemies[MAX_ENEMIES] = {0};   // hepsi sıfır başlar
     int enemyCount = 0;
 
@@ -216,7 +227,7 @@ int main(int argc, char *argv[])
         player_render(&player, renderer, layers, LAYER_COUNT, &camera); // oyuncuyu 
         
         for (int i = 0; i < enemyCount; i++)
-            enemy_render(&enemies[i], renderer, &camera);
+            enemy_render(&enemies[i], renderer, enemy_texture, &camera);
         
         health_bar_render(&player, renderer);
         SDL_RenderPresent(renderer); // Ekrana bas.
@@ -230,6 +241,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < TILE_TYPE_COUNT; i++) {
         if (tile_textures[i]) SDL_DestroyTexture(tile_textures[i]);  // NULL olanları atla
     }
+    SDL_DestroyTexture(enemy_texture);
     SDL_DestroyRenderer(renderer); // Renderer'ı temizle
     SDL_DestroyWindow(window);     // Pencereyi temizle
     SDL_Quit();                    // SDL'i temizle
