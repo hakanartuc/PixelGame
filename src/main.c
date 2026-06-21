@@ -4,42 +4,10 @@
 #include "common.h"
 #include "tilemap.h"
 #include "player.h"
+#include "enemy.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-
-
-// Dünyada var olan, hareket eden, hasar alabilen her şeyin ortak çekirdeği.
-typedef struct {
-    SDL_FRect rect;            // konum + boyut (collision/hurtbox)
-    float health, maxHealth;   // can
-    bool alive;                // yaşıyor mu
-    int facing;                // 0=aşağı, 1=yukarı, 2=yan
-    bool facingLeft;
-    float speed;               // hareket hızı
-    float hitFlash;            // vuruş flaşı (saniye, geri sayar)
-    float knockbackX, knockbackY;  // geri itilme hızı
-} Entity;
-
-
-
-// Düşmanın davranış durumu
-typedef enum {
-    ENEMY_IDLE,    // bekliyor
-    ENEMY_CHASE,   // oyuncuyu kovalıyor
-    ENEMY_ATTACK,  // saldırı menzilinde
-} EnemyState;
-
-// Düşman = ortak çekirdek + AI'a özel alanlar
-typedef struct {
-    Entity e;                 // ortak çekirdek (konum, can, hareket, vuruş tepkisi)
-    EnemyState state;         // AI durumu
-    float attackCooldown;     // bir sonraki saldırıya kalan süre
-    bool attackTriggered;
-} Enemy;
-
-#define MAX_ENEMIES 10
-
 
 
 // Bir PNG'yi yükleyip GPU texture'ına düşüştürür; hata olursa NULL döner.
@@ -101,71 +69,6 @@ static void health_bar_render(const Player *p, SDL_Renderer *renderer)
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderRect(renderer, &bg);
 }
-
-static void enemy_render(const Enemy *d, SDL_Renderer *renderer, const Camera *camera)
-{
-    if (!d->e.alive) return;
-
-    SDL_FRect screen = {
-        d->e.rect.x - camera->x,
-        d->e.rect.y - camera->y,
-        d->e.rect.w,
-        d->e.rect.h
-    };
-
-    if (d->e.hitFlash > 0.0f)
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);  // flaş
-    else
-        SDL_SetRenderDrawColor(renderer, 180, 40, 160, 255);   // normal mor
-
-    SDL_RenderFillRect(renderer, &screen);
-}
-
-static void enemy_update(Enemy *d, float targetX, float targetY, float dt)
-{
-    if (!d->e.alive) return;
-
-    // Flaş ve knockback
-    if (d->e.hitFlash > 0.0f) d->e.hitFlash -= dt;
-    d->e.rect.x += d->e.knockbackX * dt;
-    d->e.rect.y += d->e.knockbackY * dt;
-    float damping = 12.0f;
-    d->e.knockbackX -= d->e.knockbackX * damping * dt;
-    d->e.knockbackY -= d->e.knockbackY * damping * dt;
-
-    // AI: hedefe mesafe (hedef merkezi parametre olarak geldi)
-    float dx = targetX - (d->e.rect.x + d->e.rect.w/2.0f);
-    float dy = targetY - (d->e.rect.y + d->e.rect.h/2.0f);
-    float dist = SDL_sqrtf(dx*dx + dy*dy);
-
-    // Durum kararı
-    float detectRange = 300.0f;
-    float attackRange = 60.0f;
-    if (dist < attackRange)       d->state = ENEMY_ATTACK;
-    else if (dist < detectRange)  d->state = ENEMY_CHASE;
-    else                          d->state = ENEMY_IDLE;
-
-    // Cooldown azalt
-    if (d->attackCooldown > 0.0f) d->attackCooldown -= dt;
-
-    // Davranış
-    if (d->state == ENEMY_CHASE) {
-        if (dist > 0.0f) {                       // sıfır bölme koruması
-            float nx = dx / dist, ny = dy / dist;
-            d->e.rect.x += nx * d->e.speed * dt;
-            d->e.rect.y += ny * d->e.speed * dt;
-        }
-    }
-
-    d->attackTriggered = false;   // her kare sıfırla
-    if (d->state == ENEMY_ATTACK) {
-        if (d->attackCooldown <= 0.0f) {
-            d->attackTriggered = true;   // "saldırdım" — hasarı dışarısı versin
-            d->attackCooldown = 1.0f;
-        }
-    }
-}
-
 
 // Kamera karakteri ekranda ortalayacak şekilde ayarlanır. Clamp ile harita dışına çıkmaz.
 static void camera_update(Camera *camera, const Player *p, int winW, int winH)
