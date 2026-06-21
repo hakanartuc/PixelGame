@@ -58,6 +58,9 @@ typedef struct {
 
 #define MAX_ENEMIES 10
 
+#define SPAWN_X 300.0f
+#define SPAWN_Y 300.0f
+
 #define FRAME_W        64
 #define FRAME_H        64
 #define FRAME_DURATION 0.1f
@@ -467,7 +470,13 @@ static void player_update(Player *p, const bool *keys, bool attackPressed, float
         p->speed = PLAYER_SPEED;   // geçersiz tile → normal hız
     }
 
-        if (p->health < 0.0f) p->health = 0.0f;
+    if (p->health <= 0.0f) {
+        p->rect.x = SPAWN_X;
+        p->rect.y = SPAWN_Y;
+        p->health = p->maxHealth;
+        p->attacking = false;      // yarım kalan saldırıyı iptal et
+        p->attackTimer = 0.0f;
+    }
 
     // --- YÖN: basılı tuşlardan bir yön vektörü (dx, dy) kur ---
     float dx = 0.0f, dy = 0.0f;
@@ -619,7 +628,7 @@ int main(int argc, char *argv[])
     // Oyuncuyu oluştur + başlangıç durumunu ayarla
     Player player = 
     {
-        .rect = { .x = 300.0f, .y = 300.0f, .w = 48.0f, .h = 64.0f }, // dünya ayak izi (küçük)
+        .rect = { .x = SPAWN_X, .y = SPAWN_Y, .w = 48.0f, .h = 64.0f }, // dünya ayak izi (küçük)
         .drawW = 128.0f, .drawH = 128.0f, // ekranda çizim boyutu (büyük)
         .facing = 0,
         .facingLeft = false,
