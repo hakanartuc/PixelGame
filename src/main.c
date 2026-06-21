@@ -7,6 +7,18 @@
 
 #define DEBUG_DRAW 1
 
+// Dünyada var olan, hareket eden, hasar alabilen her şeyin ortak çekirdeği.
+typedef struct {
+    SDL_FRect rect;            // konum + boyut (collision/hurtbox)
+    float health, maxHealth;   // can
+    bool alive;                // yaşıyor mu
+    int facing;                // 0=aşağı, 1=yukarı, 2=yan
+    bool facingLeft;
+    float speed;               // hareket hızı
+    float hitFlash;            // vuruş flaşı (saniye, geri sayar)
+    float knockbackX, knockbackY;  // geri itilme hızı
+} Entity;
+
 // Karakterin TÜM kalıcı durumu tek bir yapıda.
 typedef struct{
     SDL_FRect rect;     // DÜNYA konumu + MANTIKSAL boyut (hareket, clamp, ileride çarpışma)
@@ -30,29 +42,21 @@ typedef struct{
 
 } Player;
 
-typedef enum {
-    DUMMY_IDLE,    // bekliyor
-    DUMMY_CHASE,   // oyuncuyu kovalıyor
-    DUMMY_ATTACK
-} DummyState;
-
-// Geçici test hedefi (ileride genel bir Enemy/Entity olacak).
-typedef struct {
-    SDL_FRect rect;   // dünya konumu + boyut (collision/hurtbox için)
-    float health;
-    bool alive;       // false olunca çizilmez/vurulmaz
-
-    float hitFlash;      // >0 ise "az önce vuruldu" (saniye, geri sayar)
-    float knockbackX;    // anlık geri itilme hızı (x)
-    float knockbackY;    // anlık geri itilme hızı (y)
-
-    DummyState state;    // şu anki davranış durumu
-    float speed;         // kovalama hızı
-    float attackCooldown;   // bir sonraki saldırıya kalan süre (saniye)
-} Dummy;
-
 // Düşmanın davranış durumu
+typedef enum {
+    ENEMY_IDLE,    // bekliyor
+    ENEMY_CHASE,   // oyuncuyu kovalıyor
+    ENEMY_ATTACK,  // saldırı menzilinde
+} EnemyState;
 
+// Düşman = ortak çekirdek + AI'a özel alanlar
+typedef struct {
+    Entity e;                 // ortak çekirdek (konum, can, hareket, vuruş tepkisi)
+    EnemyState state;         // AI durumu
+    float attackCooldown;     // bir sonraki saldırıya kalan süre
+} Enemy;
+
+#define MAX_ENEMIES 10
 
 #define FRAME_W        64
 #define FRAME_H        64
@@ -299,93 +303,68 @@ static void health_bar_render(const Player *p, SDL_Renderer *renderer)
     SDL_RenderRect(renderer, &bg);
 }
 
-// Dummy'yi çizer (şimdilik basit kutu; sprite sonra).
-static void dummy_render(const Dummy *d, SDL_Renderer *renderer, const Camera *camera)
+static void enemy_render(const Enemy *d, SDL_Renderer *renderer, const Camera *camera)
 {
-    if (!d->alive) return;
+    if (!d->e.alive) return;
 
     SDL_FRect screen = {
-        d->rect.x - camera->x,
-        d->rect.y - camera->y,
-        d->rect.w,
-        d->rect.h
+        d->e.rect.x - camera->x,
+        d->e.rect.y - camera->y,
+        d->e.rect.w,
+        d->e.rect.h
     };
 
-    // Vuruş flaşı aktifse beyaz/parlak, değilse normal mor
-    if (d->hitFlash > 0.0f)
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);  // beyaz flaş
+    if (d->e.hitFlash > 0.0f)
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);  // flaş
     else
         SDL_SetRenderDrawColor(renderer, 180, 40, 160, 255);   // normal mor
 
     SDL_RenderFillRect(renderer, &screen);
 }
 
-// Dummy'nin durumunu günceller (knockback hareketi, flaş sönümü).
-static void dummy_update(Dummy *d, Player *player ,float dt)
+static void enemy_update(Enemy *d, Player *player, float dt)
 {
-    if (!d->alive) return;
+    if (!d->e.alive) return;
 
-    // Flaş zamanlayıcısını azalt
-    if (d->hitFlash > 0.0f)
-        d->hitFlash -= dt;
+    // Flaş ve knockback
+    if (d->e.hitFlash > 0.0f) d->e.hitFlash -= dt;
+    d->e.rect.x += d->e.knockbackX * dt;
+    d->e.rect.y += d->e.knockbackY * dt;
+    float damping = 12.0f;
+    d->e.knockbackX -= d->e.knockbackX * damping * dt;
+    d->e.knockbackY -= d->e.knockbackY * damping * dt;
 
-    // Knockback'i uygula (pozisyonu it) ve sönümle
-    d->rect.x += d->knockbackX * dt;
-    d->rect.y += d->knockbackY * dt;
-
-    // Sönümleme: knockback zamanla sıfıra yaklaşsın (sürtünme)
-    float damping = 12.0f;   // ne kadar hızlı sönsün
-    d->knockbackX -= d->knockbackX * damping * dt;
-    d->knockbackY -= d->knockbackY * damping * dt;
-
-    // --- AI: oyuncuya mesafeyi hesapla
-    // İki merkez arasındaki fark
-    float dx = (player->rect.x + player->rect.w / 2.0f) - (d->rect.x + d->rect.w / 2.0f);
-    float dy = (player->rect.y + player->rect.h / 2.0f) - (d->rect.y + d->rect.h / 2.0f);
+    // AI: oyuncuya mesafe
+    float dx = (player->rect.x + player->rect.w/2.0f) - (d->e.rect.x + d->e.rect.w/2.0f);
+    float dy = (player->rect.y + player->rect.h/2.0f) - (d->e.rect.y + d->e.rect.h/2.0f);
     float dist = SDL_sqrtf(dx*dx + dy*dy);
 
-    // --- DURUM KARARI: mesafeye göre ---
-    float detectRange = 300.0f; // bu mesafeye girince fark eder
-    float attackRange = 60.0f;  // saldırı menzili (yakın dövüş)
+    // Durum kararı
+    float detectRange = 300.0f;
+    float attackRange = 60.0f;
+    if (dist < attackRange)       d->state = ENEMY_ATTACK;
+    else if (dist < detectRange)  d->state = ENEMY_CHASE;
+    else                          d->state = ENEMY_IDLE;
 
-    if (dist < attackRange)
-        d->state = DUMMY_ATTACK;
-    else if (dist < detectRange)
-        d->state = DUMMY_CHASE;
-    else
-        d->state = DUMMY_IDLE;
+    // Cooldown azalt
+    if (d->attackCooldown > 0.0f) d->attackCooldown -= dt;
 
-    // Cooldown'u her kare azalt (durumdan bağımsız)
-    if (d->attackCooldown > 0.0f)
-        d-> attackCooldown -= dt;
-
-    // --- DURUMA GÖRE DAVRANIŞ ---
-    if (d->state == DUMMY_CHASE)
-    {
-        // Oyuncuya doğru yön vektörü (normalize) -> o yönde yürü
-        if(dist > 0.0f) // sıfır bölme koruması (üst üsteyken)
-        {
-            float nx = dx / dist;
-            float ny = dy / dist;
-            d->rect.x += nx * d->speed * dt;
-            d->rect.y += ny * d->speed * dt;
+    // Davranış
+    if (d->state == ENEMY_CHASE) {
+        if (dist > 0.0f) {
+            float nx = dx / dist, ny = dy / dist;
+            d->e.rect.x += nx * d->e.speed * dt;
+            d->e.rect.y += ny * d->e.speed * dt;
         }
     }
-    else if (d->state == DUMMY_ATTACK)
-    {
-        // Saldırı menzilinde: cooldown doluysa vur
-        if(d-> attackCooldown <= 0.0f)
-        {
-            // OYUNCUYA HASAR
-            if (d->attackCooldown <= 0.0f) {
-                player->health -= 10.0f;       // oyuncuya 10 hasar
+    else if (d->state == ENEMY_ATTACK) {
+        if (d->attackCooldown <= 0.0f) {
+            player->health -= 10.0f;
             if (player->health < 0.0f) player->health = 0.0f;
-                d->attackCooldown = 1.0f;
-            SDL_Log("Dummy saldirdi! Oyuncu can: %.0f", player->health);
-        }
+            d->attackCooldown = 1.0f;
+            SDL_Log("Dusman saldirdi! Oyuncu can: %.0f", player->health);
         }
     }
-    // IDLE'da hareket yok
 }
 
 // Oyuncunun saldırı hitbox'ını (baktığı yönde) hesaplar.
@@ -653,17 +632,35 @@ int main(int argc, char *argv[])
         .maxHealth = 100.0f
     };
 
-    Dummy dummy = {
+    Enemy enemies[MAX_ENEMIES] = {0};   // hepsi sıfır başlar
+    int enemyCount = 0;
+
+    enemies[0] = (Enemy){
+        .e = {
+
         .rect = { .x = 500.0f, .y = 200.0f, .w = 48.0f, .h = 64.0f },
         .health = 100.0f,
         .alive = true,
         .hitFlash = 0.0f,
         .knockbackX = 0.0f,
         .knockbackY = 0.0f,
-        .state = DUMMY_IDLE,
         .speed = 200.0f, // oyuncudan (500) yavaş — kaçabilirsin
+        },
+        .state = ENEMY_IDLE,
         .attackCooldown = 0.0f
     };
+    enemyCount = 1;
+
+    enemies[1] = (Enemy){
+        .e = {
+            .rect = { .x = 800.0f, .y = 500.0f, .w = 48.0f, .h = 64.0f },
+            .health = 100.0f, .maxHealth = 100.0f,
+            .alive = true, .speed = 250.0f,   // farklı hız!
+        },
+        .state = ENEMY_IDLE,
+        .attackCooldown = 0.0f,
+    };
+    enemyCount = 2;
 
     // Tile texture'ları: TILE_TYPES tablosundaki path'lerden yükle.
     // texturePath == NULL olanlar (örn. taş) texture'sız kalır → render'da renk basılır.
@@ -725,29 +722,33 @@ int main(int argc, char *argv[])
         player_update(&player, keys, attackPressed, dt); // oyuncuyu güncelle
 
         // --- SALDIRI ÇARPIŞMASI ---
-        if (player.attacking && dummy.alive && !player.attackHit) {
+        if (player.attacking && !player.attackHit) {
             SDL_FRect hb = attack_hitbox(&player);
-            if (SDL_HasRectIntersectionFloat(&hb, &dummy.rect)) {
-                dummy.health -= 25.0f;
-                player.attackHit = true;
+            for (int i = 0; i < enemyCount; i++) {
+                if (!enemies[i].e.alive) continue;   // ölüleri atla
+                if (SDL_HasRectIntersectionFloat(&hb, &enemies[i].e.rect)) {
+                    enemies[i].e.health -= 25.0f;
+                    player.attackHit = true;
 
-                // --- VURUŞ TEPKİSİ ---
-                dummy.hitFlash = 0.15f;   // flaş süresi başlat
+                    enemies[i].e.hitFlash = 0.15f;
+                    float kb = 180.0f;
+                    if (player.facing == 2)
+                        enemies[i].e.knockbackX = player.facingLeft ? -kb : kb;
+                    else if (player.facing == 1)
+                        enemies[i].e.knockbackY = -kb;
+                    else
+                        enemies[i].e.knockbackY = kb;
 
-                // Knockback: oyuncunun baktığı yönde it
-                float kb = 150.0f;   // geri itilme gücü
-                if (player.facing == 2)            // yan
-                    dummy.knockbackX = player.facingLeft ? -kb : kb;
-                else if (player.facing == 1)       // yukarı
-                    dummy.knockbackY = -kb;
-                else                                // aşağı
-                    dummy.knockbackY = kb;
+                    if (enemies[i].e.health <= 0.0f)
+                        enemies[i].e.alive = false;
 
-                if (dummy.health <= 0.0f)
-                    dummy.alive = false;
+                    break;   // bir saldırıda bir düşmana vur (isteğe bağlı)
+                }
             }
         }
-        dummy_update(&dummy, &player, dt);
+
+        for (int i = 0; i < enemyCount; i++)
+            enemy_update(&enemies[i], &player, dt);
 
         camera_update(&camera, &player, winW, winH);  // kamerayı güncelle - karakteri takip et
 
@@ -755,7 +756,10 @@ int main(int argc, char *argv[])
         SDL_RenderClear(renderer); // ekranı temizle (arka plan rengini doldur)
         tilemap_render(renderer, tile_textures, &camera); // haritayı çiz
         player_render(&player, renderer, layers, LAYER_COUNT, &camera); // oyuncuyu 
-        dummy_render(&dummy, renderer, &camera);
+        
+        for (int i = 0; i < enemyCount; i++)
+            enemy_render(&enemies[i], renderer, &camera);
+        
         health_bar_render(&player, renderer);
         SDL_RenderPresent(renderer); // Ekrana bas.
     }
