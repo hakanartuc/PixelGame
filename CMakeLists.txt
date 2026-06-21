@@ -11,6 +11,7 @@ add_subdirectory(vendor/SDL EXCLUDE_FROM_ALL)
 add_executable(game
     src/main.c
     src/tilemap.c
+    src/player.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle
 
