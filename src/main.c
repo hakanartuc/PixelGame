@@ -56,6 +56,7 @@ typedef struct {
     Entity e;                 // ortak çekirdek (konum, can, hareket, vuruş tepkisi)
     EnemyState state;         // AI durumu
     float attackCooldown;     // bir sonraki saldırıya kalan süre
+    bool attackTriggered;
 } Enemy;
 
 #define MAX_ENEMIES 10
@@ -162,7 +163,7 @@ static void enemy_render(const Enemy *d, SDL_Renderer *renderer, const Camera *c
     SDL_RenderFillRect(renderer, &screen);
 }
 
-static void enemy_update(Enemy *d, Player *player, float dt)
+static void enemy_update(Enemy *d, float targetX, float targetY, float dt)
 {
     if (!d->e.alive) return;
 
@@ -174,9 +175,9 @@ static void enemy_update(Enemy *d, Player *player, float dt)
     d->e.knockbackX -= d->e.knockbackX * damping * dt;
     d->e.knockbackY -= d->e.knockbackY * damping * dt;
 
-    // AI: oyuncuya mesafe
-    float dx = (player->rect.x + player->rect.w/2.0f) - (d->e.rect.x + d->e.rect.w/2.0f);
-    float dy = (player->rect.y + player->rect.h/2.0f) - (d->e.rect.y + d->e.rect.h/2.0f);
+    // AI: hedefe mesafe (hedef merkezi parametre olarak geldi)
+    float dx = targetX - (d->e.rect.x + d->e.rect.w/2.0f);
+    float dy = targetY - (d->e.rect.y + d->e.rect.h/2.0f);
     float dist = SDL_sqrtf(dx*dx + dy*dy);
 
     // Durum kararı
@@ -191,18 +192,18 @@ static void enemy_update(Enemy *d, Player *player, float dt)
 
     // Davranış
     if (d->state == ENEMY_CHASE) {
-        if (dist > 0.0f) {
+        if (dist > 0.0f) {                       // sıfır bölme koruması
             float nx = dx / dist, ny = dy / dist;
             d->e.rect.x += nx * d->e.speed * dt;
             d->e.rect.y += ny * d->e.speed * dt;
         }
     }
-    else if (d->state == ENEMY_ATTACK) {
+    
+    d->attackTriggered = false;   // her kare sıfırla
+    if (d->state == ENEMY_ATTACK) {
         if (d->attackCooldown <= 0.0f) {
-            player->health -= 10.0f;
-            if (player->health < 0.0f) player->health = 0.0f;
+            d->attackTriggered = true;   // "saldırdım" — hasarı dışarısı versin
             d->attackCooldown = 1.0f;
-            SDL_Log("Dusman saldirdi! Oyuncu can: %.0f", player->health);
         }
     }
 }
@@ -593,8 +594,17 @@ int main(int argc, char *argv[])
             }
         }
 
-        for (int i = 0; i < enemyCount; i++)
-            enemy_update(&enemies[i], &player, dt);
+        float px = player.rect.x + player.rect.w/2.0f;
+        float py = player.rect.y + player.rect.h/2.0f;
+        for (int i = 0; i < enemyCount; i++) {
+            enemy_update(&enemies[i], px, py, dt);
+
+            // Düşman bu kare saldırdıysa ve oyuncu menzildeyse, hasarı BURADA uygula
+            if (enemies[i].attackTriggered) {
+                player.health -= 10.0f;
+                if (player.health < 0.0f) player.health = 0.0f;
+            }
+        }
 
         camera_update(&camera, &player, winW, winH);  // kamerayı güncelle - karakteri takip et
 
