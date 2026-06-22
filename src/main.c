@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
         player_update(&player, keys, attackPressed, dt); // oyuncuyu güncelle
 
         // --- SALDIRI ÇARPIŞMASI ---
-        if (player.attacking && !player.attackHit) {
+        if (player.attacking && !player.attackHit && player.currentFrame == PLAYER_ATTACK_HIT_FRAME) {
             SDL_FRect hb = attack_hitbox(&player);
             for (int i = 0; i < enemyCount; i++) {
                 if (!enemies[i].e.alive) continue;   // ölüleri atla

@@ -4,7 +4,7 @@
 #include "player.h"
 
 
-#define DEBUG_DRAW 1
+#define DEBUG_DRAW 0
 
 // Animasyon satır tablosu: [hareket durumu][yön] → sheet satırı
 // hareket: 0 = idle, 1 = yürüyüş
@@ -14,6 +14,11 @@ static const int ANIM_ROWS[2][3] = {
     {   0,      2,     1  },   // [0] idle
     {   3,      5,     4  },   // [1] yürüyüş
 };
+
+// Oyuncu saldırı satırları [yön] (aşağı/yukarı/yan) → sheet satırı
+// (mevcut ANIM_ROWS idle/walk içindi; bu attack için ayrı)
+static const int PLAYER_ATTACK_ROWS[3] = { 32, 34, 33 };  // aşağı=32, yukarı=34, yan=33
+#define PLAYER_ATTACK_FRAMES 6
 
 // Oyuncunun saldırı hitbox'ını (baktığı yönde) hesaplar.
 SDL_FRect attack_hitbox(const Player *p)
@@ -120,7 +125,6 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt)
         p->rect.y = SPAWN_Y;
         p->health = p->maxHealth;
         p->attacking = false;      // yarım kalan saldırıyı iptal et
-        p->attackTimer = 0.0f;
     }
 
     // --- YÖN: basılı tuşlardan bir yön vektörü (dx, dy) kur ---
@@ -152,44 +156,57 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt)
             p->rect.y = newY;
         
 
-        if (SDL_fabsf(dx) > SDL_fabsf(dy)) {   // yatay baskın → yan
-            p->facing = 2;
-            p->facingLeft = (dx < 0);
-        } else {                                // dikey baskın → yukarı/aşağı
-            p->facing = (dy < 0) ? 1 : 0;          // dy<0 yukarı, değilse aşağı
+        if (SDL_fabsf(dx) > SDL_fabsf(dy)) {
+            if (!p->attacking) { p->facing = 2; p->facingLeft = (dx < 0); }
+        } else {
+            if (!p->attacking) p->facing = (dy < 0) ? 1 : 0;
         }
     }
 
-    // --- ANİMASYON SATIRI: facing + moving'den satırı TABLODAN oku ---
-    p->animRow = ANIM_ROWS[moving][p->facing];
-    int frameCount = 6;
+    if (p->attacking) {
+        // --- SALDIRI: tek-seferlik animasyon ---
+        p->animRow = PLAYER_ATTACK_ROWS[p->facing];
+        p->lastRow = p->animRow;   // saldırıdan çıkınca geçiş tetiklenmesin
 
-    // --- GEÇİŞ: animasyon değiştiyse baştan başlat (ÖNCE) ---
-    if (p->animRow != p->lastRow) {
-        p->currentFrame = 0;
-        p->animTimer = 0.0f;
-        p->lastRow = p->animRow;
+        p->animTimer += dt;
+        if (p->animTimer >= FRAME_DURATION) {
+            p->animTimer -= FRAME_DURATION;
+            p->currentFrame++;
+
+            // Vuruş karesine ulaştık → hasar main loop'ta uygulanacak
+            // (burada sadece animasyon ilerliyor; hasar tetikleme aşağıda açıklanıyor)
+
+            // Son kareye ulaşınca saldırı bitti
+            if (p->currentFrame >= PLAYER_ATTACK_FRAMES) {
+                p->attacking = false;
+                p->currentFrame = 0;
+                // idle/walk satırına dönüşü bir sonraki kare normal kol halleder
+            }
+        }
     }
-
-    // --- SAYAÇ: kareyi zamanla ilerlet (SONRA) ---
-    p->animTimer += dt;
-    if (p->animTimer >= FRAME_DURATION) {
-        p->animTimer -= FRAME_DURATION;
-        p->currentFrame = (p->currentFrame + 1) % frameCount;
+    else {
+        // --- NORMAL: idle/walk ---
+        p->animRow = ANIM_ROWS[moving][p->facing];
+        int frameCount = 6;
+        if (p->animRow != p->lastRow) {
+            p->currentFrame = 0;
+            p->animTimer = 0.0f;
+            p->lastRow = p->animRow;
+        }
+        p->animTimer += dt;
+        if (p->animTimer >= FRAME_DURATION) {
+            p->animTimer -= FRAME_DURATION;
+            p->currentFrame = (p->currentFrame + 1) % frameCount;
+        }
     }
 
     // --- SALDIRI DURUMU ---
-    // Yeni saldırı başlat (sadece şu an saldırmıyorsa — üst üste binmesin)
+    // Yeni saldırı başlat (saldırı sürmüyorsa)
     if (attackPressed && !p->attacking) {
         p->attacking = true;
-        p->attackTimer = 0.3f;   // saldırı penceresi süresi
-        p->attackHit = false;
-    }
-    // Süreyi azalt, bitince kapat
-    if (p->attacking) {
-        p->attackTimer -= dt;
-        if (p->attackTimer <= 0.0f)
-            p->attacking = false;
+        p->currentFrame = 0;
+        p->animTimer = 0.0f;
+        p->attackHit = false;     // bu saldırıda henüz vurmadık
     }
 
 }

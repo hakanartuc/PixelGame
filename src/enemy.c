@@ -3,7 +3,7 @@
 #include "tilemap.h"
 #include "enemy.h"
 
-#define DEBUG_DRAW 1
+#define DEBUG_DRAW 0
 
 #define ENEMY_FRAME_W 32      // sprite kare genişliği
 #define ENEMY_FRAME_H 32      // sprite kare yüksekliği

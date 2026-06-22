@@ -19,6 +19,8 @@
 #define FRAME_H        64
 #define FRAME_DURATION 0.1f
 
+#define PLAYER_ATTACK_HIT_FRAME 1
+
 // Karakterin TÜM kalıcı durumu tek bir yapıda.
 typedef struct{
     SDL_FRect rect;     // DÜNYA konumu + MANTIKSAL boyut (hareket, clamp, ileride çarpışma)
@@ -37,7 +39,6 @@ typedef struct{
 
     // Saldırı durumu
     bool attacking;       // şu an saldırı animasyonu/penceresi aktif mi?
-    float attackTimer;    // saldırının kalan süresi (saniye)
     bool attackHit;       // bu saldırıda dummy'ye değdi mi (tekrar vurmasın)
 
 } Player;
