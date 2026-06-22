@@ -239,3 +239,30 @@ int mob_find_nearest(Mob *mobs, int mobCount, float px, float py)
     return bestId;   // 0 = mob yok
 }
 
+// Hedef mob'un HP barını ekranın üstünde çizer (KO tarzı sabit panel).
+void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW)
+{
+    if (target == NULL) return;   // hedef yoksa çizme
+
+    // Bar ölçüleri — ekranın üst-ortasında
+    float barW = 240.0f, barH = 22.0f;
+    float barX = (winW - barW) / 2.0f;   // yatay ortala
+    float barY = 20.0f;                   // üstten boşluk
+
+    // 1) Arka plan (boş bar)
+    SDL_FRect bg = { barX, barY, barW, barH };
+    SDL_SetRenderDrawColor(renderer, 40, 20, 20, 255);
+    SDL_RenderFillRect(renderer, &bg);
+
+    // 2) Dolu kısım (cana oranlı)
+    float ratio = target->e.health / target->e.maxHealth;
+    if (ratio < 0.0f) ratio = 0.0f;
+    if (ratio > 1.0f) ratio = 1.0f;
+    SDL_FRect fill = { barX, barY, barW * ratio, barH };
+    SDL_SetRenderDrawColor(renderer, 200, 40, 40, 255);   // kırmızı
+    SDL_RenderFillRect(renderer, &fill);
+
+    // 3) Çerçeve
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderRect(renderer, &bg);
+}

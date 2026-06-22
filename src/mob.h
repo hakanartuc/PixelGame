@@ -46,5 +46,6 @@ void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture *texture, cons
 void mob_update(Mob *d, float targetX, float targetY, float dt);
 int mob_find_nearest(Mob *mobs, int mobCount, float px, float py);
 Mob *mob_find_by_id(Mob *mobs, int mobCount, int id);
+void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW);
 
 #endif

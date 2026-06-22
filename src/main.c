@@ -197,8 +197,7 @@ int main(int argc, char *argv[])
                 float tdy = (target->e.rect.y + target->e.rect.h/2.0f) - (player.rect.y + player.rect.h/2.0f);
                 float tdist = SDL_sqrtf(tdx*tdx + tdy*tdy);
 
-                float playerAttackRange = 80.0f;
-                if (tdist > playerAttackRange) {
+                if (tdist > PLAYER_ATTACK_RANGE) {
                     // Menzil dışı → saldırma (boşa savurma yok)
                     attackPressed = false;
                 } else {
@@ -241,7 +240,6 @@ int main(int argc, char *argv[])
             Mob *target = mob_find_by_id(mobs, mobCount, player.targetMobId);
             if (target == NULL) {
                 player.targetMobId = 0;   // hedef artık yok → temizle
-                SDL_Log("Hedef dustu (mob oldu)");
             }
         }
 
@@ -253,8 +251,7 @@ int main(int argc, char *argv[])
                 float tdy = (target->e.rect.y + target->e.rect.h/2.0f) - (player.rect.y + player.rect.h/2.0f);
                 float tdist = SDL_sqrtf(tdx*tdx + tdy*tdy);
 
-                float playerAttackRange = 80.0f;
-                if (tdist <= playerAttackRange) {
+                if (tdist <= PLAYER_ATTACK_RANGE) {
                     target->e.health -= 25.0f;
                     target->e.hitFlash = 0.15f;
                     float kb = 180.0f;
@@ -292,6 +289,10 @@ int main(int argc, char *argv[])
         for (int i = 0; i < mobCount; i++)
             mob_render(&mobs[i], renderer, mob_texture, &camera, player.targetMobId);
         
+         // Hedef HP bar (seçili mob varsa)
+        Mob *hpTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
+        target_hp_bar_render(renderer, hpTarget, winW);
+
         health_bar_render(&player, renderer);
         SDL_RenderPresent(renderer); // Ekrana bas.
     }

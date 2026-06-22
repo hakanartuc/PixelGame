@@ -19,6 +19,8 @@
 #define FRAME_H        64
 #define FRAME_DURATION 0.1f
 
+#define PLAYER_ATTACK_RANGE 80.0f
+
 #define PLAYER_ATTACK_HIT_FRAME 1
 
 // Karakterin TÜM kalıcı durumu tek bir yapıda.
