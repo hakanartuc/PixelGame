@@ -7,6 +7,7 @@
 
 
 #define MAX_MOBS 10
+#define MAX_MOB_TYPES 16   // tür tablosu kapasitesi (tile'lardaki MAX_TILE_TYPES gibi)
 
 // Dünyada var olan, hareket eden, hasar alabilen her şeyin ortak çekirdeği.
 typedef struct {
@@ -27,22 +28,63 @@ typedef enum {
     MOB_ATTACK,  // saldırı menzilinde
 } MobState;
 
+// Saldırı türü — mob nasıl saldırır
+typedef enum {
+    ATTACK_MELEE,    // yakın dövüş: menzilde anında hasar
+    ATTACK_RANGED,   // okçu: mermi fırlatır (İLERİDE — mermi sistemi gerekir)
+    ATTACK_MAGIC,    // büyücü: büyü fırlatır (İLERİDE)
+} AttackType;
+
+// Bir animasyonun sheet üzerindeki tanımı (konum + boyut + zamanlama)
+typedef struct {
+    int x, y;             // sheet'te ilk karenin sol-üst köşesi (piksel)
+    int frameW, frameH;   // bu animasyonun kare boyutu
+    int frameCount;       // kaç kare
+    float frameDuration;  // kare başına süre
+    int feetY;            // karakterin ayağının hücre içindeki y'si (piksel)
+} AnimClip;
+
+// Mob TÜRÜ — bir kez tanımlanır, tüm o türdeki mob'lar paylaşır.
+// (TileType gibi: sabit, türe-özel veriler burada)
+typedef struct {
+    const char *name;          // "Goblin Maceman" (HP bar'da gösterilir)
+    const char *texturePath;   // sprite dosyası
+
+    // savaş/hareket istatistikleri
+    float maxHealth;
+    float speed;
+    float attackRange;         // saldırı menzili (türe göre — okçu uzun, melee kısa)
+    float detectRange;         // oyuncuyu fark etme menzili
+    float damage;              // saldırı başına hasar
+    AttackType attackType;     // nasıl saldırır
+
+     // Animasyon düzeni (türe özel)
+    int attackHitFrame;      // saldırının hangi karesinde hasar
+
+    AnimClip anims[3][3];
+} MobType;
+
 // Düşman = ortak çekirdek + AI'a özel alanlar
 typedef struct {
     int id;
     Entity e;                 // ortak çekirdek (konum, can, hareket, vuruş tepkisi)
+    const MobType *type;   // mob hangi türden (goblin? ork?)
     MobState state;         // AI durumu
     float attackCooldown;     // bir sonraki saldırıya kalan süre
     bool attackTriggered;
     // animasyon
-    int animRow;          // o an çizilen sheet satırı
     int currentFrame;     // hangi karedeyiz
     float animTimer;      // kare ilerleme sayacı
     bool attacking;       // şu an bir saldırı animasyonu oynuyor mu?
-    int lastRow;          // YENİ — animasyon değişince currentFrame sıfırlamak için
+    int lastState;        // geçiş tespiti: önceki durum
+    int lastFacing;       // geçiş tespiti: önceki yön
 } Mob;
 
-void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture *texture, const Camera *camera, int targetMobId);
+extern const MobType MOB_TYPES[];
+extern const int MOB_TYPE_COUNT;
+
+
+void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures, const Camera *camera, int targetMobId);
 void mob_update(Mob *d, float targetX, float targetY, float dt);
 int mob_find_nearest(Mob *mobs, int mobCount, float px, float py);
 Mob *mob_find_by_id(Mob *mobs, int mobCount, int id);

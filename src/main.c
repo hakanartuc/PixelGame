@@ -79,15 +79,19 @@ int main(int argc, char *argv[])
         .maxHealth = 100.0f
     };
 
-    SDL_Texture *mob_texture = load_texture(renderer, "assets/Mobs/Goblins/Goblin_Maceman.png");
-    if (mob_texture == NULL) 
-    {
-        SDL_Log("Dusman sprite yuklenemedi");
-        SDL_DestroyTexture(mob_texture);  // sadece yüklenmiş olanları yık
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
+    // Mob texture'ları: her tür için sprite yükle (TILE_TYPES gibi)
+    SDL_Texture *mob_textures[MAX_MOB_TYPES] = {0};
+    for (int i = 0; i < MOB_TYPE_COUNT; i++) {
+        mob_textures[i] = load_texture(renderer, MOB_TYPES[i].texturePath);
+        if (mob_textures[i] == NULL) {
+            SDL_Log("Mob texture yuklenemedi: %s", MOB_TYPES[i].texturePath);
+            for (int j = 0; j < LAYER_COUNT; j++)
+                if (mob_textures[j]) SDL_DestroyTexture(mob_textures[j]);  // sadece yüklenmiş olanları yık
+            SDL_DestroyRenderer(renderer);
+            SDL_DestroyWindow(window);
+            SDL_Quit();
         return 1;
+        }
     }
 
     Mob mobs[MAX_MOBS] = {0};   // hepsi sıfır başlar
@@ -97,15 +101,16 @@ int main(int argc, char *argv[])
 
     mobs[0] = (Mob){
         .id = nextMobId++, 
+        .type = &MOB_TYPES[0],   // ← Goblin türü
         .e = {
-        .rect = { .x = 500.0f, .y = 200.0f, .w = 48.0f, .h = 64.0f },
-        .health = 100.0f,
+        .rect = { .x = 1000.0f, .y = 300.0f, .w = 48.0f, .h = 64.0f },
+        .health = MOB_TYPES[0].maxHealth,
         .alive = true,
         .hitFlash = 0.0f,
         .knockbackX = 0.0f,
         .knockbackY = 0.0f,
-        .speed = 200.0f, // oyuncudan (500) yavaş — kaçabilirsin
-        .maxHealth = 100.0f
+        .speed = MOB_TYPES[0].speed,
+        .maxHealth = MOB_TYPES[0].maxHealth,
         },
         .state = MOB_IDLE,
         .attackCooldown = 0.0f
@@ -114,10 +119,16 @@ int main(int argc, char *argv[])
 
     mobs[1] = (Mob){
         .id = nextMobId++,
+        .type = &MOB_TYPES[1],   // ← ORC türü
         .e = {
             .rect = { .x = 800.0f, .y = 500.0f, .w = 48.0f, .h = 64.0f },
-            .health = 100.0f, .maxHealth = 100.0f,
-            .alive = true, .speed = 250.0f,   // farklı hız!
+            .health = MOB_TYPES[1].maxHealth,
+            .alive = true,
+            .hitFlash = 0.0f,
+            .knockbackX = 0.0f,
+            .knockbackY = 0.0f,
+            .speed = MOB_TYPES[1].speed,
+            .maxHealth = MOB_TYPES[1].maxHealth,
         },
         .state = MOB_IDLE,
         .attackCooldown = 0.0f,
@@ -273,7 +284,7 @@ int main(int argc, char *argv[])
 
             // Düşman bu kare saldırdıysa ve oyuncu menzildeyse, hasarı BURADA uygula
             if (mobs[i].attackTriggered) {
-                player.health -= 10.0f;
+                player.health -= mobs[i].type->damage;   // türe göre hasar
                 if (player.health < 0.0f) player.health = 0.0f;
             }
         }
@@ -287,7 +298,7 @@ int main(int argc, char *argv[])
         player_render(&player, renderer, layers, LAYER_COUNT, &camera); // oyuncuyu 
         
         for (int i = 0; i < mobCount; i++)
-            mob_render(&mobs[i], renderer, mob_texture, &camera, player.targetMobId);
+            mob_render(&mobs[i], renderer, mob_textures, &camera, player.targetMobId);
         
          // Hedef HP bar (seçili mob varsa)
         Mob *hpTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
@@ -305,7 +316,11 @@ int main(int argc, char *argv[])
     for (int i = 0; i < TILE_TYPE_COUNT; i++) {
         if (tile_textures[i]) SDL_DestroyTexture(tile_textures[i]);  // NULL olanları atla
     }
-    SDL_DestroyTexture(mob_texture);
+
+    for (int i = 0; i < MOB_TYPE_COUNT; i++) {
+        if (mob_textures[i]) SDL_DestroyTexture(mob_textures[i]);  // NULL olanları atla
+    }
+
     SDL_DestroyRenderer(renderer); // Renderer'ı temizle
     SDL_DestroyWindow(window);     // Pencereyi temizle
     SDL_Quit();                    // SDL'i temizle

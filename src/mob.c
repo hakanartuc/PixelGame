@@ -3,25 +3,75 @@
 #include "tilemap.h"
 #include "mob.h"
 
-
-#define MOB_FRAME_W 32      // sprite kare genişliği
-#define MOB_FRAME_H 32      // sprite kare yüksekliği
-#define MOB_ATTACK_HIT_FRAME 3   // saldırı animasyonunun bu karesinde hasar uygulanır
-
-// mob.c'nin üstünde, static
-// [durum][yön] → sheet satırı.  durum: 0=idle, 1=run, 2=attack | yön: 0=aşağı, 1=yukarı, 2=yan
-static const int MOB_ANIM_ROWS[3][3] = {
-    // aşağı  yukarı  yan
-    {   0,      2,     1  },   // [0] idle
-    {   3,      5,     4  },   // [1] run
-    {   6,      8,     7  },   // [2] attack
+// Mob türleri tablosu — her tür bir kez tanımlı. (TILE_TYPES gibi)
+const MobType MOB_TYPES[] = {
+    // [0] Goblin Maceman — uniform 32×32, klasik düzen
+    {
+        .name = "Goblin Maceman",
+        .texturePath = "assets/Mobs/Goblins/Goblin_Maceman.png",
+        .maxHealth = 100.0f,
+        .speed = 200.0f,
+        .attackRange = 60.0f,
+        .detectRange = 300.0f,
+        .damage = 10.0f,
+        .attackType = ATTACK_MELEE,
+        .attackHitFrame = 3,
+        .anims = {
+            // [0] idle — aşağı, yukarı, yan (4 kare, 32×32)
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.18f, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.18f, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.18f, .feetY=30 },
+            },
+            // [1] run — aşağı, yukarı, yan (6 kare, 32×32)
+            {
+                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+            },
+            // [2] attack — aşağı, yukarı, yan (6 kare, 32×32)
+            {
+                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
+                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
+            },
+        },
+    },
+    // [1] Orc Grunt — KARIŞIK boyut: idle/run 32×32, attack 64×64
+    {
+        .name = "Orc Grunt",
+        .texturePath = "assets/Mobs/Orcs/Orc_Grunt.png",
+        .maxHealth = 200.0f,
+        .speed = 150.0f,
+        .attackRange = 70.0f,
+        .detectRange = 320.0f,
+        .damage = 20.0f,
+        .attackType = ATTACK_MELEE,
+        .attackHitFrame = 4,
+        .anims = {
+            // [0] idle — aşağı, yukarı, yan (6 kare, 32×32)
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.13, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.13, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.13, .feetY=30 },
+            },
+            // [1] run — aşağı, yukarı, yan (6 kare, 32×32)
+            {
+                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+            },
+            // [2] attack — aşağı, yukarı, yan (8 kare, 64×64 — feetY FARKLI: 46)
+            {
+                { .x=0, .y=192, .frameW=64, .frameH=64, .frameCount=8, .frameDuration=0.07f, .feetY=46 },
+                { .x=0, .y=320, .frameW=64, .frameH=64, .frameCount=8, .frameDuration=0.07f, .feetY=46 },
+                { .x=0, .y=256, .frameW=64, .frameH=64, .frameCount=8, .frameDuration=0.07f, .feetY=46 },
+            },
+        },
+    },
 };
 
-// durum başına kare sayısı: idle 4, run 6, attack 6
-static const int MOB_FRAME_COUNTS[3] = { 4, 6, 6 };
-
-// durum başına kare süresi: idle, run, attack
-static const float MOB_FRAME_DURATIONS[3] = { 0.18f, 0.15f, 0.08f };  // attack en hızlı
+const int MOB_TYPE_COUNT = (int)(sizeof(MOB_TYPES) / sizeof(MOB_TYPES[0]));
 
 // Yere yatık bir oval (hedef halkası) çizer. cx,cy = merkez (ekran), 
 // rx,ry = yatay/dikey yarıçap.
@@ -40,43 +90,51 @@ static void draw_target_ring(SDL_Renderer *renderer, float cx, float cy, float r
     }
 }
 
-void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture *texture, const Camera *camera, int targetMobId)
+void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures, const Camera *camera, int targetMobId)
 {
     if (!m->e.alive) return;
 
-    // Kaynak: sheet'ten doğru kare
+    // Aktif animasyon clip'i: durum + yön
+    const AnimClip *clip = &m->type->anims[m->state][m->e.facing];
+
+    // Kaynak: clip'in başlangıcından currentFrame kadar kay (clip'in kendi kare boyutuyla)
     SDL_FRect src = {
-        .x = m->currentFrame * MOB_FRAME_W,
-        .y = m->animRow * MOB_FRAME_H,
-        .w = MOB_FRAME_W,
-        .h = MOB_FRAME_H
+        .x = clip->x + m->currentFrame * clip->frameW,
+        .y = clip->y,
+        .w = clip->frameW,
+        .h = clip->frameH
     };
 
-    // Hedef: ekranda nereye, ne boyutta (drawW/drawH bir kez — hem sprite hem halka kullanır)
-    float drawW = 64.0f, drawH = 64.0f;   // 32x32 kareyi 64x64'e ölçekle
+    float scale = 2.0f;
+    float drawW = clip->frameW * scale;
+    float drawH = clip->frameH * scale;
+    float feetOffset = clip->feetY * scale;   // ayak, ölçekli
+
     SDL_FRect screen = {
         .x = (m->e.rect.x + m->e.rect.w / 2.0f) - drawW / 2.0f - camera->x,
-        .y = (m->e.rect.y + m->e.rect.h) - drawH - camera->y,
+        .y = (m->e.rect.y + m->e.rect.h) - feetOffset - camera->y,  // ayak hizası (altı değil)
         .w = drawW,
         .h = drawH
     };
 
-    // Seçili hedefse, ayağında halka çiz (sprite'tan ÖNCE — altında kalsın)
+    // Seçili hedefse, ayağında halka çiz (sprite'tan ÖNCE)
     if (m->id == targetMobId) {
-        float ringCx = screen.x + drawW / 2.0f;
-        float ringCy = screen.y + drawH - 20.0f;   // sprite ayağı kutu altından ~20px yukarıda (gözle ayarlandı)
-
+        // Halka rect'in altına (sabit boyut — clip'e bağlı değil, mob'un ayak izi)
+        float ringCx = (m->e.rect.x + m->e.rect.w / 2.0f) - camera->x;
+        float ringCy = (m->e.rect.y + m->e.rect.h) - camera->y;
         SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255);
-        draw_target_ring(renderer, ringCx, ringCy, drawW * 0.35f, drawW * 0.18f);
+        draw_target_ring(renderer, ringCx, ringCy, m->e.rect.w * 0.7f, m->e.rect.w * 0.35f);
     }
 
     SDL_FlipMode flip = m->e.facingLeft ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 
-    // hitFlash varken beyazımsı çizmek için renk modülasyonu (basit yaklaşım)
+    int typeIndex = (int)(m->type - MOB_TYPES);
+    SDL_Texture *texture = mob_textures[typeIndex];
+
     if (m->e.hitFlash > 0.0f)
-        SDL_SetTextureColorMod(texture, 255, 150, 150);   // hafif kırmızımsı flaş
+        SDL_SetTextureColorMod(texture, 255, 150, 150);
     else
-        SDL_SetTextureColorMod(texture, 255, 255, 255);   // normal
+        SDL_SetTextureColorMod(texture, 255, 255, 255);
 
     SDL_RenderTextureRotated(renderer, texture, &src, &screen, 0.0, NULL, flip);
 
@@ -104,60 +162,45 @@ void mob_update(Mob *m, float targetX, float targetY, float dt)
     m->e.knockbackX -= m->e.knockbackX * damping * dt;
     m->e.knockbackY -= m->e.knockbackY * damping * dt;
 
-    // Cooldown her kare azalır
     if (m->attackCooldown > 0.0f) m->attackCooldown -= dt;
 
-    // Hedefe mesafe ve yön
     float dx = targetX - (m->e.rect.x + m->e.rect.w/2.0f);
     float dy = targetY - (m->e.rect.y + m->e.rect.h/2.0f);
     float dist = SDL_sqrtf(dx*dx + dy*dy);
 
-    float detectRange = 300.0f;
-    float attackRange = 60.0f;
+    float detectRange = m->type->detectRange;
+    float attackRange = m->type->attackRange;
 
-    m->attackTriggered = false;   // her kare sıfırla
+    m->attackTriggered = false;
 
     if (m->attacking) {
         // --- SALDIRI SÜRÜYOR: tek-seferlik animasyon ---
-        int frameCount = MOB_FRAME_COUNTS[2];
-        bool justFinished = false;
+        m->state = MOB_ATTACK;   // attack clip'i (durum 2)
+        const AnimClip *clip = &m->type->anims[MOB_ATTACK][m->e.facing];
 
         m->animTimer += dt;
-        if (m->animTimer >= MOB_FRAME_DURATIONS[2]) {
-            m->animTimer -= MOB_FRAME_DURATIONS[2];
+        if (m->animTimer >= clip->frameDuration) {
+            m->animTimer -= clip->frameDuration;
             m->currentFrame++;
 
-            // Vuruş karesinde hasar tetikle (bir kez)
-            if (m->currentFrame == MOB_ATTACK_HIT_FRAME) {
+            // Vuruş karesinde hasar tetikle
+            if (m->currentFrame == m->type->attackHitFrame) {
                 if (dist < attackRange + 20.0f)
                     m->attackTriggered = true;
             }
 
             // Son kareye ulaşınca saldırı bitti
-            if (m->currentFrame >= frameCount) {
+            if (m->currentFrame >= clip->frameCount) {
                 m->attacking = false;
-                m->currentFrame = 0; 
+                m->currentFrame = 0;
                 m->animTimer = 0.0f;
                 m->attackCooldown = 0.6f;
-                justFinished = true;
+                m->state = MOB_IDLE;   // idle'a dön
             }
-        }
-
-        // Saldırı HÂLÂ sürüyorsa attack satırını çiz.
-        // Bittiyse dokunma → sonraki update else koluna girip doğru satırı seçecek.
-        if (!justFinished) {
-            // Saldırı sürüyor → attack satırı
-            m->animRow = MOB_ANIM_ROWS[2][m->e.facing];
-            m->lastRow = m->animRow;
-        } else {
-            // Saldırı yeni bitti → hemen idle satırına geç (boş kareyi önle)
-            m->animRow = MOB_ANIM_ROWS[0][m->e.facing];   // idle, aynı yön
-            m->lastRow = m->animRow;
-            // currentFrame zaten 0 (yukarıda sıfırlandı)
         }
     }
     else {
-        // --- SALDIRI YOK: idle / chase, ve saldırı tetikleme ---
+        // --- SALDIRI YOK: idle / chase ---
 
         // Yön: oyuncuya doğru (menzildeyse)
         if (dist > 0.0f && dist < detectRange) {
@@ -169,42 +212,40 @@ void mob_update(Mob *m, float targetX, float targetY, float dt)
             }
         }
 
-        int animState;   // 0=idle, 1=run
+        // Durum: chase mi idle mi
         if (dist < detectRange && dist >= attackRange) {
-            m->state = MOB_CHASE;
-            animState = 1;
+            m->state = MOB_CHASE;   // run clip'i (durum 1)
             if (dist > 0.0f) {
                 float nx = dx / dist, ny = dy / dist;
                 m->e.rect.x += nx * m->e.speed * dt;
                 m->e.rect.y += ny * m->e.speed * dt;
             }
         } else {
-            m->state = MOB_IDLE;
-            animState = 0;
+            m->state = MOB_IDLE;   // idle clip'i (durum 0)
         }
 
-        // Saldırı menzilinde + cooldown bittiyse → YENİ SALDIRI BAŞLAT
+        // Saldırı menzilinde + cooldown bittiyse → saldırı başlat
         if (dist < attackRange && m->attackCooldown <= 0.0f) {
             m->attacking = true;
             m->currentFrame = 0;
             m->animTimer = 0.0f;
         }
 
-        // Döngüsel animasyon (idle/run)
-        int frameCount = MOB_FRAME_COUNTS[animState];
-        m->animRow = MOB_ANIM_ROWS[animState][m->e.facing];
+        // Döngüsel animasyon (aktif clip: state + facing)
+        const AnimClip *clip = &m->type->anims[m->state][m->e.facing];
 
-        // Satır değiştiyse kareyi sıfırla (olmayan kareye düşmeyi önler)
-        if (m->animRow != m->lastRow) {
+        // Geçiş: durum ya da yön değiştiyse kareyi sıfırla
+        if (m->state != m->lastState || m->e.facing != m->lastFacing) {
             m->currentFrame = 0;
             m->animTimer = 0.0f;
-            m->lastRow = m->animRow;
+            m->lastState = m->state;
+            m->lastFacing = m->e.facing;
         }
 
         m->animTimer += dt;
-        if (m->animTimer >= MOB_FRAME_DURATIONS[animState]) {
-            m->animTimer -= MOB_FRAME_DURATIONS[animState];
-            m->currentFrame = (m->currentFrame + 1) % frameCount;
+        if (m->animTimer >= clip->frameDuration) {
+            m->animTimer -= clip->frameDuration;
+            m->currentFrame = (m->currentFrame + 1) % clip->frameCount;
         }
     }
 }
