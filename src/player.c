@@ -3,9 +3,6 @@
 #include "tilemap.h"
 #include "player.h"
 
-
-#define DEBUG_DRAW 0
-
 // Animasyon satır tablosu: [hareket durumu][yön] → sheet satırı
 // hareket: 0 = idle, 1 = yürüyüş
 // yön:     0 = aşağı, 1 = yukarı, 2 = yan

@@ -1,12 +1,12 @@
-#ifndef ENEMY_H
-#define ENEMY_H
+#ifndef MOB_H
+#define MOB_H
 
 #include <SDL3/SDL.h>
 #include <stdbool.h> 
 #include "common.h"
 
 
-#define MAX_ENEMIES 10
+#define MAX_MOBS 10
 
 // Dünyada var olan, hareket eden, hasar alabilen her şeyin ortak çekirdeği.
 typedef struct {
@@ -22,15 +22,16 @@ typedef struct {
 
 // Düşmanın davranış durumu
 typedef enum {
-    ENEMY_IDLE,    // bekliyor
-    ENEMY_CHASE,   // oyuncuyu kovalıyor
-    ENEMY_ATTACK,  // saldırı menzilinde
-} EnemyState;
+    MOB_IDLE,    // bekliyor
+    MOB_CHASE,   // oyuncuyu kovalıyor
+    MOB_ATTACK,  // saldırı menzilinde
+} MobState;
 
 // Düşman = ortak çekirdek + AI'a özel alanlar
 typedef struct {
+    int id;
     Entity e;                 // ortak çekirdek (konum, can, hareket, vuruş tepkisi)
-    EnemyState state;         // AI durumu
+    MobState state;         // AI durumu
     float attackCooldown;     // bir sonraki saldırıya kalan süre
     bool attackTriggered;
     // animasyon
@@ -39,9 +40,9 @@ typedef struct {
     float animTimer;      // kare ilerleme sayacı
     bool attacking;       // şu an bir saldırı animasyonu oynuyor mu?
     int lastRow;          // YENİ — animasyon değişince currentFrame sıfırlamak için
-} Enemy;
+} Mob;
 
-void enemy_render(const Enemy *d, SDL_Renderer *renderer, SDL_Texture *texture, const Camera *camera);
-void enemy_update(Enemy *d, float targetX, float targetY, float dt);
+void mob_render(const Mob *d, SDL_Renderer *renderer, SDL_Texture *texture, const Camera *camera);
+void mob_update(Mob *d, float targetX, float targetY, float dt);
 
 #endif

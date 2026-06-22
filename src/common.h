@@ -3,6 +3,9 @@
 
 #include <SDL3/SDL.h>   // SDL_FRect, Uint8 gibi tipler için
 
+
+#define DEBUG_DRAW 0
+
 // --- Harita boyut sabitleri (birçok modül kullanır) ---
 #define TILE_SIZE 64    // bir tile kaç piksel
 #define MAP_W     40    // harita genişliği (tile)

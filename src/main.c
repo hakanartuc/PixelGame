@@ -4,7 +4,7 @@
 #include "common.h"
 #include "tilemap.h"
 #include "player.h"
-#include "enemy.h"
+#include "mob.h"
 #include "render.h"
 
 
@@ -79,23 +79,25 @@ int main(int argc, char *argv[])
         .maxHealth = 100.0f
     };
 
-    SDL_Texture *enemy_texture = load_texture(renderer, "assets/Mobs/Goblins/Goblin_Maceman.png");
-    if (enemy_texture == NULL) 
+    SDL_Texture *mob_texture = load_texture(renderer, "assets/Mobs/Goblins/Goblin_Maceman.png");
+    if (mob_texture == NULL) 
     {
         SDL_Log("Dusman sprite yuklenemedi");
-        SDL_DestroyTexture(enemy_texture);  // sadece yüklenmiş olanları yık
+        SDL_DestroyTexture(mob_texture);  // sadece yüklenmiş olanları yık
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
     }
 
-    Enemy enemies[MAX_ENEMIES] = {0};   // hepsi sıfır başlar
-    int enemyCount = 0;
+    Mob mobs[MAX_MOBS] = {0};   // hepsi sıfır başlar
+    int mobCount = 0;
 
-    enemies[0] = (Enemy){
+    int nextMobId = 1;
+
+    mobs[0] = (Mob){
+        .id = nextMobId++, 
         .e = {
-
         .rect = { .x = 500.0f, .y = 200.0f, .w = 48.0f, .h = 64.0f },
         .health = 100.0f,
         .alive = true,
@@ -105,21 +107,22 @@ int main(int argc, char *argv[])
         .speed = 200.0f, // oyuncudan (500) yavaş — kaçabilirsin
         .maxHealth = 100.0f
         },
-        .state = ENEMY_IDLE,
+        .state = MOB_IDLE,
         .attackCooldown = 0.0f
     };
-    enemyCount = 1;
+    mobCount = 1;
 
-    enemies[1] = (Enemy){
+    mobs[1] = (Mob){
+        .id = nextMobId++,
         .e = {
             .rect = { .x = 800.0f, .y = 500.0f, .w = 48.0f, .h = 64.0f },
             .health = 100.0f, .maxHealth = 100.0f,
             .alive = true, .speed = 250.0f,   // farklı hız!
         },
-        .state = ENEMY_IDLE,
+        .state = MOB_IDLE,
         .attackCooldown = 0.0f,
     };
-    enemyCount = 2;
+    mobCount = 2;
 
     // Tile texture'ları: TILE_TYPES tablosundaki path'lerden yükle.
     // texturePath == NULL olanlar (örn. taş) texture'sız kalır → render'da renk basılır.
@@ -183,23 +186,23 @@ int main(int argc, char *argv[])
         // --- SALDIRI ÇARPIŞMASI ---
         if (player.attacking && !player.attackHit && player.currentFrame == PLAYER_ATTACK_HIT_FRAME) {
             SDL_FRect hb = attack_hitbox(&player);
-            for (int i = 0; i < enemyCount; i++) {
-                if (!enemies[i].e.alive) continue;   // ölüleri atla
-                if (SDL_HasRectIntersectionFloat(&hb, &enemies[i].e.rect)) {
-                    enemies[i].e.health -= 25.0f;
+            for (int i = 0; i < mobCount; i++) {
+                if (!mobs[i].e.alive) continue;   // ölüleri atla
+                if (SDL_HasRectIntersectionFloat(&hb, &mobs[i].e.rect)) {
+                    mobs[i].e.health -= 25.0f;
                     player.attackHit = true;
 
-                    enemies[i].e.hitFlash = 0.15f;
+                    mobs[i].e.hitFlash = 0.15f;
                     float kb = 180.0f;
                     if (player.facing == 2)
-                        enemies[i].e.knockbackX = player.facingLeft ? -kb : kb;
+                        mobs[i].e.knockbackX = player.facingLeft ? -kb : kb;
                     else if (player.facing == 1)
-                        enemies[i].e.knockbackY = -kb;
+                        mobs[i].e.knockbackY = -kb;
                     else
-                        enemies[i].e.knockbackY = kb;
+                        mobs[i].e.knockbackY = kb;
 
-                    if (enemies[i].e.health <= 0.0f)
-                        enemies[i].e.alive = false;
+                    if (mobs[i].e.health <= 0.0f)
+                        mobs[i].e.alive = false;
 
                     break;   // bir saldırıda bir düşmana vur (isteğe bağlı)
                 }
@@ -208,11 +211,11 @@ int main(int argc, char *argv[])
 
         float px = player.rect.x + player.rect.w/2.0f;
         float py = player.rect.y + player.rect.h/2.0f;
-        for (int i = 0; i < enemyCount; i++) {
-            enemy_update(&enemies[i], px, py, dt);
+        for (int i = 0; i < mobCount; i++) {
+            mob_update(&mobs[i], px, py, dt);
 
             // Düşman bu kare saldırdıysa ve oyuncu menzildeyse, hasarı BURADA uygula
-            if (enemies[i].attackTriggered) {
+            if (mobs[i].attackTriggered) {
                 player.health -= 10.0f;
                 if (player.health < 0.0f) player.health = 0.0f;
             }
@@ -226,8 +229,8 @@ int main(int argc, char *argv[])
         tilemap_render(renderer, tile_textures, &camera); // haritayı çiz
         player_render(&player, renderer, layers, LAYER_COUNT, &camera); // oyuncuyu 
         
-        for (int i = 0; i < enemyCount; i++)
-            enemy_render(&enemies[i], renderer, enemy_texture, &camera);
+        for (int i = 0; i < mobCount; i++)
+            mob_render(&mobs[i], renderer, mob_texture, &camera);
         
         health_bar_render(&player, renderer);
         SDL_RenderPresent(renderer); // Ekrana bas.
@@ -241,7 +244,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < TILE_TYPE_COUNT; i++) {
         if (tile_textures[i]) SDL_DestroyTexture(tile_textures[i]);  // NULL olanları atla
     }
-    SDL_DestroyTexture(enemy_texture);
+    SDL_DestroyTexture(mob_texture);
     SDL_DestroyRenderer(renderer); // Renderer'ı temizle
     SDL_DestroyWindow(window);     // Pencereyi temizle
     SDL_Quit();                    // SDL'i temizle
