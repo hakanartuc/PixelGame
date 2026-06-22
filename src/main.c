@@ -145,6 +145,7 @@ int main(int argc, char *argv[])
     while (running)
     {
         bool attackPressed = false;
+        bool targetPressed = false;
         // 4a) INPUT: OS'in bu kare için kuyruğa attığı tüm olayları boşalt.
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -162,6 +163,9 @@ int main(int argc, char *argv[])
                 else if(event.key.key == SDLK_SPACE){
                      // SALDIRI tetiklendi (anlık olay — basılı tutmak tekrar tetiklemez*)
                     attackPressed = true;
+                }
+                else if (event.key.key == SDLK_Z) {
+                    targetPressed = true;   // hedef seçme tuşu
                 }
             }
         }
@@ -181,32 +185,88 @@ int main(int argc, char *argv[])
         int winW, winH;
         SDL_GetWindowSize(window, &winW, &winH); // pencere boyutunu al (dinamik olarak, pencere yeniden boyutlandırılabilir)
 
-        player_update(&player, keys, attackPressed, dt); // oyuncuyu güncelle
+        // --- SALDIRI GEÇERLİLİĞİ (KO tarzı): hedef yoksa ya da menzil dışıysa saldırma ---
+        if (attackPressed) {
+            Mob *target = mob_find_by_id(mobs, mobCount, player.targetMobId);
+            if (target == NULL) {
+                // Hedef yok → saldırma
+                attackPressed = false;
+            } else {
+                // Hedef var → menzilde mi?
+                float tdx = (target->e.rect.x + target->e.rect.w/2.0f) - (player.rect.x + player.rect.w/2.0f);
+                float tdy = (target->e.rect.y + target->e.rect.h/2.0f) - (player.rect.y + player.rect.h/2.0f);
+                float tdist = SDL_sqrtf(tdx*tdx + tdy*tdy);
 
-        // --- SALDIRI ÇARPIŞMASI ---
-        if (player.attacking && !player.attackHit && player.currentFrame == PLAYER_ATTACK_HIT_FRAME) {
-            SDL_FRect hb = attack_hitbox(&player);
-            for (int i = 0; i < mobCount; i++) {
-                if (!mobs[i].e.alive) continue;   // ölüleri atla
-                if (SDL_HasRectIntersectionFloat(&hb, &mobs[i].e.rect)) {
-                    mobs[i].e.health -= 25.0f;
-                    player.attackHit = true;
-
-                    mobs[i].e.hitFlash = 0.15f;
-                    float kb = 180.0f;
-                    if (player.facing == 2)
-                        mobs[i].e.knockbackX = player.facingLeft ? -kb : kb;
-                    else if (player.facing == 1)
-                        mobs[i].e.knockbackY = -kb;
-                    else
-                        mobs[i].e.knockbackY = kb;
-
-                    if (mobs[i].e.health <= 0.0f)
-                        mobs[i].e.alive = false;
-
-                    break;   // bir saldırıda bir düşmana vur (isteğe bağlı)
+                float playerAttackRange = 80.0f;
+                if (tdist > playerAttackRange) {
+                    // Menzil dışı → saldırma (boşa savurma yok)
+                    attackPressed = false;
+                } else {
+                    // Geçerli saldırı → oyuncuyu hedefe döndür
+                    if (SDL_fabsf(tdx) > SDL_fabsf(tdy)) {
+                        player.facing = 2;
+                        player.facingLeft = (tdx < 0);
+                    } else {
+                        player.facing = (tdy < 0) ? 1 : 0;
+                    }
                 }
             }
+        }
+
+        player_update(&player, keys, attackPressed, dt); // oyuncuyu güncelle
+
+        if (targetPressed) {
+            float px = player.rect.x + player.rect.w/2.0f;
+            float py = player.rect.y + player.rect.h/2.0f;
+            player.targetMobId = mob_find_nearest(mobs, mobCount, px, py);
+
+            // Hedef seçildiyse oyuncuyu ona döndür (KO tarzı)
+            if (player.targetMobId != 0) {
+                Mob *target = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                if (target != NULL) {
+                    float tdx = (target->e.rect.x + target->e.rect.w/2.0f) - px;
+                    float tdy = (target->e.rect.y + target->e.rect.h/2.0f) - py;
+                    if (SDL_fabsf(tdx) > SDL_fabsf(tdy)) {
+                        player.facing = 2;
+                        player.facingLeft = (tdx < 0);
+                    } else {
+                        player.facing = (tdy < 0) ? 1 : 0;
+                    }
+                }
+            }
+        }
+
+        // --- HEDEF GEÇERLİLİĞİ: seçili mob öldüyse/yoksa hedefi temizle ---
+        if (player.targetMobId != 0) {
+            Mob *target = mob_find_by_id(mobs, mobCount, player.targetMobId);
+            if (target == NULL) {
+                player.targetMobId = 0;   // hedef artık yok → temizle
+                SDL_Log("Hedef dustu (mob oldu)");
+            }
+        }
+
+        // --- SALDIRI HASARI: vuruş karesinde, hedef hâlâ menzildeyse ---
+        if (player.attacking && !player.attackHit && player.currentFrame == PLAYER_ATTACK_HIT_FRAME) {
+            Mob *target = mob_find_by_id(mobs, mobCount, player.targetMobId);
+            if (target != NULL) {
+                float tdx = (target->e.rect.x + target->e.rect.w/2.0f) - (player.rect.x + player.rect.w/2.0f);
+                float tdy = (target->e.rect.y + target->e.rect.h/2.0f) - (player.rect.y + player.rect.h/2.0f);
+                float tdist = SDL_sqrtf(tdx*tdx + tdy*tdy);
+
+                float playerAttackRange = 80.0f;
+                if (tdist <= playerAttackRange) {
+                    target->e.health -= 25.0f;
+                    target->e.hitFlash = 0.15f;
+                    float kb = 180.0f;
+                    if (tdist > 0.0f) {
+                        target->e.knockbackX = (tdx / tdist) * kb;
+                        target->e.knockbackY = (tdy / tdist) * kb;
+                    }
+                    if (target->e.health <= 0.0f)
+                        target->e.alive = false;
+                }
+            }
+            player.attackHit = true;   // bu saldırıda denendi (tekrar etmesin)
         }
 
         float px = player.rect.x + player.rect.w/2.0f;
@@ -230,7 +290,7 @@ int main(int argc, char *argv[])
         player_render(&player, renderer, layers, LAYER_COUNT, &camera); // oyuncuyu 
         
         for (int i = 0; i < mobCount; i++)
-            mob_render(&mobs[i], renderer, mob_texture, &camera);
+            mob_render(&mobs[i], renderer, mob_texture, &camera, player.targetMobId);
         
         health_bar_render(&player, renderer);
         SDL_RenderPresent(renderer); // Ekrana bas.

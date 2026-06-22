@@ -42,7 +42,9 @@ typedef struct {
     int lastRow;          // YENİ — animasyon değişince currentFrame sıfırlamak için
 } Mob;
 
-void mob_render(const Mob *d, SDL_Renderer *renderer, SDL_Texture *texture, const Camera *camera);
+void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture *texture, const Camera *camera, int targetMobId);
 void mob_update(Mob *d, float targetX, float targetY, float dt);
+int mob_find_nearest(Mob *mobs, int mobCount, float px, float py);
+Mob *mob_find_by_id(Mob *mobs, int mobCount, int id);
 
 #endif

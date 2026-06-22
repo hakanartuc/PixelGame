@@ -23,7 +23,24 @@ static const int MOB_FRAME_COUNTS[3] = { 4, 6, 6 };
 // durum başına kare süresi: idle, run, attack
 static const float MOB_FRAME_DURATIONS[3] = { 0.18f, 0.15f, 0.08f };  // attack en hızlı
 
-void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture *texture, const Camera *camera)
+// Yere yatık bir oval (hedef halkası) çizer. cx,cy = merkez (ekran), 
+// rx,ry = yatay/dikey yarıçap.
+static void draw_target_ring(SDL_Renderer *renderer, float cx, float cy, float rx, float ry)
+{
+    int segments = 24;   // ovali kaç parçaya bölelim (çok = pürüzsüz)
+    float prevX = cx + rx;   // ilk nokta (açı 0)
+    float prevY = cy;
+    for (int i = 1; i <= segments; i++) {
+        float angle = (float)i / segments * 2.0f * 3.14159265f;  // 0 → 2π
+        float x = cx + rx * SDL_cosf(angle);
+        float y = cy + ry * SDL_sinf(angle);
+        SDL_RenderLine(renderer, prevX, prevY, x, y);   // önceki noktadan bu noktaya çizgi
+        prevX = x;
+        prevY = y;
+    }
+}
+
+void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture *texture, const Camera *camera, int targetMobId)
 {
     if (!m->e.alive) return;
 
@@ -35,15 +52,23 @@ void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture *texture, cons
         .h = MOB_FRAME_H
     };
 
-    // Hedef: ekranda nereye, ne boyutta
+    // Hedef: ekranda nereye, ne boyutta (drawW/drawH bir kez — hem sprite hem halka kullanır)
     float drawW = 64.0f, drawH = 64.0f;   // 32x32 kareyi 64x64'e ölçekle
-    // Sprite'ı rect'in ortasına/altına hizala (oyuncudaki mantık gibi, basitleştirilmiş)
     SDL_FRect screen = {
         .x = (m->e.rect.x + m->e.rect.w / 2.0f) - drawW / 2.0f - camera->x,
         .y = (m->e.rect.y + m->e.rect.h) - drawH - camera->y,
         .w = drawW,
         .h = drawH
     };
+
+    // Seçili hedefse, ayağında halka çiz (sprite'tan ÖNCE — altında kalsın)
+    if (m->id == targetMobId) {
+        float ringCx = screen.x + drawW / 2.0f;
+        float ringCy = screen.y + drawH - 20.0f;   // sprite ayağı kutu altından ~20px yukarıda (gözle ayarlandı)
+
+        SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255);
+        draw_target_ring(renderer, ringCx, ringCy, drawW * 0.35f, drawW * 0.18f);
+    }
 
     SDL_FlipMode flip = m->e.facingLeft ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 
@@ -183,3 +208,34 @@ void mob_update(Mob *m, float targetX, float targetY, float dt)
         }
     }
 }
+
+// Verilen ID'ye sahip canlı mob'u bul. Yoksa NULL.
+Mob *mob_find_by_id(Mob *mobs, int mobCount, int id)
+{
+    if (id == 0) return NULL;
+
+    for (int i = 0; i < mobCount; i++) {
+        if (mobs[i].e.alive && mobs[i].id == id)
+            return &mobs[i];
+    }
+    return NULL;
+}
+
+// Z'ye basınca: en yakın canlı mob'u hedefle
+int mob_find_nearest(Mob *mobs, int mobCount, float px, float py)
+{
+    int bestId = 0;
+    float bestDist = 999999.0f;
+    for (int i = 0; i < mobCount; i++) {
+        if (!mobs[i].e.alive) continue;
+        float dx = (mobs[i].e.rect.x + mobs[i].e.rect.w/2.0f) - px;
+        float dy = (mobs[i].e.rect.y + mobs[i].e.rect.h/2.0f) - py;
+        float d = dx*dx + dy*dy;   // karekök gereksiz (sadece karşılaştırma)
+        if (d < bestDist) {
+            bestDist = d;
+            bestId = mobs[i].id;
+        }
+    }
+    return bestId;   // 0 = mob yok
+}
+

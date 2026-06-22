@@ -41,6 +41,7 @@ typedef struct{
     bool attacking;       // şu an saldırı animasyonu/penceresi aktif mi?
     bool attackHit;       // bu saldırıda dummy'ye değdi mi (tekrar vurmasın)
 
+    int targetMobId;    // seçili mob'un ID'si (0 = hedef yok)
 } Player;
 
 SDL_FRect attack_hitbox(const Player *p);
