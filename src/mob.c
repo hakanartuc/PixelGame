@@ -35,6 +35,12 @@ const MobType MOB_TYPES[] = {
                 { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
                 { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
             },
+            // [3] dying — death animasyonu (üç yöne de aynı, tek yönlü ölüm)
+            {
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=23 },  // aşağı
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=23 },  // yukarı
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=23 },  // yan
+            },
         },
     },
     // [1] Orc Grunt — KARIŞIK boyut: idle/run 32×32, attack 64×64
@@ -67,6 +73,12 @@ const MobType MOB_TYPES[] = {
                 { .x=0, .y=320, .frameW=64, .frameH=64, .frameCount=8, .frameDuration=0.07f, .feetY=46 },
                 { .x=0, .y=256, .frameW=64, .frameH=64, .frameCount=8, .frameDuration=0.07f, .feetY=46 },
             },
+            // [3] dying — death animasyonu (üç yöne de aynı, tek yönlü ölüm)
+            {
+                { .x=0, .y=384, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },  // aşağı
+                { .x=0, .y=384, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },  // yukarı
+                { .x=0, .y=384, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },  // yan
+            },
         },
     },
 };
@@ -92,7 +104,7 @@ static void draw_target_ring(SDL_Renderer *renderer, float cx, float cy, float r
 
 void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures, const Camera *camera, int targetMobId)
 {
-    if (!m->e.alive) return;
+    if (!m->e.alive && !m->dying) return;   // ne canlı ne ölüyorsa çizme
 
     // Aktif animasyon clip'i: durum + yön
     const AnimClip *clip = &m->type->anims[m->state][m->e.facing];
@@ -152,7 +164,23 @@ void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures
 
 void mob_update(Mob *m, float targetX, float targetY, float dt)
 {
-    if (!m->e.alive) return;
+    // Ölüm animasyonu oynuyorsa: sadece onu ilerlet, AI çalışmaz
+    if (m->dying) {
+        const AnimClip *clip = &m->type->anims[MOB_DYING][m->e.facing];
+        m->animTimer += dt;
+        if (m->animTimer >= clip->frameDuration) {
+            m->animTimer -= clip->frameDuration;
+            m->currentFrame++;
+            if (m->currentFrame >= clip->frameCount) {
+                // Death animasyonu bitti → mob tamamen kayboldu
+                m->dying = false;
+                m->currentFrame = clip->frameCount - 1;  // son karede kal (ya da kaybol)
+            }
+        }
+        return;   // dying'de AI yok
+    }
+
+    if (!m->e.alive) return;   // ölü (ve death anim bitmiş) → işlem yok
 
     // Flaş ve knockback
     if (m->e.hitFlash > 0.0f) m->e.hitFlash -= dt;

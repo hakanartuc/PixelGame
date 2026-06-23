@@ -26,6 +26,7 @@ typedef enum {
     MOB_IDLE,    // bekliyor
     MOB_CHASE,   // oyuncuyu kovalıyor
     MOB_ATTACK,  // saldırı menzilinde
+    MOB_DYING    // ölüm animasyonu oynuyor
 } MobState;
 
 // Saldırı türü — mob nasıl saldırır
@@ -61,7 +62,7 @@ typedef struct {
      // Animasyon düzeni (türe özel)
     int attackHitFrame;      // saldırının hangi karesinde hasar
 
-    AnimClip anims[3][3];
+    AnimClip anims[4][3];
 } MobType;
 
 // Düşman = ortak çekirdek + AI'a özel alanlar
@@ -76,8 +77,9 @@ typedef struct {
     int currentFrame;     // hangi karedeyiz
     float animTimer;      // kare ilerleme sayacı
     bool attacking;       // şu an bir saldırı animasyonu oynuyor mu?
-    int lastState;        // geçiş tespiti: önceki durum
+    MobState lastState;        // geçiş tespiti: önceki durum
     int lastFacing;       // geçiş tespiti: önceki yön
+    bool dying;           // ölüm animasyonu sürüyor mu (çiziliyor ama AI/hedef dışı)
 } Mob;
 
 extern const MobType MOB_TYPES[];

@@ -271,7 +271,15 @@ int main(int argc, char *argv[])
                         target->e.knockbackY = (tdy / tdist) * kb;
                     }
                     if (target->e.health <= 0.0f)
-                        target->e.alive = false;
+                    {
+                        // Anında kaybolma YERİNE ölüm animasyonu başlat
+                        target->e.alive = false;      // AI/hedef dışı
+                        target->dying = true;          // death animasyonu başlasın
+                        target->state = MOB_DYING;
+                        target->currentFrame = 0;
+                        target->animTimer = 0.0f;
+                    }
+                        
                 }
             }
             player.attackHit = true;   // bu saldırıda denendi (tekrar etmesin)
