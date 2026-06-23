@@ -95,45 +95,17 @@ int main(int argc, char *argv[])
     }
 
     Mob mobs[MAX_MOBS] = {0};   // hepsi sıfır başlar
-    int mobCount = 0;
+    int mobCount = MAX_MOBS;
 
     int nextMobId = 1;
 
-    mobs[0] = (Mob){
-        .id = nextMobId++, 
-        .type = &MOB_TYPES[0],   // ← Goblin türü
-        .e = {
-        .rect = { .x = 1000.0f, .y = 300.0f, .w = 48.0f, .h = 64.0f },
-        .health = MOB_TYPES[0].maxHealth,
-        .alive = true,
-        .hitFlash = 0.0f,
-        .knockbackX = 0.0f,
-        .knockbackY = 0.0f,
-        .speed = MOB_TYPES[0].speed,
-        .maxHealth = MOB_TYPES[0].maxHealth,
-        },
-        .state = MOB_IDLE,
-        .attackCooldown = 0.0f
+    // Spawn bölgeleri — KO'daki "kamp"lar: bir alanda birden çok mob.
+    SpawnZone spawnZones[] = {
+        { .x = 1000.0f, .y = 300.0f, .radius = 200.0f, .type = &MOB_TYPES[0], .maxCount = 5, .respawnTimer = 0.0f },  // goblin kampı (5 mob)
+        { .x = 1500.0f, .y = 700.0f, .radius = 150.0f, .type = &MOB_TYPES[1], .maxCount = 3, .respawnTimer = 0.0f },  // ork kampı (3 mob)
     };
-    mobCount = 1;
-
-    mobs[1] = (Mob){
-        .id = nextMobId++,
-        .type = &MOB_TYPES[1],   // ← ORC türü
-        .e = {
-            .rect = { .x = 800.0f, .y = 500.0f, .w = 48.0f, .h = 64.0f },
-            .health = MOB_TYPES[1].maxHealth,
-            .alive = true,
-            .hitFlash = 0.0f,
-            .knockbackX = 0.0f,
-            .knockbackY = 0.0f,
-            .speed = MOB_TYPES[1].speed,
-            .maxHealth = MOB_TYPES[1].maxHealth,
-        },
-        .state = MOB_IDLE,
-        .attackCooldown = 0.0f,
-    };
-    mobCount = 2;
+    int spawnZoneCount = (int)(sizeof(spawnZones) / sizeof(spawnZones[0]));
+    spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId);   // ← başlangıçta doldur
 
     // Tile texture'ları: TILE_TYPES tablosundaki path'lerden yükle.
     // texturePath == NULL olanlar (örn. taş) texture'sız kalır → render'da renk basılır.
@@ -285,10 +257,12 @@ int main(int argc, char *argv[])
             player.attackHit = true;   // bu saldırıda denendi (tekrar etmesin)
         }
 
+        spawn_zones_update(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId, dt);
+
         float px = player.rect.x + player.rect.w/2.0f;
         float py = player.rect.y + player.rect.h/2.0f;
         for (int i = 0; i < mobCount; i++) {
-            mob_update(&mobs[i], px, py, dt);
+            mob_update(&mobs[i],mobs, mobCount, px, py, dt);
 
             // Düşman bu kare saldırdıysa ve oyuncu menzildeyse, hasarı BURADA uygula
             if (mobs[i].attackTriggered) {

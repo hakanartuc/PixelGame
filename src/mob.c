@@ -1,7 +1,12 @@
 #include <SDL3/SDL.h>
+#include <stdlib.h>
 #include "common.h"
 #include "tilemap.h"
 #include "mob.h"
+
+#define RESPAWN_DELAY 3.0f   // mob ölünce kaç saniye sonra yenisi doğar
+#define SEPARATION_RADIUS 70.0f   // bu mesafeden yakın mob'lar iter
+#define SEPARATION_FORCE 250.0f   // itme gücü
 
 // Mob türleri tablosu — her tür bir kez tanımlı. (TILE_TYPES gibi)
 const MobType MOB_TYPES[] = {
@@ -102,8 +107,19 @@ static void draw_target_ring(SDL_Renderer *renderer, float cx, float cy, float r
     }
 }
 
+// Bölge içinde rastgele bir konum üretir.
+static void zone_random_pos(const SpawnZone *z, float *outX, float *outY)
+{
+    float angle = (float)(rand() % 360) * 3.14159265f / 180.0f;
+    float dist = (float)(rand() % (int)z->radius);
+    *outX = z->x + SDL_cosf(angle) * dist;
+    *outY = z->y + SDL_sinf(angle) * dist;
+}
+
 void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures, const Camera *camera, int targetMobId)
 {
+    if (m->type == NULL) return;   // boş slot → çizme
+
     if (!m->e.alive && !m->dying) return;   // ne canlı ne ölüyorsa çizme
 
     // Aktif animasyon clip'i: durum + yön
@@ -162,8 +178,10 @@ void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures
     #endif
 }
 
-void mob_update(Mob *m, float targetX, float targetY, float dt)
+void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, float dt)
 {
+    if (m->type == NULL) return;   // boş slot (hiç mob doğmamış) → atla
+
     // Ölüm animasyonu oynuyorsa: sadece onu ilerlet, AI çalışmaz
     if (m->dying) {
         const AnimClip *clip = &m->type->anims[MOB_DYING][m->e.facing];
@@ -242,13 +260,31 @@ void mob_update(Mob *m, float targetX, float targetY, float dt)
 
         // Durum: chase mi idle mi
         if (dist < detectRange && dist >= attackRange) {
-            m->state = MOB_CHASE;   // run clip'i (durum 1)
+            m->state = MOB_CHASE;
             if (dist > 0.0f) {
                 float nx = dx / dist, ny = dy / dist;
-                m->e.rect.x += nx * m->e.speed * dt;
-                m->e.rect.y += ny * m->e.speed * dt;
+
+                // Separation: yakın mob'lardan uzaklaş
+                float sepX = 0.0f, sepY = 0.0f;
+                for (int j = 0; j < mobCount; j++) {
+                    if (&mobs[j] == m) continue;
+                    if (!mobs[j].e.alive) continue;
+                    float ox = m->e.rect.x - mobs[j].e.rect.x;
+                    float oy = m->e.rect.y - mobs[j].e.rect.y;
+                    float d = SDL_sqrtf(ox*ox + oy*oy);
+                    if (d > 0.0f && d < SEPARATION_RADIUS) {
+                        float strength = (SEPARATION_RADIUS - d) / SEPARATION_RADIUS;
+                        sepX += (ox / d) * strength;
+                        sepY += (oy / d) * strength;
+                    }
+                }
+
+                // Oyuncuya doğru + ayrışma
+                m->e.rect.x += (nx * m->e.speed + sepX * SEPARATION_FORCE) * dt;
+                m->e.rect.y += (ny * m->e.speed + sepY * SEPARATION_FORCE) * dt;
             }
-        } else {
+        }
+        else {
             m->state = MOB_IDLE;   // idle clip'i (durum 0)
         }
 
@@ -334,4 +370,71 @@ void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW)
     // 3) Çerçeve
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderRect(renderer, &bg);
+}
+
+// Boş slota mob doğurur. Doğan mob'un ID'sini döndürür (0 = başarısız).
+int mob_spawn(Mob *mobs, int maxMobs, int *nextMobId, const MobType *type, float x, float y, int zoneId)
+{
+    int slot = -1;
+    for (int i = 0; i < maxMobs; i++) {
+        if (!mobs[i].e.alive && !mobs[i].dying) { slot = i; break; }
+    }
+    if (slot == -1) return 0;   // boş slot yok
+
+    int id = (*nextMobId)++;
+    mobs[slot] = (Mob){
+        .id = id,
+        .type = type,
+        .e = { .rect = { .x=x, .y=y, .w=48.0f, .h=64.0f },
+               .health = type->maxHealth, .maxHealth = type->maxHealth,
+               .speed = type->speed, .alive = true },
+        .state = MOB_IDLE, .attackCooldown = 0.0f,
+        .lastState = -1, .lastFacing = -1,
+        .zoneId = zoneId
+    };
+    return id;   // doğan mob'un ID'si
+}
+
+void spawn_zones_update(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId, float dt)
+{
+    for (int i = 0; i < zoneCount; i++) {
+        SpawnZone *z = &zones[i];
+
+        // Bu bölgeye ait canlı (ya da ölüm animasyonu oynayan) mob say
+        int aliveCount = 0;
+        for (int j = 0; j < maxMobs; j++) {
+            if (mobs[j].zoneId == i && (mobs[j].e.alive || mobs[j].dying))
+                aliveCount++;
+        }
+
+        // Bölge dolu mu?
+        if (aliveCount >= z->maxCount) {
+            z->respawnTimer = RESPAWN_DELAY;   // dolu → sayacı tam tut
+            continue;
+        }
+
+        // Eksik mob var → respawn sayacını azalt
+        z->respawnTimer -= dt;
+        if (z->respawnTimer <= 0.0f) {
+            // Bölge içinde rastgele konum (merkez ± yarıçap)
+           float sx, sy;
+            zone_random_pos(z, &sx, &sy);
+            mob_spawn(mobs, maxMobs, nextMobId, z->type, sx, sy, i);
+            z->respawnTimer = RESPAWN_DELAY;
+        }
+    }
+}
+
+// Oyun başında: tüm bölgeleri maxCount kadar mob'la doldur (respawn beklemeden).
+void spawn_zones_fill(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId)
+{
+    for (int i = 0; i < zoneCount; i++) {
+        SpawnZone *z = &zones[i];
+        for (int n = 0; n < z->maxCount; n++) {
+            // Bölge içinde rastgele konum
+            float sx, sy;
+            zone_random_pos(z, &sx, &sy);
+            mob_spawn(mobs, maxMobs, nextMobId, z->type, sx, sy, i);
+        }
+    }
 }

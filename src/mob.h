@@ -70,6 +70,7 @@ typedef struct {
     int id;
     Entity e;                 // ortak çekirdek (konum, can, hareket, vuruş tepkisi)
     const MobType *type;   // mob hangi türden (goblin? ork?)
+    int zoneId;           // hangi spawn bölgesinden doğdu (-1 = hiçbiri/manuel)
     MobState state;         // AI durumu
     float attackCooldown;     // bir sonraki saldırıya kalan süre
     bool attackTriggered;
@@ -82,14 +83,28 @@ typedef struct {
     bool dying;           // ölüm animasyonu sürüyor mu (çiziliyor ama AI/hedef dışı)
 } Mob;
 
+
+
+typedef struct {
+    float x, y;          // bölge merkezi
+    float radius;        // yarıçap (mob'lar bu alanda rastgele doğar)
+    const MobType *type; // hangi tür
+    int maxCount;        // bölgede kaç mob olmalı
+    float respawnTimer;  // eksik varsa geri sayım
+} SpawnZone;
+
 extern const MobType MOB_TYPES[];
 extern const int MOB_TYPE_COUNT;
 
 
 void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures, const Camera *camera, int targetMobId);
-void mob_update(Mob *d, float targetX, float targetY, float dt);
+void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, float dt);
 int mob_find_nearest(Mob *mobs, int mobCount, float px, float py);
 Mob *mob_find_by_id(Mob *mobs, int mobCount, int id);
 void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW);
+// Boş bir slota, verilen türden mob doğurur. Başarılıysa true.
+int mob_spawn(Mob *mobs, int maxMobs, int *nextMobId, const MobType *type, float x, float y, int zoneId);
+void spawn_zones_update(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId, float dt);
+void spawn_zones_fill(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId);
 
 #endif
