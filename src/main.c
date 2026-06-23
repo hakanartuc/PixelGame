@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
         return 1;                  // Başarısızsa çık
     }
 
-    SDL_Texture *crateTex = load_texture(renderer, "assets/Loot/Crate_Anim.png");
+    SDL_Texture *crateTex = load_texture(renderer, "assets/Loot/sheetlist_48x32_smallchest_1.png");
     if (crateTex == NULL) {
         SDL_Log("Kasa texture yuklenemedi");
         SDL_DestroyRenderer(renderer);

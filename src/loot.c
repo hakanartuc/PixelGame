@@ -2,6 +2,8 @@
 #include "common.h"
 #include "loot.h"
 
+#define CRATE_SCALE  1.2f
+
 // Kasa açılma animasyonu clip'i (Crate_Anim.png: 6 kare, 48×48, 48px aralık)
 // Şimdilik tek clip — kapalı=kare 0, açılma=kare 0→5.
 static const AnimClip CRATE_CLIP = {
@@ -11,6 +13,24 @@ static const AnimClip CRATE_CLIP = {
     .frameDuration = 0.08f,
     .feetY = 33,   // kasa alt hizası (ölçtüğümüz son kare ~33)
 };
+
+// Kasanın dünyadaki görsel dikdörtgenini hesaplar (çizim + tıklama aynı kaynaktan).
+static SDL_FRect loot_visual_rect(const Loot *l)
+{
+    const AnimClip *clip = &CRATE_CLIP;
+    float scale = CRATE_SCALE;   // ← sabit yap (aşağıda)
+    float drawW = clip->frameW * scale;
+    float drawH = clip->frameH * scale;
+    float feetOffset = clip->feetY * scale;
+
+    SDL_FRect r = {
+        .x = (l->rect.x + l->rect.w/2.0f) - drawW/2.0f,
+        .y = (l->rect.y + l->rect.h) - feetOffset,
+        .w = drawW,
+        .h = drawH
+    };
+    return r;
+}
 
 bool loot_spawn(Loot *loots, int maxLoot, float x, float y)
 {
@@ -47,19 +67,14 @@ void loot_render_all(Loot *loots, int maxLoot, SDL_Renderer *renderer, SDL_Textu
             .h = clip->frameH
         };
 
-        // Hedef: ekranda, ölçekli (mob gibi 2×), ayak hizalı
-        float scale = 2.0f;
-        float drawW = clip->frameW * scale;
-        float drawH = clip->frameH * scale;
-        float feetOffset = clip->feetY * scale;
-
-        SDL_FRect screen = {
-            .x = (l->rect.x + l->rect.w / 2.0f) - drawW / 2.0f - camera->x,
-            .y = (l->rect.y + l->rect.h) - feetOffset - camera->y,
-            .w = drawW,
-            .h = drawH
+        SDL_FRect vr = loot_visual_rect(l);
+        SDL_FRect screen = 
+        {
+            .x = vr.x - camera->x,
+            .y = vr.y - camera->y,
+            .w = vr.w,
+            .h = vr.h
         };
-
         SDL_RenderTexture(renderer, crateTex, &src, &screen);
     }
 }
@@ -70,8 +85,9 @@ int loot_find_at(Loot *loots, int maxLoot, float worldX, float worldY)
         Loot *l = &loots[i];
         if (!l->active) continue;
         // Nokta kasanın rect'i içinde mi?
-        if (worldX >= l->rect.x && worldX <= l->rect.x + l->rect.w &&
-            worldY >= l->rect.y && worldY <= l->rect.y + l->rect.h) {
+        SDL_FRect vr = loot_visual_rect(l);
+        if (worldX >= vr.x && worldX <= vr.x + vr.w && worldY >= vr.y && worldY <= vr.y + vr.h) 
+        {
             return i;
         }
     }
@@ -97,3 +113,5 @@ void loot_update_all(Loot *loots, int maxLoot, float dt)
         }
     }
 }
+
+

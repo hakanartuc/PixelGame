@@ -181,6 +181,8 @@ void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures
 void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, float dt)
 {
     if (m->type == NULL) return;   // boş slot (hiç mob doğmamış) → atla
+    
+    m->attackTriggered = false;
 
     // Ölüm animasyonu oynuyorsa: sadece onu ilerlet, AI çalışmaz
     if (m->dying) {
@@ -216,8 +218,6 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
 
     float detectRange = m->type->detectRange;
     float attackRange = m->type->attackRange;
-
-    m->attackTriggered = false;
 
     if (m->attacking) {
         // --- SALDIRI SÜRÜYOR: tek-seferlik animasyon ---
