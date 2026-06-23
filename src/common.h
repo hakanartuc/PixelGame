@@ -16,4 +16,14 @@ typedef struct {
     float x, y;   // kameranın dünya uzayındaki sol üst köşesi
 } Camera;
 
+
+// Bir animasyonun sheet üzerindeki tanımı (konum + boyut + zamanlama)
+typedef struct {
+    int x, y;             // sheet'te ilk karenin sol-üst köşesi (piksel)
+    int frameW, frameH;   // bu animasyonun kare boyutu
+    int frameCount;       // kaç kare
+    float frameDuration;  // kare başına süre
+    int feetY;            // karakterin ayağının hücre içindeki y'si (piksel)
+} AnimClip;
+
 #endif // COMMON_H

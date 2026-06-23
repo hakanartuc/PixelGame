@@ -14,6 +14,7 @@ add_executable(game
     src/player.c
     src/mob.c
     src/render.c
+    src/loot.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle
 

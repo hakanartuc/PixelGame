@@ -36,14 +36,6 @@ typedef enum {
     ATTACK_MAGIC,    // büyücü: büyü fırlatır (İLERİDE)
 } AttackType;
 
-// Bir animasyonun sheet üzerindeki tanımı (konum + boyut + zamanlama)
-typedef struct {
-    int x, y;             // sheet'te ilk karenin sol-üst köşesi (piksel)
-    int frameW, frameH;   // bu animasyonun kare boyutu
-    int frameCount;       // kaç kare
-    float frameDuration;  // kare başına süre
-    int feetY;            // karakterin ayağının hücre içindeki y'si (piksel)
-} AnimClip;
 
 // Mob TÜRÜ — bir kez tanımlanır, tüm o türdeki mob'lar paylaşır.
 // (TileType gibi: sabit, türe-özel veriler burada)

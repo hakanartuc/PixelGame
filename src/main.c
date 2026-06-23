@@ -6,6 +6,7 @@
 #include "player.h"
 #include "mob.h"
 #include "render.h"
+#include "loot.h"
 
 
 int main(int argc, char *argv[])
@@ -35,6 +36,16 @@ int main(int argc, char *argv[])
         SDL_Quit();                // SDL'i temizle
         return 1;                  // Başarısızsa çık
     }
+
+    SDL_Texture *crateTex = load_texture(renderer, "assets/Loot/Crate_Anim.png");
+    if (crateTex == NULL) {
+        SDL_Log("Kasa texture yuklenemedi");
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+    Loot loots[MAX_LOOT] = {0};   // hepsi inactive başlar
 
     // base → feet (ayakkabı) → legs (pantolon) → chest (gömlek) → hands (eller) → hair (saç)
     // Katmanlar ÇİZİM SIRASINDA (alttan üste). Yeni parça eklemek = buraya bir satır.
@@ -101,8 +112,8 @@ int main(int argc, char *argv[])
 
     // Spawn bölgeleri — KO'daki "kamp"lar: bir alanda birden çok mob.
     SpawnZone spawnZones[] = {
-        { .x = 1000.0f, .y = 300.0f, .radius = 200.0f, .type = &MOB_TYPES[0], .maxCount = 5, .respawnTimer = 0.0f },  // goblin kampı (5 mob)
-        { .x = 1500.0f, .y = 700.0f, .radius = 150.0f, .type = &MOB_TYPES[1], .maxCount = 3, .respawnTimer = 0.0f },  // ork kampı (3 mob)
+        { .x = 1000.0f, .y = 300.0f, .radius = 200.0f, .type = &MOB_TYPES[0], .maxCount = 1, .respawnTimer = 0.0f },  // goblin kampı (5 mob)
+        { .x = 1500.0f, .y = 700.0f, .radius = 150.0f, .type = &MOB_TYPES[1], .maxCount = 1, .respawnTimer = 0.0f },  // ork kampı (3 mob)
     };
     int spawnZoneCount = (int)(sizeof(spawnZones) / sizeof(spawnZones[0]));
     spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId);   // ← başlangıçta doldur
@@ -149,6 +160,22 @@ int main(int argc, char *argv[])
                 }
                 else if (event.key.key == SDLK_Z) {
                     targetPressed = true;   // hedef seçme tuşu
+                }
+            }
+            else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) 
+            {
+                if (event.button.button == SDL_BUTTON_LEFT) 
+                {
+                    float worldX = event.button.x + camera.x;
+                    float worldY = event.button.y + camera.y;
+                    int li = loot_find_at(loots, MAX_LOOT, worldX, worldY);
+                    
+                    if (li >= 0 && loots[li].state == LOOT_CLOSED) 
+                    {
+                        loots[li].state = LOOT_OPENING;   // aç
+                        loots[li].currentFrame = 0;
+                        loots[li].animTimer = 0.0f;
+                    }
                 }
             }
         }
@@ -250,6 +277,9 @@ int main(int argc, char *argv[])
                         target->state = MOB_DYING;
                         target->currentFrame = 0;
                         target->animTimer = 0.0f;
+
+                        // Ganimet düşür (mob'un konumunda)
+                        loot_spawn(loots, MAX_LOOT, target->e.rect.x, target->e.rect.y);
                     }
                         
                 }
@@ -270,9 +300,13 @@ int main(int argc, char *argv[])
                 if (player.health < 0.0f) player.health = 0.0f;
             }
         }
+        
+        loot_update_all(loots, MAX_LOOT, dt);
 
         camera_update(&camera, player.rect.x + player.rect.w/2.0f,
                                player.rect.y + player.rect.h/2.0f, winW, winH);  // kamerayı güncelle - karakteri takip et
+
+    
 
         SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
         SDL_RenderClear(renderer); // ekranı temizle (arka plan rengini doldur)
@@ -281,7 +315,10 @@ int main(int argc, char *argv[])
         
         for (int i = 0; i < mobCount; i++)
             mob_render(&mobs[i], renderer, mob_textures, &camera, player.targetMobId);
+
         
+        loot_render_all(loots, MAX_LOOT, renderer, crateTex, &camera);   // ← kasalar (mob'lardan sonra, HUD'dan önce)
+
          // Hedef HP bar (seçili mob varsa)
         Mob *hpTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
         target_hp_bar_render(renderer, hpTarget, winW);
@@ -303,6 +340,8 @@ int main(int argc, char *argv[])
         if (mob_textures[i]) SDL_DestroyTexture(mob_textures[i]);  // NULL olanları atla
     }
 
+    if (crateTex) 
+        SDL_DestroyTexture(crateTex);
     SDL_DestroyRenderer(renderer); // Renderer'ı temizle
     SDL_DestroyWindow(window);     // Pencereyi temizle
     SDL_Quit();                    // SDL'i temizle
