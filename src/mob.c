@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <stdlib.h>
 #include "common.h"
+#include "font.h"
 #include "tilemap.h"
 #include "mob.h"
 
@@ -345,7 +346,7 @@ int mob_find_nearest(Mob *mobs, int mobCount, float px, float py)
 }
 
 // Hedef mob'un HP barını ekranın üstünde çizer (KO tarzı sabit panel).
-void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW)
+void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW, TTF_Font *font)
 {
     if (target == NULL) return;   // hedef yoksa çizme
 
@@ -370,6 +371,22 @@ void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW)
     // 3) Çerçeve
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderRect(renderer, &bg);
+
+
+    // Mob ismi — bar'ın ÜSTÜNE, ortalı
+    if (font != NULL && target->type != NULL) {
+        SDL_Color white = { 255, 255, 255, 255 };
+
+        // Yazının piksel boyutunu ölç (ortalamak için genişlik lazım)
+        int textW = 0, textH = 0;
+        TTF_GetStringSize(font, target->type->name, 0, &textW, &textH);
+
+        // Bar'a göre yatay ortala
+        float textX = barX + (barW - textW) / 2.0f;
+        float textY = barY - 20.0f;   // bar'ın üstünde
+
+        draw_text(renderer, font, target->type->name, textX, textY, white);
+    }
 }
 
 // Boş slota mob doğurur. Doğan mob'un ID'sini döndürür (0 = başarısız).

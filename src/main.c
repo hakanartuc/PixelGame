@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h> // platformlar arası 'main' köprülemesi (mobil/web için de gerekli)
 #include <stdbool.h>
+#include "font.h"
 #include "common.h"
 #include "tilemap.h"
 #include "player.h"
@@ -16,6 +17,16 @@ int main(int argc, char *argv[])
     {
         SDL_Log("SDL_Init basarısız: %s", SDL_GetError());
         return 1; // Başarısızsa çık
+    }
+
+    if (!font_init()) {
+        // hata — ama oyunu çökertme, font olmadan devam edilebilir
+        SDL_Log("Font sistemi baslatilamadi");
+    }
+    TTF_Font *gameFont = font_load("assets/fonts/PublicPixel-rv0pA.ttf", 16.0f);
+    if (gameFont == NULL) {
+        SDL_Log("Oyun fontu yuklenemedi");
+        // devam — draw_text NULL font'ta hiçbir şey çizmez (güvenli)
     }
 
     // 2) Pencere oluştur.
@@ -37,6 +48,8 @@ int main(int argc, char *argv[])
         return 1;                  // Başarısızsa çık
     }
 
+    SDL_SetRenderVSync(renderer, 1);
+
     SDL_Texture *crateTex = load_texture(renderer, "assets/Loot/sheetlist_48x32_smallchest_1.png");
     if (crateTex == NULL) {
         SDL_Log("Kasa texture yuklenemedi");
@@ -45,6 +58,7 @@ int main(int argc, char *argv[])
         SDL_Quit();
         return 1;
     }
+
     Loot loots[MAX_LOOT] = {0};   // hepsi inactive başlar
 
     // base → feet (ayakkabı) → legs (pantolon) → chest (gömlek) → hands (eller) → hair (saç)
@@ -128,13 +142,13 @@ int main(int argc, char *argv[])
         }
     }
 
-    Uint64 last = SDL_GetTicks();
-
     // 4) Oyun döngüsü
     bool running = true;
 
     generate_map(); // haritayı oluştur
     Camera camera = { .x = 0.0f, .y = 0.0f };
+
+    Uint64 last = SDL_GetTicks();
 
     while (running)
     {
@@ -321,9 +335,14 @@ int main(int argc, char *argv[])
 
          // Hedef HP bar (seçili mob varsa)
         Mob *hpTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
-        target_hp_bar_render(renderer, hpTarget, winW);
+        target_hp_bar_render(renderer, hpTarget, winW, gameFont);
 
         health_bar_render(&player, renderer);
+
+        // Test yazısı (her kare çizilir)
+        SDL_Color white = { 255, 255, 255, 255 };
+        draw_text(renderer, gameFont, "Pixe Game", 20.0f, 60.0f, white);
+
         SDL_RenderPresent(renderer); // Ekrana bas.
     }
 
@@ -339,6 +358,8 @@ int main(int argc, char *argv[])
     for (int i = 0; i < MOB_TYPE_COUNT; i++) {
         if (mob_textures[i]) SDL_DestroyTexture(mob_textures[i]);  // NULL olanları atla
     }
+
+    font_quit(gameFont);
 
     if (crateTex) 
         SDL_DestroyTexture(crateTex);

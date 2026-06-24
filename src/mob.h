@@ -93,8 +93,7 @@ void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures
 void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, float dt);
 int mob_find_nearest(Mob *mobs, int mobCount, float px, float py);
 Mob *mob_find_by_id(Mob *mobs, int mobCount, int id);
-void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW);
-// Boş bir slota, verilen türden mob doğurur. Başarılıysa true.
+void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW, TTF_Font *font);
 int mob_spawn(Mob *mobs, int maxMobs, int *nextMobId, const MobType *type, float x, float y, int zoneId);
 void spawn_zones_update(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId, float dt);
 void spawn_zones_fill(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId);
