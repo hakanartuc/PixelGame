@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     }
     // (yolu kendi konumuna göre ayarla)
 
-    Loot loots[MAX_LOOT_ITEMS] = {0};   // hepsi inactive başlar
+    Loot loots[MAX_LOOT] = {0};   // hepsi inactive başlar
     int openLootIndex = -1;
     Inventory inventory = {0};   // tüm slotlar boş başlar (main'de, oyuncuyla birlikte)
 
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
 
                     // 2) Popup kapalıysa: kasa açma
                     if (!handled) {
-                        int li = loot_find_at(loots, MAX_LOOT_ITEMS, worldX, worldY);
+                        int li = loot_find_at(loots, MAX_LOOT, worldX, worldY);
                         if (li >= 0 && loots[li].state == LOOT_CLOSED) {
                             loots[li].state = LOOT_OPENING;
                             loots[li].currentFrame = 0;
@@ -326,13 +326,14 @@ int main(int argc, char *argv[])
                 float tdy = (target->e.rect.y + target->e.rect.h/2.0f) - (player.rect.y + player.rect.h/2.0f);
                 float tdist = SDL_sqrtf(tdx*tdx + tdy*tdy);
 
+                float dmg = 50.0f;
                 if (tdist <= PLAYER_ATTACK_RANGE) {
-                    target->e.health -= 50.0f;
+                    target->e.health -= dmg;
                     target->e.hitFlash = 0.15f;
 
                     floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
                                     target->e.rect.x + target->e.rect.w/2.0f + 10.0f,
-                                    target->e.rect.y, 25);
+                                    target->e.rect.y, (int)dmg);
 
                     float kb = 180.0f;
                     if (tdist > 0.0f) {
@@ -349,7 +350,7 @@ int main(int argc, char *argv[])
                         target->animTimer = 0.0f;
 
                         // Ganimet düşür (mob'un konumunda)
-                        loot_spawn(loots, MAX_LOOT_ITEMS, target->e.rect.x, target->e.rect.y);
+                        loot_spawn(loots, MAX_LOOT, target->e.rect.x, target->e.rect.y);
                     }
                         
                 }
@@ -371,7 +372,7 @@ int main(int argc, char *argv[])
             }
         }
         
-        loot_update_all(loots, MAX_LOOT_ITEMS, dt);
+        loot_update_all(loots, MAX_LOOT, dt);
 
 
         floattext_update_all(floatTexts, MAX_FLOAT_TEXTS, dt);
@@ -393,7 +394,7 @@ int main(int argc, char *argv[])
             loot_popup_render(renderer, &loots[openLootIndex], itemIconTex, gameFont, &camera);
 
         
-        loot_render_all(loots, MAX_LOOT_ITEMS, renderer, crateTex, &camera);   // ← kasalar (mob'lardan sonra, HUD'dan önce)
+        loot_render_all(loots, MAX_LOOT, renderer, crateTex, &camera);   // ← kasalar (mob'lardan sonra, HUD'dan önce)
 
         // Hasar yazıları (mob'ların üstünde, dünya uzayında)
         floattext_render_all(floatTexts, MAX_FLOAT_TEXTS, renderer, gameFont, &camera);   // ← BURAYA (present'tan önce)
@@ -403,10 +404,6 @@ int main(int argc, char *argv[])
         target_hp_bar_render(renderer, hpTarget, winW, gameFont);
 
         health_bar_render(&player, renderer);
-
-        // Test yazısı (her kare çizilir)
-        SDL_Color white = { 255, 255, 255, 255 };
-        draw_text(renderer, gameFont, "Pixe Game", 20.0f, 60.0f, white);
 
         SDL_RenderPresent(renderer); // Ekrana bas.
     }

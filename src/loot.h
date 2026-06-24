@@ -5,6 +5,7 @@
 #include "common.h"
 #include "item.h"
 
+#define MAX_LOOT 20   // dünyada aynı anda max kaç kasa
 #define MAX_LOOT_ITEMS 9   // dünyada aynı anda max kaç kasa
 
 typedef enum {
