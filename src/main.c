@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "font.h"
 #include "common.h"
+#include "floattext.h"
 #include "tilemap.h"
 #include "player.h"
 #include "mob.h"
@@ -118,6 +119,8 @@ int main(int argc, char *argv[])
         return 1;
         }
     }
+
+    FloatText floatTexts[MAX_FLOAT_TEXTS] = {0};
 
     Mob mobs[MAX_MOBS] = {0};   // hepsi sıfır başlar
     int mobCount = MAX_MOBS;
@@ -278,6 +281,11 @@ int main(int argc, char *argv[])
                 if (tdist <= PLAYER_ATTACK_RANGE) {
                     target->e.health -= 25.0f;
                     target->e.hitFlash = 0.15f;
+
+                    floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                    target->e.rect.x + target->e.rect.w/2.0f + 10.0f,
+                                    target->e.rect.y, 25);
+
                     float kb = 180.0f;
                     if (tdist > 0.0f) {
                         target->e.knockbackX = (tdx / tdist) * kb;
@@ -317,6 +325,9 @@ int main(int argc, char *argv[])
         
         loot_update_all(loots, MAX_LOOT, dt);
 
+
+        floattext_update_all(floatTexts, MAX_FLOAT_TEXTS, dt);
+
         camera_update(&camera, player.rect.x + player.rect.w/2.0f,
                                player.rect.y + player.rect.h/2.0f, winW, winH);  // kamerayı güncelle - karakteri takip et
 
@@ -332,6 +343,9 @@ int main(int argc, char *argv[])
 
         
         loot_render_all(loots, MAX_LOOT, renderer, crateTex, &camera);   // ← kasalar (mob'lardan sonra, HUD'dan önce)
+
+        // Hasar yazıları (mob'ların üstünde, dünya uzayında)
+        floattext_render_all(floatTexts, MAX_FLOAT_TEXTS, renderer, gameFont, &camera);   // ← BURAYA (present'tan önce)
 
          // Hedef HP bar (seçili mob varsa)
         Mob *hpTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
