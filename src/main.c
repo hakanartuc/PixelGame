@@ -9,6 +9,7 @@
 #include "mob.h"
 #include "render.h"
 #include "loot.h"
+#include "inventory.h"
 
 
 int main(int argc, char *argv[])
@@ -60,7 +61,19 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Loot loots[MAX_LOOT] = {0};   // hepsi inactive başlar
+    SDL_Texture *itemIconTex = load_texture(renderer, "assets/items/Tool_Icons_NO_Outline.png");
+    if (itemIconTex == NULL) {
+        SDL_Log("Item texture yuklenemedi");
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+    // (yolu kendi konumuna göre ayarla)
+
+    Loot loots[MAX_LOOT_ITEMS] = {0};   // hepsi inactive başlar
+    int openLootIndex = -1;
+    Inventory inventory = {0};   // tüm slotlar boş başlar (main'de, oyuncuyla birlikte)
 
     // base → feet (ayakkabı) → legs (pantolon) → chest (gömlek) → hands (eller) → hair (saç)
     // Katmanlar ÇİZİM SIRASINDA (alttan üste). Yeni parça eklemek = buraya bir satır.
@@ -167,9 +180,14 @@ int main(int argc, char *argv[])
             }
             else if (event.type == SDL_EVENT_KEY_DOWN)
             { // Bir tuşa basıldı mı?
-                if (event.key.key == SDLK_ESCAPE)
-                {                    // ESC tuşuna basıldı mı?
-                    running = false; // Oyun döngüsünden çık
+                if (event.key.key == SDLK_ESCAPE) 
+                {
+                    if (openLootIndex >= 0) {
+                        loots[openLootIndex].state = LOOT_CLOSING;   // kasayı da kapat
+                        openLootIndex = -1;
+                    } else {
+                        running = false;
+                    }
                 }
                 else if(event.key.key == SDLK_SPACE){
                      // SALDIRI tetiklendi (anlık olay — basılı tutmak tekrar tetiklemez*)
@@ -179,19 +197,49 @@ int main(int argc, char *argv[])
                     targetPressed = true;   // hedef seçme tuşu
                 }
             }
-            else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) 
-            {
-                if (event.button.button == SDL_BUTTON_LEFT) 
-                {
+            else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+                if (event.button.button == SDL_BUTTON_LEFT) {
                     float worldX = event.button.x + camera.x;
                     float worldY = event.button.y + camera.y;
-                    int li = loot_find_at(loots, MAX_LOOT, worldX, worldY);
-                    
-                    if (li >= 0 && loots[li].state == LOOT_CLOSED) 
-                    {
-                        loots[li].state = LOOT_OPENING;   // aç
-                        loots[li].currentFrame = 0;
-                        loots[li].animTimer = 0.0f;
+
+                    bool handled = false;
+
+                    // 1) Popup açıksa: item'e mi, yoksa dışarı mı tıklandı?
+                    if (openLootIndex >= 0) {
+                        int itemIdx = loot_popup_item_at(&loots[openLootIndex], worldX, worldY);
+                        if (itemIdx >= 0) {
+                            // Item al
+                            ItemStack *stack = &loots[openLootIndex].items[itemIdx];
+                            if (stack->type != NULL) {
+                                if (inventory_add(&inventory, stack->type, stack->count)) {
+                                    stack->type = NULL;
+                                    stack->count = 0;
+                                    if (loot_is_empty(&loots[openLootIndex])) {
+                                        loots[openLootIndex].active = false;   // boş kasa KAYBOLUR
+                                        openLootIndex = -1;
+                                    }
+                                }
+                            }
+                            handled = true;
+                        }
+                        else {
+                            // Popup açık ama item'e tıklanmadı → dışarı tıklama
+                            // Kasayı kapat + popup'ı kapat
+                            loots[openLootIndex].state = LOOT_CLOSING;
+                            openLootIndex = -1;
+                            handled = true;
+                        }
+                    }
+
+                    // 2) Popup kapalıysa: kasa açma
+                    if (!handled) {
+                        int li = loot_find_at(loots, MAX_LOOT_ITEMS, worldX, worldY);
+                        if (li >= 0 && loots[li].state == LOOT_CLOSED) {
+                            loots[li].state = LOOT_OPENING;
+                            loots[li].currentFrame = 0;
+                            loots[li].animTimer = 0.0f;
+                            openLootIndex = li;
+                        }
                     }
                 }
             }
@@ -279,7 +327,7 @@ int main(int argc, char *argv[])
                 float tdist = SDL_sqrtf(tdx*tdx + tdy*tdy);
 
                 if (tdist <= PLAYER_ATTACK_RANGE) {
-                    target->e.health -= 25.0f;
+                    target->e.health -= 50.0f;
                     target->e.hitFlash = 0.15f;
 
                     floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
@@ -301,7 +349,7 @@ int main(int argc, char *argv[])
                         target->animTimer = 0.0f;
 
                         // Ganimet düşür (mob'un konumunda)
-                        loot_spawn(loots, MAX_LOOT, target->e.rect.x, target->e.rect.y);
+                        loot_spawn(loots, MAX_LOOT_ITEMS, target->e.rect.x, target->e.rect.y);
                     }
                         
                 }
@@ -323,7 +371,7 @@ int main(int argc, char *argv[])
             }
         }
         
-        loot_update_all(loots, MAX_LOOT, dt);
+        loot_update_all(loots, MAX_LOOT_ITEMS, dt);
 
 
         floattext_update_all(floatTexts, MAX_FLOAT_TEXTS, dt);
@@ -341,8 +389,11 @@ int main(int argc, char *argv[])
         for (int i = 0; i < mobCount; i++)
             mob_render(&mobs[i], renderer, mob_textures, &camera, player.targetMobId);
 
+        if (openLootIndex >= 0)
+            loot_popup_render(renderer, &loots[openLootIndex], itemIconTex, gameFont, &camera);
+
         
-        loot_render_all(loots, MAX_LOOT, renderer, crateTex, &camera);   // ← kasalar (mob'lardan sonra, HUD'dan önce)
+        loot_render_all(loots, MAX_LOOT_ITEMS, renderer, crateTex, &camera);   // ← kasalar (mob'lardan sonra, HUD'dan önce)
 
         // Hasar yazıları (mob'ların üstünde, dünya uzayında)
         floattext_render_all(floatTexts, MAX_FLOAT_TEXTS, renderer, gameFont, &camera);   // ← BURAYA (present'tan önce)
