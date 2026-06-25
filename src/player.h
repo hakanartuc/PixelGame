@@ -1,54 +1,66 @@
 #ifndef PLAYER_H
 #define PLAYER_H
-
 #include <SDL3/SDL.h>
-#include <stdbool.h> 
+#include <stdbool.h>
 #include "common.h"
 
+// LPC sprite sheet sabitleri
+#define FRAME_W 64           // LPC kare 64×64
+#define FRAME_H 64
+#define LPC_SHEET_COLS 13    // sheet 13 sütun
 
+// LPC'de karakterin ayağı hücrenin neresinde (collision/feet hizası için)
+// LPC karakterleri 64px hücrede, ayak ~y=58 civarı (ölçeceğiz, şimdilik tahmin)
+#define SPRITE_FEET_Y 58
 
-// Ayak kutusu: rect'in ALT kısmında, dar bir collision alanı.
-// (top-down'da karakter ayağıyla çarpışır, tüm gövdesiyle değil)
-#define SPRITE_FEET_Y 40 // sprite hücresinde karakterin ayağının olduğu satır, ölçülen değer
 #define PLAYER_SPEED 500.0f
-
 #define SPAWN_X 300.0f
 #define SPAWN_Y 300.0f
-
-#define FRAME_W        64
-#define FRAME_H        64
 #define FRAME_DURATION 0.1f
-
 #define PLAYER_ATTACK_RANGE 80.0f
+#define PLAYER_ATTACK_HIT_FRAME 3   // slash'ın vuruş karesi (6 karelik slash'ta ~3)
 
-#define PLAYER_ATTACK_HIT_FRAME 1
+// LPC yön sırası (sheet satır sırası): 0=yukarı, 1=sol, 2=aşağı, 3=sağ
+typedef enum {
+    DIR_UP = 0,
+    DIR_LEFT = 1,
+    DIR_DOWN = 2,
+    DIR_RIGHT = 3,
+} Direction;
 
-// Karakterin TÜM kalıcı durumu tek bir yapıda.
-typedef struct{
-    SDL_FRect rect;     // DÜNYA konumu + MANTIKSAL boyut (hareket, clamp, ileride çarpışma)
-    float drawW, drawH; // EKRANDA çizim boyutu (sadece render kullanır)
-    int facing;         // 0=aşağı, 1=yukarı, 2=yan
-    bool facingLeft;    // true = sola bakıyor, false = sağa bakıyor
-    int animRow;        // o an çizilecek sheet satırı (update yazar, render okur)
-    int currentFrame;   // animasyonun hangi karesinde olduğumuz.
-    float animTimer;    // kare ilerleme sayacı
-    int lastRow;        // önceki karenin animRow'u; animasyon değiştiğinde sıfırlamak için
+// Oyuncunun animasyon durumu (hangi LPC animasyonu)
+typedef enum {
+    PLAYER_IDLE,    // dururken (satır 22-25, 2 kare)
+    PLAYER_WALK,    // yürüme (satır 8-11, 9 kare)
+    PLAYER_SLASH,   // kılıç saldırısı (satır 12-15, 6 kare)
+    // ileride: THRUST, SHOOT, SPELLCAST, HURT, RUN, DEATH...
+} PlayerState;
 
-    // Durum sistemleri
-    float speed;        // anlık hareket hızı
-    float health;       // anlık can
-    float maxHealth;    // maksimum can
+// Karakterin TÜM kalıcı durumu
+typedef struct {
+    SDL_FRect rect;      // dünya konumu + mantıksal boyut (ayak izi)
+    float drawW, drawH;  // ekranda çizim boyutu
+
+    Direction facing;    // 4 yön (LPC: UP/LEFT/DOWN/RIGHT)
+    PlayerState state;   // mevcut animasyon durumu
+
+    int currentFrame;    // animasyon karesi
+    float animTimer;     // kare ilerleme sayacı
+    PlayerState lastState; // geçiş tespiti: önceki durum
+    Direction lastFacing;  // geçiş tespiti: önceki yön
+
+    float speed;
+    float health;
+    float maxHealth;
 
     // Saldırı durumu
-    bool attacking;       // şu an saldırı animasyonu/penceresi aktif mi?
-    bool attackHit;       // bu saldırıda dummy'ye değdi mi (tekrar vurmasın)
-
-    int targetMobId;    // seçili mob'un ID'si (0 = hedef yok)
+    bool attacking;
+    bool attackHit;
+    int targetMobId;
 } Player;
 
-SDL_FRect attack_hitbox(const Player *p);
 void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture **layers, int layerCount, const Camera *camera);
 void player_update(Player *p, const bool *keys, bool attackPressed, float dt);
 void health_bar_render(const Player *p, SDL_Renderer *renderer);
 
-#endif // PLAYER_H
+#endif

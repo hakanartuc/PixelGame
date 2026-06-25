@@ -10,6 +10,7 @@
 #include "render.h"
 #include "loot.h"
 #include "inventory.h"
+#include "equipment.h"
 
 
 int main(int argc, char *argv[])
@@ -52,7 +53,7 @@ int main(int argc, char *argv[])
 
     SDL_SetRenderVSync(renderer, 1);
 
-    SDL_Texture *crateTex = load_texture(renderer, "assets/Loot/sheetlist_48x32_smallchest_1.png");
+    SDL_Texture *crateTex = load_texture(renderer, "assets/loot/chest_small.png");
     if (crateTex == NULL) {
         SDL_Log("Kasa texture yuklenemedi");
         SDL_DestroyRenderer(renderer);
@@ -61,7 +62,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    SDL_Texture *itemIconTex = load_texture(renderer, "assets/items/Tool_Icons_NO_Outline.png");
+    SDL_Texture *itemIconTex = load_texture(renderer, "assets/icons/items/tool_icons.png");
     if (itemIconTex == NULL) {
         SDL_Log("Item texture yuklenemedi");
         SDL_DestroyRenderer(renderer);
@@ -75,15 +76,14 @@ int main(int argc, char *argv[])
     int openLootIndex = -1;
     Inventory inventory = {0};   // tüm slotlar boş başlar (main'de, oyuncuyla birlikte)
 
+    Equipment equipment = {0};   // tüm slotlar boş başlar
+
     // base → feet (ayakkabı) → legs (pantolon) → chest (gömlek) → hands (eller) → hair (saç)
     // Katmanlar ÇİZİM SIRASINDA (alttan üste). Yeni parça eklemek = buraya bir satır.
     const char *layer_paths[] = {
-        "assets/player/Player_Base/Player_Base_animations.png",
-        "assets/player/Feet/Shoes_1_Brown.png",
-        "assets/player/Legs/OG_Pants/Pants_1_Blue.png",
-        "assets/player/Chest/OG_Shirt/Shirt_1_Green.png",
-        "assets/player/Hands/Hands_1_Bare.png",
-        "assets/player/Head/Hair_1/Hair_1_Brown.png",
+        "assets/characters/body/male/light.png",
+        "assets/characters/head/male/human_light.png",
+        "assets/characters/face/male/neutral_light.png",
     };
 
     #define LAYER_COUNT ((int)(sizeof(layer_paths) / sizeof(layer_paths[0])))
@@ -103,16 +103,15 @@ int main(int argc, char *argv[])
     }
     
     // Oyuncuyu oluştur + başlangıç durumunu ayarla
-    Player player = 
-    {
-        .rect = { .x = SPAWN_X, .y = SPAWN_Y, .w = 48.0f, .h = 64.0f }, // dünya ayak izi (küçük)
-        .drawW = 128.0f, .drawH = 128.0f, // ekranda çizim boyutu (büyük)
-        .facing = 0,
-        .facingLeft = false,
-        .animRow = 0,
+    Player player = {
+        .rect = { .x = SPAWN_X, .y = SPAWN_Y, .w = 48.0f, .h = 64.0f },
+        .drawW = 64.0f, .drawH = 64.0f,
+        .facing = DIR_DOWN,        // başlangıç yönü
+        .state = PLAYER_IDLE,
         .currentFrame = 0,
         .animTimer = 0.0f,
-        .lastRow = -1,
+        .lastState = -1,           // ilk karede geçiş tetiklensin
+        .lastFacing = -1,
         .speed = PLAYER_SPEED,
         .health = 100.0f,
         .maxHealth = 100.0f
@@ -283,10 +282,9 @@ int main(int argc, char *argv[])
                 } else {
                     // Geçerli saldırı → oyuncuyu hedefe döndür
                     if (SDL_fabsf(tdx) > SDL_fabsf(tdy)) {
-                        player.facing = 2;
-                        player.facingLeft = (tdx < 0);
+                        player.facing = (tdx < 0) ? DIR_LEFT : DIR_RIGHT;
                     } else {
-                        player.facing = (tdy < 0) ? 1 : 0;
+                        player.facing = (tdy < 0) ? DIR_UP : DIR_DOWN;
                     }
                 }
             }
@@ -306,10 +304,9 @@ int main(int argc, char *argv[])
                     float tdx = (target->e.rect.x + target->e.rect.w/2.0f) - px;
                     float tdy = (target->e.rect.y + target->e.rect.h/2.0f) - py;
                     if (SDL_fabsf(tdx) > SDL_fabsf(tdy)) {
-                        player.facing = 2;
-                        player.facingLeft = (tdx < 0);
+                       player.facing = (tdx < 0) ? DIR_LEFT : DIR_RIGHT;
                     } else {
-                        player.facing = (tdy < 0) ? 1 : 0;
+                        player.facing = (tdy < 0) ? DIR_UP : DIR_DOWN;
                     }
                 }
             }

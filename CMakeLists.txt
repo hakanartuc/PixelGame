@@ -22,7 +22,8 @@ add_executable(game
     src/font.c 
     src/floattext.c
     src/item.c
-    src/inventory.c 
+    src/inventory.c
+    src/equipment.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle
 target_link_libraries(game PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)   # ← SDL3_ttf

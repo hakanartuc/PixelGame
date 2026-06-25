@@ -14,7 +14,7 @@ const MobType MOB_TYPES[] = {
     // [0] Goblin Maceman — uniform 32×32, klasik düzen
     {
         .name = "Goblin Maceman",
-        .texturePath = "assets/Mobs/Goblins/Goblin_Maceman.png",
+        .texturePath = "assets/characters/mobs/Goblin_Maceman.png",
         .maxHealth = 100.0f,
         .speed = 200.0f,
         .attackRange = 60.0f,
@@ -52,7 +52,7 @@ const MobType MOB_TYPES[] = {
     // [1] Orc Grunt — KARIŞIK boyut: idle/run 32×32, attack 64×64
     {
         .name = "Orc Grunt",
-        .texturePath = "assets/Mobs/Orcs/Orc_Grunt.png",
+        .texturePath = "assets/characters/mobs/Orc_Grunt.png",
         .maxHealth = 200.0f,
         .speed = 150.0f,
         .attackRange = 70.0f,

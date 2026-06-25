@@ -3,209 +3,165 @@
 #include "tilemap.h"
 #include "player.h"
 
-// Animasyon satır tablosu: [hareket durumu][yön] → sheet satırı
-// hareket: 0 = idle, 1 = yürüyüş
-// yön:     0 = aşağı, 1 = yukarı, 2 = yan
-static const int ANIM_ROWS[2][3] = {
-    // aşağı  yukarı  yan
-    {   0,      2,     1  },   // [0] idle
-    {   3,      5,     4  },   // [1] yürüyüş
+// LPC animasyon tanımı: her durum için başlangıç satırı + kare sayısı
+// Yön, başlangıç satırına eklenir (UP=0, LEFT=1, DOWN=2, RIGHT=3)
+typedef struct {
+    int startRow;     // animasyonun ilk yönünün (UP) satırı
+    int frameCount;   // kaç kare
+    float frameDur;   // kare süresi
+    bool loop;        // döngüsel mi (idle/walk) yoksa tek-seferlik mi (slash)
+} LpcAnim;
+
+// PlayerState sırasıyla: IDLE, WALK, SLASH
+static const LpcAnim PLAYER_ANIMS[] = {
+    [PLAYER_IDLE]  = { .startRow = 22, .frameCount = 2, .frameDur = 0.4f,  .loop = true  },  // satır 22-25
+    [PLAYER_WALK]  = { .startRow = 8,  .frameCount = 9, .frameDur = 0.08f, .loop = true  },  // satır 8-11
+    [PLAYER_SLASH] = { .startRow = 12, .frameCount = 6, .frameDur = 0.06f, .loop = false },  // satır 12-15
 };
 
-// Oyuncu saldırı satırları [yön] (aşağı/yukarı/yan) → sheet satırı
-// (mevcut ANIM_ROWS idle/walk içindi; bu attack için ayrı)
-static const int PLAYER_ATTACK_ROWS[3] = { 32, 34, 33 };  // aşağı=32, yukarı=34, yan=33
-#define PLAYER_ATTACK_FRAMES 6
 
-// Oyuncunun saldırı hitbox'ını (baktığı yönde) hesaplar.
-SDL_FRect attack_hitbox(const Player *p)
-{
-    float w = 40.0f, h = 40.0f;   // hitbox boyutu
-    // Oyuncunun merkezinden başla
-    float cx = p->rect.x + p->rect.w / 2.0f;
-    float cy = p->rect.y + p->rect.h / 2.0f;
-
-    float hx = cx, hy = cy;
-    // Yöne göre hitbox'ı oyuncunun ÖNÜNE kaydır:
-    if (p->facing == 2) {            // yan
-        hx = p->facingLeft ? (p->rect.x - w) : (p->rect.x + p->rect.w);
-        hy = cy - h / 2.0f;
-    } else if (p->facing == 1) {     // yukarı
-        hx = cx - w / 2.0f;
-        hy = p->rect.y - h;
-    } else {                          // aşağı (facing == 0)
-        hx = cx - w / 2.0f;
-        hy = p->rect.y + p->rect.h;
-    }
-    SDL_FRect box = { hx, hy, w, h };
-    return box;
-}
 
 // Oyuncuyu çizer - sadece OKUR, değiştirmez.
 void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture **layers, int layerCount, const Camera *camera)
 {
+    const LpcAnim *anim = &PLAYER_ANIMS[p->state];
+    int row = anim->startRow + (int)p->facing;   // durum satırı + yön
+
     SDL_FRect src = {
         .x = p->currentFrame * FRAME_W,
-        .y = p->animRow * FRAME_H,
+        .y = row * FRAME_H,
         .w = FRAME_W,
         .h = FRAME_H
     };
-    
-    // Sprite'ın görsel ayağı (hücrede y=40), rect'in ALTINA hizalanmalı.
-    // Çizim kutusunun altındaki boşluk: (FRAME_H - 40) * ölçek = (64-40) * (drawH/FRAME_H)
-    float scale = p->drawH / (float)FRAME_H;          // 128/64 = 2
-    float footPadding = (FRAME_H - SPRITE_FEET_Y) * scale;       // (64-40)*2 = 48px boşluk
+
+    // Ayak hizalama (LPC: ayak hücrede SPRITE_FEET_Y'de)
+    float scale = p->drawH / (float)FRAME_H;
+    float footPadding = (FRAME_H - SPRITE_FEET_Y) * scale;
     SDL_FRect screen = {
         .x = (p->rect.x + p->rect.w / 2.0f) - p->drawW / 2.0f - camera->x,
-        .y = (p->rect.y + p->rect.h) - p->drawH + footPadding - camera->y,  // +footPadding: çizimi aşağı kaydır
+        .y = (p->rect.y + p->rect.h) - p->drawH + footPadding - camera->y,
         .w = p->drawW,
         .h = p->drawH
     };
 
-    SDL_FlipMode flip = p->facingLeft ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
-    for (int i = 0; i < layerCount; i++)
-    {
-        SDL_RenderTextureRotated(renderer, layers[i], &src, &screen, 0.0, NULL, flip);
+    // LPC'de flip YOK — sol/sağ ayrı satır. Tüm katmanları düz çiz.
+    for (int i = 0; i < layerCount; i++) {
+        SDL_RenderTexture(renderer, layers[i], &src, &screen);
     }
 
     #if DEBUG_DRAW
-    // --- DEBUG: collision kutularını çiz (dünya → ekran: kamerayı çıkar) ---
-    // 1) rect (tüm ayak izi) — kırmızı çerçeve
-    SDL_FRect rectScreen = {
-        p->rect.x - camera->x,
-        p->rect.y - camera->y,
-        p->rect.w,
-        p->rect.h
-    };
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);   // kırmızı
+    SDL_FRect rectScreen = { p->rect.x - camera->x, p->rect.y - camera->y, p->rect.w, p->rect.h };
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     SDL_RenderRect(renderer, &rectScreen);
-
-    // 2) ayak kutusu (gerçek collision) — sarı çerçeve
-    //    feetY = rect.y + rect.h - FEET_H, feetX = rect.x + FEET_INSET, feetW = rect.w - FEET_INSET*2
     SDL_FRect fb = feet_box(p->rect.x, p->rect.y, p->rect.w, p->rect.h);
     SDL_FRect feetScreen = { fb.x - camera->x, fb.y - camera->y, fb.w, fb.h };
-
-    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // sarı
+    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
     SDL_RenderRect(renderer, &feetScreen);
-
-    if (p->attacking) {
-        SDL_FRect hb = attack_hitbox(p);
-        SDL_FRect hbScreen = { hb.x - camera->x, hb.y - camera->y, hb.w, hb.h };
-        SDL_SetRenderDrawColor(renderer, 0, 150, 255, 255);  // mavi
-        SDL_RenderRect(renderer, &hbScreen);
-    }
-
     #endif
 }
 
 // Oyuncuyu günceller
 void player_update(Player *p, const bool *keys, bool attackPressed, float dt)
 {
-    // --- TILE TEPKİSİ: bastığın tile'ın özelliklerine göre hız/can ayarla ---
+    // --- TILE TEPKİSİ (aynı) ---
     SDL_FRect fb = feet_box(p->rect.x, p->rect.y, p->rect.w, p->rect.h);
     int groundTile = tile_at_point(fb.x + fb.w / 2.0f, fb.y + fb.h / 2.0f);
-
     if (groundTile >= 0 && groundTile < TILE_TYPE_COUNT) {
-        // hız: temel hız × tile'ın çarpanı (her kare yeniden hesaplanır)
         p->speed = PLAYER_SPEED * TILE_TYPES[groundTile].speedMultiplier;
-
-        // hasar: tile saniyede 'damage' veriyorsa, dt kadarını uygula
         if (TILE_TYPES[groundTile].damage > 0.0f)
             p->health -= TILE_TYPES[groundTile].damage * dt;
-
     } else {
-        p->speed = PLAYER_SPEED;   // geçersiz tile → normal hız
+        p->speed = PLAYER_SPEED;
     }
 
     if (p->health <= 0.0f) {
         p->rect.x = SPAWN_X;
         p->rect.y = SPAWN_Y;
         p->health = p->maxHealth;
-        p->attacking = false;      // yarım kalan saldırıyı iptal et
+        p->attacking = false;
     }
 
-    // --- YÖN: basılı tuşlardan bir yön vektörü (dx, dy) kur ---
+    // --- YÖN: WASD'den hareket vektörü ---
     float dx = 0.0f, dy = 0.0f;
-    if (keys[SDL_SCANCODE_W]) dy -= 1;  // yukarı
-    if (keys[SDL_SCANCODE_S]) dy += 1;  // aşağı
-    if (keys[SDL_SCANCODE_A]) dx -= 1;  // sol
-    if (keys[SDL_SCANCODE_D]) dx += 1;  // sağ
+    if (keys[SDL_SCANCODE_W]) dy -= 1;
+    if (keys[SDL_SCANCODE_S]) dy += 1;
+    if (keys[SDL_SCANCODE_A]) dx -= 1;
+    if (keys[SDL_SCANCODE_D]) dx += 1;
 
-    bool moving = false;
+    bool moving = (dx != 0.0f || dy != 0.0f);
 
-    // --- NORMALİZE: yön vektörünü 1 birim uzunluğa indir ---
-    float length = SDL_sqrtf(dx * dx + dy * dy);
-    if (length > 0) {                    // sıfır kontrolü ŞART: 0/0 = NaN, kutuyu sessizce yok eder
-        dx = dx / length;
-        dy = dy / length;
-        moving = true;
+    // Normalize + hareket
+    if (moving) {
+        float len = SDL_sqrtf(dx*dx + dy*dy);
+        dx /= len; dy /= len;
 
-        // X EKSENİ
+        // X ekseni
         float newX = p->rect.x + dx * p->speed * dt;
         SDL_FRect fx = feet_box(newX, p->rect.y, p->rect.w, p->rect.h);
-        if (!box_hits_solid(fx))
-            p->rect.x = newX;
+        if (!box_hits_solid(fx)) p->rect.x = newX;
 
-        // Y EKSENİ
+        // Y ekseni
         float newY = p->rect.y + dy * p->speed * dt;
         SDL_FRect fy = feet_box(p->rect.x, newY, p->rect.w, p->rect.h);
-        if (!box_hits_solid(fy))
-            p->rect.y = newY;
-        
+        if (!box_hits_solid(fy)) p->rect.y = newY;
 
-        if (SDL_fabsf(dx) > SDL_fabsf(dy)) {
-            if (!p->attacking) { p->facing = 2; p->facingLeft = (dx < 0); }
-        } else {
-            if (!p->attacking) p->facing = (dy < 0) ? 1 : 0;
-        }
-    }
-
-    if (p->attacking) {
-        // --- SALDIRI: tek-seferlik animasyon ---
-        p->animRow = PLAYER_ATTACK_ROWS[p->facing];
-        p->lastRow = p->animRow;   // saldırıdan çıkınca geçiş tetiklenmesin
-
-        p->animTimer += dt;
-        if (p->animTimer >= FRAME_DURATION) {
-            p->animTimer -= FRAME_DURATION;
-            p->currentFrame++;
-
-            // Vuruş karesine ulaştık → hasar main loop'ta uygulanacak
-            // (burada sadece animasyon ilerliyor; hasar tetikleme aşağıda açıklanıyor)
-
-            // Son kareye ulaşınca saldırı bitti
-            if (p->currentFrame >= PLAYER_ATTACK_FRAMES) {
-                p->attacking = false;
-                p->currentFrame = 0;
-                // idle/walk satırına dönüşü bir sonraki kare normal kol halleder
+        // YÖN belirleme (4 yön — saldırı sırasında değiştirme)
+        if (!p->attacking) {
+            // Baskın eksene göre yön (LPC: 4 ayrı yön)
+            if (SDL_fabsf(dx) > SDL_fabsf(dy)) {
+                p->facing = (dx < 0) ? DIR_LEFT : DIR_RIGHT;
+            } else {
+                p->facing = (dy < 0) ? DIR_UP : DIR_DOWN;
             }
         }
     }
-    else {
-        // --- NORMAL: idle/walk ---
-        p->animRow = ANIM_ROWS[moving][p->facing];
-        int frameCount = 6;
-        if (p->animRow != p->lastRow) {
-            p->currentFrame = 0;
-            p->animTimer = 0.0f;
-            p->lastRow = p->animRow;
-        }
-        p->animTimer += dt;
-        if (p->animTimer >= FRAME_DURATION) {
-            p->animTimer -= FRAME_DURATION;
-            p->currentFrame = (p->currentFrame + 1) % frameCount;
-        }
+
+    // --- DURUM (state) belirleme ---
+    if (p->attacking) {
+        p->state = PLAYER_SLASH;
+    } else if (moving) {
+        p->state = PLAYER_WALK;
+    } else {
+        p->state = PLAYER_IDLE;
     }
 
-    // --- SALDIRI DURUMU ---
-    // Yeni saldırı başlat (saldırı sürmüyorsa)
+    // --- Yeni saldırı başlat ---
     if (attackPressed && !p->attacking) {
         p->attacking = true;
+        p->state = PLAYER_SLASH;
         p->currentFrame = 0;
         p->animTimer = 0.0f;
-        p->attackHit = false;     // bu saldırıda henüz vurmadık
+        p->attackHit = false;
     }
 
+    // --- ANİMASYON ilerlet ---
+    const LpcAnim *anim = &PLAYER_ANIMS[p->state];
+
+    // Geçiş: durum ya da yön değişti mi → kareyi sıfırla
+    if (p->state != p->lastState || p->facing != p->lastFacing) {
+        p->currentFrame = 0;
+        p->animTimer = 0.0f;
+        p->lastState = p->state;
+        p->lastFacing = p->facing;
+    }
+
+    p->animTimer += dt;
+    if (p->animTimer >= anim->frameDur) {
+        p->animTimer -= anim->frameDur;
+        p->currentFrame++;
+
+        if (p->currentFrame >= anim->frameCount) {
+            if (anim->loop) {
+                p->currentFrame = 0;   // döngüsel (idle/walk)
+            } else {
+                // tek-seferlik (slash) bitti
+                p->currentFrame = anim->frameCount - 1;
+                if (p->state == PLAYER_SLASH) {
+                    p->attacking = false;   // saldırı bitti
+                }
+            }
+        }
+    }
 }
 
 // Can barını ekranın köşesine çizer. Ekran-uzayına bağlıdır, kamera hareketinden etkilenmez.
