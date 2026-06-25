@@ -77,6 +77,19 @@ int main(int argc, char *argv[])
     Inventory inventory = {0};   // tüm slotlar boş başlar (main'de, oyuncuyla birlikte)
 
     Equipment equipment = {0};   // tüm slotlar boş başlar
+    // GECICI TEST: ekipmani elle giydir (B6 dogrulama). ITEM_TYPES sirasi:
+// 4=Demir Miger, 5=Demir Zirh, 6=Demir Pantolon
+equipment.slots[EQUIP_HELMET] = (ItemStack){ &ITEM_TYPES[4], 1 };
+equipment.slots[EQUIP_CHEST]  = (ItemStack){ &ITEM_TYPES[5], 1 };
+equipment.slots[EQUIP_LEGS]   = (ItemStack){ &ITEM_TYPES[6], 1 };
+
+    // Ekipman texture'lari: ITEM_TYPES ile PARALEL dizi (index eslesir).
+// Giyilebilir + sprite yolu olan her item icin yukle; digerleri NULL.
+SDL_Texture *equipTextures[MAX_ITEM_TYPES] = {0};   // sabit boyut → {0} artik legal
+for (int i = 0; i < ITEM_TYPE_COUNT; i++) {
+    if (ITEM_TYPES[i].equipable && ITEM_TYPES[i].equipSpritePath != NULL)
+        equipTextures[i] = load_texture(renderer, ITEM_TYPES[i].equipSpritePath);
+}
 
     // base → feet (ayakkabı) → legs (pantolon) → chest (gömlek) → hands (eller) → hair (saç)
     // Katmanlar ÇİZİM SIRASINDA (alttan üste). Yeni parça eklemek = buraya bir satır.
@@ -377,7 +390,12 @@ int main(int argc, char *argv[])
         SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
         SDL_RenderClear(renderer); // ekranı temizle (arka plan rengini doldur)
         tilemap_render(renderer, tile_textures, &camera); // haritayı çiz
-        player_render(&player, renderer, layers, LAYER_COUNT, &camera); // oyuncuyu 
+
+        PlayerLayer built[16];
+        int builtCount = build_player_layers(layers, LAYER_COUNT, &equipment,
+                                     equipTextures, built, 16);
+
+        player_render(&player, renderer, built, builtCount, &camera); // oyuncuyu 
         
         for (int i = 0; i < mobCount; i++)
             mob_render(&mobs[i], renderer, mob_textures, &camera, player.targetMobId);
@@ -415,6 +433,9 @@ int main(int argc, char *argv[])
     for (int i = 0; i < MOB_TYPE_COUNT; i++) {
         if (mob_textures[i]) SDL_DestroyTexture(mob_textures[i]);  // NULL olanları atla
     }
+
+    for (int i = 0; i < ITEM_TYPE_COUNT; i++)
+    if (equipTextures[i]) SDL_DestroyTexture(equipTextures[i]);
 
     font_quit(gameFont);
 

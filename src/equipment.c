@@ -83,3 +83,15 @@ bool unequip_slot(Equipment *eq, Inventory *inv, EquipSlot slot)
 {
     return unequip_to_inventory(eq, inv, slot);
 }
+
+int slot_zorder(EquipSlot slot)
+{
+    switch (slot) {
+        case EQUIP_LEGS:    return 20;   // pantolon (body 10 ustu)
+        case EQUIP_BOOTS:   return 25;   // ayakkabi
+        case EQUIP_CHEST:   return 60;   // govde zirhi
+        case EQUIP_GLOVES:  return 70;   // eldiven
+        case EQUIP_HELMET:  return 130;  // kask (en ust)
+        default:            return 0;    // gorseli olmayan slot (yuzuk/kolye vs)
+    }
+}

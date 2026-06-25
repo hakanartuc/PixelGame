@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include <stdbool.h>
 #include "common.h"
+#include "equipment.h"
 
 // LPC sprite sheet sabitleri
 #define FRAME_W 64           // LPC kare 64×64
@@ -68,5 +69,13 @@ typedef struct {
 void player_render(const Player *p, SDL_Renderer *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera);
 void player_update(Player *p, const bool *keys, bool attackPressed, float dt);
 void health_bar_render(const Player *p, SDL_Renderer *renderer);
+
+
+// Oyuncunun cizilecek katmanlarini olusturur: base (body/head/face) + giyili ekipman.
+// out: en az (3 + EQUIP_SLOT_COUNT) kapasiteli olmali. z'ye gore sirali doner.
+// Donen deger: katman sayisi.
+int build_player_layers(const PlayerLayer *base, int baseCount,
+                        const Equipment *eq, SDL_Texture **equipTextures,
+                        PlayerLayer *out, int outCap);
 
 #endif

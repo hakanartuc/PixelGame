@@ -190,3 +190,45 @@ void health_bar_render(const Player *p, SDL_Renderer *renderer)
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderRect(renderer, &bg);
 }
+
+int build_player_layers(const PlayerLayer *base, int baseCount,
+                        const Equipment *eq, SDL_Texture **equipTextures,
+                        PlayerLayer *out, int outCap)
+{
+    int n = 0;
+
+    // 1) Base katmanlar (body/head/face) — oldugu gibi kopyala
+    for (int i = 0; i < baseCount; i++) {
+        if (n < outCap) out[n++] = base[i];
+    }
+
+    // 2) Giyili ekipman slotlari → katman
+    for (int s = 0; s < EQUIP_SLOT_COUNT; s++) {
+        const ItemStack *st = &eq->slots[s];
+        if (st->type == NULL) continue;            // slot bos → atla
+
+        int idx = (int)(st->type - ITEM_TYPES);    // koprü: pointer farki = item indeksi
+        SDL_Texture *tex = equipTextures[idx];
+        if (tex == NULL) continue;                 // gorseli yok → atla
+
+        if (n < outCap) {
+            out[n].tex = tex;
+            out[n].z   = slot_zorder((EquipSlot)s);
+            n++;
+        }
+    }
+
+    // 3) z'ye gore artan sirala (insertion sort — n kucuk, basit, stabil)
+    //    '>' kullaniyoruz ('>=' degil) → esit z'lerde sira korunur (omuz parcalari icin onemli)
+    for (int i = 1; i < n; i++) {
+        PlayerLayer key = out[i];
+        int j = i - 1;
+        while (j >= 0 && out[j].z > key.z) {
+            out[j + 1] = out[j];
+            j--;
+        }
+        out[j + 1] = key;
+    }
+
+    return n;
+}

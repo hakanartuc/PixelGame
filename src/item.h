@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "common.h"
 
-#define MAX_ITEM_TYPES 32
+#define MAX_ITEM_TYPES 32   // ITEM_TYPES kapasitesi (paralel diziler icin sabit boyut)
 
 // Ekipman slotları (KO düzeni)
 typedef enum {
