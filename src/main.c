@@ -158,6 +158,8 @@ int main(int argc, char *argv[])
         }
     }
 
+    bool inventoryOpen = false;
+
     // 4) Oyun döngüsü
     bool running = true;
 
@@ -195,6 +197,9 @@ int main(int argc, char *argv[])
                 }
                 else if (event.key.key == SDLK_Z) {
                     targetPressed = true;   // hedef seçme tuşu
+                }
+                else if (event.key.key == SDLK_I) {
+                    inventoryOpen = !inventoryOpen;   // aç/kapat
                 }
             }
             else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
@@ -404,6 +409,9 @@ int main(int argc, char *argv[])
         target_hp_bar_render(renderer, hpTarget, winW, gameFont);
 
         health_bar_render(&player, renderer);
+
+        if (inventoryOpen)
+            inventory_render(&inventory, renderer, itemIconTex, gameFont, winW, winH);
 
         SDL_RenderPresent(renderer); // Ekrana bas.
     }
