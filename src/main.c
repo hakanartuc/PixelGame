@@ -80,27 +80,17 @@ int main(int argc, char *argv[])
 
     // base → feet (ayakkabı) → legs (pantolon) → chest (gömlek) → hands (eller) → hair (saç)
     // Katmanlar ÇİZİM SIRASINDA (alttan üste). Yeni parça eklemek = buraya bir satır.
-    const char *layer_paths[] = {
-        "assets/characters/body/male/light.png",
-        "assets/characters/head/male/human_light.png",
-        "assets/characters/face/male/neutral_light.png",
+    // base katmanlar: body → head → face. { texture, z } — z = LPC dosya öneki (çizim sırası, küçük=arka).
+    PlayerLayer layers[] = {
+        { load_texture(renderer, "assets/characters/body/male/light.png"),         10  },
+        { load_texture(renderer, "assets/characters/head/male/human_light.png"),   100 },
+        { load_texture(renderer, "assets/characters/face/male/neutral_light.png"), 101 },
     };
 
-    #define LAYER_COUNT ((int)(sizeof(layer_paths) / sizeof(layer_paths[0])))
+    #define LAYER_COUNT ((int)(sizeof(layers) / sizeof(layers[0])))
 
-     SDL_Texture *layers[LAYER_COUNT] = {0};   // hepsi NULL ile başla (temizlik güvenliği)
-    for (int i = 0; i < LAYER_COUNT; i++) {
-        layers[i] = load_texture(renderer, layer_paths[i]);
-        if (layers[i] == NULL) {
-            SDL_Log("Katman yuklenemedi: %s", layer_paths[i]);
-            for (int j = 0; j < LAYER_COUNT; j++)
-                if (layers[j]) SDL_DestroyTexture(layers[j]);  // sadece yüklenmiş olanları yık
-            SDL_DestroyRenderer(renderer);
-            SDL_DestroyWindow(window);
-            SDL_Quit();
-            return 1;
-        }
-    }
+    for (int i = 0; i < LAYER_COUNT; i++)
+    if (!layers[i].tex) SDL_Log("Katman yuklenemedi (idx %d)", i);
     
     // Oyuncuyu oluştur + başlangıç durumunu ayarla
     Player player = {
@@ -416,7 +406,7 @@ int main(int argc, char *argv[])
     // 5) Her şeyi oluşturmanın TERS sırasıyla temizle. C'de bu bizim sorumluluğumuzda,
     // hiçbir destructor bunu kendiliğinden yapmaz.
     for (int i = 0; i < LAYER_COUNT; i++) {
-        SDL_DestroyTexture(layers[i]);
+        SDL_DestroyTexture(layers[i].tex);
     }
     for (int i = 0; i < TILE_TYPE_COUNT; i++) {
         if (tile_textures[i]) SDL_DestroyTexture(tile_textures[i]);  // NULL olanları atla

@@ -22,7 +22,7 @@ static const LpcAnim PLAYER_ANIMS[] = {
 
 
 // Oyuncuyu çizer - sadece OKUR, değiştirmez.
-void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture **layers, int layerCount, const Camera *camera)
+void player_render(const Player *p, SDL_Renderer *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera)
 {
     const LpcAnim *anim = &PLAYER_ANIMS[p->state];
     int row = anim->startRow + (int)p->facing;   // durum satırı + yön
@@ -46,7 +46,7 @@ void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture **layers
 
     // LPC'de flip YOK — sol/sağ ayrı satır. Tüm katmanları düz çiz.
     for (int i = 0; i < layerCount; i++) {
-        SDL_RenderTexture(renderer, layers[i], &src, &screen);
+        SDL_RenderTexture(renderer, layers[i].tex, &src, &screen);
     }
 
     #if DEBUG_DRAW

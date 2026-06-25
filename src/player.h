@@ -11,7 +11,7 @@
 
 // LPC'de karakterin ayağı hücrenin neresinde (collision/feet hizası için)
 // LPC karakterleri 64px hücrede, ayak ~y=58 civarı (ölçeceğiz, şimdilik tahmin)
-#define SPRITE_FEET_Y 58
+#define SPRITE_FEET_Y 61
 
 #define PLAYER_SPEED 500.0f
 #define SPAWN_X 300.0f
@@ -36,6 +36,12 @@ typedef enum {
     // ileride: THRUST, SHOOT, SPELLCAST, HURT, RUN, DEATH...
 } PlayerState;
 
+// player.h — AnimClip gibi
+typedef struct {
+    SDL_Texture *tex;
+    int z;            // çizim sırası: küçük=arka, büyük=ön (LPC dosya öneki)
+} PlayerLayer;
+
 // Karakterin TÜM kalıcı durumu
 typedef struct {
     SDL_FRect rect;      // dünya konumu + mantıksal boyut (ayak izi)
@@ -59,7 +65,7 @@ typedef struct {
     int targetMobId;
 } Player;
 
-void player_render(const Player *p, SDL_Renderer *renderer, SDL_Texture **layers, int layerCount, const Camera *camera);
+void player_render(const Player *p, SDL_Renderer *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera);
 void player_update(Player *p, const bool *keys, bool attackPressed, float dt);
 void health_bar_render(const Player *p, SDL_Renderer *renderer);
 
