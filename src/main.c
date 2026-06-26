@@ -79,21 +79,9 @@ int main(int argc, char *argv[])
 
     Equipment equipment = {0};   // tüm slotlar boş başlar
 
-    // Ekipman texture'lari: ITEM_TYPES ile PARALEL dizi (index eslesir).
-// Giyilebilir + sprite yolu olan her item icin yukle; digerleri NULL.
-SDL_Texture *equipTextures[MAX_ITEM_TYPES] = {0};   // sabit boyut → {0} artik legal
-for (int i = 0; i < ITEM_TYPE_COUNT; i++) {
-    if (ITEM_TYPES[i].equipable && ITEM_TYPES[i].equipSpritePath != NULL)
-        equipTextures[i] = load_texture(renderer, ITEM_TYPES[i].equipSpritePath);
-}
-
     ItemTextures itemTex;
     item_textures_load(&itemTex, renderer);
 
-
-inventory_add(&inventory, &ITEM_TYPES[4], 1);   // Demir Miger
-inventory_add(&inventory, &ITEM_TYPES[5], 1);   // Demir Zirh
-inventory_add(&inventory, &ITEM_TYPES[6], 1);   // Demir Pantolon
 
     // base → feet (ayakkabı) → legs (pantolon) → chest (gömlek) → hands (eller) → hair (saç)
     // Katmanlar ÇİZİM SIRASINDA (alttan üste). Yeni parça eklemek = buraya bir satır.
@@ -465,9 +453,6 @@ inventory_add(&inventory, &ITEM_TYPES[6], 1);   // Demir Pantolon
     for (int i = 0; i < MOB_TYPE_COUNT; i++) {
         if (mob_textures[i]) SDL_DestroyTexture(mob_textures[i]);  // NULL olanları atla
     }
-
-    for (int i = 0; i < ITEM_TYPE_COUNT; i++)
-    if (equipTextures[i]) SDL_DestroyTexture(equipTextures[i]);
 
     item_textures_free(&itemTex);
     font_quit(gameFont);

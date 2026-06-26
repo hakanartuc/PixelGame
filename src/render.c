@@ -12,7 +12,7 @@ SDL_Texture *load_texture(SDL_Renderer *renderer, const char *path)
     int w, h, channels;
     unsigned char *pixels = stbi_load(path, &w, &h, &channels, 4); // 4 = RGBA'ya zorla
     if(pixels == NULL){
-        SDL_Log("Yüklenemedi: %s", stbi_failure_reason());
+        SDL_Log("Yuklenemedi (%s): %s", path, SDL_GetError());
         return NULL;
     }
 
