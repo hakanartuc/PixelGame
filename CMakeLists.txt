@@ -25,6 +25,7 @@ add_executable(game
     src/inventory.c
     src/equipment.c
     src/item_textures.c
+    src/menu.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle
 target_link_libraries(game PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)   # ← SDL3_ttf
