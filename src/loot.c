@@ -3,6 +3,8 @@
 #include "common.h"
 #include "font.h"
 #include "loot.h"
+#include "item.h"
+#include "item_textures.h"
 
 
 #define CRATE_SCALE  1.2f
@@ -54,7 +56,7 @@ bool loot_spawn(Loot *loots, int maxLoot, float x, float y)
     };
 
     // 2) Rastgele item doldur
-    int n = 1 + rand() % 7;   // 1, 2 ya da 3 item
+    int n = 1 + rand() % 3;   // 1, 2 ya da 3 item
     loots[slot].itemCount = n;
     for (int k = 0; k < n; k++) {
         int t = rand() % ITEM_TYPE_COUNT;
@@ -142,7 +144,9 @@ void loot_update_all(Loot *loots, int maxLoot, float dt)
 }
 
 
-void loot_popup_render(SDL_Renderer *renderer, const Loot *loot, SDL_Texture *itemIconTex, TTF_Font *font, const Camera *camera)
+void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
+                       SDL_Texture *itemIconTex, const ItemTextures *itemTex,
+                       TTF_Font *font, const Camera *camera)
 {
     if (loot == NULL || loot->state != LOOT_OPEN) return;
 
@@ -179,9 +183,15 @@ void loot_popup_render(SDL_Renderer *renderer, const Loot *loot, SDL_Texture *it
         SDL_RenderFillRect(renderer, &cell);
 
         const ItemType *it = loot->items[k].type;
-        SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };
         SDL_FRect dst = { cx + 6, cy + 6, 32, 32 };
-        SDL_RenderTexture(renderer, itemIconTex, &src, &dst);
+
+        SDL_Texture *icon = item_icon_tex(itemTex, it);
+        if (icon != NULL) {
+            SDL_RenderTexture(renderer, icon, &it->iconSrc, &dst);   // item kendi sheet'inden
+        } else {
+            SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };    // fallback: tool_icons
+            SDL_RenderTexture(renderer, itemIconTex, &src, &dst);
+        }
     }
 }
 

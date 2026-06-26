@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "common.h"
 #include "item.h"
+#include "item_textures.h"
 
 #define MAX_LOOT 20   // dünyada aynı anda max kaç kasa
 #define MAX_LOOT_ITEMS 9   // dünyada aynı anda max kaç kasa
@@ -37,7 +38,9 @@ int loot_find_at(Loot *loots, int maxLoot, float worldX, float worldY);
 // Kasaları güncelle (açılma animasyonu).
 void loot_update_all(Loot *loots, int maxLoot, float dt);
 
-void loot_popup_render(SDL_Renderer *renderer, const Loot *loot, SDL_Texture *itemIconTex, TTF_Font *font, const Camera *camera);
+void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
+                       SDL_Texture *itemIconTex, const ItemTextures *itemTex,
+                       TTF_Font *font, const Camera *camera);
 
 int loot_popup_item_at(const Loot *loot, float worldX, float worldY);
 

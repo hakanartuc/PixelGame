@@ -414,7 +414,7 @@ int main(int argc, char *argv[])
             mob_render(&mobs[i], renderer, mob_textures, &camera, player.targetMobId);
 
         if (openLootIndex >= 0)
-            loot_popup_render(renderer, &loots[openLootIndex], itemIconTex, gameFont, &camera);
+            loot_popup_render(renderer, &loots[openLootIndex], itemIconTex, &itemTex, gameFont, &camera);
 
         
         loot_render_all(loots, MAX_LOOT, renderer, crateTex, &camera);   // ← kasalar (mob'lardan sonra, HUD'dan önce)

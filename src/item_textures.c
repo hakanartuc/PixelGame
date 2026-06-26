@@ -13,6 +13,10 @@ void item_textures_load(ItemTextures *t, SDL_Renderer *r)
         const ItemType *it = &ITEM_TYPES[i];
         if (it->equipable && it->equipSpritePath != NULL)
             t->equipTex[i] = load_texture(r, it->equipSpritePath);
+
+        if (it->equipable && !t->equipTex[i])
+           SDL_Log("UYARI: '%s' equip sprite yuklenemedi: %s", it->name, it->equipSpritePath);
+
         // ikon ayri yukleniyor (paylasim YOK → free'de double-free riski yok)
         if (it->iconSpritePath != NULL)
             t->iconTex[i] = load_texture(r, it->iconSpritePath);
