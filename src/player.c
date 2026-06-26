@@ -2,6 +2,8 @@
 #include "common.h"
 #include "tilemap.h"
 #include "player.h"
+#include "equipment.h"   // ← EKLE: Equipment tam tanim + EQUIP_SLOT_COUNT + EquipSlot + slot_zorder
+#include "item.h"        // ← EKLE: ItemStack + ITEM_TYPES
 
 // LPC animasyon tanımı: her durum için başlangıç satırı + kare sayısı
 // Yön, başlangıç satırına eklenir (UP=0, LEFT=1, DOWN=2, RIGHT=3)

@@ -46,6 +46,9 @@ typedef struct {
     WeaponType weaponType;       // silahsa tipi (değilse WEAPON_NONE)
     const char *equipSpritePath; // paper-doll katmanı (kuşanınca görünen sprite, NULL: yok)
     int plusLevel;               // +0..+8 (parlama efekti için)
+
+    const char *iconSpritePath;   // ikon dosyasi (NULL → tool_icons fallback)
+    SDL_FRect   iconSrc;          // o dosyadaki kare {x, y, w, h}
 } ItemType;
 
 // Bir somut item (kasada/envanterde) = tür + miktar

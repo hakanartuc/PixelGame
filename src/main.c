@@ -11,6 +11,7 @@
 #include "loot.h"
 #include "inventory.h"
 #include "equipment.h"
+#include "item_textures.h"
 
 
 int main(int argc, char *argv[])
@@ -77,11 +78,6 @@ int main(int argc, char *argv[])
     Inventory inventory = {0};   // tüm slotlar boş başlar (main'de, oyuncuyla birlikte)
 
     Equipment equipment = {0};   // tüm slotlar boş başlar
-    // GECICI TEST: ekipmani elle giydir (B6 dogrulama). ITEM_TYPES sirasi:
-// 4=Demir Miger, 5=Demir Zirh, 6=Demir Pantolon
-equipment.slots[EQUIP_HELMET] = (ItemStack){ &ITEM_TYPES[4], 1 };
-equipment.slots[EQUIP_CHEST]  = (ItemStack){ &ITEM_TYPES[5], 1 };
-equipment.slots[EQUIP_LEGS]   = (ItemStack){ &ITEM_TYPES[6], 1 };
 
     // Ekipman texture'lari: ITEM_TYPES ile PARALEL dizi (index eslesir).
 // Giyilebilir + sprite yolu olan her item icin yukle; digerleri NULL.
@@ -90,6 +86,14 @@ for (int i = 0; i < ITEM_TYPE_COUNT; i++) {
     if (ITEM_TYPES[i].equipable && ITEM_TYPES[i].equipSpritePath != NULL)
         equipTextures[i] = load_texture(renderer, ITEM_TYPES[i].equipSpritePath);
 }
+
+    ItemTextures itemTex;
+    item_textures_load(&itemTex, renderer);
+
+
+inventory_add(&inventory, &ITEM_TYPES[4], 1);   // Demir Miger
+inventory_add(&inventory, &ITEM_TYPES[5], 1);   // Demir Zirh
+inventory_add(&inventory, &ITEM_TYPES[6], 1);   // Demir Pantolon
 
     // base → feet (ayakkabı) → legs (pantolon) → chest (gömlek) → hands (eller) → hair (saç)
     // Katmanlar ÇİZİM SIRASINDA (alttan üste). Yeni parça eklemek = buraya bir satır.
@@ -249,6 +253,27 @@ for (int i = 0; i < ITEM_TYPE_COUNT; i++) {
                         }
                     }
                 }
+                 else if (event.button.button == SDL_BUTTON_RIGHT) {
+                    if (inventoryOpen) {
+                        int winW, winH;
+                        SDL_GetWindowSize(window, &winW, &winH);
+                        int panelX = (winW - 400) / 2;
+
+                        // 1) Once ekipman paneline mi tiklandi? (panelY = 40)
+                        EquipSlot eqSlot = equipment_slot_at((float)event.button.x,
+                                                             (float)event.button.y, panelX, 40);
+                        if (eqSlot != EQUIP_NONE) {
+                            unequip_slot(&equipment, &inventory, eqSlot);   // cikar → envantere
+                        }
+                        else {
+                            // 2) Degilse envantere mi? (panelY = 40+340)
+                            int slot = inventory_slot_at((float)event.button.x, (float)event.button.y,
+                                                         (float)panelX, (float)(40 + 340));
+                            if (slot >= 0)
+                                equip_from_inventory(&equipment, &inventory, slot);
+                        }
+                    }
+                }
             }
         }
 
@@ -393,7 +418,7 @@ for (int i = 0; i < ITEM_TYPE_COUNT; i++) {
 
         PlayerLayer built[16];
         int builtCount = build_player_layers(layers, LAYER_COUNT, &equipment,
-                                     equipTextures, built, 16);
+                                     itemTex.equipTex, built, 16);
 
         player_render(&player, renderer, built, builtCount, &camera); // oyuncuyu 
         
@@ -415,8 +440,15 @@ for (int i = 0; i < ITEM_TYPE_COUNT; i++) {
 
         health_bar_render(&player, renderer);
 
-        if (inventoryOpen)
-            inventory_render(&inventory, renderer, itemIconTex, gameFont, winW, winH);
+        if (inventoryOpen) 
+        {
+           int panelX = (winW - 400) / 2;
+            int panelY = 40;
+            equipment_render(&equipment, renderer, itemIconTex, &itemTex,
+                             built, builtCount, panelX, panelY);
+            inventory_render(&inventory, renderer, itemIconTex, &itemTex, gameFont,
+                             (float)panelX, (float)(panelY + 340));
+        }
 
         SDL_RenderPresent(renderer); // Ekrana bas.
     }
@@ -437,6 +469,7 @@ for (int i = 0; i < ITEM_TYPE_COUNT; i++) {
     for (int i = 0; i < ITEM_TYPE_COUNT; i++)
     if (equipTextures[i]) SDL_DestroyTexture(equipTextures[i]);
 
+    item_textures_free(&itemTex);
     font_quit(gameFont);
 
     if (crateTex) 

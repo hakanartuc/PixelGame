@@ -3,7 +3,8 @@
 #include <SDL3/SDL.h>
 #include <stdbool.h>
 #include "common.h"
-#include "equipment.h"
+
+typedef struct Equipment Equipment;   // ← forward decl (pointer için yeter)
 
 // LPC sprite sheet sabitleri
 #define FRAME_W 64           // LPC kare 64×64
@@ -38,9 +39,9 @@ typedef enum {
 } PlayerState;
 
 // player.h — AnimClip gibi
-typedef struct {
+typedef struct PlayerLayer {
     SDL_Texture *tex;
-    int z;            // çizim sırası: küçük=arka, büyük=ön (LPC dosya öneki)
+    int z;
 } PlayerLayer;
 
 // Karakterin TÜM kalıcı durumu

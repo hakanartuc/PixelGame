@@ -1,9 +1,11 @@
 #include <SDL3/SDL.h>   // inventory.c'ye ekle (şu an sadece inventory.h var)
 #include "inventory.h"
 #include "font.h"
+#include "item_textures.h"
 
 void inventory_render(const Inventory *inv, SDL_Renderer *renderer,
-                      SDL_Texture *itemIconTex, TTF_Font *font, int winW, int winH)
+                      SDL_Texture *itemIconTex, const ItemTextures *itemTex,
+                      TTF_Font *font, float panelX, float panelY)
 {
     int cols = 5;
     int rows = (INVENTORY_SIZE + cols - 1) / cols;   // 20/5 = 4 satır
@@ -12,8 +14,6 @@ void inventory_render(const Inventory *inv, SDL_Renderer *renderer,
 
     float panelW = cols * cellSize + pad * 2;
     float panelH = rows * cellSize + pad * 2 + 30.0f;   // +30 başlık için
-    float panelX = (winW - panelW) / 2.0f;   // ekran ortası
-    float panelY = (winH - panelH) / 2.0f;
 
     // Panel arka planı
     SDL_SetRenderDrawColor(renderer, 25, 25, 35, 240);
@@ -42,14 +42,22 @@ void inventory_render(const Inventory *inv, SDL_Renderer *renderer,
         SDL_SetRenderDrawColor(renderer, 90, 90, 105, 255);
         SDL_RenderRect(renderer, &cell);
 
-        // Dolu slotsa ikon çiz
+        // Dolu slotsa ikon ciz
         if (inv->slots[i].type != NULL) {
             const ItemType *it = inv->slots[i].type;
-            SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };
             SDL_FRect dst = { cx + 8, cy + 8, 32, 32 };
-            SDL_RenderTexture(renderer, itemIconTex, &src, &dst);
 
-            // Miktar (stack > 1 ise)
+            SDL_Texture *icon = item_icon_tex(itemTex, it);
+            if (icon != NULL) {
+                // item kendi sheet'inden (LPC izole parca = temiz ikon)
+                SDL_RenderTexture(renderer, icon, &it->iconSrc, &dst);
+            } else {
+                // fallback: tool_icons + iconIndex
+                SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };
+                SDL_RenderTexture(renderer, itemIconTex, &src, &dst);
+            }
+
+            // Miktar (stack > 1 ise) — AYNEN kalir
             if (inv->slots[i].count > 1 && font != NULL) {
                 char buf[16];
                 snprintf(buf, sizeof(buf), "%d", inv->slots[i].count);
@@ -86,4 +94,29 @@ bool inventory_add(Inventory *inv, const ItemType *type, int count)
     }
 
     return false;   // çanta dolu
+}
+
+// Ekran koordinatindan hangi envanter slotuna denk geldigini bulur.
+// panelX/panelY: inventory_render'a verilen panel sol-ust (AYNI degerler).
+// Donen: slot indeksi (0..INVENTORY_SIZE-1) ya da -1 (bos alana tiklandi).
+int inventory_slot_at(float x, float y, float panelX, float panelY)
+{
+    // inventory_render'daki AYNI matematik (tek kaynak — desenkronize olmasin)
+    int cols = 5;
+    float cellSize = 56.0f;
+    float pad = 16.0f;
+    float gridY = panelY + pad + 30.0f;   // baslik altindan basliyor (render ile ayni)
+
+    for (int i = 0; i < INVENTORY_SIZE; i++) {
+        int col = i % cols, row = i / cols;
+        float cx = panelX + pad + col * cellSize;
+        float cy = gridY + row * cellSize;
+        // hucrenin tiklanabilir alani: cellSize-6 (render'daki cell ile ayni)
+        SDL_FRect cell = { cx, cy, cellSize - 6, cellSize - 6 };
+        if (x >= cell.x && x < cell.x + cell.w &&
+            y >= cell.y && y < cell.y + cell.h) {
+            return i;
+        }
+    }
+    return -1;
 }

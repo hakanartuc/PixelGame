@@ -54,7 +54,7 @@ bool loot_spawn(Loot *loots, int maxLoot, float x, float y)
     };
 
     // 2) Rastgele item doldur
-    int n = 1 + rand() % 3;   // 1, 2 ya da 3 item
+    int n = 1 + rand() % 7;   // 1, 2 ya da 3 item
     loots[slot].itemCount = n;
     for (int k = 0; k < n; k++) {
         int t = rand() % ITEM_TYPE_COUNT;
