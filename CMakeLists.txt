@@ -4,6 +4,8 @@ project(PixelGame C)
 set(C_MAKE_STANDARD 11)
 set(C_MAKE_STANDARD_REQUIRED ON)
 
+set(SDLTTF_VENDORED ON CACHE BOOL "" FORCE)
+
 #Gömülü SDL kaynağını bizim derlememizin parçası olarak inşa et.
 #EXCLUDE_FROM_ALL: SDL'in kendi testlerini/örneklerini boşuna derleme
 add_subdirectory(vendor/SDL EXCLUDE_FROM_ALL)
