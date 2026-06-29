@@ -50,7 +50,7 @@ void menu_render(SDL_Renderer *renderer, TTF_Font *font,
     // 2) Ekrana gore butonlar
     if (screen == MENU_MAIN) {
         draw_button(renderer, font, menu_button_rect(0, 2, winW, winH), "Devam Et");
-        draw_button(renderer, font, menu_button_rect(1, 2, winW, winH), "Oyundan Cik");
+        draw_button(renderer, font, menu_button_rect(1, 2, winW, winH), "Oyundan Çık");
     }
     else if (screen == MENU_CONFIRM_QUIT) {
         // Baslik
@@ -64,8 +64,8 @@ void menu_render(SDL_Renderer *renderer, TTF_Font *font,
             draw_text(renderer, font, q,
                       (winW - tw) / 2.0f, startY - 50.0f, white);
         }
-        draw_button(renderer, font, menu_button_rect(0, 2, winW, winH), "Evet, Cik");
-        draw_button(renderer, font, menu_button_rect(1, 2, winW, winH), "Hayir, Geri");
+        draw_button(renderer, font, menu_button_rect(0, 2, winW, winH), "Evet");
+        draw_button(renderer, font, menu_button_rect(1, 2, winW, winH), "Hayır");
     }
 }
 
