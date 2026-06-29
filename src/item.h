@@ -45,6 +45,7 @@ typedef struct {
     EquipSlot equipSlot;         // hangi slota gider (EQUIP_NONE: kuşanılamaz)
     WeaponType weaponType;       // silahsa tipi (değilse WEAPON_NONE)
     const char *equipSpritePath; // paper-doll katmanı (kuşanınca görünen sprite, NULL: yok)
+    const char *equipSpritePathBack;   // 2. katman (silah arka — yoksa NULL)
     int plusLevel;               // +0..+8 (parlama efekti için)
 
     const char *iconSpritePath;   // ikon dosyasi (NULL → tool_icons fallback)

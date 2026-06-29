@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include <stdbool.h>
 #include "common.h"
+#include "item_textures.h"
 
 typedef struct Equipment Equipment;   // ← forward decl (pointer için yeter)
 
@@ -76,7 +77,7 @@ void health_bar_render(const Player *p, SDL_Renderer *renderer);
 // out: en az (3 + EQUIP_SLOT_COUNT) kapasiteli olmali. z'ye gore sirali doner.
 // Donen deger: katman sayisi.
 int build_player_layers(const PlayerLayer *base, int baseCount,
-                        const Equipment *eq, SDL_Texture **equipTextures,
+                        const Equipment *eq, const ItemTextures *itemTex,
                         PlayerLayer *out, int outCap);
 
 #endif

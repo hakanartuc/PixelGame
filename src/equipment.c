@@ -114,6 +114,7 @@ int slot_zorder(EquipSlot slot)
         case EQUIP_CHEST:   return 60;   // govde zirhi
         case EQUIP_GLOVES:  return 70;   // eldiven
         case EQUIP_HELMET:  return 130;  // kask (en ust)
+        case EQUIP_WEAPON:  return 140;  // silah onu (en ust, LPC z140)
         default:            return 0;    // gorseli olmayan slot (yuzuk/kolye vs)
     }
 }

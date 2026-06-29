@@ -491,9 +491,9 @@ int main(int argc, char *argv[])
         SDL_RenderClear(renderer);                            // ekranı temizle (arka plan rengini doldur)
         tilemap_render(renderer, tile_textures, &camera);     // haritayı çiz
 
-        PlayerLayer built[16];
+        PlayerLayer built[24];
         int builtCount = build_player_layers(layers, LAYER_COUNT, &equipment,
-                                             itemTex.equipTex, built, 16);
+                                             &itemTex, built, 24);
 
         player_render(&player, renderer, built, builtCount, &camera); // oyuncuyu
 

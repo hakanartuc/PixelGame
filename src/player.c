@@ -16,7 +16,7 @@ typedef struct {
 
 // PlayerState sırasıyla: IDLE, WALK, SLASH
 static const LpcAnim PLAYER_ANIMS[] = {
-    [PLAYER_IDLE]  = { .startRow = 22, .frameCount = 2, .frameDur = 0.4f,  .loop = true  },  // satır 22-25
+    [PLAYER_IDLE] = { .startRow = 22, .frameCount = 2, .frameDur = 0.4f, .loop = true },  // ElizaWy idle (body + arming sword ayni satirda)
     [PLAYER_WALK]  = { .startRow = 8,  .frameCount = 9, .frameDur = 0.08f, .loop = true  },  // satır 8-11
     [PLAYER_SLASH] = { .startRow = 12, .frameCount = 6, .frameDur = 0.06f, .loop = false },  // satır 12-15
 };
@@ -194,7 +194,7 @@ void health_bar_render(const Player *p, SDL_Renderer *renderer)
 }
 
 int build_player_layers(const PlayerLayer *base, int baseCount,
-                        const Equipment *eq, SDL_Texture **equipTextures,
+                        const Equipment *eq, const ItemTextures *itemTex,
                         PlayerLayer *out, int outCap)
 {
     int n = 0;
@@ -204,18 +204,26 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
         if (n < outCap) out[n++] = base[i];
     }
 
-    // 2) Giyili ekipman slotlari → katman
+     // 2) Giyili ekipman slotlari → katman
     for (int s = 0; s < EQUIP_SLOT_COUNT; s++) {
         const ItemStack *st = &eq->slots[s];
-        if (st->type == NULL) continue;            // slot bos → atla
+        if (st->type == NULL) continue;
 
-        int idx = (int)(st->type - ITEM_TYPES);    // koprü: pointer farki = item indeksi
-        SDL_Texture *tex = equipTextures[idx];
-        if (tex == NULL) continue;                 // gorseli yok → atla
+        int z = slot_zorder((EquipSlot)s);
 
-        if (n < outCap) {
-            out[n].tex = tex;
-            out[n].z   = slot_zorder((EquipSlot)s);
+        // ON katman (normal ekipman + silah onu)
+        SDL_Texture *texFront = item_equip_tex(itemTex, st->type);
+        if (texFront != NULL && n < outCap) {
+            out[n].tex = texFront;
+            out[n].z   = z;
+            n++;
+        }
+
+        // ARKA katman (sadece silah — arka, govdenin GERISINDE cizilsin)
+        SDL_Texture *texBack = item_equip_tex_back(itemTex, st->type);
+        if (texBack != NULL && n < outCap) {
+            out[n].tex = texBack;
+            out[n].z   = 5;   // body(10)'dan KUCUK → govdenin arkasinda
             n++;
         }
     }
