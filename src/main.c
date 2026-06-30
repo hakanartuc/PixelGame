@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
     bool running = true;
 
     generate_map(); // haritayı oluştur
-    Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 1.5f};
+    Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 1.0f};
 
     Uint64 last = SDL_GetTicks();
 
