@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "common.h"
 #include "item_textures.h"
+#include "fx.h"
 
 typedef struct Equipment Equipment;   // ← forward decl (pointer için yeter)
 
@@ -22,6 +23,7 @@ typedef struct Equipment Equipment;   // ← forward decl (pointer için yeter)
 #define FRAME_DURATION 0.1f
 #define PLAYER_ATTACK_RANGE 80.0f
 #define PLAYER_ATTACK_HIT_FRAME 3   // slash'ın vuruş karesi (6 karelik slash'ta ~3)
+
 
 // LPC yön sırası (sheet satır sırası): 0=yukarı, 1=sol, 2=aşağı, 3=sağ
 typedef enum {
@@ -66,7 +68,10 @@ typedef struct {
     bool attacking;
     bool attackHit;
     int targetMobId;
+    WeaponFxType weaponFx;   // su an aktif silah efekti (ileride silahtan gelecek)
 } Player;
+
+
 
 void player_render(const Player *p, SDL_Renderer *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera);
 void player_update(Player *p, const bool *keys, bool attackPressed, float dt);
@@ -79,5 +84,9 @@ void health_bar_render(const Player *p, SDL_Renderer *renderer);
 int build_player_layers(const PlayerLayer *base, int baseCount,
                         const Equipment *eq, const ItemTextures *itemTex,
                         PlayerLayer *out, int outCap);
+
+void weapon_render_test(Player *p, SDL_Renderer *renderer,
+                        SDL_Texture *weaponTex, SDL_Texture *glowTex,
+                        ParticleSystem *fx, const Camera *camera, bool backLayer);
 
 #endif

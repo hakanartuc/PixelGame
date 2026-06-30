@@ -13,7 +13,9 @@
 
 // --- Kamera: dünya uzayında bir görüş penceresi ---
 typedef struct {
-    float x, y;   // kameranın dünya uzayındaki sol üst köşesi
+    float x;
+    float y;
+    float zoom;   // 1.0 = normal, 1.5 = %50 yakin
 } Camera;
 
 

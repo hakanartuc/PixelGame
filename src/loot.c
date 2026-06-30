@@ -83,13 +83,14 @@ void loot_render_all(Loot *loots, int maxLoot, SDL_Renderer *renderer, SDL_Textu
             .h = clip->frameH
         };
 
+       float zoom = camera->zoom;
         SDL_FRect vr = loot_visual_rect(l);
         SDL_FRect screen = 
         {
-            .x = vr.x - camera->x,
-            .y = vr.y - camera->y,
-            .w = vr.w,
-            .h = vr.h
+            .x = (vr.x - camera->x) * zoom,
+            .y = (vr.y - camera->y) * zoom,
+            .w = vr.w * zoom,
+            .h = vr.h * zoom
         };
         SDL_RenderTexture(renderer, crateTex, &src, &screen);
     }
@@ -161,35 +162,35 @@ void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
 
     // Panel konumu: kasanın dünya konumu − kamera (dünyaya sabit)
     // Kasanın biraz ÜSTÜNDE/yanında göster (kasanın üstüne çıksın)
-    float panelX = (loot->rect.x + loot->rect.w / 2.0f) - panelW / 2.0f - camera->x;  // kasa ortasına yatay ortalı
-    float panelY = loot->rect.y - panelH - 10.0f - camera->y;   // kasanın üstünde
+    float zoom = camera->zoom;
+    float panelX = ((loot->rect.x + loot->rect.w / 2.0f) - panelW / 2.0f - camera->x) * zoom;
+    float panelY = (loot->rect.y - panelH - 10.0f - camera->y) * zoom;
 
-    // Panel arka planı
+    // Panel arka planı (boyutlar da zoom'lu)
     SDL_SetRenderDrawColor(renderer, 30, 30, 40, 235);
-    SDL_FRect panel = { panelX, panelY, panelW, panelH };
+    SDL_FRect panel = { panelX, panelY, panelW * zoom, panelH * zoom };
     SDL_RenderFillRect(renderer, &panel);
     SDL_SetRenderDrawColor(renderer, 200, 200, 210, 255);
     SDL_RenderRect(renderer, &panel);
 
-    // Item'ler (aynı, panelX/panelY artık kasaya göre)
     for (int k = 0; k < loot->itemCount; k++) {
         if (loot->items[k].type == NULL) continue;
         int col = k % cols, row = k / cols;
-        float cx = panelX + pad + col * cellSize;
-        float cy = panelY + pad + row * cellSize;
+        float cx = panelX + (pad + col * cellSize) * zoom;
+        float cy = panelY + (pad + row * cellSize) * zoom;
 
         SDL_SetRenderDrawColor(renderer, 60, 60, 75, 255);
-        SDL_FRect cell = { cx, cy, cellSize - 4, cellSize - 4 };
+        SDL_FRect cell = { cx, cy, (cellSize - 4) * zoom, (cellSize - 4) * zoom };
         SDL_RenderFillRect(renderer, &cell);
 
         const ItemType *it = loot->items[k].type;
-        SDL_FRect dst = { cx + 6, cy + 6, 32, 32 };
+        SDL_FRect dst = { cx + 6 * zoom, cy + 6 * zoom, 32 * zoom, 32 * zoom };
 
         SDL_Texture *icon = item_icon_tex(itemTex, it);
         if (icon != NULL) {
-            SDL_RenderTexture(renderer, icon, &it->iconSrc, &dst);   // item kendi sheet'inden
+            SDL_RenderTexture(renderer, icon, &it->iconSrc, &dst);
         } else {
-            SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };    // fallback: tool_icons
+            SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };
             SDL_RenderTexture(renderer, itemIconTex, &src, &dst);
         }
     }

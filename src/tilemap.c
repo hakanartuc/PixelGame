@@ -134,15 +134,18 @@ SDL_FRect feet_box(float rectX, float rectY, float rectW, float rectH)
 
 void tilemap_render(SDL_Renderer *renderer, SDL_Texture **tileTextures, const Camera *camera)
 {
+    float zoom = camera->zoom;
+
     for (int row = 0; row < MAP_H; row++) {
         for (int col = 0; col < MAP_W; col++) {
             int tileID = tilemap[row][col];
             SDL_FRect dst = {
-                col * TILE_SIZE - camera->x,
-                row * TILE_SIZE - camera->y,
-                TILE_SIZE, TILE_SIZE
+                (col * TILE_SIZE - camera->x) * zoom,
+                (row * TILE_SIZE - camera->y) * zoom,
+                TILE_SIZE * zoom,
+                TILE_SIZE * zoom
             };
-            tile_draw(renderer, tileTextures, tileID, dst);  // renk+switch yerine tek çağrı
+            tile_draw(renderer, tileTextures, tileID, dst);
         }
     }
 }

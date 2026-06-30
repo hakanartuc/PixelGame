@@ -13,6 +13,7 @@
 #include "inventory.h"
 #include "equipment.h"
 #include "item_textures.h"
+#include "fx.h"
 
 int main(int argc, char *argv[])
 {
@@ -95,6 +96,22 @@ int main(int argc, char *argv[])
         {load_texture(renderer, "assets/characters/face/male/neutral_light.png"), 101},
     };
 
+    SDL_Texture *swordTex = load_texture(renderer, "assets/equipment/weapon/sword_basic.png");
+    if (swordTex == NULL)
+    {
+        SDL_Log("Kilic texture yuklenemedi");
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    SDL_Texture *glowTex = create_glow_texture(renderer, 64);
+    if (glowTex == NULL) {
+        SDL_Log("Glow texture olusturulamadi");
+        // kritik degil, devam (glow olmadan)
+    }
+
 #define LAYER_COUNT ((int)(sizeof(layers) / sizeof(layers[0])))
 
     for (int i = 0; i < LAYER_COUNT; i++)
@@ -114,7 +131,13 @@ int main(int argc, char *argv[])
         .lastFacing = -1,
         .speed = PLAYER_SPEED,
         .health = 100.0f,
-        .maxHealth = 100.0f};
+        .maxHealth = 100.0f,
+        .weaponFx = WEAPON_FX_PINK,
+    };
+        
+
+    ParticleSystem weaponFx;
+    fx_init(&weaponFx);
 
     // Mob texture'ları: her tür için sprite yükle (TILE_TYPES gibi)
     SDL_Texture *mob_textures[MAX_MOB_TYPES] = {0};
@@ -169,7 +192,7 @@ int main(int argc, char *argv[])
     bool running = true;
 
     generate_map(); // haritayı oluştur
-    Camera camera = {.x = 0.0f, .y = 0.0f};
+    Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 1.5f};
 
     Uint64 last = SDL_GetTicks();
 
@@ -225,6 +248,11 @@ int main(int argc, char *argv[])
                 {
                     inventoryOpen = !inventoryOpen;
                 }
+                else if (event.key.key == SDLK_F && gameState == GAME_PLAYING)
+                {
+                    // Efekt tipleri arasinda gecis (test)
+                    player.weaponFx = (player.weaponFx + 1) % 3;  // NONE/PINK/FLAME
+                }
             }
             else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
             {
@@ -246,8 +274,8 @@ int main(int argc, char *argv[])
                 }
                 else if (event.button.button == SDL_BUTTON_LEFT)
                 {
-                    float worldX = event.button.x + camera.x;
-                    float worldY = event.button.y + camera.y;
+                    float worldX = event.button.x / camera.zoom + camera.x;
+                    float worldY = event.button.y / camera.zoom + camera.y;
 
                     bool handled = false;
 
@@ -382,6 +410,7 @@ int main(int argc, char *argv[])
             }
 
             player_update(&player, keys, attackPressed, dt); // oyuncuyu güncelle
+            fx_update(&weaponFx, dt);
 
             if (targetPressed)
             {
@@ -495,7 +524,12 @@ int main(int argc, char *argv[])
         int builtCount = build_player_layers(layers, LAYER_COUNT, &equipment,
                                              &itemTex, built, 24);
 
+        weapon_render_test(&player, renderer, swordTex, glowTex, &weaponFx, &camera, true);
         player_render(&player, renderer, built, builtCount, &camera); // oyuncuyu
+        weapon_render_test(&player, renderer, swordTex, glowTex, &weaponFx, &camera, false);
+
+        
+        fx_render(&weaponFx, renderer, glowTex, &camera);
 
         for (int i = 0; i < mobCount; i++)
             mob_render(&mobs[i], renderer, mob_textures, &camera, player.targetMobId);
@@ -513,6 +547,7 @@ int main(int argc, char *argv[])
         target_hp_bar_render(renderer, hpTarget, winW, gameFont);
 
         health_bar_render(&player, renderer);
+        
 
         if (inventoryOpen)
         {
@@ -547,6 +582,13 @@ int main(int argc, char *argv[])
         if (mob_textures[i])
             SDL_DestroyTexture(mob_textures[i]); // NULL olanları atla
     }
+
+    if (swordTex)
+        SDL_DestroyTexture(swordTex);
+
+        
+    if (glowTex)
+        SDL_DestroyTexture(glowTex);
 
     item_textures_free(&itemTex);
     font_quit(gameFont);

@@ -51,8 +51,10 @@ void floattext_render_all(FloatText *texts, int maxTexts, SDL_Renderer *renderer
         TTF_GetStringSize(font, buf, 0, &textW, &textH);
 
         // Dünya → ekran
-        float sx = texts[i].x - camera->x - textW / 2.0f;   // ortalı
-        float sy = texts[i].y - camera->y;
+        // Dünya → ekran (zoom dahil)
+        float zoom = camera->zoom;
+        float sx = (texts[i].x - camera->x) * zoom - textW / 2.0f;   // ortalı (yazi boyutu sabit)
+        float sy = (texts[i].y - camera->y) * zoom;
 
         // Solma: ömür azaldıkça alpha düşür
         float ratio = texts[i].life / texts[i].maxLife;   // 1 → 0

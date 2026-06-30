@@ -134,25 +134,29 @@ void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures
         .h = clip->frameH
     };
 
+    float zoom = camera->zoom;
     float scale = 2.0f;
     float drawW = clip->frameW * scale;
     float drawH = clip->frameH * scale;
     float feetOffset = clip->feetY * scale;   // ayak, ölçekli
 
+    // Once dunya-uzayinda kose, sonra zoom ile ekrana
+    float mobWorldX = (m->e.rect.x + m->e.rect.w / 2.0f) - drawW / 2.0f;
+    float mobWorldY = (m->e.rect.y + m->e.rect.h) - feetOffset;
     SDL_FRect screen = {
-        .x = (m->e.rect.x + m->e.rect.w / 2.0f) - drawW / 2.0f - camera->x,
-        .y = (m->e.rect.y + m->e.rect.h) - feetOffset - camera->y,  // ayak hizası (altı değil)
-        .w = drawW,
-        .h = drawH
+        .x = (mobWorldX - camera->x) * zoom,
+        .y = (mobWorldY - camera->y) * zoom,
+        .w = drawW * zoom,
+        .h = drawH * zoom
     };
 
     // Seçili hedefse, ayağında halka çiz (sprite'tan ÖNCE)
     if (m->id == targetMobId) {
-        // Halka rect'in altına (sabit boyut — clip'e bağlı değil, mob'un ayak izi)
-        float ringCx = (m->e.rect.x + m->e.rect.w / 2.0f) - camera->x;
-        float ringCy = (m->e.rect.y + m->e.rect.h) - camera->y;
+        float ringCx = ((m->e.rect.x + m->e.rect.w / 2.0f) - camera->x) * zoom;
+        float ringCy = ((m->e.rect.y + m->e.rect.h) - camera->y) * zoom;
         SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255);
-        draw_target_ring(renderer, ringCx, ringCy, m->e.rect.w * 0.7f, m->e.rect.w * 0.35f);
+        draw_target_ring(renderer, ringCx, ringCy,
+                         m->e.rect.w * 0.7f * zoom, m->e.rect.w * 0.35f * zoom);
     }
 
     SDL_FlipMode flip = m->e.facingLeft ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
