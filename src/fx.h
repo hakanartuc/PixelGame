@@ -32,6 +32,16 @@ typedef struct {
     int nextFree;        // dairesel arama ipucu
 } ParticleSystem;
 
+// Yone gore kilic bolgesinin karakter merkezine gore kabaca ofseti (dunya px)
+// LPC'de kilic sag elde; yone gore govdenin su tarafinda.
+// facing: UP=0, LEFT=1, DOWN=2, RIGHT=3
+static const struct { float dx, dy; } WEAPON_FX_OFFSET[4] = {
+    {  -15.0f, -2.0f },  // UP    — kilic ust-sagda (arkada)
+    { -14.0f,  -2.0f },  // LEFT  — kilic solda
+    { -4.0f,  15.0f },  // DOWN  — kilic sol-onde
+    {  14.0f,  -2.0f },  // RIGHT — kilic sagda
+};
+
 
 
 // Havuzu sifirla

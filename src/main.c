@@ -91,20 +91,10 @@ int main(int argc, char *argv[])
     // Katmanlar ÇİZİM SIRASINDA (alttan üste). Yeni parça eklemek = buraya bir satır.
     // base katmanlar: body → head → face. { texture, z } — z = LPC dosya öneki (çizim sırası, küçük=arka).
     PlayerLayer layers[] = {
-        {load_texture(renderer, "assets/characters/body/male/light.png"), 10},
-        {load_texture(renderer, "assets/characters/head/male/human_light.png"), 100},
-        {load_texture(renderer, "assets/characters/face/male/neutral_light.png"), 101},
+        {load_texture(renderer, "assets/characters/body/male/light.png"), 10, -1},
+        {load_texture(renderer, "assets/characters/head/male/human_light.png"), 100, -1},
+        {load_texture(renderer, "assets/characters/face/male/neutral_light.png"), 101, -1},
     };
-
-    SDL_Texture *swordTex = load_texture(renderer, "assets/equipment/weapon/sword_basic.png");
-    if (swordTex == NULL)
-    {
-        SDL_Log("Kilic texture yuklenemedi");
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
 
     SDL_Texture *glowTex = create_glow_texture(renderer, 64);
     if (glowTex == NULL) {
@@ -409,7 +399,7 @@ int main(int argc, char *argv[])
                 }
             }
 
-            player_update(&player, keys, attackPressed, dt); // oyuncuyu güncelle
+            player_update(&player, keys, attackPressed, dt, &weaponFx); // oyuncuyu güncelle
             fx_update(&weaponFx, dt);
 
             if (targetPressed)
@@ -524,10 +514,7 @@ int main(int argc, char *argv[])
         int builtCount = build_player_layers(layers, LAYER_COUNT, &equipment,
                                              &itemTex, built, 24);
 
-        weapon_render_test(&player, renderer, swordTex, glowTex, &weaponFx, &camera, true);
         player_render(&player, renderer, built, builtCount, &camera); // oyuncuyu
-        weapon_render_test(&player, renderer, swordTex, glowTex, &weaponFx, &camera, false);
-
         
         fx_render(&weaponFx, renderer, glowTex, &camera);
 
@@ -582,9 +569,6 @@ int main(int argc, char *argv[])
         if (mob_textures[i])
             SDL_DestroyTexture(mob_textures[i]); // NULL olanları atla
     }
-
-    if (swordTex)
-        SDL_DestroyTexture(swordTex);
 
         
     if (glowTex)

@@ -18,10 +18,10 @@ const ItemType ITEM_TYPES[] = {
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
 
     // --- Silah: farkli grid (Adim 5), simdilik tool_icons fallback ---
-    {.name = "Demir Kilic", .iconIndex = 4, .maxStack = 1,
+    {.name = "Long Sword", .iconIndex = 4, .maxStack = 1,
   .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_ONE_HAND,
-  .equipSpritePath     = "assets/equipment/weapon/arming_sword_steel_140.png",   // on
-  .equipSpritePathBack = "assets/equipment/weapon/arming_sword_steel_009.png",   // arka
+  .equipSpritePath     = "assets/equipment/weapon/long_sword_140.png",   // on
+  .equipSpritePathBack = "assets/equipment/weapon/long_sword_009.png",   // arka
   .plusLevel = 0,
   .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
 

@@ -45,6 +45,7 @@ typedef enum {
 typedef struct PlayerLayer {
     SDL_Texture *tex;
     int z;
+    int idleRowOverride;  // -1 = yok (base satirini kullan), >=0 = idle'da bu satiri ciz
 } PlayerLayer;
 
 // Karakterin TÜM kalıcı durumu
@@ -74,7 +75,7 @@ typedef struct {
 
 
 void player_render(const Player *p, SDL_Renderer *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera);
-void player_update(Player *p, const bool *keys, bool attackPressed, float dt);
+void player_update(Player *p, const bool *keys, bool attackPressed, float dt, ParticleSystem *fx);
 void health_bar_render(const Player *p, SDL_Renderer *renderer);
 
 

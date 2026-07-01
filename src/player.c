@@ -1,5 +1,5 @@
 #include <SDL3/SDL.h>
-#include <stdlib.h>   // rand, RAND_MAX
+#include <stdlib.h> // rand, RAND_MAX
 #include "common.h"
 #include "tilemap.h"
 #include "player.h"
@@ -7,7 +7,8 @@
 #include "item.h"      // ← EKLE: ItemStack + ITEM_TYPES
 
 // 0.0..1.0 arasi rastgele float
-static inline float randf(void) {
+static inline float randf(void)
+{
     return (float)rand() / ((float)RAND_MAX + 1.0f);
 }
 
@@ -23,11 +24,10 @@ typedef struct
 
 // PlayerState sırasıyla: IDLE, WALK, SLASH
 static const LpcAnim PLAYER_ANIMS[] = {
-    [PLAYER_IDLE] = {.startRow = 22, .frameCount = 2, .frameDur = 0.4f, .loop = true}, // ElizaWy idle (body + arming sword ayni satirda)
+    [PLAYER_IDLE] = {.startRow = 22, .frameCount = 2, .frameDur = 0.4f, .loop = true},
     [PLAYER_WALK] = {.startRow = 8, .frameCount = 9, .frameDur = 0.08f, .loop = true}, // satır 8-11
     [PLAYER_SLASH] = {.startRow = 12, .frameCount = 6, .frameDur = 0.08f, .loop = false},
 };
-
 
 // Silahin bir karedeki eldeki konumu
 typedef struct
@@ -86,10 +86,10 @@ static const WeaponAnchor SLASH_ANCHORS[4][6] = {
 // Idle/walk icin yon-bazli silah durusu (kare yok — yone gore sabit)
 // facing: UP=0, LEFT=1, DOWN=2, RIGHT=3
 static const WeaponAnchor IDLE_ANCHORS[4] = {
-    { 42.0f, 44.0f, -20.0f },  // UP — kabza ele indi, kilic daha dik yukari
-    { 23.0f, 44.0f, -70.0f },  // LEFT — kilic biraz daha yatay/yukari
-    { 20.0f, 45.0f,  -10.0f },  // DOWN — iyi (degismedi)
-    { 28.0f, 45.0f,  60.0f },  // RIGHT — iyi (hafif el ayari)
+    {42.0f, 44.0f, -20.0f}, // UP — kabza ele indi, kilic daha dik yukari
+    {23.0f, 44.0f, -70.0f}, // LEFT — kilic biraz daha yatay/yukari
+    {20.0f, 45.0f, -10.0f}, // DOWN — iyi (degismedi)
+    {28.0f, 45.0f, 60.0f},  // RIGHT — iyi (hafif el ayari)
 };
 
 // Oyuncuyu çizer - sadece OKUR, değiştirmez.
@@ -118,10 +118,19 @@ void player_render(const Player *p, SDL_Renderer *renderer, const PlayerLayer *l
         .w = p->drawW * zoom,
         .h = p->drawH * zoom};
 
-    // LPC'de flip YOK — sol/sağ ayrı satır. Tüm katmanları düz çiz.
     for (int i = 0; i < layerCount; i++)
     {
-        SDL_RenderTexture(renderer, layers[i].tex, &src, &screen);
+        SDL_FRect layerSrc = src; // varsayilan: ortak src (state satiri + currentFrame)
+
+        // Idle'da bu katmanin override'i varsa: farkli satir + sabit frame 0
+        if (p->state == PLAYER_IDLE && layers[i].idleRowOverride >= 0)
+        {
+            int r2 = layers[i].idleRowOverride + (int)p->facing; // silah: walk row 8 + yon
+            layerSrc.x = 0;                                      // frame 0 = ayakta durus
+            layerSrc.y = r2 * FRAME_H;
+        }
+
+        SDL_RenderTexture(renderer, layers[i].tex, &layerSrc, &screen);
     }
 
 #if DEBUG_DRAW
@@ -136,7 +145,7 @@ void player_render(const Player *p, SDL_Renderer *renderer, const PlayerLayer *l
 }
 
 // Oyuncuyu günceller
-void player_update(Player *p, const bool *keys, bool attackPressed, float dt)
+void player_update(Player *p, const bool *keys, bool attackPressed, float dt, ParticleSystem *fx)
 {
     // --- TILE TEPKİSİ (aynı) ---
     SDL_FRect fb = feet_box(p->rect.x, p->rect.y, p->rect.w, p->rect.h);
@@ -266,6 +275,42 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt)
             }
         }
     }
+
+    // --- SILAH EFEKTI: karakter etrafinda partikul dogur ---
+    if (p->weaponFx != WEAPON_FX_NONE)
+    {
+          // Karakter merkezi + yone gore kilic bolgesi ofseti
+    float cx = p->rect.x + p->rect.w / 2.0f + WEAPON_FX_OFFSET[p->facing].dx;
+    float cy = p->rect.y + p->rect.h / 2.0f + WEAPON_FX_OFFSET[p->facing].dy;
+
+        int spawnPerFrame = 3;
+        for (int k = 0; k < spawnPerFrame; k++)
+        {
+            // Dogum noktasi: kilic bolgesi civarinda dar sacilim (govde geneli degil)
+    float ox = cx + (randf() - 0.5f) * 12.0f;
+    float oy = cy + (randf() - 0.5f) * 24.0f;
+
+            float vx, vy, life, size;
+            Uint8 pr, pg, pb;
+
+            if (p->weaponFx == WEAPON_FX_FLAME) {
+                vx = (randf() - 0.5f) * 40.0f;
+                vy = -60.0f - randf() * 60.0f;
+                life = 0.3f + randf() * 0.3f;
+                size = 8.0f + randf() * 10.0f;
+                pr = 255; pg = (Uint8)(200 + rand() % 55); pb = (Uint8)(rand() % 80);
+            } else {
+                float angR = randf() * 6.2832f;
+                float spd = 20.0f + randf() * 50.0f;
+                vx = SDL_cosf(angR) * spd;
+                vy = SDL_sinf(angR) * spd - 30.0f;
+                life = 0.3f + randf() * 0.4f;
+                size = 6.0f + randf() * 8.0f;
+                pr = 255; pg = (Uint8)(40 + rand() % 60); pb = (Uint8)(180 + rand() % 50);
+            }
+            fx_spawn(fx, ox, oy, vx, vy, life, size, pr, pg, pb, p->weaponFx);
+        }
+    }
 }
 
 // Can barını ekranın köşesine çizer. Ekran-uzayına bağlıdır, kamera hareketinden etkilenmez.
@@ -325,6 +370,7 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
         {
             out[n].tex = texFront;
             out[n].z = z;
+            out[n].idleRowOverride = (s == EQUIP_WEAPON) ? 8 : -1;  // silah idle'da walk row 8, zirh -1
             n++;
         }
 
@@ -334,6 +380,7 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
         {
             out[n].tex = texBack;
             out[n].z = 5; // body(10)'dan KUCUK → govdenin arkasinda
+            out[n].idleRowOverride = 8;  // silah back — idle'da walk row 8
             n++;
         }
     }
@@ -384,17 +431,19 @@ void weapon_render_test(Player *p, SDL_Renderer *renderer,
     if (p->state == PLAYER_SLASH)
     {
         int f = p->currentFrame;
-        if (f < 0) f = 0;
-        if (f > 5) f = 5;
+        if (f < 0)
+            f = 0;
+        if (f > 5)
+            f = 5;
         handX = SLASH_ANCHORS[p->facing][f].handX;
         handY = SLASH_ANCHORS[p->facing][f].handY;
         angleDeg = SLASH_ANCHORS[p->facing][f].angle;
     }
     else
     {
-         // Idle/walk: yone gore durus
-        handX    = IDLE_ANCHORS[p->facing].handX;
-        handY    = IDLE_ANCHORS[p->facing].handY;
+        // Idle/walk: yone gore durus
+        handX = IDLE_ANCHORS[p->facing].handX;
+        handY = IDLE_ANCHORS[p->facing].handY;
         angleDeg = IDLE_ANCHORS[p->facing].angle;
     }
 
@@ -435,7 +484,8 @@ void weapon_render_test(Player *p, SDL_Renderer *renderer,
         float bladeWorldLen = gripY * scale;
 
         int spawnPerFrame = 3;
-        for (int k = 0; k < spawnPerFrame; k++) {
+        for (int k = 0; k < spawnPerFrame; k++)
+        {
             float frac = 0.4f + 0.6f * randf();
             float ox = handWorldX + pdirX * bladeWorldLen * frac;
             float oy = handWorldY + pdirY * bladeWorldLen * frac;
@@ -443,7 +493,8 @@ void weapon_render_test(Player *p, SDL_Renderer *renderer,
             float vx, vy, life, size;
             Uint8 pr, pg, pb;
 
-            if (p->weaponFx == WEAPON_FX_FLAME) {
+            if (p->weaponFx == WEAPON_FX_FLAME)
+            {
                 // ALEV: yukari yukselir, sicak renk
                 vx = (randf() - 0.5f) * 40.0f;
                 vy = -60.0f - randf() * 60.0f;
@@ -452,7 +503,9 @@ void weapon_render_test(Player *p, SDL_Renderer *renderer,
                 pr = 255;
                 pg = (Uint8)(200 + rand() % 55);
                 pb = (Uint8)(rand() % 80);
-            } else {
+            }
+            else
+            {
                 // PINK ENERGY: rastgele yon, hafif yukari
                 float angR = randf() * 6.2832f;
                 float spd = 20.0f + randf() * 50.0f;
@@ -483,12 +536,23 @@ void weapon_render_test(Player *p, SDL_Renderer *renderer,
         // Aura rengi efekt tipine gore
         Uint8 glowR, glowG, glowB;
         Uint8 sparkR, sparkG, sparkB;
-        if (p->weaponFx == WEAPON_FX_FLAME) {
-            glowR = 255; glowG = 140; glowB = 20;    // turuncu aura
-            sparkR = 255; sparkG = 220; sparkB = 40; // sari kivilcim
-        } else {
-            glowR = 255; glowG = 40; glowB = 180;    // pembe aura
-            sparkR = 255; sparkG = 20; sparkB = 140; // koyu pembe kivilcim
+        if (p->weaponFx == WEAPON_FX_FLAME)
+        {
+            glowR = 255;
+            glowG = 140;
+            glowB = 20; // turuncu aura
+            sparkR = 255;
+            sparkG = 220;
+            sparkB = 40; // sari kivilcim
+        }
+        else
+        {
+            glowR = 255;
+            glowG = 40;
+            glowB = 180; // pembe aura
+            sparkR = 255;
+            sparkG = 20;
+            sparkB = 140; // koyu pembe kivilcim
         }
 
         SDL_SetTextureBlendMode(glowTex, SDL_BLENDMODE_BLEND);
@@ -529,12 +593,14 @@ void weapon_render_test(Player *p, SDL_Renderer *renderer,
 
         // --- ICINDEKI PARILDAYAN NOKTACIKLAR ---
         int sparkCount = 8;
-        for (int s = 0; s < sparkCount; s++) {
+        for (int s = 0; s < sparkCount; s++)
+        {
             float sFrac = 0.4f + 0.6f * ((s * 0.37f) - (int)(s * 0.37f));
             float sOff = SDL_sinf(s * 2.1f) * (weaponW * weaponScale * 0.15f);
 
             float twinkle = 0.5f + 0.5f * SDL_sinf(t * 8.0f + s * 1.7f);
-            if (twinkle < 0.3f) continue;
+            if (twinkle < 0.3f)
+                continue;
 
             float driftFrac = sFrac + SDL_sinf(t * 2.0f + s) * 0.05f;
             float spx = handScreenX + dirX * bladeLen * driftFrac + perpX * sOff;
@@ -548,7 +614,8 @@ void weapon_render_test(Player *p, SDL_Renderer *renderer,
             SDL_FRect sdst = {
                 .x = spx - sparkSize * 0.5f,
                 .y = spy - sparkSize * 0.5f,
-                .w = sparkSize, .h = sparkSize};
+                .w = sparkSize,
+                .h = sparkSize};
             SDL_RenderTexture(renderer, glowTex, NULL, &sdst);
         }
 
