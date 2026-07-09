@@ -9,6 +9,21 @@
 #define SEPARATION_RADIUS 70.0f   // bu mesafeden yakın mob'lar iter
 #define SEPARATION_FORCE 250.0f   // itme gücü
 
+// Loot tabloları — her mob türü ne düşürür (şans + plus tavanı).
+// Girdiler bağımsız: aynı ölümde birden fazlası düşebilir.
+static const LootEntry GOBLIN_LOOT[] = {
+    { &ITEM_TYPES[ITEM_POTION_HP],  0.40f, 0 },
+    { &ITEM_TYPES[ITEM_LONG_SWORD], 0.08f, 3 },
+};
+static const LootEntry ORC_LOOT[] = {
+    { &ITEM_TYPES[ITEM_POTION_HP],   0.50f, 0 },
+    { &ITEM_TYPES[ITEM_HELMET_IRON], 0.15f, 3 },
+    { &ITEM_TYPES[ITEM_CHEST_IRON],  0.12f, 3 },
+    { &ITEM_TYPES[ITEM_LEGS_IRON],   0.15f, 3 },
+    { &ITEM_TYPES[ITEM_LONG_SWORD],  0.12f, 5 },
+};
+#define LOOT_COUNT(t) ((int)(sizeof(t) / sizeof((t)[0])))
+
 // Mob türleri tablosu — her tür bir kez tanımlı. (TILE_TYPES gibi)
 const MobType MOB_TYPES[] = {
     // [0] Goblin Maceman — uniform 32×32, klasik düzen
@@ -23,6 +38,8 @@ const MobType MOB_TYPES[] = {
         .damage = 5.0f,
         .defense = 0.0f,
         .attackType = ATTACK_MELEE,
+        .lootTable = GOBLIN_LOOT, .lootTableCount = LOOT_COUNT(GOBLIN_LOOT),
+        .goldMin = 5, .goldMax = 15,
         .attackHitFrame = 3,
         .anims = {
             // [0] idle — aşağı, yukarı, yan (4 kare, 32×32)
@@ -63,6 +80,8 @@ const MobType MOB_TYPES[] = {
         .damage = 10.0f,
         .defense = 10.0f,
         .attackType = ATTACK_MELEE,
+        .lootTable = ORC_LOOT, .lootTableCount = LOOT_COUNT(ORC_LOOT),
+        .goldMin = 20, .goldMax = 50,
         .attackHitFrame = 4,
         .anims = {
             // [0] idle — aşağı, yukarı, yan (6 kare, 32×32)

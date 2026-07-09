@@ -41,19 +41,21 @@ static float apply_defense(float raw, float defense)
     return raw * 100.0f / (100.0f + defense);
 }
 
-HitResult combat_player_hit(const Player *p, const ItemType *weapon,
+HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
                             float targetDefense)
 {
     HitResult hit = {0};
 
-    float base = (weapon != NULL) ? weapon->damage : UNARMED_DAMAGE;
+    // Taban: instance hasarı (tür × plus ölçeği); silahsızsa sabit
+    bool armed = (weapon != NULL && weapon->type != NULL);
+    float base = armed ? item_damage(weapon) : UNARMED_DAMAGE;
 
     // STR ölçeği (taban 10 = çarpansız)
     float strScale = 1.0f + (float)(p->strength - STAT_BASE) * STR_DAMAGE_PER_POINT;
 
     // Skill bonusu — silahın geliştirdiği skill'in seviyesinden
     float skillScale = 1.0f;
-    SkillType sk = combat_weapon_skill(weapon);
+    SkillType sk = combat_weapon_skill(armed ? weapon->type : NULL);
     if (sk != SKILL_NONE)
         skillScale += (float)(p->skills[sk].level - 1) * SKILL_DAMAGE_PER_LEVEL;
 
@@ -74,10 +76,8 @@ HitResult combat_player_hit(const Player *p, const ItemType *weapon,
 float equipment_total_defense(const Equipment *eq)
 {
     float total = 0.0f;
-    for (int s = 0; s < EQUIP_SLOT_COUNT; s++) {
-        if (eq->slots[s].type != NULL)
-            total += eq->slots[s].type->defense;
-    }
+    for (int s = 0; s < EQUIP_SLOT_COUNT; s++)
+        total += item_defense(&eq->slots[s]);   // boş slot 0 döner
     return total;
 }
 

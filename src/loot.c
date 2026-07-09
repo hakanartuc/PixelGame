@@ -37,7 +37,19 @@ static SDL_FRect loot_visual_rect(const Loot *l)
     return r;
 }
 
-bool loot_spawn(Loot *loots, int maxLoot, float x, float y)
+// Plus roll: her kademe için %35 devam şansı — +0 sık, yüksek plus nadir.
+// (0.35^3 ≈ %4 → +3; tavan hem tablodan hem ITEM_MAX_PLUS'tan)
+static int roll_plus(int maxPlus)
+{
+    if (maxPlus > ITEM_MAX_PLUS) maxPlus = ITEM_MAX_PLUS;
+    int plus = 0;
+    while (plus < maxPlus && randf() < 0.35f)
+        plus++;
+    return plus;
+}
+
+bool loot_spawn(Loot *loots, int maxLoot, float x, float y,
+                const LootEntry *table, int tableCount, int goldMin, int goldMax)
 {
     // Boş slot bul
     int slot = -1;
@@ -46,23 +58,29 @@ bool loot_spawn(Loot *loots, int maxLoot, float x, float y)
     }
     if (slot == -1) return false;   // doluysa düşürme
 
-    // 1) Kasayı kur (BU EKSİKTİ!)
+    // 1) Kasayı kur
     loots[slot] = (Loot){
         .rect = { .x = x, .y = y, .w = 48.0f, .h = 48.0f },
         .active = true,
         .state = LOOT_CLOSED,
-        .currentFrame = 0,        // kapalı kasa karesi (sheet'i ters çevirdiysen 0 doğru)
+        .currentFrame = 0,        // kapalı kasa karesi
         .animTimer = 0.0f,
     };
 
-    // 2) Rastgele item doldur
-    int n = 1 + rand() % 3;   // 1, 2 ya da 3 item
-    loots[slot].itemCount = n;
-    for (int k = 0; k < n; k++) {
-        int t = rand() % ITEM_TYPE_COUNT;
-        loots[slot].items[k].type = &ITEM_TYPES[t];
-        loots[slot].items[k].count = 1;
+    // 2) İçeriği tablodan roll'la: her girdi bağımsız zar
+    int n = 0;
+    for (int k = 0; k < tableCount && n < MAX_LOOT_ITEMS; k++) {
+        if (randf() >= table[k].chance) continue;   // düşmedi
+        loots[slot].items[n].type = table[k].type;
+        loots[slot].items[n].count = 1;
+        loots[slot].items[n].plusLevel = roll_plus(table[k].maxPlus);
+        n++;
     }
+    loots[slot].itemCount = n;
+
+    // 3) Altın (her zaman düşer — kasa asla tamamen boş olmaz)
+    if (goldMax < goldMin) goldMax = goldMin;
+    loots[slot].gold = goldMin + rand() % (goldMax - goldMin + 1);
 
     return true;
 }
@@ -149,13 +167,15 @@ void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
                        SDL_Texture *itemIconTex, const ItemTextures *itemTex,
                        TTF_Font *font, const Camera *camera)
 {
-    (void)font;   // şimdilik kullanılmıyor (item adı tooltip'i gelince kullanılacak)
     if (loot == NULL || loot->state != LOOT_OPEN) return;
+
+    // Altın da bir hücre kaplar (item'lardan sonra, son hücre)
+    int cells = loot->itemCount + (loot->gold > 0 ? 1 : 0);
 
     int cols = 3;
     float cellSize = 48.0f;
     float pad = 12.0f;
-    int rows = (loot->itemCount + cols - 1) / cols;
+    int rows = (cells + cols - 1) / cols;
     if (rows < 1) rows = 1;
 
     float panelW = cols * cellSize + pad * 2;
@@ -194,6 +214,38 @@ void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
             SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };
             SDL_RenderTexture(renderer, itemIconTex, &src, &dst);
         }
+
+        // Plus seviyesi (envanterle aynı dil: sağ üst, camgöbeği)
+        if (loot->items[k].plusLevel > 0 && font != NULL) {
+            char buf[8];
+            snprintf(buf, sizeof(buf), "+%d", loot->items[k].plusLevel);
+            SDL_Color cyan = { 90, 220, 255, 255 };
+            draw_text(renderer, font, buf, cx + (cellSize - 24) * zoom, cy, cyan);
+        }
+    }
+
+    // Altın hücresi (son hücre): sarı kese + miktar
+    if (loot->gold > 0) {
+        int k = loot->itemCount;
+        int col = k % cols, row = k / cols;
+        float cx = panelX + (pad + col * cellSize) * zoom;
+        float cy = panelY + (pad + row * cellSize) * zoom;
+
+        SDL_SetRenderDrawColor(renderer, 60, 60, 75, 255);
+        SDL_FRect cell = { cx, cy, (cellSize - 4) * zoom, (cellSize - 4) * zoom };
+        SDL_RenderFillRect(renderer, &cell);
+
+        // Kese: içi dolu altın karesi (ikon gelene kadar temsili)
+        SDL_SetRenderDrawColor(renderer, 255, 210, 60, 255);
+        SDL_FRect coin = { cx + 12 * zoom, cy + 8 * zoom, 20 * zoom, 20 * zoom };
+        SDL_RenderFillRect(renderer, &coin);
+
+        if (font != NULL) {
+            char buf[16];
+            snprintf(buf, sizeof(buf), "%d", loot->gold);
+            SDL_Color goldCol = { 255, 210, 60, 255 };
+            draw_text(renderer, font, buf, cx + 4 * zoom, cy + (cellSize - 20) * zoom, goldCol);
+        }
     }
 }
 
@@ -203,10 +255,13 @@ int loot_popup_item_at(const Loot *loot, float worldX, float worldY)
 {
     if (loot == NULL || loot->state != LOOT_OPEN) return -1;
 
+    // loot_popup_render ile AYNI hücre matematiği (altın dahil)
+    int cells = loot->itemCount + (loot->gold > 0 ? 1 : 0);
+
     int cols = 3;
     float cellSize = 48.0f;
     float pad = 12.0f;
-    int rows = (loot->itemCount + cols - 1) / cols;
+    int rows = (cells + cols - 1) / cols;
     if (rows < 1) rows = 1;
 
     float panelW = cols * cellSize + pad * 2;
@@ -215,22 +270,24 @@ int loot_popup_item_at(const Loot *loot, float worldX, float worldY)
     float panelX = (loot->rect.x + loot->rect.w / 2.0f) - panelW / 2.0f;
     float panelY = loot->rect.y - panelH - 10.0f;
 
-    for (int k = 0; k < loot->itemCount; k++) {
-        if (loot->items[k].type == NULL) continue;
+    for (int k = 0; k < cells; k++) {
+        bool isGoldCell = (k == loot->itemCount);
+        if (!isGoldCell && loot->items[k].type == NULL) continue;
         int col = k % cols, row = k / cols;
         float cx = panelX + pad + col * cellSize;
         float cy = panelY + pad + row * cellSize;
         if (worldX >= cx && worldX <= cx + cellSize - 4 &&
             worldY >= cy && worldY <= cy + cellSize - 4) {
-            return k;
+            return isGoldCell ? LOOT_CELL_GOLD : k;
         }
     }
     return -1;
 }
 
-// Kasada hiç item kaldı mı? (hepsi alındıysa true)
+// Kasada bir şey kaldı mı? (item'lar VE altın alındıysa boş)
 bool loot_is_empty(const Loot *loot)
 {
+    if (loot->gold > 0) return false;
     for (int k = 0; k < loot->itemCount; k++) {
         if (loot->items[k].type != NULL) return false;
     }

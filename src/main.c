@@ -16,6 +16,7 @@
 #include "fx.h"
 #include "skill.h"
 #include "combat.h"
+#include "save.h"
 
 int main(int argc, char *argv[])
 {
@@ -127,9 +128,17 @@ int main(int argc, char *argv[])
         .maxHealth = 100.0f,
         .strength = 10,    // sabit taban — dağıtım yok, ileride ekipman/perk ekler
         .dexterity = 10,
+        .gold = 50,        // başlangıç parası (vendor için)
         // weaponFx her frame kusanili silahtan senkronlanir (bkz. player_update oncesi)
     };
     skills_init(player.skills);
+
+    // Başlangıç seti: tam demir set + kılıç KUŞANILI (+0), çantada 3 iksir
+    equipment.slots[EQUIP_WEAPON] = (ItemStack){ &ITEM_TYPES[ITEM_LONG_SWORD], 1, 0 };
+    equipment.slots[EQUIP_HELMET] = (ItemStack){ &ITEM_TYPES[ITEM_HELMET_IRON], 1, 0 };
+    equipment.slots[EQUIP_CHEST]  = (ItemStack){ &ITEM_TYPES[ITEM_CHEST_IRON], 1, 0 };
+    equipment.slots[EQUIP_LEGS]   = (ItemStack){ &ITEM_TYPES[ITEM_LEGS_IRON], 1, 0 };
+    inventory_add(&inventory, &ITEM_TYPES[ITEM_POTION_HP], 3, 0);
         
 
     ParticleSystem weaponFx;
@@ -261,6 +270,27 @@ int main(int argc, char *argv[])
                     if (fxPreview >= WEAPON_FX_COUNT)
                         fxPreview = -1;
                 }
+                else if (event.key.key == SDLK_F5 && gameState == GAME_PLAYING)
+                {
+                    // Hızlı kayıt
+                    const char *msg = save_game(SAVE_PATH, &player, &inventory, &equipment)
+                                    ? "Kaydedildi" : "Kayit HATASI";
+                    SDL_Color white = { 255, 255, 255, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 10.0f, msg, white);
+                }
+                else if (event.key.key == SDLK_F9 && gameState == GAME_PLAYING)
+                {
+                    // Hızlı yükleme (dünya durumu değişmez, sadece oyuncu+eşyalar)
+                    if (load_game(SAVE_PATH, &player, &inventory, &equipment))
+                    {
+                        SDL_Color white = { 255, 255, 255, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f, "Yuklendi", white);
+                    }
+                }
             }
             else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
             {
@@ -291,16 +321,37 @@ int main(int argc, char *argv[])
                     if (openLootIndex >= 0)
                     {
                         int itemIdx = loot_popup_item_at(&loots[openLootIndex], worldX, worldY);
-                        if (itemIdx >= 0)
+                        if (itemIdx == LOOT_CELL_GOLD)
+                        {
+                            // Altın hücresi: al + bildir
+                            Loot *l = &loots[openLootIndex];
+                            player.gold += l->gold;
+                            char buf[FLOAT_TEXT_LEN];
+                            snprintf(buf, sizeof(buf), "+%d Gold", l->gold);
+                            SDL_Color goldCol = { 255, 210, 60, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 l->rect.x + l->rect.w / 2.0f,
+                                                 l->rect.y - 20.0f, buf, goldCol);
+                            l->gold = 0;
+                            if (loot_is_empty(l))
+                            {
+                                l->active = false;   // boş kasa kaybolur
+                                openLootIndex = -1;
+                            }
+                            handled = true;
+                        }
+                        else if (itemIdx >= 0)
                         {
                             // Item al
                             ItemStack *stack = &loots[openLootIndex].items[itemIdx];
                             if (stack->type != NULL)
                             {
-                                if (inventory_add(&inventory, stack->type, stack->count))
+                                if (inventory_add(&inventory, stack->type, stack->count,
+                                                  stack->plusLevel))
                                 {
                                     stack->type = NULL;
                                     stack->count = 0;
+                                    stack->plusLevel = 0;
                                     if (loot_is_empty(&loots[openLootIndex]))
                                     {
                                         loots[openLootIndex].active = false; // boş kasa KAYBOLUR
@@ -330,6 +381,7 @@ int main(int argc, char *argv[])
                             loots[li].currentFrame = 0;
                             loots[li].animTimer = 0.0f;
                             openLootIndex = li;
+                            // (altın popup'ta hücre olarak durur, tıklayınca alınır)
                         }
                     }
                 }
@@ -354,7 +406,38 @@ int main(int argc, char *argv[])
                             int slot = inventory_slot_at((float)event.button.x, (float)event.button.y,
                                                          (float)panelX, (float)(40 + 340));
                             if (slot >= 0)
-                                equip_from_inventory(&equipment, &inventory, slot);
+                            {
+                                ItemStack *st = &inventory.slots[slot];
+                                if (st->type != NULL && st->type->consumable)
+                                {
+                                    // Tüketilebilir: iç (can zaten fulse harcama)
+                                    if (player.health < player.maxHealth)
+                                    {
+                                        player.health += st->type->healAmount;
+                                        if (player.health > player.maxHealth)
+                                            player.health = player.maxHealth;
+
+                                        char buf[FLOAT_TEXT_LEN];
+                                        snprintf(buf, sizeof(buf), "+%d HP",
+                                                 (int)st->type->healAmount);
+                                        SDL_Color green = { 120, 255, 120, 255 };
+                                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                             player.rect.x + player.rect.w / 2.0f,
+                                                             player.rect.y - 10.0f, buf, green);
+
+                                        st->count--;
+                                        if (st->count <= 0)
+                                        {
+                                            st->type = NULL;
+                                            st->plusLevel = 0;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    equip_from_inventory(&equipment, &inventory, slot);
+                                }
+                            }
                         }
                     }
                 }
@@ -475,8 +558,8 @@ int main(int argc, char *argv[])
 
                     if (tdist <= PLAYER_ATTACK_RANGE)
                     {
-                        // Combat A: hasar silah + stat + skill'den (sabit değer yok)
-                        const ItemType *weapon = equipment.slots[EQUIP_WEAPON].type;
+                        // Combat A: hasar silah instance'ından (plus dahil) + stat + skill
+                        const ItemStack *weapon = &equipment.slots[EQUIP_WEAPON];
                         HitResult hit = combat_player_hit(&player, weapon,
                                                           target->type->defense);
 
@@ -488,7 +571,7 @@ int main(int argc, char *argv[])
                                         target->e.rect.y, (int)hit.damage, hit.crit);
 
                         // Use-based XP: hasar GERÇEKTEN uygulandığında (havayı kesmek saymaz)
-                        SkillType sk = combat_weapon_skill(weapon);
+                        SkillType sk = combat_weapon_skill(weapon->type);
                         if (sk != SKILL_NONE)
                         {
                             float xp = combat_xp_for_hit(hit.damage, target->type->level,
@@ -521,8 +604,10 @@ int main(int argc, char *argv[])
                             target->currentFrame = 0;
                             target->animTimer = 0.0f;
 
-                            // Ganimet düşür (mob'un konumunda)
-                            loot_spawn(loots, MAX_LOOT, target->e.rect.x, target->e.rect.y);
+                            // Ganimet düşür (mob'un konumunda, türün loot tablosundan)
+                            loot_spawn(loots, MAX_LOOT, target->e.rect.x, target->e.rect.y,
+                                       target->type->lootTable, target->type->lootTableCount,
+                                       target->type->goldMin, target->type->goldMax);
                         }
                     }
                 }
@@ -583,6 +668,15 @@ int main(int argc, char *argv[])
         target_hp_bar_render(renderer, hpTarget, winW, gameFont);
 
         health_bar_render(&player, renderer);
+
+        // Altın göstergesi (HP barının altı)
+        if (gameFont != NULL)
+        {
+            char goldBuf[32];
+            snprintf(goldBuf, sizeof(goldBuf), "Gold %d", player.gold);
+            SDL_Color goldCol = { 255, 210, 60, 255 };
+            draw_text(renderer, gameFont, goldBuf, 20.0f, 48.0f, goldCol);
+        }
         
 
         if (inventoryOpen)

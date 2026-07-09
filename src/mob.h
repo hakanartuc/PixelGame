@@ -2,8 +2,9 @@
 #define MOB_H
 
 #include <SDL3/SDL.h>
-#include <stdbool.h> 
+#include <stdbool.h>
 #include "common.h"
+#include "item.h"   // LootEntry (tür başına loot tablosu)
 
 
 #define MAX_MOBS 10
@@ -52,6 +53,11 @@ typedef struct {
     float damage;              // saldırı başına hasar
     float defense;             // defans (oyuncu hasarı 100/(100+def) ile kısılır)
     AttackType attackType;     // nasıl saldırır
+
+    // Loot: her girdi için ayrı zar atılır (bkz. loot_spawn)
+    const LootEntry *lootTable;
+    int lootTableCount;
+    int goldMin, goldMax;      // düşen altın aralığı
 
      // Animasyon düzeni (türe özel)
     int attackHitFrame;      // saldırının hangi karesinde hasar

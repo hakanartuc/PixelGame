@@ -19,8 +19,9 @@ void inventory_render(const Inventory *inv, SDL_Renderer *renderer,
                       TTF_Font *font, float panelX, float panelY);
 
 // Envantere item ekle (stack'lenebilirse mevcut yığına, yoksa boş slota).
+// plusLevel instance'a aittir: yalnız AYNI plus'lı yığınlar birleşir.
 // Başarılıysa true (yer varsa), çanta doluysa false.
-bool inventory_add(Inventory *inv, const ItemType *type, int count);
+bool inventory_add(Inventory *inv, const ItemType *type, int count, int plusLevel);
 
 int inventory_slot_at(float x, float y, float panelX, float panelY);
 

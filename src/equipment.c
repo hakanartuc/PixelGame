@@ -29,12 +29,14 @@ static bool unequip_to_inventory(Equipment *eq, Inventory *inv, EquipSlot slot)
 {
     if (eq->slots[slot].type == NULL) return true;   // zaten boş, sorun yok
 
-    // Envantere eklemeyi dene
-    if (!inventory_add(inv, eq->slots[slot].type, eq->slots[slot].count))
+    // Envantere eklemeyi dene (plus instance'la birlikte taşınır)
+    if (!inventory_add(inv, eq->slots[slot].type, eq->slots[slot].count,
+                       eq->slots[slot].plusLevel))
         return false;   // çanta dolu → çıkarılamadı
 
     eq->slots[slot].type = NULL;   // slotu boşalt
     eq->slots[slot].count = 0;
+    eq->slots[slot].plusLevel = 0;
     return true;
 }
 
@@ -80,22 +82,22 @@ bool equip_from_inventory(Equipment *eq, Inventory *inv, int invSlotIndex)
     // takas sırası önemli. Şöyle: eskiyi geri koy, sonra yeniyi koy.
 
     // Önce kuşanılacak item'i sakla (envanterden çıkmadan)
-    const ItemType *toEquip = item;
-    int toEquipCount = invStack->count;
+    ItemStack toEquip = *invStack;
 
     // Envanter slotunu boşalt (item'i "elimize aldık")
     invStack->type = NULL;
     invStack->count = 0;
+    invStack->plusLevel = 0;
 
     // Hedef slottaki eskiyi envantere geri koy
     if (eq->slots[targetSlot].type != NULL) {
         // Eskisini envantere ekle (yer var, çünkü az önce bir slot boşalttık)
-        inventory_add(inv, eq->slots[targetSlot].type, eq->slots[targetSlot].count);
+        inventory_add(inv, eq->slots[targetSlot].type, eq->slots[targetSlot].count,
+                      eq->slots[targetSlot].plusLevel);
     }
 
-    // Yeniyi kuşan
-    eq->slots[targetSlot].type = toEquip;
-    eq->slots[targetSlot].count = toEquipCount;
+    // Yeniyi kuşan (instance olduğu gibi taşınır — plus kaybolmaz)
+    eq->slots[targetSlot] = toEquip;
 
     return true;
 }

@@ -77,6 +77,7 @@ typedef struct Player {
     // Skill'ler stat değil doğrudan hasar çarpanı verir (use-based felsefe).
     int strength;    // hasar ölçeği
     int dexterity;   // kritik şansı
+    int gold;        // para (loot'tan gelir, vendor'da harcanacak)
 
     Skill skills[SKILL_COUNT];   // use-based skill'ler (kullandıkça gelişir)
 

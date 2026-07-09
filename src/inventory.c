@@ -64,18 +64,29 @@ void inventory_render(const Inventory *inv, SDL_Renderer *renderer,
                 SDL_Color yellow = { 255, 230, 80, 255 };
                 draw_text(renderer, font, buf, cx + 8, cy + cellSize - 24, yellow);
             }
+
+            // Plus seviyesi (+1 ve üstü) — sağ üst köşe, camgöbeği
+            if (inv->slots[i].plusLevel > 0 && font != NULL) {
+                char buf[8];
+                snprintf(buf, sizeof(buf), "+%d", inv->slots[i].plusLevel);
+                SDL_Color cyan = { 90, 220, 255, 255 };
+                draw_text(renderer, font, buf, cx + cellSize - 32, cy + 2, cyan);
+            }
         }
     }
 }
 
-bool inventory_add(Inventory *inv, const ItemType *type, int count)
+bool inventory_add(Inventory *inv, const ItemType *type, int count, int plusLevel)
 {
     if (type == NULL) return false;
 
-    // 1) Stack'lenebilen item zaten varsa, ona ekle
+    // 1) Stack'lenebilen item zaten varsa, ona ekle (plus da aynı olmalı —
+    //    +0 ve +3 aynı yığına girmez, farklı item'dir)
     if (type->maxStack > 1) {
         for (int i = 0; i < INVENTORY_SIZE; i++) {
-            if (inv->slots[i].type == type && inv->slots[i].count < type->maxStack) {
+            if (inv->slots[i].type == type &&
+                inv->slots[i].plusLevel == plusLevel &&
+                inv->slots[i].count < type->maxStack) {
                 inv->slots[i].count += count;
                 // (Basit: maxStack taşmasını şimdilik kontrol etmiyoruz —
                 //  ileride taşan kısmı yeni slota koyarız)
@@ -89,6 +100,7 @@ bool inventory_add(Inventory *inv, const ItemType *type, int count)
         if (inv->slots[i].type == NULL) {
             inv->slots[i].type = type;
             inv->slots[i].count = count;
+            inv->slots[i].plusLevel = plusLevel;
             return true;
         }
     }

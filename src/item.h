@@ -54,17 +54,49 @@ typedef struct {
     int equipIdleRow;            // idle'da çizilecek satır (0 = yok, sheet'in kendi idle'ı oynar)
     bool slashOversize;          // slash'ı oversize bloktan çiz (64px slash satırı boş silahlar)
     WeaponFxType weaponFx;       // silahın partikül efekti (0 = WEAPON_FX_NONE)
-    int plusLevel;               // +0..+8 (parlama efekti için)
+
+    // --- Tüketilebilir (iksir vb.) ---
+    bool consumable;             // envanterden sağ tıkla kullanılır
+    float healAmount;            // kullanınca iyileşen can
 
     const char *iconSpritePath;   // ikon dosyasi (NULL → tool_icons fallback)
     SDL_FRect   iconSrc;          // o dosyadaki kare {x, y, w, h}
 } ItemType;
 
-// Bir somut item (kasada/envanterde) = tür + miktar
+// Bir somut item (kasada/envanterde) = tür + miktar + instance roll'ları.
+// plusLevel TÜRDE değil BURADA: aynı türden +0 ve +3 kılıç ayrı item'dir.
+typedef struct {
+    const ItemType *type;   // NULL = boş slot
+    int count;
+    int plusLevel;          // +0..+8 (drop anında roll'lanır; stack'lenenler hep +0)
+} ItemStack;
+
+#define ITEM_MAX_PLUS 8
+#define ITEM_PLUS_SCALE 0.10f   // her plus: +%10 hasar/defans
+
+// Instance değerleri: tür tabanı × plus ölçeği (combat bunları kullanır)
+float item_damage(const ItemStack *s);    // silah değilse 0
+float item_defense(const ItemStack *s);   // zırh/kalkan değilse 0
+
+// Loot tablosu girdisi: mob ölünce her girdi için ayrı zar atılır
 typedef struct {
     const ItemType *type;
-    int count;
-} ItemStack;
+    float chance;     // 0..1 düşme şansı (girdiler bağımsız)
+    int maxPlus;      // plus roll üst sınırı (0 = hep +0)
+} LootEntry;
+
+// ITEM_TYPES dizin sabitleri — loot tabloları sihirli sayı kullanmasın.
+// item.c'deki dizi sırasıyla AYNI tutulmalı.
+typedef enum {
+    ITEM_BOW = 0,
+    ITEM_PICKAXE,
+    ITEM_TORCH,
+    ITEM_LONG_SWORD,
+    ITEM_HELMET_IRON,
+    ITEM_CHEST_IRON,
+    ITEM_LEGS_IRON,
+    ITEM_POTION_HP,
+} ItemId;
 
 extern const ItemType ITEM_TYPES[];
 extern const int ITEM_TYPE_COUNT;

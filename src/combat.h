@@ -23,8 +23,8 @@ typedef struct {
 SkillType combat_weapon_skill(const ItemType *weapon);
 
 // Oyuncunun bir vuruşta vereceği hasar (Combat A formülü).
-// weapon NULL ise silahsız: taban hasar, skill bonusu yok.
-HitResult combat_player_hit(const Player *p, const ItemType *weapon,
+// weapon instance olarak gelir (plus ölçeği dahil); type NULL ise silahsız.
+HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
                             float targetDefense);
 
 // Mob'un oyuncuya vereceği hasar: mob hasarı × varyans, oyuncu zırh
