@@ -81,6 +81,7 @@ typedef struct {
     int zoneId;           // hangi spawn bölgesinden doğdu (-1 = hiçbiri/manuel)
     float homeX, homeY;   // doğduğu nokta (leash bunu referans alır)
     bool aggro;           // vuruldu/kamp alarmı: algı menzili yok sayılır (leash sıfırlar)
+    float bleedDps, bleedTime;   // Kanatma perki DoT'u (main işler — ölüm/loot orada)
     MobState state;         // AI durumu
     float attackCooldown;     // bir sonraki saldırıya kalan süre
     bool attackTriggered;

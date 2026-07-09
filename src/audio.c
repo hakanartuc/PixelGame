@@ -8,8 +8,12 @@ static const char *SFX_FILES[SFX_COUNT] = {
     [SFX_LOOT]    = "loot",
     [SFX_POTION]  = "potion",
     [SFX_LEVELUP] = "levelup",
-    [SFX_UI]      = "ui",
-    [SFX_DEATH]   = "death",
+    [SFX_UI]        = "ui",
+    [SFX_DEATH]     = "death",
+    [SFX_PERK]      = "perk",
+    [SFX_DODGE]     = "dodge",
+    [SFX_REFLECT]   = "reflect",
+    [SFX_DEATHSAVE] = "deathsave",
 };
 
 // Efekt başına: ham WAV verisi + cihaza bağlı stream

@@ -45,6 +45,7 @@ add_executable(game
     src/music.c
     src/minimap.c
     src/ui_theme.c
+    src/perk.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle
 target_link_libraries(game PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)   # ← SDL3_ttf

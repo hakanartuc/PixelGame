@@ -7,6 +7,7 @@
 #include "fx.h"
 #include "skill.h"
 #include "ability.h"
+#include "perk.h"
 
 typedef struct Equipment Equipment;   // ← forward decl (pointer için yeter)
 
@@ -81,6 +82,15 @@ typedef struct Player {
     int gold;        // para (loot'tan gelir, vendor'da harcanacak)
 
     Skill skills[SKILL_COUNT];   // use-based skill'ler (kullandıkça gelişir)
+
+    // Perk seçimleri: [skill][tier] → seçenek (0..2) ya da PERK_UNCHOSEN.
+    // Etkiler her seçimde perk_compute_effects ile toplanır (main tutar).
+    Sint8 perkChoice[SKILL_COUNT][PERK_TIERS];
+    float gaziTimer;       // "Gazi": hasar yiyince 5 sn hasar buff'ı
+    float deathSaveCd;     // "Yikilmaz/Olumsuz" ölüm kurtarışı beklemesi
+
+    // Mob vuruşları oyuncuyu iter (perk'lerle azalır/sıfırlanır)
+    float knockbackX, knockbackY;
 
     // Saldırı durumu
     bool attacking;

@@ -48,8 +48,17 @@ bool skill_add_xp(Skill *skills, SkillType t, float xp);
 // Panelde/loglarda gösterilecek isim.
 const char *skill_name(SkillType t);
 
+// Panel yerleşimi — perk pip'leri/tıklama da aynı ölçüleri kullanır (perk.c)
+#define SKILL_PANEL_W 430.0f   // isim + seviye + perk pip'leri + XP çubuğu sığar
+#define SKILL_PANEL_PAD 16.0f
+#define SKILL_PANEL_ROW_H 26.0f
+#define SKILL_PANEL_HEADER 30.0f
+
 // Skill paneli (K tuşu). Tüm skill'leri level + XP çubuğuyla listeler.
 void skill_panel_render(const Skill *skills, SDL_Renderer *renderer,
                         TTF_Font *font, float panelX, float panelY);
+
+// Panelde tıklanan skill satırı (0..SKILL_COUNT-1, -1 = yok) — perk seçimi açar
+int skill_panel_row_at(float x, float y, float panelX, float panelY);
 
 #endif

@@ -16,6 +16,10 @@ typedef enum {
     SFX_LEVELUP,   // skill seviye atlama
     SFX_UI,        // menü/panel tık
     SFX_DEATH,     // oyuncu ölümü
+    SFX_PERK,      // perk seçimi (törensel arpej)
+    SFX_DODGE,     // Kaçınma perki tetiklendi (whoosh)
+    SFX_REFLECT,   // Karşılık/Diken yansıması (metalik ting)
+    SFX_DEATHSAVE, // Yıkılmaz/Ölümsüz kurtarışı (gong + yükseliş)
     SFX_COUNT,
 } SfxId;
 

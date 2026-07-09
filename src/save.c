@@ -8,7 +8,7 @@
 #include "minimap.h"
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 5u   // v2: hotbar; v3: görevler; v4: gün+saat; v5: keşif haritası
+#define SAVE_VERSION 6u   // ...; v5: keşif haritası; v6: perk seçimleri
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -99,6 +99,12 @@ bool save_game(const char *path, const Player *p,
     ok = ok && w32(f, exploredBytes);
     if (ok && exploredBytes > 0)
         ok = fwrite(exploredBuf, (size_t)exploredBytes, 1, f) == 1;
+
+    // Perk seçimleri (v6): skill × tier matris
+    ok = ok && w32(f, SKILL_COUNT) && w32(f, PERK_TIERS);
+    for (int s = 0; ok && s < SKILL_COUNT; s++)
+        for (int t = 0; ok && t < PERK_TIERS; t++)
+            ok = w32(f, p->perkChoice[s][t]);
 
     fclose(f);
     if (!ok)
@@ -193,6 +199,11 @@ bool load_game(const char *path, Player *p,
     float tmpHours;
     ok = ok && r32(f, &tmpDay) && rf(f, &tmpHours);
 
+    // Perk seçimleri geçici matrisi (v6)
+    for (int s = 0; s < SKILL_COUNT; s++)
+        for (int t = 0; t < PERK_TIERS; t++)
+            tmpP.perkChoice[s][t] = PERK_UNCHOSEN;
+
     // Keşif haritası (v5)
     static Uint8 exploredBuf[EXPLORED_BUF_CAP];
     Sint32 exploredBytes = 0;
@@ -201,6 +212,18 @@ bool load_game(const char *path, Player *p,
         ok = false;   // bozuk boyut
     if (ok && exploredBytes > 0)
         ok = fread(exploredBuf, (size_t)exploredBytes, 1, f) == 1;
+
+    // Perk seçimleri (v6): boyutlar da okunur (ileride skill/tier artarsa tolerans)
+    Sint32 nSkill, nTier;
+    ok = ok && r32(f, &nSkill) && r32(f, &nTier);
+    for (int s = 0; ok && s < nSkill; s++)
+        for (int t = 0; ok && t < nTier; t++) {
+            Sint32 c;
+            ok = r32(f, &c);
+            if (ok && s < SKILL_COUNT && t < PERK_TIERS &&
+                c >= PERK_UNCHOSEN && c < PERK_OPTIONS)
+                tmpP.perkChoice[s][t] = (Sint8)c;
+        }
 
     fclose(f);
     if (!ok) {

@@ -68,11 +68,12 @@ const char *skill_name(SkillType t)
 void skill_panel_render(const Skill *skills, SDL_Renderer *renderer,
                         TTF_Font *font, float panelX, float panelY)
 {
-    // Envanter paneliyle aynı görsel dil (renkler/pad inventory_render'dan)
-    float pad = 16.0f;
-    float rowH = 26.0f;
-    float panelW = 360.0f;
-    float panelH = SKILL_COUNT * rowH + pad * 2 + 30.0f;   // +30 başlık
+    // Envanter paneliyle aynı görsel dil (yerleşim sabitleri skill.h'ta —
+    // perk pip'leri ve tıklama testi de aynı ölçüleri kullanır)
+    float pad = SKILL_PANEL_PAD;
+    float rowH = SKILL_PANEL_ROW_H;
+    float panelW = SKILL_PANEL_W;
+    float panelH = SKILL_COUNT * rowH + pad * 2 + SKILL_PANEL_HEADER + 20.0f;   // +20 alt ipucu
 
     ui_panel(renderer, panelX, panelY, panelW, panelH);
 
@@ -93,7 +94,8 @@ void skill_panel_render(const Skill *skills, SDL_Renderer *renderer,
         }
 
         // XP çubuğu (satırın sağında): bu seviyedeki ilerleme
-        float barW = 80.0f, barH = 8.0f;
+        // (60px — solunda perk pip'lerine yer kalır, bkz. perk_pips_render)
+        float barW = 60.0f, barH = 8.0f;
         float barX = panelX + panelW - pad - barW;
         float barY = rowY + 5.0f;
         float ratio = (s->xpToNext > 0.0f) ? s->xp / s->xpToNext : 0.0f;
@@ -107,4 +109,20 @@ void skill_panel_render(const Skill *skills, SDL_Renderer *renderer,
 
         rowY += rowH;
     }
+
+    // Alt ipucu: perk seçimi nasıl yapılır
+    if (font != NULL) {
+        SDL_Color hint = { 255, 210, 60, 255 };
+        draw_text(renderer, font, "Sari nokta = perk hazir, satira tikla",
+                  panelX + pad, rowY + 4.0f, hint);
+    }
+}
+
+int skill_panel_row_at(float x, float y, float panelX, float panelY)
+{
+    float gridY = panelY + SKILL_PANEL_PAD + SKILL_PANEL_HEADER;
+    if (x < panelX || x > panelX + SKILL_PANEL_W) return -1;
+    int row = (int)((y - gridY) / SKILL_PANEL_ROW_H);
+    if (y < gridY || row < 0 || row >= SKILL_COUNT) return -1;
+    return row;
 }

@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "item.h"
 #include "skill.h"
+#include "perk.h"
 
 // Combat A modeli: ıska yok, her vuruş isabet eder — derinlik hasar hesabında.
 // raw = silahHasarı × STR ölçeği × skill bonusu × varyans(0.9-1.1) [× crit]
@@ -22,21 +23,26 @@ typedef struct {
 // Silah → geliştirdiği skill. NULL (silahsız) veya eşleşme yoksa SKILL_NONE.
 SkillType combat_weapon_skill(const ItemType *weapon);
 
-// Oyuncunun bir vuruşta vereceği hasar (Combat A formülü).
+// Oyuncunun bir vuruşta vereceği hasar (Combat A formülü + perk etkileri).
 // weapon instance olarak gelir (plus ölçeği dahil); type NULL ise silahsız.
 // abilityScale: aktif skill çarpanı (normal vuruş = 1.0).
+// targetHpRatio: hedefin can oranı (İnfaz perki için).
 HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
-                            float targetDefense, float abilityScale);
+                            float targetDefense, float abilityScale,
+                            float targetHpRatio, const PerkEffects *fx);
 
-// Silahın otomatik vuruş aralığı (silahsız/tanımsızsa varsayılan).
-float combat_attack_interval(const ItemStack *weapon);
+// Silahın otomatik vuruş aralığı (perk çarpanı dahil).
+float combat_attack_interval(const ItemStack *weapon, const PerkEffects *fx);
 
-// Mob'un oyuncuya vereceği hasar: mob hasarı × varyans, oyuncu zırh
-// defansından (kuşanılı item'ların defense toplamı) geçirilir.
-float combat_mob_damage(float mobDamage, const Equipment *eq);
+// Mob'un oyuncuya vereceği hasar: mob hasarı × varyans → oyuncu defansı
+// (perk çarpanları dahil). outDodged: Kaçınma perki tetiklendiyse true (hasar 0).
+// playerIdle: Kule perki (hareketsizken ek koruma). healthRatio: Yaralı Ayı.
+float combat_mob_damage(float mobDamage, const Equipment *eq,
+                        const PerkEffects *fx, bool playerIdle,
+                        float healthRatio, bool yaraliAyi, bool *outDodged);
 
-// Kuşanılı ekipmanın toplam defansı (zırh + kalkan).
-float equipment_total_defense(const Equipment *eq);
+// Kuşanılı ekipmanın toplam defansı (sınıf perk çarpanlarıyla).
+float equipment_total_defense(const Equipment *eq, const PerkEffects *fx);
 
 // Vuruş XP'si: verilen hasarla orantılı; oyuncunun skill seviyesi mob
 // seviyesinin çok üstündeyse azalan getiri (düşük mob'da grind engeli).

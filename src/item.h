@@ -26,6 +26,14 @@ typedef enum {
     EQUIP_NONE = -1,   // kuşanılamaz item (slot yok)
 } EquipSlot;
 
+// Zırh sınıfı — hangi zırh skill'ini geliştirir/perk'lerden etkilenir
+typedef enum {
+    ARMOR_NONE = 0,    // zırh değil
+    ARMOR_LIGHT,       // hafif (deri vb. — item'ları ileride)
+    ARMOR_MEDIUM,      // orta
+    ARMOR_HEAVY,       // ağır (mevcut demir set)
+} ArmorClass;
+
 // Silah tipi — hangi el slotlarını nasıl kullandığı
 typedef enum {
     WEAPON_NONE,       // silah değil
@@ -49,6 +57,7 @@ typedef struct {
     float damage;                // silah taban hasarı (combat formülünün girdisi)
     float attackInterval;        // silahsa: iki otomatik vuruş arası süre (0 = varsayılan)
     float defense;               // zırh/kalkan defansı (azalan getirili: 100/(100+def))
+    ArmorClass armorClass;       // zırhsa sınıfı (skill XP + perk çarpanları)
     const char *equipSpritePath; // paper-doll katmanı (kuşanınca görünen sprite, NULL: yok)
     const char *equipSpritePathBack;   // 2. katman (silah arka — yoksa NULL)
     int equipZ;                  // ön katman z (LPC dosya öneki; 0 = slot_zorder varsayılanı)

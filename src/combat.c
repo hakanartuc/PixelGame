@@ -41,15 +41,17 @@ static float apply_defense(float raw, float defense)
     return raw * 100.0f / (100.0f + defense);
 }
 
-float combat_attack_interval(const ItemStack *weapon)
+float combat_attack_interval(const ItemStack *weapon, const PerkEffects *fx)
 {
+    float base = 1.0f;   // silahsız/tanımsız varsayılanı
     if (weapon != NULL && weapon->type != NULL && weapon->type->attackInterval > 0.0f)
-        return weapon->type->attackInterval;
-    return 1.0f;   // silahsız/tanımsız varsayılanı
+        base = weapon->type->attackInterval;
+    return base * fx->attackIntervalMult;   // Hızlı/Usta Bilek
 }
 
 HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
-                            float targetDefense, float abilityScale)
+                            float targetDefense, float abilityScale,
+                            float targetHpRatio, const PerkEffects *fx)
 {
     HitResult hit = {0};
 
@@ -66,13 +68,28 @@ HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
     if (sk != SKILL_NONE)
         skillScale += (float)(p->skills[sk].level - 1) * SKILL_DAMAGE_PER_LEVEL;
 
-    float raw = base * strScale * skillScale * abilityScale * damage_variance();
+    // Perk: tek el hasar çarpanları (Güçlü Tutuş / Kılıç Ustası / Ezici Ağırlık)
+    float perkScale = (sk == SKILL_ONE_HANDED) ? fx->oneHandDmgMult : 1.0f;
 
-    // Kritik: DEX şansı, sabit çarpan
+    // Perk: Zinde (can %50 üstünde) + Gazi (hasar sonrası 5 sn buff)
+    if (fx->dmgWhenHealthy > 0.0f && p->health > p->maxHealth * 0.5f)
+        perkScale *= 1.0f + fx->dmgWhenHealthy;
+    if (fx->gaziDmgBonus > 0.0f && p->gaziTimer > 0.0f)
+        perkScale *= 1.0f + fx->gaziDmgBonus;
+
+    // Perk: İnfaz — can %20 altındaki hedefe ek hasar
+    if (fx->executeBonus > 0.0f && targetHpRatio < 0.20f)
+        perkScale *= 1.0f + fx->executeBonus;
+
+    float raw = base * strScale * skillScale * perkScale
+              * abilityScale * damage_variance();
+
+    // Kritik: DEX şansı + Keskin Göz; çarpan Derin Kesik'le yükselir
     float critChance = CRIT_BASE_CHANCE
-                     + (float)(p->dexterity - STAT_BASE) * CRIT_PER_DEX;
+                     + (float)(p->dexterity - STAT_BASE) * CRIT_PER_DEX
+                     + fx->critChanceBonus;
     if (randf() < critChance) {
-        raw *= CRIT_MULTIPLIER;
+        raw *= fx->critMult;
         hit.crit = true;
     }
 
@@ -80,18 +97,44 @@ HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
     return hit;
 }
 
-float equipment_total_defense(const Equipment *eq)
+float equipment_total_defense(const Equipment *eq, const PerkEffects *fx)
 {
     float total = 0.0f;
-    for (int s = 0; s < EQUIP_SLOT_COUNT; s++)
-        total += item_defense(&eq->slots[s]);   // boş slot 0 döner
+    for (int s = 0; s < EQUIP_SLOT_COUNT; s++) {
+        const ItemStack *st = &eq->slots[s];
+        float def = item_defense(st);   // boş slot 0 döner
+        if (st->type != NULL)
+            def *= fx->defMult[st->type->armorClass];   // sınıf perk çarpanı
+        total += def;
+    }
     return total;
 }
 
-float combat_mob_damage(float mobDamage, const Equipment *eq)
+float combat_mob_damage(float mobDamage, const Equipment *eq,
+                        const PerkEffects *fx, bool playerIdle,
+                        float healthRatio, bool yaraliAyi, bool *outDodged)
 {
+    *outDodged = false;
+
+    // Perk: Kaçınma/Refleks — hasarı tamamen savuştur
+    if (fx->dodgeChance > 0.0f && randf() < fx->dodgeChance) {
+        *outDodged = true;
+        return 0.0f;
+    }
+
     float raw = mobDamage * damage_variance();
-    return apply_defense(raw, equipment_total_defense(eq));
+    float def = equipment_total_defense(eq, fx);
+
+    // Kalkan Duvarı: K sabiti 120 → aynı defans daha çok kısar
+    float dmg = raw * fx->defenseK / (fx->defenseK + ((def > 0.0f) ? def : 0.0f));
+
+    dmg *= fx->dmgTakenMult;                        // Koruyucu Katman/Kale/Granit/Juggernaut
+    if (fx->kuleIdleDef && playerIdle)
+        dmg *= 0.80f;                               // Kule
+    if (yaraliAyi && healthRatio < 0.30f)
+        dmg *= 0.85f;                               // Yaralı Ayı
+
+    return dmg;
 }
 
 float combat_xp_for_hit(float damage, int mobLevel, int skillLevel)
