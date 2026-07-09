@@ -106,6 +106,7 @@ bool unequip_slot(Equipment *eq, Inventory *inv, EquipSlot slot)
     return unequip_to_inventory(eq, inv, slot);
 }
 
+// Slot icin VARSAYILAN z — item kendi equipZ'sini verirse o kazanir (build_player_layers).
 int slot_zorder(EquipSlot slot)
 {
     switch (slot) {
@@ -113,7 +114,8 @@ int slot_zorder(EquipSlot slot)
         case EQUIP_BOOTS:   return 25;   // ayakkabi
         case EQUIP_CHEST:   return 60;   // govde zirhi
         case EQUIP_GLOVES:  return 70;   // eldiven
-        case EQUIP_HELMET:  return 130;  // kask (en ust)
+        case EQUIP_HELMET:  return 130;  // kask
+        case EQUIP_SHIELD:  return 135;  // kalkan (kaskin ustu, silahin alti)
         case EQUIP_WEAPON:  return 140;  // silah onu (en ust, LPC z140)
         default:            return 0;    // gorseli olmayan slot (yuzuk/kolye vs)
     }

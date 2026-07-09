@@ -362,7 +362,9 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
         if (st->type == NULL)
             continue;
 
-        int z = slot_zorder((EquipSlot)s);
+        // z ve idle satiri item verisinden; equipZ=0 → slot varsayilani
+        int z = (st->type->equipZ > 0) ? st->type->equipZ : slot_zorder((EquipSlot)s);
+        int idleRow = (st->type->equipIdleRow > 0) ? st->type->equipIdleRow : -1;
 
         // ON katman (normal ekipman + silah onu)
         SDL_Texture *texFront = item_equip_tex(itemTex, st->type);
@@ -370,17 +372,17 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
         {
             out[n].tex = texFront;
             out[n].z = z;
-            out[n].idleRowOverride = (s == EQUIP_WEAPON) ? 8 : -1;  // silah idle'da walk row 8, zirh -1
+            out[n].idleRowOverride = idleRow;
             n++;
         }
 
-        // ARKA katman (sadece silah — arka, govdenin GERISINDE cizilsin)
+        // ARKA katman (varsa; z item verisinden — silahta body(10) altinda kalir)
         SDL_Texture *texBack = item_equip_tex_back(itemTex, st->type);
         if (texBack != NULL && n < outCap)
         {
             out[n].tex = texBack;
-            out[n].z = 5; // body(10)'dan KUCUK → govdenin arkasinda
-            out[n].idleRowOverride = 8;  // silah back — idle'da walk row 8
+            out[n].z = st->type->equipZBack;
+            out[n].idleRowOverride = idleRow;
             n++;
         }
     }

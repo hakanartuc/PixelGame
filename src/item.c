@@ -22,6 +22,8 @@ const ItemType ITEM_TYPES[] = {
   .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_ONE_HAND,
   .equipSpritePath     = "assets/equipment/weapon/long_sword_140.png",   // on
   .equipSpritePathBack = "assets/equipment/weapon/long_sword_009.png",   // arka
+  .equipZ = 140, .equipZBack = 9,   // dosya oneklerinden (LPC z)
+  .equipIdleRow = 8,                // silahin idle'i yok → walk row 8 ayakta durus
   .plusLevel = 0,
   .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
 

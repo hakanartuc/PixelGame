@@ -46,6 +46,9 @@ typedef struct {
     WeaponType weaponType;       // silahsa tipi (değilse WEAPON_NONE)
     const char *equipSpritePath; // paper-doll katmanı (kuşanınca görünen sprite, NULL: yok)
     const char *equipSpritePathBack;   // 2. katman (silah arka — yoksa NULL)
+    int equipZ;                  // ön katman z (LPC dosya öneki; 0 = slot_zorder varsayılanı)
+    int equipZBack;              // arka katman z (equipSpritePathBack varsa zorunlu)
+    int equipIdleRow;            // idle'da çizilecek satır (0 = yok, sheet'in kendi idle'ı oynar)
     int plusLevel;               // +0..+8 (parlama efekti için)
 
     const char *iconSpritePath;   // ikon dosyasi (NULL → tool_icons fallback)
