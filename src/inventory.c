@@ -4,8 +4,8 @@
 #include "item_textures.h"
 #include "ui_theme.h"
 
-void inventory_render(const Inventory *inv, SDL_Renderer *renderer,
-                      SDL_Texture *itemIconTex, const ItemTextures *itemTex,
+void inventory_render(const Inventory *inv, R2D *renderer,
+                      R2DTexture *itemIconTex, const ItemTextures *itemTex,
                       TTF_Font *font, float panelX, float panelY)
 {
     int cols = 5;
@@ -43,14 +43,14 @@ void inventory_render(const Inventory *inv, SDL_Renderer *renderer,
             const ItemType *it = inv->slots[i].type;
             SDL_FRect dst = { cx + 8, cy + 8, 32, 32 };
 
-            SDL_Texture *icon = item_icon_tex(itemTex, it);
+            R2DTexture *icon = item_icon_tex(itemTex, it);
             if (icon != NULL) {
                 // item kendi sheet'inden (LPC izole parca = temiz ikon)
-                SDL_RenderTexture(renderer, icon, &it->iconSrc, &dst);
+                r2d_draw_texture(renderer, icon, &it->iconSrc, &dst);
             } else {
                 // fallback: tool_icons + iconIndex
                 SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };
-                SDL_RenderTexture(renderer, itemIconTex, &src, &dst);
+                r2d_draw_texture(renderer, itemIconTex, &src, &dst);
             }
 
             // Miktar (stack > 1 ise) — AYNEN kalir

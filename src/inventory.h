@@ -1,7 +1,8 @@
 #ifndef INVENTORY_H
 #define INVENTORY_H
 
-#include <SDL3/SDL.h>           // SDL_Renderer, SDL_Texture için
+#include "r2d.h"
+#include <SDL3/SDL.h>           // R2D, R2DTexture için
 #include <SDL3_ttf/SDL_ttf.h>   // TTF_Font için
 #include <stdbool.h>
 #include "item.h"
@@ -14,8 +15,8 @@ typedef struct {
     ItemStack slots[INVENTORY_SIZE];   // boş slot: type = NULL
 } Inventory;
 
-void inventory_render(const Inventory *inv, SDL_Renderer *renderer,
-                      SDL_Texture *itemIconTex, const ItemTextures *itemTex,
+void inventory_render(const Inventory *inv, R2D *renderer,
+                      R2DTexture *itemIconTex, const ItemTextures *itemTex,
                       TTF_Font *font, float panelX, float panelY);
 
 // Envantere item ekle (stack'lenebilirse mevcut yığına, yoksa boş slota).

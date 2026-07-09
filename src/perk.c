@@ -179,7 +179,7 @@ void perk_compute_effects(const Sint8 choice[SKILL_COUNT][PERK_TIERS],
 
 void perk_pips_render(const Skill *skills,
                       const Sint8 choice[SKILL_COUNT][PERK_TIERS],
-                      SDL_Renderer *renderer, TTF_Font *font,
+                      R2D *renderer, TTF_Font *font,
                       float panelX, float panelY)
 {
     (void)font;
@@ -194,12 +194,12 @@ void perk_pips_render(const Skill *skills,
         for (int t = 0; t < PERK_TIERS; t++) {
             SDL_FRect pip = { px + t * 10.0f, rowY + 5.0f, 8.0f, 8.0f };
             if (choice[s][t] != PERK_UNCHOSEN)
-                SDL_SetRenderDrawColor(renderer, 120, 220, 120, 255);   // seçildi
+                r2d_set_color(renderer, 120, 220, 120, 255);   // seçildi
             else if (skills[s].level >= PERK_THRESHOLDS[t])
-                SDL_SetRenderDrawColor(renderer, 255, 210, 60, 255);    // SEÇ! (tıkla)
+                r2d_set_color(renderer, 255, 210, 60, 255);    // SEÇ! (tıkla)
             else
-                SDL_SetRenderDrawColor(renderer, 70, 70, 85, 255);      // kilitli
-            SDL_RenderFillRect(renderer, &pip);
+                r2d_set_color(renderer, 70, 70, 85, 255);      // kilitli
+            r2d_fill_rect(renderer, &pip);
         }
     }
 }
@@ -209,7 +209,7 @@ void perk_pips_render(const Skill *skills,
 #define CARD_H 64.0f
 #define CARD_GAP 10.0f
 
-void perk_choice_render(SkillType s, int tier, SDL_Renderer *renderer,
+void perk_choice_render(SkillType s, int tier, R2D *renderer,
                         TTF_Font *font, float x, float y)
 {
     float panelW = CARD_W + 32.0f;

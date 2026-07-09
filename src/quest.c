@@ -19,7 +19,7 @@ int quest_find(const char *id)
     return -1;
 }
 
-void quest_log_render(const QuestStatus *status, SDL_Renderer *renderer,
+void quest_log_render(const QuestStatus *status, R2D *renderer,
                       TTF_Font *font, float panelX, float panelY)
 {
     // Panel dili skill/envanterle aynı (renkler oradan)
@@ -67,12 +67,12 @@ void quest_log_render(const QuestStatus *status, SDL_Renderer *renderer,
                     : (float)st->progress / (float)q->targetCount;
         if (st->state == QUEST_REWARDED || st->state == QUEST_DONE) ratio = 1.0f;
 
-        SDL_SetRenderDrawColor(renderer, 50, 50, 65, 255);
+        r2d_set_color(renderer, 50, 50, 65, 255);
         SDL_FRect barBg = { panelX + pad, barY, barW, barH };
-        SDL_RenderFillRect(renderer, &barBg);
-        SDL_SetRenderDrawColor(renderer, 120, 200, 120, 255);
+        r2d_fill_rect(renderer, &barBg);
+        r2d_set_color(renderer, 120, 200, 120, 255);
         SDL_FRect barFg = { panelX + pad, barY, barW * ratio, barH };
-        SDL_RenderFillRect(renderer, &barFg);
+        r2d_fill_rect(renderer, &barFg);
 
         char info[48];
         int shown = (st->progress > q->targetCount) ? q->targetCount : st->progress;

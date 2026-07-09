@@ -17,8 +17,8 @@ const ShopEntry SHOP_STOCK[] = {
 };
 const int SHOP_STOCK_COUNT = (int)(sizeof(SHOP_STOCK) / sizeof(SHOP_STOCK[0]));
 
-void shop_render(SDL_Renderer *renderer, TTF_Font *font,
-                 SDL_Texture *itemIconTex, const ItemTextures *itemTex,
+void shop_render(R2D *renderer, TTF_Font *font,
+                 R2DTexture *itemIconTex, const ItemTextures *itemTex,
                  int playerGold, float panelX, float panelY)
 {
     float panelH = SHOP_STOCK_COUNT * SHOP_ROW_H + SHOP_PAD * 2 + 56.0f;
@@ -43,12 +43,12 @@ void shop_render(SDL_Renderer *renderer, TTF_Font *font,
 
         // İkon (envanterle aynı fallback zinciri)
         SDL_FRect dst = { row.x + 4.0f, rowY + 3.0f, 32.0f, 32.0f };
-        SDL_Texture *icon = item_icon_tex(itemTex, it);
+        R2DTexture *icon = item_icon_tex(itemTex, it);
         if (icon != NULL) {
-            SDL_RenderTexture(renderer, icon, &it->iconSrc, &dst);
+            r2d_draw_texture(renderer, icon, &it->iconSrc, &dst);
         } else {
             SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };
-            SDL_RenderTexture(renderer, itemIconTex, &src, &dst);
+            r2d_draw_texture(renderer, itemIconTex, &src, &dst);
         }
 
         // Ad + fiyat (altın yetmiyorsa fiyat soluk)

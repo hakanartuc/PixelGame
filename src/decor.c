@@ -15,12 +15,12 @@ const int DECOR_COUNT = (int)(sizeof(DECORS) / sizeof(DECORS[0]));
 // Texture boyutları (yüklemede bir kez okunur — çizim/collision tek kaynaktan)
 static float texW[16], texH[16];
 
-void decor_set_texture_sizes(SDL_Texture **decorTextures)
+void decor_set_texture_sizes(R2DTexture **decorTextures)
 {
     for (int i = 0; i < DECOR_COUNT && i < 16; i++) {
         texW[i] = texH[i] = 0.0f;
         if (decorTextures[i] != NULL)
-            SDL_GetTextureSize(decorTextures[i], &texW[i], &texH[i]);
+            r2d_texture_size(decorTextures[i], &texW[i], &texH[i]);
     }
 }
 
@@ -33,7 +33,7 @@ static SDL_FRect decor_rect(int i)
     return r;
 }
 
-void decor_render_all(SDL_Renderer *renderer, SDL_Texture **decorTextures,
+void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
                       const Camera *camera)
 {
     float zoom = camera->zoom;
@@ -44,7 +44,7 @@ void decor_render_all(SDL_Renderer *renderer, SDL_Texture **decorTextures,
             (r.x - camera->x) * zoom, (r.y - camera->y) * zoom,
             r.w * zoom, r.h * zoom,
         };
-        SDL_RenderTexture(renderer, decorTextures[i], NULL, &dst);
+        r2d_draw_texture(renderer, decorTextures[i], NULL, &dst);
     }
 }
 

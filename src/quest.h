@@ -1,5 +1,6 @@
 #ifndef QUEST_H
 #define QUEST_H
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdbool.h>
@@ -44,7 +45,7 @@ int quest_find(const char *id);
 int quest_on_kill(QuestStatus *status, const MobType *killed);
 
 // Quest log paneli (J): tüm görevler — durum, ilerleme çubuğu, ödül.
-void quest_log_render(const QuestStatus *status, SDL_Renderer *renderer,
+void quest_log_render(const QuestStatus *status, R2D *renderer,
                       TTF_Font *font, float panelX, float panelY);
 
 #endif

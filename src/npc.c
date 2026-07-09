@@ -122,7 +122,7 @@ int npc_nearest_in_range(float px, float py)
     return best;
 }
 
-void npc_render_all(SDL_Renderer *renderer, SDL_Texture **npcTextures,
+void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
                     const Camera *camera, TTF_Font *font, int nearestIdx)
 {
     float zoom = camera->zoom;
@@ -144,7 +144,7 @@ void npc_render_all(SDL_Renderer *renderer, SDL_Texture **npcTextures,
             .y = (npcState[i].y - drawSize + 8.0f - camera->y) * zoom,
             .w = drawSize * zoom, .h = drawSize * zoom,
         };
-        SDL_RenderTexture(renderer, npcTextures[i], &src, &dst);
+        r2d_draw_texture(renderer, npcTextures[i], &src, &dst);
 
         if (font != NULL) {
             // İsim baş üstünde; menzildeyse E ipucu

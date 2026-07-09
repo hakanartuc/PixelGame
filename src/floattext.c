@@ -49,7 +49,7 @@ void floattext_update_all(FloatText *texts, int maxTexts, float dt)
     }
 }
 
-void floattext_render_all(FloatText *texts, int maxTexts, SDL_Renderer *renderer,
+void floattext_render_all(FloatText *texts, int maxTexts, R2D *renderer,
                           TTF_Font *font, const Camera *camera)
 {
     if (font == NULL) return;

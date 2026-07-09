@@ -65,7 +65,7 @@ const char *skill_name(SkillType t)
     }
 }
 
-void skill_panel_render(const Skill *skills, SDL_Renderer *renderer,
+void skill_panel_render(const Skill *skills, R2D *renderer,
                         TTF_Font *font, float panelX, float panelY)
 {
     // Envanter paneliyle aynı görsel dil (yerleşim sabitleri skill.h'ta —
@@ -100,12 +100,12 @@ void skill_panel_render(const Skill *skills, SDL_Renderer *renderer,
         float barY = rowY + 5.0f;
         float ratio = (s->xpToNext > 0.0f) ? s->xp / s->xpToNext : 0.0f;
 
-        SDL_SetRenderDrawColor(renderer, 50, 50, 65, 255);
+        r2d_set_color(renderer, 50, 50, 65, 255);
         SDL_FRect barBg = { barX, barY, barW, barH };
-        SDL_RenderFillRect(renderer, &barBg);
-        SDL_SetRenderDrawColor(renderer, 120, 200, 120, 255);
+        r2d_fill_rect(renderer, &barBg);
+        r2d_set_color(renderer, 120, 200, 120, 255);
         SDL_FRect barFg = { barX, barY, barW * ratio, barH };
-        SDL_RenderFillRect(renderer, &barFg);
+        r2d_fill_rect(renderer, &barFg);
 
         rowY += rowH;
     }

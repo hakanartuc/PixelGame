@@ -1,5 +1,6 @@
 #ifndef SHOP_H
 #define SHOP_H
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include "item.h"
@@ -17,8 +18,8 @@ extern const ShopEntry SHOP_STOCK[];
 extern const int SHOP_STOCK_COUNT;
 
 // Dükkan paneli: stok listesi (ikon + ad + fiyat) + oyuncu altını
-void shop_render(SDL_Renderer *renderer, TTF_Font *font,
-                 SDL_Texture *itemIconTex, const ItemTextures *itemTex,
+void shop_render(R2D *renderer, TTF_Font *font,
+                 R2DTexture *itemIconTex, const ItemTextures *itemTex,
                  int playerGold, float panelX, float panelY);
 
 // Tıklanan stok satırı (-1 = yok). shop_render ile aynı yerleşim.

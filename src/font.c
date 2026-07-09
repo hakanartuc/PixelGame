@@ -2,6 +2,34 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include "font.h"
 
+// TTF yüzeyini r2d texture'ına çevirir (RGBA32'ye normalize edip yükler).
+// Her karede oluşturup yıkmak basit ama yeterli — r2d yıkımı kare sonuna erteler.
+static R2DTexture *texture_from_surface(R2D *renderer, SDL_Surface *surface)
+{
+    SDL_Surface *rgba = surface;
+    if (surface->format != SDL_PIXELFORMAT_RGBA32) {
+        rgba = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32);
+        if (rgba == NULL) return NULL;
+    }
+
+    R2DTexture *tex;
+    if (rgba->pitch == rgba->w * 4) {
+        tex = r2d_texture_from_pixels(renderer, rgba->pixels, rgba->w, rgba->h);
+    } else {
+        // pitch hizalıysa satır satır sıkıştır (GPU upload bitişik bekler)
+        Uint8 *packed = SDL_malloc((size_t)rgba->w * rgba->h * 4);
+        for (int row = 0; row < rgba->h; row++)
+            memcpy(packed + (size_t)row * rgba->w * 4,
+                   (Uint8 *)rgba->pixels + (size_t)row * rgba->pitch,
+                   (size_t)rgba->w * 4);
+        tex = r2d_texture_from_pixels(renderer, packed, rgba->w, rgba->h);
+        SDL_free(packed);
+    }
+
+    if (rgba != surface) SDL_DestroySurface(rgba);
+    return tex;
+}
+
 bool font_init(void)
 {
     if (!TTF_Init()) {
@@ -21,7 +49,7 @@ TTF_Font *font_load(const char *path, float size)
     return font;
 }
 
-void draw_text(SDL_Renderer *renderer, TTF_Font *font, const char *text,
+void draw_text(R2D *renderer, TTF_Font *font, const char *text,
                float x, float y, SDL_Color color)
 {
     if (font == NULL || text == NULL || text[0] == '\0') return;
@@ -34,7 +62,7 @@ void draw_text(SDL_Renderer *renderer, TTF_Font *font, const char *text,
     }
 
     // 2) Yüzeyi texture'a çevir (GPU'da çizilebilsin)
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    R2DTexture *texture = texture_from_surface(renderer, surface);
     if (texture == NULL) {
         SDL_DestroySurface(surface);
         return;
@@ -42,14 +70,14 @@ void draw_text(SDL_Renderer *renderer, TTF_Font *font, const char *text,
 
     // 3) Texture'ı ekrana çiz
     SDL_FRect dst = { x, y, (float)surface->w, (float)surface->h };
-    SDL_RenderTexture(renderer, texture, NULL, &dst);
+    r2d_draw_texture(renderer, texture, NULL, &dst);
 
     // 4) Temizlik (her karede oluşturulup yıkılıyor — basit ama yeterli)
-    SDL_DestroyTexture(texture);
+    r2d_texture_destroy(NULL, texture);
     SDL_DestroySurface(surface);
 }
 
-float draw_text_wrapped(SDL_Renderer *renderer, TTF_Font *font, const char *text,
+float draw_text_wrapped(R2D *renderer, TTF_Font *font, const char *text,
                         float x, float y, float wrapW, SDL_Color color)
 {
     if (font == NULL || text == NULL || text[0] == '\0') return 0.0f;
@@ -61,17 +89,17 @@ float draw_text_wrapped(SDL_Renderer *renderer, TTF_Font *font, const char *text
         return 0.0f;
     }
 
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    R2DTexture *texture = texture_from_surface(renderer, surface);
     if (texture == NULL) {
         SDL_DestroySurface(surface);
         return 0.0f;
     }
 
     SDL_FRect dst = { x, y, (float)surface->w, (float)surface->h };
-    SDL_RenderTexture(renderer, texture, NULL, &dst);
+    r2d_draw_texture(renderer, texture, NULL, &dst);
 
     float h = (float)surface->h;
-    SDL_DestroyTexture(texture);
+    r2d_texture_destroy(NULL, texture);
     SDL_DestroySurface(surface);
     return h;
 }

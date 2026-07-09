@@ -1,5 +1,6 @@
 #ifndef FLOATTEXT_H
 #define FLOATTEXT_H
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdbool.h>
@@ -29,7 +30,7 @@ void floattext_spawn_text(FloatText *texts, int maxTexts, float x, float y,
 void floattext_update_all(FloatText *texts, int maxTexts, float dt);
 
 // Tüm aktif yazıları çiz.
-void floattext_render_all(FloatText *texts, int maxTexts, SDL_Renderer *renderer,
+void floattext_render_all(FloatText *texts, int maxTexts, R2D *renderer,
                           TTF_Font *font, const Camera *camera);
 
 #endif

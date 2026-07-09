@@ -83,7 +83,7 @@ static void fx_burst(ParticleSystem *fx, float cx, float cy, int count,
         float spd = speed * (0.5f + randf() * 0.5f);
         fx_spawn(fx, cx + (randf() - 0.5f) * 8.0f, cy + (randf() - 0.5f) * 8.0f,
                  SDL_cosf(ang) * spd, SDL_sinf(ang) * spd - speed * 0.2f,
-                 0.35f + randf() * 0.35f, 5.0f + randf() * 7.0f, r, g, b,
+                 0.45f + randf() * 0.4f, 10.0f + randf() * 10.0f, r, g, b,
                  WEAPON_FX_NONE);
     }
 }
@@ -143,33 +143,31 @@ int main(int argc, char *argv[])
         return 1;   // Başarısızsa çık
     }
 
-    // 3) Pencereye bağlı bir renderer oluştur.
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, NULL);
+    // 3) SDL_GPU tabanlı kendi renderer'ımız (r2d) — vsync r2d_init içinde
+    R2D *renderer = r2d_init(window);
     if (renderer == NULL)
     {
-        SDL_Log("SDL_CreateRenderer basarısız: %s", SDL_GetError());
+        SDL_Log("r2d_init basarısız");
         SDL_DestroyWindow(window); // Pencereyi temizle
         SDL_Quit();                // SDL'i temizle
         return 1;                  // Başarısızsa çık
     }
 
-    SDL_SetRenderVSync(renderer, 1);
-
-    SDL_Texture *crateTex = load_texture(renderer, "assets/loot/chest_small.png");
+    R2DTexture *crateTex = load_texture(renderer, "assets/loot/chest_small.png");
     if (crateTex == NULL)
     {
         SDL_Log("Kasa texture yuklenemedi");
-        SDL_DestroyRenderer(renderer);
+        r2d_quit(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
     }
 
-    SDL_Texture *itemIconTex = load_texture(renderer, "assets/icons/items/tool_icons.png");
+    R2DTexture *itemIconTex = load_texture(renderer, "assets/icons/items/tool_icons.png");
     if (itemIconTex == NULL)
     {
         SDL_Log("Item texture yuklenemedi");
-        SDL_DestroyRenderer(renderer);
+        r2d_quit(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
@@ -194,7 +192,7 @@ int main(int argc, char *argv[])
         {load_texture(renderer, "assets/characters/face/male/neutral_light.png"), 101, -1, false},
     };
 
-    SDL_Texture *glowTex = create_glow_texture(renderer, 64);
+    R2DTexture *glowTex = create_glow_texture(renderer, 64);
     if (glowTex == NULL) {
         SDL_Log("Glow texture olusturulamadi");
         // kritik degil, devam (glow olmadan)
@@ -241,7 +239,7 @@ int main(int argc, char *argv[])
     hotbar_place_unlocks(&hotbar, player.skills);
 
     // Dekorlar (evler): texture + boyutları (render/collision tek kaynaktan)
-    SDL_Texture *decor_textures[16] = {0};
+    R2DTexture *decor_textures[16] = {0};
     for (int i = 0; i < DECOR_COUNT && i < 16; i++)
         decor_textures[i] = load_texture(renderer, DECORS[i].texPath);
     decor_set_texture_sizes(decor_textures);
@@ -259,7 +257,7 @@ int main(int argc, char *argv[])
     bool minimapOpen = true;   // M ile kapatılabilir
 
     // NPC'ler: texture + diyalog dosyaları (yüklenemeyen NPC konuşamaz, oyun çökmez)
-    SDL_Texture *npc_textures[NPC_COUNT];
+    R2DTexture *npc_textures[NPC_COUNT];
     Dialog npcDialogs[NPC_COUNT];
     bool npcDialogOk[NPC_COUNT];
     for (int i = 0; i < NPC_COUNT; i++)
@@ -287,7 +285,7 @@ int main(int argc, char *argv[])
     int fxPreview = -1; // -1 = kapali; F ile efekt onizleme (silahin efektini gecici ezer, test)
 
     // Mob texture'ları: her tür için sprite yükle (TILE_TYPES gibi)
-    SDL_Texture *mob_textures[MAX_MOB_TYPES] = {0};
+    R2DTexture *mob_textures[MAX_MOB_TYPES] = {0};
     for (int i = 0; i < MOB_TYPE_COUNT; i++)
     {
         mob_textures[i] = load_texture(renderer, MOB_TYPES[i].texturePath);
@@ -296,8 +294,8 @@ int main(int argc, char *argv[])
             SDL_Log("Mob texture yuklenemedi: %s", MOB_TYPES[i].texturePath);
             for (int j = 0; j < LAYER_COUNT; j++)
                 if (mob_textures[j])
-                    SDL_DestroyTexture(mob_textures[j]); // sadece yüklenmiş olanları yık
-            SDL_DestroyRenderer(renderer);
+                    r2d_texture_destroy(NULL, mob_textures[j]); // sadece yüklenmiş olanları yık
+            r2d_quit(renderer);
             SDL_DestroyWindow(window);
             SDL_Quit();
             return 1;
@@ -330,7 +328,7 @@ int main(int argc, char *argv[])
 
     // Tile texture'ları: TILE_TYPES tablosundaki path'lerden yükle.
     // texturePath == NULL olanlar (örn. taş) texture'sız kalır → render'da renk basılır.
-    SDL_Texture *tile_textures[MAX_TILE_TYPES] = {0}; // TILE_TYPE_COUNT yerine MAX_TILE_TYPES
+    R2DTexture *tile_textures[MAX_TILE_TYPES] = {0}; // TILE_TYPE_COUNT yerine MAX_TILE_TYPES
     for (int i = 0; i < TILE_TYPE_COUNT; i++)
     {
         if (TILE_TYPES[i].texturePath != NULL)
@@ -358,7 +356,7 @@ int main(int argc, char *argv[])
     const char *splashText = NULL;
     float splashTimer = 0.0f;
     TTF_Font *splashFont = font_load("assets/fonts/PublicPixel-rv0pA.ttf", 32.0f);
-    Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 1.0f};
+    Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 2.0f};
 
     Uint64 last = SDL_GetTicks();
 
@@ -1181,7 +1179,7 @@ int main(int argc, char *argv[])
                                  mobs[i].e.rect.x + mobs[i].e.rect.w * (0.3f + randf() * 0.4f),
                                  mobs[i].e.rect.y + mobs[i].e.rect.h * 0.4f,
                                  (randf() - 0.5f) * 15.0f, 40.0f + randf() * 30.0f,
-                                 0.4f, 4.0f + randf() * 4.0f, 190, 20, 20,
+                                 0.55f, 8.0f + randf() * 6.0f, 190, 20, 20,
                                  WEAPON_FX_NONE);
 
                     if (mobs[i].e.health <= 0.0f)
@@ -1275,7 +1273,7 @@ int main(int argc, char *argv[])
                          player.rect.x + player.rect.w * randf(),
                          player.rect.y + player.rect.h * 0.7f,
                          (randf() - 0.5f) * 20.0f, -35.0f - randf() * 25.0f,
-                         0.4f, 4.0f + randf() * 5.0f, 255, 90, 40,
+                         0.5f, 7.0f + randf() * 6.0f, 255, 90, 40,
                          WEAPON_FX_NONE);
             }
 
@@ -1371,8 +1369,9 @@ int main(int argc, char *argv[])
 
         music_update(dt);   // fade + loop besleme (menüde/ölümde de akar)
 
-        SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
-        SDL_RenderClear(renderer);                            // ekranı temizle (arka plan rengini doldur)
+        // Kare başlat (clear rengi gri); swapchain yoksa bu kare çizilmez
+        if (!r2d_begin_frame(renderer, 155, 155, 155))
+            continue;
         tilemap_render(renderer, tile_textures, &camera);     // haritayı çiz
         decor_render_all(renderer, decor_textures, &camera);  // evler (zemin üstü, entity altı)
 
@@ -1382,12 +1381,13 @@ int main(int argc, char *argv[])
 
         player_render(&player, renderer, built, builtCount, &camera); // oyuncuyu
         
-        fx_render(&weaponFx, renderer, glowTex, &camera);
-
         for (int i = 0; i < mobCount; i++)
             mob_render(&mobs[i], renderer, mob_textures, &camera, player.targetMobId);
 
         npc_render_all(renderer, npc_textures, &camera, gameFont, nearestNpc);
+
+        // Partiküller dünya varlıklarının ÜSTÜNDE (kan damlası mobun önünde görünsün)
+        fx_render(&weaponFx, renderer, glowTex, &camera);
 
         if (openLootIndex >= 0)
             loot_popup_render(renderer, &loots[openLootIndex], itemIconTex, &itemTex, gameFont, &camera);
@@ -1401,10 +1401,10 @@ int main(int argc, char *argv[])
         Uint8 darkness = gametime_darkness();
         if (darkness > 0)
         {
-            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-            SDL_SetRenderDrawColor(renderer, 10, 10, 45, darkness);
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_set_color(renderer, 10, 10, 45, darkness);
             SDL_FRect night = { 0, 0, (float)winW, (float)winH };
-            SDL_RenderFillRect(renderer, &night);
+            r2d_fill_rect(renderer, &night);
         }
 
         // Hedef HP bar (seçili mob varsa)
@@ -1445,10 +1445,10 @@ int main(int argc, char *argv[])
         // Ölüm ekranı: koyu kızıl karartma + yazılar (her şeyin üstünde, menü hariç)
         if (deathTimer > 0.0f && splashFont != NULL)
         {
-            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-            SDL_SetRenderDrawColor(renderer, 40, 0, 0, 200);
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_set_color(renderer, 40, 0, 0, 200);
             SDL_FRect dead = { 0, 0, (float)winW, (float)winH };
-            SDL_RenderFillRect(renderer, &dead);
+            r2d_fill_rect(renderer, &dead);
 
             int tw = 0, th = 0;
             TTF_GetStringSize(splashFont, "Oldun", 0, &tw, &th);
@@ -1511,38 +1511,38 @@ int main(int argc, char *argv[])
         if (gameState == GAME_PAUSED)                          // ← EKLE
             menu_render(renderer, gameFont, menuScreen, winW, winH);
 
-        SDL_RenderPresent(renderer); // Ekrana bas.
+        r2d_end_frame(renderer); // batch'i GPU'ya gönder + ekrana bas
     }
 
     // 5) Her şeyi oluşturmanın TERS sırasıyla temizle. C'de bu bizim sorumluluğumuzda,
     // hiçbir destructor bunu kendiliğinden yapmaz.
     for (int i = 0; i < LAYER_COUNT; i++)
     {
-        SDL_DestroyTexture(layers[i].tex);
+        r2d_texture_destroy(NULL, layers[i].tex);
     }
     for (int i = 0; i < TILE_TYPE_COUNT; i++)
     {
         if (tile_textures[i])
-            SDL_DestroyTexture(tile_textures[i]); // NULL olanları atla
+            r2d_texture_destroy(NULL, tile_textures[i]); // NULL olanları atla
     }
 
     for (int i = 0; i < MOB_TYPE_COUNT; i++)
     {
         if (mob_textures[i])
-            SDL_DestroyTexture(mob_textures[i]); // NULL olanları atla
+            r2d_texture_destroy(NULL, mob_textures[i]); // NULL olanları atla
     }
 
         
     for (int i = 0; i < NPC_COUNT; i++)
         if (npc_textures[i])
-            SDL_DestroyTexture(npc_textures[i]);
+            r2d_texture_destroy(NULL, npc_textures[i]);
 
     for (int i = 0; i < DECOR_COUNT && i < 16; i++)
         if (decor_textures[i])
-            SDL_DestroyTexture(decor_textures[i]);
+            r2d_texture_destroy(NULL, decor_textures[i]);
 
     if (glowTex)
-        SDL_DestroyTexture(glowTex);
+        r2d_texture_destroy(NULL, glowTex);
 
     minimap_quit();
     ui_theme_quit();
@@ -1554,8 +1554,8 @@ int main(int argc, char *argv[])
     font_shutdown();   // tüm fontlar kapandıktan sonra, bir kez
 
     if (crateTex)
-        SDL_DestroyTexture(crateTex);
-    SDL_DestroyRenderer(renderer); // Renderer'ı temizle
+        r2d_texture_destroy(NULL, crateTex);
+    r2d_quit(renderer); // GPU kaynaklarını temizle
     SDL_DestroyWindow(window);     // Pencereyi temizle
     SDL_Quit();                    // SDL'i temizle
     return 0;                      // Başarılı çık

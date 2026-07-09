@@ -1,5 +1,6 @@
 #ifndef SKILL_H
 #define SKILL_H
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdbool.h>
@@ -55,7 +56,7 @@ const char *skill_name(SkillType t);
 #define SKILL_PANEL_HEADER 30.0f
 
 // Skill paneli (K tuşu). Tüm skill'leri level + XP çubuğuyla listeler.
-void skill_panel_render(const Skill *skills, SDL_Renderer *renderer,
+void skill_panel_render(const Skill *skills, R2D *renderer,
                         TTF_Font *font, float panelX, float panelY);
 
 // Panelde tıklanan skill satırı (0..SKILL_COUNT-1, -1 = yok) — perk seçimi açar

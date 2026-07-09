@@ -22,7 +22,7 @@ static SDL_FRect menu_button_rect(int i, int count, int winW, int winH)
 }
 
 // Tek buton ciz (kutu + ortali metin).
-static void draw_button(SDL_Renderer *renderer, TTF_Font *font,
+static void draw_button(R2D *renderer, TTF_Font *font,
                         SDL_FRect r, const char *label)
 {
     ui_button(renderer, r.x, r.y, r.w, r.h);   // perçinli ten buton (tema)
@@ -36,13 +36,13 @@ static void draw_button(SDL_Renderer *renderer, TTF_Font *font,
     }
 }
 
-void menu_render(SDL_Renderer *renderer, TTF_Font *font,
+void menu_render(R2D *renderer, TTF_Font *font,
                  MenuScreen screen, int winW, int winH)
 {
     // 1) Tum ekrani karart (yari saydam siyah) — oyun arkada donuk durur
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
+    r2d_set_color(renderer, 0, 0, 0, 180);
     SDL_FRect dim = { 0, 0, (float)winW, (float)winH };
-    SDL_RenderFillRect(renderer, &dim);
+    r2d_fill_rect(renderer, &dim);
 
     // 2) Ekrana gore butonlar
     if (screen == MENU_MAIN) {

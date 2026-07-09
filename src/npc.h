@@ -1,5 +1,6 @@
 #ifndef NPC_H
 #define NPC_H
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include "common.h"
@@ -38,7 +39,7 @@ void npc_update(float dt, float hours);
 
 // Tüm NPC'leri çiz (idle animasyon + isim; en yakındakine E prompt'u).
 // nearestIdx: npc_nearest_in_range sonucu (-1 = prompt yok).
-void npc_render_all(SDL_Renderer *renderer, SDL_Texture **npcTextures,
+void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
                     const Camera *camera, TTF_Font *font, int nearestIdx);
 
 // Oyuncuya NPC_INTERACT_RANGE içindeki en yakın KONUŞULABILIR NPC (-1 = yok).

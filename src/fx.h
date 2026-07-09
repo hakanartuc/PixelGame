@@ -1,6 +1,7 @@
 #ifndef FX_H
 #define FX_H
 
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <stdbool.h>
 #include "common.h"
@@ -67,7 +68,7 @@ void fx_spawn(ParticleSystem *fx, float x, float y, float vx, float vy,
 void fx_update(ParticleSystem *fx, float dt);
 
 // Tum partikulleri ciz (glow texture ile, kamera + zoom)
-void fx_render(ParticleSystem *fx, SDL_Renderer *renderer,
-               SDL_Texture *glowTex, const Camera *camera);
+void fx_render(ParticleSystem *fx, R2D *renderer,
+               R2DTexture *glowTex, const Camera *camera);
 
 #endif

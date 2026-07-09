@@ -1,7 +1,7 @@
 #include "item_textures.h"
 #include "render.h"   // load_texture
 
-void item_textures_load(ItemTextures *t, SDL_Renderer *r)
+void item_textures_load(ItemTextures *t, R2D *r)
 {
     // hepsini NULL'la (yuklenemeyen / kusanilamaz slotlar NULL kalir)
     for (int i = 0; i < MAX_ITEM_TYPES; i++) {
@@ -33,9 +33,9 @@ void item_textures_load(ItemTextures *t, SDL_Renderer *r)
 void item_textures_free(ItemTextures *t)
 {
     for (int i = 0; i < MAX_ITEM_TYPES; i++) {
-        if (t->equipTex[i])     { SDL_DestroyTexture(t->equipTex[i]);     t->equipTex[i] = NULL; }
-        if (t->equipTexBack[i]) { SDL_DestroyTexture(t->equipTexBack[i]); t->equipTexBack[i] = NULL; }   // ← EKLE
-        if (t->iconTex[i])      { SDL_DestroyTexture(t->iconTex[i]);      t->iconTex[i] = NULL; }
+        if (t->equipTex[i])     { r2d_texture_destroy(NULL, t->equipTex[i]);     t->equipTex[i] = NULL; }
+        if (t->equipTexBack[i]) { r2d_texture_destroy(NULL, t->equipTexBack[i]); t->equipTexBack[i] = NULL; }   // ← EKLE
+        if (t->iconTex[i])      { r2d_texture_destroy(NULL, t->iconTex[i]);      t->iconTex[i] = NULL; }
     }
 }
 
@@ -48,19 +48,19 @@ static int item_index(const ItemType *type)
     return idx;
 }
 
-SDL_Texture *item_equip_tex(const ItemTextures *t, const ItemType *type)
+R2DTexture *item_equip_tex(const ItemTextures *t, const ItemType *type)
 {
     int idx = item_index(type);
     return (idx < 0) ? NULL : t->equipTex[idx];
 }
 
-SDL_Texture *item_icon_tex(const ItemTextures *t, const ItemType *type)
+R2DTexture *item_icon_tex(const ItemTextures *t, const ItemType *type)
 {
     int idx = item_index(type);
     return (idx < 0) ? NULL : t->iconTex[idx];
 }
 
-SDL_Texture *item_equip_tex_back(const ItemTextures *t, const ItemType *type)
+R2DTexture *item_equip_tex_back(const ItemTextures *t, const ItemType *type)
 {
     int idx = item_index(type);
     return (idx < 0) ? NULL : t->equipTexBack[idx];

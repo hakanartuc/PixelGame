@@ -1,5 +1,6 @@
 #ifndef PLAYER_H
 #define PLAYER_H
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <stdbool.h>
 #include "common.h"
@@ -51,7 +52,7 @@ typedef enum {
 
 // player.h — AnimClip gibi
 typedef struct PlayerLayer {
-    SDL_Texture *tex;
+    R2DTexture *tex;
     int z;
     int idleRowOverride;  // -1 = yok (base satirini kullan), >=0 = idle'da bu satiri ciz
     bool slashOversize;   // slash'ta 64px satir yerine oversize blogu ciz (silah katmanlari)
@@ -108,9 +109,9 @@ typedef struct Player {
 
 
 
-void player_render(const Player *p, SDL_Renderer *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera);
+void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera);
 void player_update(Player *p, const bool *keys, bool attackPressed, float dt, ParticleSystem *fx);
-void health_bar_render(const Player *p, SDL_Renderer *renderer);
+void health_bar_render(const Player *p, R2D *renderer);
 
 
 // Oyuncunun cizilecek katmanlarini olusturur: base (body/head/face) + giyili ekipman.
@@ -120,8 +121,5 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
                         const Equipment *eq, const ItemTextures *itemTex,
                         PlayerLayer *out, int outCap);
 
-void weapon_render_test(Player *p, SDL_Renderer *renderer,
-                        SDL_Texture *weaponTex, SDL_Texture *glowTex,
-                        ParticleSystem *fx, const Camera *camera, bool backLayer);
 
 #endif

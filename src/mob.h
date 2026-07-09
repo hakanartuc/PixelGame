@@ -1,6 +1,7 @@
 #ifndef MOB_H
 #define MOB_H
 
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>   // TTF_Font (target_hp_bar_render)
 #include <stdbool.h>
@@ -108,7 +109,7 @@ extern const MobType MOB_TYPES[];
 extern const int MOB_TYPE_COUNT;
 
 
-void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures, const Camera *camera, int targetMobId);
+void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Camera *camera, int targetMobId);
 
 // detectMul: algı menzili çarpanı (gece 1.5 — gametime'dan main geçirir)
 void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, float dt,
@@ -118,7 +119,7 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
 void mob_alert_camp(Mob *mobs, int mobCount, const Mob *victim);
 int mob_find_nearest(Mob *mobs, int mobCount, float px, float py);
 Mob *mob_find_by_id(Mob *mobs, int mobCount, int id);
-void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW, TTF_Font *font);
+void target_hp_bar_render(R2D *renderer, const Mob *target, int winW, TTF_Font *font);
 int mob_spawn(Mob *mobs, int maxMobs, int *nextMobId, const MobType *type, float x, float y, int zoneId);
 void spawn_zones_update(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId, float dt);
 void spawn_zones_fill(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId);

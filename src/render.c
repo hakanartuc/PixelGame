@@ -5,37 +5,12 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-// Bir PNG'yi yükleyip GPU texture'ına düşüştürür; hata olursa NULL döner.
+// Bir PNG'yi yükleyip GPU texture'ına dönüştürür; hata olursa NULL döner.
 // DİKKAT (sahiplik): bu fonksiyon yeni bir texture "yaratır"; onu yok etmek
-// ARTIK ÇAĞIRANIN SORUMLULUĞUNDADIR.
-SDL_Texture *load_texture(SDL_Renderer *renderer, const char *path)
+// ÇAĞIRANIN SORUMLULUĞUNDADIR. (r2d varsayılanı NEAREST — pixel-art keskin)
+R2DTexture *load_texture(R2D *renderer, const char *path)
 {
-    int w, h, channels;
-    unsigned char *pixels = stbi_load(path, &w, &h, &channels, 4); // 4 = RGBA'ya zorla
-    if(pixels == NULL){
-        SDL_Log("Yuklenemedi (%s): %s", path, SDL_GetError());
-        return NULL;
-    }
-
-    SDL_Surface *surface = SDL_CreateSurfaceFrom(w, h, SDL_PIXELFORMAT_RGBA32, pixels, w * 4);
-    if(surface == NULL){
-        SDL_Log("Surface olusturulamadi: %s %s", path, SDL_GetError());
-        stbi_image_free(pixels);
-        return NULL;
-    }
-
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-    
-    if(texture == NULL){
-        SDL_Log("Texture olusturulamadi: %s %s", path, SDL_GetError());
-        SDL_DestroySurface(surface);
-        stbi_image_free(pixels);
-        return NULL;
-    }
-
-    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST); // pikselleri keskin tut, bulanıklaştırma yapma
-    return texture;
-
+    return r2d_texture_load(renderer, path);
 }
 
 // Kamera karakteri ekranda ortalayacak şekilde ayarlanır. Clamp ile harita dışına çıkmaz.
@@ -62,7 +37,7 @@ void camera_update(Camera *camera, float targetX, float targetY, int winW, int w
 
 // Yumusak radial glow texture'i uretir (merkez parlak, kenar saydam).
 // Bir kez cagrilir, sonra additive blend ile cizilir.
-SDL_Texture *create_glow_texture(SDL_Renderer *renderer, int size)
+R2DTexture *create_glow_texture(R2D *renderer, int size)
 {
     // RGBA pixel buffer
     Uint8 *pixels = (Uint8 *)SDL_malloc(size * size * 4);
@@ -90,13 +65,9 @@ SDL_Texture *create_glow_texture(SDL_Renderer *renderer, int size)
         }
     }
 
-    SDL_Surface *surface = SDL_CreateSurfaceFrom(size, size, SDL_PIXELFORMAT_RGBA32, pixels, size * 4);
-    if (!surface) { SDL_free(pixels); return NULL; }
-
-    SDL_Texture *tex = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_DestroySurface(surface);
+    R2DTexture *tex = r2d_texture_from_pixels(renderer, pixels, size, size);
     SDL_free(pixels);
 
-    if (tex) SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_LINEAR);  // glow yumusak olsun (NEAREST degil)
+    if (tex) r2d_texture_set_linear(tex, true);   // glow yumusak olsun (NEAREST degil)
     return tex;
 }

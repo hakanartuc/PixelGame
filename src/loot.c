@@ -86,7 +86,7 @@ bool loot_spawn(Loot *loots, int maxLoot, float x, float y,
     return true;
 }
 
-void loot_render_all(Loot *loots, int maxLoot, SDL_Renderer *renderer, SDL_Texture *crateTex, const Camera *camera)
+void loot_render_all(Loot *loots, int maxLoot, R2D *renderer, R2DTexture *crateTex, const Camera *camera)
 {
     for (int i = 0; i < maxLoot; i++) {
         Loot *l = &loots[i];
@@ -111,7 +111,7 @@ void loot_render_all(Loot *loots, int maxLoot, SDL_Renderer *renderer, SDL_Textu
             .w = vr.w * zoom,
             .h = vr.h * zoom
         };
-        SDL_RenderTexture(renderer, crateTex, &src, &screen);
+        r2d_draw_texture(renderer, crateTex, &src, &screen);
     }
 }
 
@@ -164,8 +164,8 @@ void loot_update_all(Loot *loots, int maxLoot, float dt)
 }
 
 
-void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
-                       SDL_Texture *itemIconTex, const ItemTextures *itemTex,
+void loot_popup_render(R2D *renderer, const Loot *loot,
+                       R2DTexture *itemIconTex, const ItemTextures *itemTex,
                        TTF_Font *font, const Camera *camera)
 {
     if (loot == NULL || loot->state != LOOT_OPEN) return;
@@ -202,12 +202,12 @@ void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
         const ItemType *it = loot->items[k].type;
         SDL_FRect dst = { cx + 6 * zoom, cy + 6 * zoom, 32 * zoom, 32 * zoom };
 
-        SDL_Texture *icon = item_icon_tex(itemTex, it);
+        R2DTexture *icon = item_icon_tex(itemTex, it);
         if (icon != NULL) {
-            SDL_RenderTexture(renderer, icon, &it->iconSrc, &dst);
+            r2d_draw_texture(renderer, icon, &it->iconSrc, &dst);
         } else {
             SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };
-            SDL_RenderTexture(renderer, itemIconTex, &src, &dst);
+            r2d_draw_texture(renderer, itemIconTex, &src, &dst);
         }
 
         // Plus seviyesi (envanterle aynı dil: sağ üst, camgöbeği)
@@ -229,9 +229,9 @@ void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
         ui_cell(renderer, cx, cy, (cellSize - 4) * zoom, (cellSize - 4) * zoom);
 
         // Kese: içi dolu altın karesi (ikon gelene kadar temsili)
-        SDL_SetRenderDrawColor(renderer, 255, 210, 60, 255);
+        r2d_set_color(renderer, 255, 210, 60, 255);
         SDL_FRect coin = { cx + 12 * zoom, cy + 8 * zoom, 20 * zoom, 20 * zoom };
-        SDL_RenderFillRect(renderer, &coin);
+        r2d_fill_rect(renderer, &coin);
 
         if (font != NULL) {
             char buf[16];

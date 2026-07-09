@@ -1,6 +1,7 @@
 #ifndef TILEMAP_H
 #define TILEMAP_H
 
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <stdbool.h>
 #include "common.h"     // TILE_SIZE, MAP_W/H, Camera
@@ -34,7 +35,7 @@ bool tilemap_load_csv(const char *path);
 int map_width(void);
 int map_height(void);
 
-void tilemap_render(SDL_Renderer *renderer, SDL_Texture **tileTextures, const Camera *camera);
+void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *camera);
 
 int  tile_at_point(float worldX, float worldY);
 bool box_hits_solid(SDL_FRect box);

@@ -63,8 +63,8 @@ static int inv_total_count(const Inventory *inv, const ItemType *type)
     return total;
 }
 
-void hotbar_render(const Hotbar *hb, SDL_Renderer *renderer,
-                   SDL_Texture *itemIconTex, const ItemTextures *itemTex,
+void hotbar_render(const Hotbar *hb, R2D *renderer,
+                   R2DTexture *itemIconTex, const ItemTextures *itemTex,
                    TTF_Font *font, const float *abilityCd, const float *itemCd,
                    const Inventory *inv, int winW, int winH)
 {
@@ -95,10 +95,10 @@ void hotbar_render(const Hotbar *hb, SDL_Renderer *renderer,
             float cd = abilityCd[s->abilityId];
             if (cd > 0.0f) {
                 float ratio = cd / a->cooldown;   // 1 → 0
-                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 170);
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                r2d_set_color(renderer, 0, 0, 0, 170);
                 SDL_FRect shade = { cx, y0 + CELL * (1.0f - ratio), CELL, CELL * ratio };
-                SDL_RenderFillRect(renderer, &shade);
+                r2d_fill_rect(renderer, &shade);
 
                 if (font != NULL) {
                     char buf[8];
@@ -112,22 +112,22 @@ void hotbar_render(const Hotbar *hb, SDL_Renderer *renderer,
             const ItemType *it = s->itemType;
             SDL_FRect dst = { cx + 8.0f, y0 + 8.0f, 32.0f, 32.0f };
 
-            SDL_Texture *icon = item_icon_tex(itemTex, it);
+            R2DTexture *icon = item_icon_tex(itemTex, it);
             if (icon != NULL) {
-                SDL_RenderTexture(renderer, icon, &it->iconSrc, &dst);
+                r2d_draw_texture(renderer, icon, &it->iconSrc, &dst);
             } else {
                 SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };
-                SDL_RenderTexture(renderer, itemIconTex, &src, &dst);
+                r2d_draw_texture(renderer, itemIconTex, &src, &dst);
             }
 
             // Tür cooldown perdesi (skill'lerle aynı dil: alttan dolu + kalan sn)
             float cd = itemCd[it - ITEM_TYPES];
             if (cd > 0.0f && it->useCooldown > 0.0f) {
                 float ratio = cd / it->useCooldown;   // 1 → 0
-                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 170);
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                r2d_set_color(renderer, 0, 0, 0, 170);
                 SDL_FRect shade = { cx, y0 + CELL * (1.0f - ratio), CELL, CELL * ratio };
-                SDL_RenderFillRect(renderer, &shade);
+                r2d_fill_rect(renderer, &shade);
 
                 if (font != NULL) {
                     char buf[8];
@@ -140,9 +140,9 @@ void hotbar_render(const Hotbar *hb, SDL_Renderer *renderer,
             // Envanterdeki adet — 0 ise hücre soluk (tür barda kalır, KO gibi)
             int count = inv_total_count(inv, it);
             if (count == 0) {
-                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 170);
-                SDL_RenderFillRect(renderer, &cell);
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                r2d_set_color(renderer, 0, 0, 0, 170);
+                r2d_fill_rect(renderer, &cell);
             }
             if (font != NULL) {
                 char buf[8];

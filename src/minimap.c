@@ -8,11 +8,11 @@
 #define MINIMAP_PAD 16.0f
 
 static Uint8 explored[MAP_H_MAX][MAP_W_MAX];   // 0 = sis, 1 = keşfedildi
-static SDL_Texture *mapTex = NULL;             // keşfedilen tile'ların rengi
+static R2DTexture *mapTex = NULL;             // keşfedilen tile'ların rengi
 static bool rebuildAll = false;                // load sonrası komple yeniden işle
 
 // Tek tile'ı texture'a boya (çağıran render target'ı ayarlamış olmalı)
-static void paint_tile(SDL_Renderer *renderer, int col, int row)
+static void paint_tile(R2D *renderer, int col, int row)
 {
     int id = tile_at_point(col * TILE_SIZE + 1.0f, row * TILE_SIZE + 1.0f);
     Uint8 r = 15, g = 15, b = 20;   // bilinmeyen id → koyu
@@ -22,36 +22,32 @@ static void paint_tile(SDL_Renderer *renderer, int col, int row)
         g = TILE_TYPES[id].g;
         b = TILE_TYPES[id].b;
     }
-    SDL_SetRenderDrawColor(renderer, r, g, b, 255);
-    SDL_RenderPoint(renderer, (float)col, (float)row);
+    r2d_set_color(renderer, r, g, b, 255);
+    r2d_point(renderer, (float)col, (float)row);
 }
 
-void minimap_init(SDL_Renderer *renderer)
+void minimap_init(R2D *renderer)
 {
     memset(explored, 0, sizeof(explored));
 
-    mapTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
-                               SDL_TEXTUREACCESS_TARGET, map_width(), map_height());
+    mapTex = r2d_target_create(renderer, map_width(), map_height());
     if (mapTex == NULL) {
-        SDL_Log("Minimap texture olusturulamadi: %s", SDL_GetError());
+        SDL_Log("Minimap texture olusturulamadi");
         return;
     }
-    SDL_SetTextureScaleMode(mapTex, SDL_SCALEMODE_NEAREST);   // pixel-art keskin
 
-    // Başlangıç: her yer sis (koyu)
-    SDL_SetRenderTarget(renderer, mapTex);
-    SDL_SetRenderDrawColor(renderer, 8, 8, 12, 255);
-    SDL_RenderClear(renderer);
-    SDL_SetRenderTarget(renderer, NULL);
+    // Başlangıç: her yer sis (koyu) — boş pass sadece clear yapar
+    r2d_target_begin(renderer, mapTex, true, 8, 8, 12);
+    r2d_target_end(renderer);
 }
 
 void minimap_quit(void)
 {
-    if (mapTex) SDL_DestroyTexture(mapTex);
+    if (mapTex) r2d_texture_destroy(NULL, mapTex);
     mapTex = NULL;
 }
 
-void minimap_reveal(SDL_Renderer *renderer, float worldX, float worldY)
+void minimap_reveal(R2D *renderer, float worldX, float worldY)
 {
     if (mapTex == NULL) return;
 
@@ -61,14 +57,12 @@ void minimap_reveal(SDL_Renderer *renderer, float worldX, float worldY)
 
     // Load sonrası: tüm keşfedilmişleri bir kez yeniden işle
     if (rebuildAll) {
-        SDL_SetRenderTarget(renderer, mapTex);
-        SDL_SetRenderDrawColor(renderer, 8, 8, 12, 255);
-        SDL_RenderClear(renderer);
+        r2d_target_begin(renderer, mapTex, true, 8, 8, 12);
         for (int row = 0; row < map_height(); row++)
             for (int col = 0; col < map_width(); col++)
                 if (explored[row][col])
                     paint_tile(renderer, col, row);
-        SDL_SetRenderTarget(renderer, NULL);
+        r2d_target_end(renderer);
         rebuildAll = false;
     }
 
@@ -86,17 +80,17 @@ void minimap_reveal(SDL_Renderer *renderer, float worldX, float worldY)
 
             explored[row][col] = 1;
             if (!targetSet) {
-                SDL_SetRenderTarget(renderer, mapTex);   // yalnız gerekince değiştir
+                r2d_target_begin(renderer, mapTex, false, 0, 0, 0);   // clear YOK (artımlı)
                 targetSet = true;
             }
             paint_tile(renderer, col, row);
         }
     }
     if (targetSet)
-        SDL_SetRenderTarget(renderer, NULL);
+        r2d_target_end(renderer);
 }
 
-void minimap_render(SDL_Renderer *renderer, float playerX, float playerY,
+void minimap_render(R2D *renderer, float playerX, float playerY,
                     const Mob *mobs, int mobCount, int winW, int winH)
 {
     if (mapTex == NULL) return;
@@ -108,9 +102,9 @@ void minimap_render(SDL_Renderer *renderer, float playerX, float playerY,
     float y0 = winH - h - MINIMAP_PAD;
 
     SDL_FRect dst = { x0, y0, w, h };
-    SDL_RenderTexture(renderer, mapTex, NULL, &dst);
-    SDL_SetRenderDrawColor(renderer, 200, 200, 210, 255);
-    SDL_RenderRect(renderer, &dst);
+    r2d_draw_texture(renderer, mapTex, NULL, &dst);
+    r2d_set_color(renderer, 200, 200, 210, 255);
+    r2d_rect(renderer, &dst);
 
     // Noktalar — yalnız keşfedilmiş tile üzerindekiler (sisin altı sızmasın)
     for (int i = 0; i < mobCount; i++) {
@@ -119,9 +113,9 @@ void minimap_render(SDL_Renderer *renderer, float playerX, float playerY,
         int row = (int)(mobs[i].e.rect.y / TILE_SIZE);
         if (col < 0 || col >= mw || row < 0 || row >= mh || !explored[row][col])
             continue;
-        SDL_SetRenderDrawColor(renderer, 230, 60, 60, 255);
+        r2d_set_color(renderer, 230, 60, 60, 255);
         SDL_FRect dot = { x0 + col * scale - 1, y0 + row * scale - 1, 3, 3 };
-        SDL_RenderFillRect(renderer, &dot);
+        r2d_fill_rect(renderer, &dot);
     }
 
     for (int i = 0; i < NPC_COUNT; i++) {
@@ -130,16 +124,16 @@ void minimap_render(SDL_Renderer *renderer, float playerX, float playerY,
         int col = (int)(nx / TILE_SIZE), row = (int)(ny / TILE_SIZE);
         if (col < 0 || col >= mw || row < 0 || row >= mh || !explored[row][col])
             continue;
-        SDL_SetRenderDrawColor(renderer, 90, 230, 90, 255);
+        r2d_set_color(renderer, 90, 230, 90, 255);
         SDL_FRect dot = { x0 + col * scale - 1, y0 + row * scale - 1, 3, 3 };
-        SDL_RenderFillRect(renderer, &dot);
+        r2d_fill_rect(renderer, &dot);
     }
 
     // Oyuncu en üstte (beyaz, biraz büyük)
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    r2d_set_color(renderer, 255, 255, 255, 255);
     SDL_FRect pdot = { x0 + (playerX / TILE_SIZE) * scale - 2,
                        y0 + (playerY / TILE_SIZE) * scale - 2, 4, 4 };
-    SDL_RenderFillRect(renderer, &pdot);
+    r2d_fill_rect(renderer, &pdot);
 }
 
 int minimap_pack_explored(Uint8 *out, int cap)

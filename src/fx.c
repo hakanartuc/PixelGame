@@ -52,13 +52,13 @@ void fx_update(ParticleSystem *fx, float dt)
     }
 }
 
-void fx_render(ParticleSystem *fx, SDL_Renderer *renderer,
-               SDL_Texture *glowTex, const Camera *camera)
+void fx_render(ParticleSystem *fx, R2D *renderer,
+               R2DTexture *glowTex, const Camera *camera)
 {
     if (glowTex == NULL) return;
     float zoom = camera->zoom;
 
-    SDL_SetTextureBlendMode(glowTex, SDL_BLENDMODE_BLEND);
+    r2d_set_blend(renderer, R2D_BLEND_ALPHA);   // glow dokusu yumusak, normal alfa
 
     for (int i = 0; i < MAX_PARTICLES; i++) {
         Particle *p = &fx->items[i];
@@ -96,17 +96,17 @@ void fx_render(ParticleSystem *fx, SDL_Renderer *renderer,
             cb = p->b;
         }
 
-        SDL_SetTextureColorMod(glowTex, cr, cg, cb);
-        SDL_SetTextureAlphaMod(glowTex, alpha);
+        r2d_texture_set_color_mod(glowTex, cr, cg, cb);
+        r2d_texture_set_alpha_mod(glowTex, alpha);
         SDL_FRect dst = {
             .x = sx - size * 0.5f,
             .y = sy - size * 0.5f,
             .w = size, .h = size
         };
-        SDL_RenderTexture(renderer, glowTex, NULL, &dst);
+        r2d_draw_texture(renderer, glowTex, NULL, &dst);
     }
 
     // Normale dondur
-    SDL_SetTextureColorMod(glowTex, 255, 255, 255);
-    SDL_SetTextureAlphaMod(glowTex, 255);
+    r2d_texture_set_color_mod(glowTex, 255, 255, 255);
+    r2d_texture_set_alpha_mod(glowTex, 255);
 }

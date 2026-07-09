@@ -126,8 +126,8 @@ int slot_zorder(EquipSlot slot)
 
 // Karakter panelini cizer: arkaplan + paper-doll onizleme + slot kutulari.
 // Ekran-uzayi (kamera yok), envanterin USTUNDE. panelX/panelY = panel sol-ust (ekran).
-void equipment_render(const Equipment *eq, SDL_Renderer *renderer,
-                      SDL_Texture *itemIcons, const ItemTextures *itemTex,
+void equipment_render(const Equipment *eq, R2D *renderer,
+                      R2DTexture *itemIcons, const ItemTextures *itemTex,
                       const PlayerLayer *built, int builtCount,
                       int panelX, int panelY)
 {
@@ -148,7 +148,7 @@ void equipment_render(const Equipment *eq, SDL_Renderer *renderer,
         SDL_FRect dstDoll = { (float)DOLL_X, (float)DOLL_Y,
                               (float)(FRAME_W * DOLL_SCALE), (float)(FRAME_H * DOLL_SCALE) };
         for (int i = 0; i < builtCount; i++)
-            SDL_RenderTexture(renderer, built[i].tex, &srcDoll, &dstDoll);
+            r2d_draw_texture(renderer, built[i].tex, &srcDoll, &dstDoll);
     
     
     // 3) Slot kutulari (EQUIP_SLOT_POS tablosu). Dolu slot → item ikonu.
@@ -166,13 +166,13 @@ void equipment_render(const Equipment *eq, SDL_Renderer *renderer,
         // dolu ise ikon bas (envanter ikonu, 16x16 → hucreye olcekli)
         const ItemStack *st = &eq->slots[s];
         if (st->type != NULL) {
-            SDL_Texture *icon = item_icon_tex(itemTex, st->type);
+            R2DTexture *icon = item_icon_tex(itemTex, st->type);
             if (icon != NULL) {
-                SDL_RenderTexture(renderer, icon, &st->type->iconSrc, &cell);
+                r2d_draw_texture(renderer, icon, &st->type->iconSrc, &cell);
             } else {
                 int ic = st->type->iconIndex;
                 SDL_FRect srcIcon = { (float)(ic * 16), 0, 16, 16 };
-                SDL_RenderTexture(renderer, itemIcons, &srcIcon, &cell);
+                r2d_draw_texture(renderer, itemIcons, &srcIcon, &cell);
             }
         }
     }

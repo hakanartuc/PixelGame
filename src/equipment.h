@@ -1,5 +1,6 @@
 #ifndef EQUIPMENT_H
 #define EQUIPMENT_H
+#include "r2d.h"
 #include "item.h"
 #include "inventory.h"
 
@@ -29,8 +30,8 @@ bool unequip_slot(Equipment *eq, Inventory *inv, EquipSlot slot);
 // Kucuk = arka, buyuk = on. Base katmanlar: body 10, head 100, face 101.
 int slot_zorder(EquipSlot slot);
 
-void equipment_render(const Equipment *eq, SDL_Renderer *renderer,
-                      SDL_Texture *itemIcons, const ItemTextures *itemTex,
+void equipment_render(const Equipment *eq, R2D *renderer,
+                      R2DTexture *itemIcons, const ItemTextures *itemTex,
                       const PlayerLayer *built, int builtCount,
                       int panelX, int panelY);
 

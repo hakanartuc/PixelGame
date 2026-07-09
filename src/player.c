@@ -89,7 +89,7 @@ static const WeaponAnchor IDLE_ANCHORS[4] = {
 };
 
 // Oyuncuyu çizer - sadece OKUR, değiştirmez.
-void player_render(const Player *p, SDL_Renderer *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera)
+void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera)
 {
     const LpcAnim *anim = &PLAYER_ANIMS[p->state];
     int row = anim->startRow + (int)p->facing; // durum satırı + yön
@@ -142,17 +142,17 @@ void player_render(const Player *p, SDL_Renderer *renderer, const PlayerLayer *l
             layerDst.h = screen.h * 3.0f;
         }
 
-        SDL_RenderTexture(renderer, layers[i].tex, &layerSrc, &layerDst);
+        r2d_draw_texture(renderer, layers[i].tex, &layerSrc, &layerDst);
     }
 
 #if DEBUG_DRAW
     SDL_FRect rectScreen = {p->rect.x - camera->x, p->rect.y - camera->y, p->rect.w, p->rect.h};
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    SDL_RenderRect(renderer, &rectScreen);
+    r2d_set_color(renderer, 255, 0, 0, 255);
+    r2d_rect(renderer, &rectScreen);
     SDL_FRect fb = feet_box(p->rect.x, p->rect.y, p->rect.w, p->rect.h);
     SDL_FRect feetScreen = {fb.x - camera->x, fb.y - camera->y, fb.w, fb.h};
-    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-    SDL_RenderRect(renderer, &feetScreen);
+    r2d_set_color(renderer, 255, 255, 0, 255);
+    r2d_rect(renderer, &feetScreen);
 #endif
 }
 
@@ -374,7 +374,7 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
 }
 
 // Can barını ekranın köşesine çizer. Ekran-uzayına bağlıdır, kamera hareketinden etkilenmez.
-void health_bar_render(const Player *p, SDL_Renderer *renderer)
+void health_bar_render(const Player *p, R2D *renderer)
 {
     // Bar ölçüleri (ekran pikseli - doğrudan, kamera yok)
     float barX = 20.0f, barY = 20.0f;  // sol üst köşeden offset
@@ -382,8 +382,8 @@ void health_bar_render(const Player *p, SDL_Renderer *renderer)
 
     // 1) Arka plan (boş bar) - koy kırmızı/gri
     SDL_FRect bg = {barX, barY, barW, barH};
-    SDL_SetRenderDrawColor(renderer, 60, 20, 20, 255);
-    SDL_RenderFillRect(renderer, &bg);
+    r2d_set_color(renderer, 60, 20, 20, 255);
+    r2d_fill_rect(renderer, &bg);
 
     // 2) Dolu kısım- cana oranlı genişlik
     float ratio = p->health / p->maxHealth; // 0..1
@@ -394,12 +394,12 @@ void health_bar_render(const Player *p, SDL_Renderer *renderer)
         ratio = 1.0f;
 
     SDL_FRect fill = {barX, barY, barW * ratio, barH};  // genişlik oransal
-    SDL_SetRenderDrawColor(renderer, 220, 50, 50, 255); // parlak kırmızı
-    SDL_RenderFillRect(renderer, &fill);
+    r2d_set_color(renderer, 220, 50, 50, 255); // parlak kırmızı
+    r2d_fill_rect(renderer, &fill);
 
     // 3) Çerçeve - barın kenarı
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderRect(renderer, &bg);
+    r2d_set_color(renderer, 255, 255, 255, 255);
+    r2d_rect(renderer, &bg);
 }
 
 int build_player_layers(const PlayerLayer *base, int baseCount,
@@ -427,7 +427,7 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
         int idleRow = (st->type->equipIdleRow > 0) ? st->type->equipIdleRow : -1;
 
         // ON katman (normal ekipman + silah onu)
-        SDL_Texture *texFront = item_equip_tex(itemTex, st->type);
+        R2DTexture *texFront = item_equip_tex(itemTex, st->type);
         if (texFront != NULL && n < outCap)
         {
             out[n].tex = texFront;
@@ -438,7 +438,7 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
         }
 
         // ARKA katman (varsa; z item verisinden — silahta body(10) altinda kalir)
-        SDL_Texture *texBack = item_equip_tex_back(itemTex, st->type);
+        R2DTexture *texBack = item_equip_tex_back(itemTex, st->type);
         if (texBack != NULL && n < outCap)
         {
             out[n].tex = texBack;
@@ -466,232 +466,3 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
     return n;
 }
 
-// gripX/gripY: silah sprite'inda elin tuttugu nokta
-// handX/handY: karakter hucresinde elin oldugu nokta
-// angleDeg: silah acisi (0 = dik yukari)
-// GECICI TEST: silahi karakterin eline anchor ile ciz
-void weapon_render_test(Player *p, SDL_Renderer *renderer,
-                        SDL_Texture *weaponTex, SDL_Texture *glowTex,
-                        ParticleSystem *fx, const Camera *camera, bool backLayer)
-{
-
-    // Bu yon icin silah arkada mi cizilmeli?
-    // UP (sirti donuk) ve LEFT (sag el arkada) → arka. DOWN/RIGHT → on.
-    bool wantsBack = (p->facing == DIR_UP || p->facing == DIR_LEFT);
-
-    // Parametre ile eslesmiyorsa bu cagrida cizme
-    if (wantsBack != backLayer)
-        return;
-
-    // --- Silahin kendi grip noktasi (bu kilic icin olculdu) ---
-    const float gripX = 31.0f;
-    const float gripY = 54.0f;
-    const int weaponW = 63;
-    const int weaponH = 63;
-
-    // --- El noktasi: state + kareye gore sec ---
-    float handX, handY, angleDeg;
-
-    if (p->state == PLAYER_SLASH)
-    {
-        int f = p->currentFrame;
-        if (f < 0)
-            f = 0;
-        if (f > 5)
-            f = 5;
-        handX = SLASH_ANCHORS[p->facing][f].handX;
-        handY = SLASH_ANCHORS[p->facing][f].handY;
-        angleDeg = SLASH_ANCHORS[p->facing][f].angle;
-    }
-    else
-    {
-        // Idle/walk: yone gore durus
-        handX = IDLE_ANCHORS[p->facing].handX;
-        handY = IDLE_ANCHORS[p->facing].handY;
-        angleDeg = IDLE_ANCHORS[p->facing].angle;
-    }
-
-    // Karakterin ekran konumu (player_render ile AYNI hesap + zoom)
-    float zoom = camera->zoom;
-    float scale = p->drawH / (float)FRAME_H;
-    float footPadding = (FRAME_H - SPRITE_FEET_Y) * scale;
-
-    float charWorldX = (p->rect.x + p->rect.w / 2.0f) - p->drawW / 2.0f;
-    float charWorldY = (p->rect.y + p->rect.h) - p->drawH + footPadding;
-    float charScreenX = (charWorldX - camera->x) * zoom;
-    float charScreenY = (charWorldY - camera->y) * zoom;
-
-    // El noktasinin ekran konumu (hucre-ici nokta * scale * zoom)
-    float handScreenX = charScreenX + handX * scale * zoom;
-    float handScreenY = charScreenY + handY * scale * zoom;
-
-    // El noktasinin DUNYA konumu (partikul icin — kamera-bagimsiz)
-    float handWorldX = charWorldX + handX * scale;
-    float handWorldY = charWorldY + handY * scale;
-
-    const float weaponScale = scale * 0.75f * zoom;
-
-    SDL_FRect dst = {
-        .x = handScreenX - gripX * weaponScale,
-        .y = handScreenY - gripY * weaponScale,
-        .w = weaponW * weaponScale,
-        .h = weaponH * weaponScale};
-
-    SDL_FPoint pivot = {gripX * weaponScale, gripY * weaponScale};
-
-    // ========== PARTIKUL: silah efekt tipine gore zerre dogur ==========
-    if (p->weaponFx != WEAPON_FX_NONE)
-    {
-        float radP = angleDeg * 3.14159265f / 180.0f;
-        float pdirX = SDL_sinf(radP);
-        float pdirY = -SDL_cosf(radP);
-        float bladeWorldLen = gripY * scale;
-
-        int spawnPerFrame = 3;
-        for (int k = 0; k < spawnPerFrame; k++)
-        {
-            float frac = 0.4f + 0.6f * randf();
-            float ox = handWorldX + pdirX * bladeWorldLen * frac;
-            float oy = handWorldY + pdirY * bladeWorldLen * frac;
-
-            float vx, vy, life, size;
-            Uint8 pr, pg, pb;
-
-            if (p->weaponFx == WEAPON_FX_FLAME)
-            {
-                // ALEV: yukari yukselir, sicak renk
-                vx = (randf() - 0.5f) * 40.0f;
-                vy = -60.0f - randf() * 60.0f;
-                life = 0.3f + randf() * 0.3f;
-                size = 8.0f + randf() * 10.0f;
-                pr = 255;
-                pg = (Uint8)(200 + rand() % 55);
-                pb = (Uint8)(rand() % 80);
-            }
-            else
-            {
-                // PINK ENERGY: rastgele yon, hafif yukari
-                float angR = randf() * 6.2832f;
-                float spd = 20.0f + randf() * 50.0f;
-                vx = SDL_cosf(angR) * spd;
-                vy = SDL_sinf(angR) * spd - 30.0f;
-                life = 0.3f + randf() * 0.4f;
-                size = 6.0f + randf() * 8.0f;
-                pr = 255;
-                pg = (Uint8)(40 + rand() % 60);
-                pb = (Uint8)(180 + rand() % 50);
-            }
-
-            fx_spawn(fx, ox, oy, vx, vy, life, size, pr, pg, pb, p->weaponFx);
-        }
-    }
-    // ========== PARTIKUL SONU ==========
-
-    // Asil kilici ciz
-    SDL_RenderTextureRotated(renderer, weaponTex, NULL, &dst, angleDeg, &pivot, SDL_FLIP_NONE);
-
-    // ========== AURA EFEKTI (kilic boyunca firtina/girdap) ==========
-    // weaponFx NONE ise aura da CIZILMEZ
-    if (glowTex != NULL && p->weaponFx != WEAPON_FX_NONE)
-    {
-        float t = SDL_GetTicks() / 1000.0f;
-        float pulse = 0.5f + 0.5f * SDL_sinf(t * 4.0f);
-
-        // Aura rengi efekt tipine gore
-        Uint8 glowR, glowG, glowB;
-        Uint8 sparkR, sparkG, sparkB;
-        if (p->weaponFx == WEAPON_FX_FLAME)
-        {
-            glowR = 255;
-            glowG = 140;
-            glowB = 20; // turuncu aura
-            sparkR = 255;
-            sparkG = 220;
-            sparkB = 40; // sari kivilcim
-        }
-        else
-        {
-            glowR = 255;
-            glowG = 40;
-            glowB = 180; // pembe aura
-            sparkR = 255;
-            sparkG = 20;
-            sparkB = 140; // koyu pembe kivilcim
-        }
-
-        SDL_SetTextureBlendMode(glowTex, SDL_BLENDMODE_BLEND);
-
-        float rad = angleDeg * 3.14159265f / 180.0f;
-        float dirX = SDL_sinf(rad);
-        float dirY = -SDL_cosf(rad);
-        float perpX = -dirY;
-        float perpY = dirX;
-
-        float bladeLen = gripY * weaponScale;
-
-        int points = 6;
-        for (int i = 0; i < points; i++)
-        {
-            float frac = 0.45f + 0.55f * (float)i / (points - 1);
-
-            float baseX = handScreenX + dirX * bladeLen * frac;
-            float baseY = handScreenY + dirY * bladeLen * frac;
-
-            float swirl = SDL_sinf(t * 6.0f + i * 1.3f) * (weaponW * weaponScale * 0.18f);
-            float px = baseX + perpX * swirl;
-            float py = baseY + perpY * swirl;
-
-            float size = weaponW * weaponScale * (0.9f - frac * 0.2f) * (0.9f + pulse * 0.2f);
-            Uint8 a = (Uint8)((95 + pulse * 50) * (1.0f - frac * 0.2f));
-
-            SDL_SetTextureColorMod(glowTex, glowR, glowG, glowB);
-            SDL_SetTextureAlphaMod(glowTex, a);
-
-            SDL_FRect gdst = {
-                .x = px - size * 0.5f,
-                .y = py - size * 0.5f,
-                .w = size,
-                .h = size};
-            SDL_RenderTexture(renderer, glowTex, NULL, &gdst);
-        }
-
-        // --- ICINDEKI PARILDAYAN NOKTACIKLAR ---
-        int sparkCount = 8;
-        for (int s = 0; s < sparkCount; s++)
-        {
-            float sFrac = 0.4f + 0.6f * ((s * 0.37f) - (int)(s * 0.37f));
-            float sOff = SDL_sinf(s * 2.1f) * (weaponW * weaponScale * 0.15f);
-
-            float twinkle = 0.5f + 0.5f * SDL_sinf(t * 8.0f + s * 1.7f);
-            if (twinkle < 0.3f)
-                continue;
-
-            float driftFrac = sFrac + SDL_sinf(t * 2.0f + s) * 0.05f;
-            float spx = handScreenX + dirX * bladeLen * driftFrac + perpX * sOff;
-            float spy = handScreenY + dirY * bladeLen * driftFrac + perpY * sOff;
-
-            float sparkSize = weaponW * weaponScale * (0.18f + twinkle * 0.12f);
-
-            SDL_SetTextureColorMod(glowTex, sparkR, sparkG, sparkB);
-            SDL_SetTextureAlphaMod(glowTex, (Uint8)(twinkle * 180));
-
-            SDL_FRect sdst = {
-                .x = spx - sparkSize * 0.5f,
-                .y = spy - sparkSize * 0.5f,
-                .w = sparkSize,
-                .h = sparkSize};
-            SDL_RenderTexture(renderer, glowTex, NULL, &sdst);
-        }
-
-        SDL_SetTextureColorMod(glowTex, 255, 255, 255);
-        SDL_SetTextureAlphaMod(glowTex, 255);
-        SDL_SetTextureBlendMode(glowTex, SDL_BLENDMODE_BLEND);
-    }
-    // ========== AURA SONU ==========
-
-#if DEBUG_DRAW
-    SDL_FRect handDot = {handScreenX - 2, handScreenY - 2, 4, 4};
-    SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255);
-    SDL_RenderFillRect(renderer, &handDot);
-#endif
-}

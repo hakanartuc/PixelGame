@@ -118,7 +118,7 @@ static bool tile_is_solid(int tileID)
     return TILE_TYPES[tileID].solid;
 }
 // Bir tile ID'sinin rengini tablodan alıp renderer'a set eder.
-static void tile_set_color(SDL_Renderer *renderer, int tileID)
+static void tile_set_color(R2D *renderer, int tileID)
 {
     // SINIR KONTROLÜ: geçersiz ID'ler siyah sayılır
     Uint8 r = 0, g = 0, b = 0;
@@ -127,24 +127,24 @@ static void tile_set_color(SDL_Renderer *renderer, int tileID)
         g = TILE_TYPES[tileID].g;
         b = TILE_TYPES[tileID].b;
     }
-    SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+    r2d_set_color(renderer, r, g, b, 255);
     
 }
 
 // Bir tile'ı verilen ekran-diktörgenine çizer. Eğer tile'ın texture'ı yoksa renk basılır.
-static void tile_draw(SDL_Renderer *renderer, SDL_Texture **textures,int tileID, SDL_FRect dst)
+static void tile_draw(R2D *renderer, R2DTexture **textures,int tileID, SDL_FRect dst)
 {
     if (tileID >= 0 && tileID < TILE_TYPE_COUNT) {
-        SDL_Texture *texture = textures[tileID];
+        R2DTexture *texture = textures[tileID];
         if (texture != NULL) {
-            SDL_RenderTexture(renderer, texture, NULL, &dst);
+            r2d_draw_texture(renderer, texture, NULL, &dst);
             return;
         }
     }
 
     // Geçersiz ID veya texture yoksa renk bas:
     tile_set_color(renderer, tileID);
-    SDL_RenderFillRect(renderer, &dst);
+    r2d_fill_rect(renderer, &dst);
 }
 
 // --- Genel fonksiyonlar (header'da ilan edilmiş, static DEĞİL) ---
@@ -197,14 +197,14 @@ SDL_FRect feet_box(float rectX, float rectY, float rectW, float rectH)
     return f;
 }
 
-void tilemap_render(SDL_Renderer *renderer, SDL_Texture **tileTextures, const Camera *camera)
+void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *camera)
 {
     float zoom = camera->zoom;
 
     // CULLING: sadece ekranda görünen tile aralığını çiz.
     // Büyük haritada (200×150 = 30k tile) hepsini çizmek boşa draw call'dur.
     int outW = 0, outH = 0;
-    SDL_GetCurrentRenderOutputSize(renderer, &outW, &outH);
+    r2d_output_size(renderer, &outW, &outH);
 
     int colL = (int)(camera->x / TILE_SIZE);
     int rowT = (int)(camera->y / TILE_SIZE);

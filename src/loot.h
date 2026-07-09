@@ -1,5 +1,6 @@
 #ifndef LOOT_H
 #define LOOT_H
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <stdbool.h>
 #include "common.h"
@@ -34,7 +35,7 @@ bool loot_spawn(Loot *loots, int maxLoot, float x, float y,
                 const LootEntry *table, int tableCount, int goldMin, int goldMax);
 
 // Tüm loot'ları çiz.
-void loot_render_all(Loot *loots, int maxLoot, SDL_Renderer *renderer, SDL_Texture *crateTex, const Camera *camera);
+void loot_render_all(Loot *loots, int maxLoot, R2D *renderer, R2DTexture *crateTex, const Camera *camera);
 
 // Dünya noktasındaki aktif kasanın slot indeksini döndürür (yoksa -1).
 int loot_find_at(Loot *loots, int maxLoot, float worldX, float worldY);
@@ -42,8 +43,8 @@ int loot_find_at(Loot *loots, int maxLoot, float worldX, float worldY);
 // Kasaları güncelle (açılma animasyonu).
 void loot_update_all(Loot *loots, int maxLoot, float dt);
 
-void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
-                       SDL_Texture *itemIconTex, const ItemTextures *itemTex,
+void loot_popup_render(R2D *renderer, const Loot *loot,
+                       R2DTexture *itemIconTex, const ItemTextures *itemTex,
                        TTF_Font *font, const Camera *camera);
 
 // loot_popup_item_at'in özel dönüşü: altın hücresine tıklandı

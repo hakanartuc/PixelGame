@@ -2,6 +2,7 @@
 #define FONT_H
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include "r2d.h"
 #include <stdbool.h>
 
 // Font sistemini başlat (TTF_Init). Başarılıysa true.
@@ -11,12 +12,12 @@ bool font_init(void);
 TTF_Font *font_load(const char *path, float size);
 
 // Metni ekrana çiz (sol-üst köşe x,y konumunda, verilen renkte).
-void draw_text(SDL_Renderer *renderer, TTF_Font *font, const char *text,
+void draw_text(R2D *renderer, TTF_Font *font, const char *text,
                float x, float y, SDL_Color color);
 
 // Uzun metni wrapW pikselde sarıp çizer (diyalog kutusu için).
 // Dönen değer: çizilen bloğun yüksekliği (sonraki satırı altına koymak için).
-float draw_text_wrapped(SDL_Renderer *renderer, TTF_Font *font, const char *text,
+float draw_text_wrapped(R2D *renderer, TTF_Font *font, const char *text,
                         float x, float y, float wrapW, SDL_Color color);
 
 // Tek bir fontu kapat (yüklenen her font için bir kez).

@@ -1,5 +1,6 @@
 #ifndef DECOR_H
 #define DECOR_H
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <stdbool.h>
 #include "common.h"
@@ -18,7 +19,7 @@ extern const DecorDef DECORS[];
 extern const int DECOR_COUNT;
 
 // Hepsini çiz (tilemap'ten sonra, entity'lerden önce)
-void decor_render_all(SDL_Renderer *renderer, SDL_Texture **decorTextures,
+void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
                       const Camera *camera);
 
 // Kutu herhangi bir dekorun katı tabanına çarpıyor mu?
@@ -26,6 +27,6 @@ void decor_render_all(SDL_Renderer *renderer, SDL_Texture **decorTextures,
 bool decor_blocks(SDL_FRect box);
 
 // Texture boyutları render/collision için gerekli — yükleme sonrası bir kez çağır
-void decor_set_texture_sizes(SDL_Texture **decorTextures);
+void decor_set_texture_sizes(R2DTexture **decorTextures);
 
 #endif

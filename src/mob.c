@@ -130,7 +130,7 @@ const int MOB_TYPE_COUNT = (int)(sizeof(MOB_TYPES) / sizeof(MOB_TYPES[0]));
 
 // Yere yatık bir oval (hedef halkası) çizer. cx,cy = merkez (ekran), 
 // rx,ry = yatay/dikey yarıçap.
-static void draw_target_ring(SDL_Renderer *renderer, float cx, float cy, float rx, float ry)
+static void draw_target_ring(R2D *renderer, float cx, float cy, float rx, float ry)
 {
     int segments = 24;   // ovali kaç parçaya bölelim (çok = pürüzsüz)
     float prevX = cx + rx;   // ilk nokta (açı 0)
@@ -139,7 +139,7 @@ static void draw_target_ring(SDL_Renderer *renderer, float cx, float cy, float r
         float angle = (float)i / segments * 2.0f * 3.14159265f;  // 0 → 2π
         float x = cx + rx * SDL_cosf(angle);
         float y = cy + ry * SDL_sinf(angle);
-        SDL_RenderLine(renderer, prevX, prevY, x, y);   // önceki noktadan bu noktaya çizgi
+        r2d_line(renderer, prevX, prevY, x, y);   // önceki noktadan bu noktaya çizgi
         prevX = x;
         prevY = y;
     }
@@ -154,7 +154,7 @@ static void zone_random_pos(const SpawnZone *z, float *outX, float *outY)
     *outY = z->y + SDL_sinf(angle) * dist;
 }
 
-void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures, const Camera *camera, int targetMobId)
+void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Camera *camera, int targetMobId)
 {
     if (m->type == NULL) return;   // boş slot → çizme
 
@@ -192,7 +192,7 @@ void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures
     if (m->id == targetMobId) {
         float ringCx = ((m->e.rect.x + m->e.rect.w / 2.0f) - camera->x) * zoom;
         float ringCy = ((m->e.rect.y + m->e.rect.h) - camera->y) * zoom;
-        SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255);
+        r2d_set_color(renderer, 255, 50, 50, 255);
         draw_target_ring(renderer, ringCx, ringCy,
                          m->e.rect.w * 0.7f * zoom, m->e.rect.w * 0.35f * zoom);
     }
@@ -200,14 +200,14 @@ void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures
     SDL_FlipMode flip = m->e.facingLeft ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 
     int typeIndex = (int)(m->type - MOB_TYPES);
-    SDL_Texture *texture = mob_textures[typeIndex];
+    R2DTexture *texture = mob_textures[typeIndex];
 
     if (m->e.hitFlash > 0.0f)
-        SDL_SetTextureColorMod(texture, 255, 150, 150);
+        r2d_texture_set_color_mod(texture, 255, 150, 150);
     else
-        SDL_SetTextureColorMod(texture, 255, 255, 255);
+        r2d_texture_set_color_mod(texture, 255, 255, 255);
 
-    SDL_RenderTextureRotated(renderer, texture, &src, &screen, 0.0, NULL, flip);
+    r2d_draw_texture_flip(renderer, texture, &src, &screen, flip == SDL_FLIP_HORIZONTAL);
 
     #if DEBUG_DRAW
     SDL_FRect rectScreen = {
@@ -216,8 +216,8 @@ void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures
         m->e.rect.w,
         m->e.rect.h
     };
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    SDL_RenderRect(renderer, &rectScreen);
+    r2d_set_color(renderer, 255, 0, 0, 255);
+    r2d_rect(renderer, &rectScreen);
     #endif
 }
 
@@ -428,7 +428,7 @@ int mob_find_nearest(Mob *mobs, int mobCount, float px, float py)
 }
 
 // Hedef mob'un HP barını ekranın üstünde çizer (KO tarzı sabit panel).
-void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW, TTF_Font *font)
+void target_hp_bar_render(R2D *renderer, const Mob *target, int winW, TTF_Font *font)
 {
     if (target == NULL) return;   // hedef yoksa çizme
 
@@ -439,20 +439,20 @@ void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW, T
 
     // 1) Arka plan (boş bar)
     SDL_FRect bg = { barX, barY, barW, barH };
-    SDL_SetRenderDrawColor(renderer, 40, 20, 20, 255);
-    SDL_RenderFillRect(renderer, &bg);
+    r2d_set_color(renderer, 40, 20, 20, 255);
+    r2d_fill_rect(renderer, &bg);
 
     // 2) Dolu kısım (cana oranlı)
     float ratio = target->e.health / target->e.maxHealth;
     if (ratio < 0.0f) ratio = 0.0f;
     if (ratio > 1.0f) ratio = 1.0f;
     SDL_FRect fill = { barX, barY, barW * ratio, barH };
-    SDL_SetRenderDrawColor(renderer, 200, 40, 40, 255);   // kırmızı
-    SDL_RenderFillRect(renderer, &fill);
+    r2d_set_color(renderer, 200, 40, 40, 255);   // kırmızı
+    r2d_fill_rect(renderer, &fill);
 
     // 3) Çerçeve
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderRect(renderer, &bg);
+    r2d_set_color(renderer, 255, 255, 255, 255);
+    r2d_rect(renderer, &bg);
 
 
     // Mob ismi — bar'ın ÜSTÜNE, ortalı

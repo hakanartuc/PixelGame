@@ -1,5 +1,6 @@
 #ifndef HOTBAR_H
 #define HOTBAR_H
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdbool.h>
@@ -39,8 +40,8 @@ bool hotbar_assign_item(Hotbar *hb, const ItemType *type);
 
 // Bar çizimi: alt-orta, tuş numarası + kısaltma/ikon + cooldown perdesi + adet.
 // abilityCd: ability başına, itemCd: item TÜRÜ başına kalan bekleme (Player'dan).
-void hotbar_render(const Hotbar *hb, SDL_Renderer *renderer,
-                   SDL_Texture *itemIconTex, const ItemTextures *itemTex,
+void hotbar_render(const Hotbar *hb, R2D *renderer,
+                   R2DTexture *itemIconTex, const ItemTextures *itemTex,
                    TTF_Font *font, const float *abilityCd, const float *itemCd,
                    const Inventory *inv, int winW, int winH);
 

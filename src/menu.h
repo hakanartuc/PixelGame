@@ -1,5 +1,6 @@
 #ifndef MENU_H
 #define MENU_H
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include "font.h"
 
@@ -25,7 +26,7 @@ typedef enum {
 } MenuAction;
 
 // Pause menusunu cizer (yari saydam karartma + butonlar).
-void menu_render(SDL_Renderer *renderer, TTF_Font *font,
+void menu_render(R2D *renderer, TTF_Font *font,
                  MenuScreen screen, int winW, int winH);
 
 // Tiklama testi: verilen ekrandaki hangi butona basildi → aksiyon.

@@ -1,5 +1,6 @@
 #ifndef PERK_H
 #define PERK_H
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdbool.h>
@@ -74,11 +75,11 @@ int perk_pending_tier(SkillType s, int level, const Sint8 choice[SKILL_COUNT][PE
 // ulaşılmamış=soluk. skill_panel_render'dan SONRA, aynı panelX/panelY ile çağır.
 void perk_pips_render(const Skill *skills,
                       const Sint8 choice[SKILL_COUNT][PERK_TIERS],
-                      SDL_Renderer *renderer, TTF_Font *font,
+                      R2D *renderer, TTF_Font *font,
                       float panelX, float panelY);
 
 // Seçim overlay'i: 3 seçenek kartı (K panelinin yanında)
-void perk_choice_render(SkillType s, int tier, SDL_Renderer *renderer,
+void perk_choice_render(SkillType s, int tier, R2D *renderer,
                         TTF_Font *font, float x, float y);
 
 // Overlay'de tıklanan seçenek (0..2, -1 = dışarı). Render ile aynı yerleşim.

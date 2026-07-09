@@ -46,8 +46,14 @@ add_executable(game
     src/minimap.c
     src/ui_theme.c
     src/perk.c
+    src/r2d.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle
 target_link_libraries(game PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)   # ← SDL3_ttf
 
 target_compile_options(game PRIVATE -Wall -Wextra)
+
+# r2d duman testi — SDL_GPU yolunu oyundan bagimsiz dogrular (GPU gecisi araci)
+add_executable(r2d_test src/r2d_test.c src/r2d.c)
+target_link_libraries(r2d_test PRIVATE SDL3::SDL3)
+target_compile_options(r2d_test PRIVATE -Wall -Wextra)

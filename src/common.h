@@ -2,6 +2,7 @@
 #define COMMON_H
 
 #include <SDL3/SDL.h>   // SDL_FRect, Uint8 gibi tipler için
+#include "r2d.h"        // R2D / R2DTexture — SDL_Renderer'ın yerini aldı (tüm modüller kullanır)
 
 
 #define DEBUG_DRAW 0

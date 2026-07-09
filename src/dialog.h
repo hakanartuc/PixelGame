@@ -1,5 +1,6 @@
 #ifndef DIALOG_H
 #define DIALOG_H
+#include "r2d.h"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdbool.h>
@@ -48,6 +49,6 @@ int dialog_find(const Dialog *d, const char *id);
 
 // Alt panel: NPC adı + metin (sarılı) + numaralı seçenekler
 void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
-                   SDL_Renderer *renderer, TTF_Font *font, int winW, int winH);
+                   R2D *renderer, TTF_Font *font, int winW, int winH);
 
 #endif

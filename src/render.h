@@ -3,8 +3,9 @@
 
 #include <SDL3/SDL.h>
 #include "common.h"     // Camera
+#include "r2d.h"        // R2D / R2DTexture (SDL_Renderer'ın yerini aldı)
 
-SDL_Texture *load_texture(SDL_Renderer *renderer, const char *path);
+R2DTexture *load_texture(R2D *renderer, const char *path);
 void camera_update(Camera *camera, float targetX, float targetY, int winW, int winH);
 
 // Dunya koordinatini ekran koordinatina cevirir (zoom dahil)
@@ -17,6 +18,6 @@ static inline SDL_FRect world_to_screen(float worldX, float worldY, float worldW
     };
 }
 
-SDL_Texture *create_glow_texture(SDL_Renderer *renderer, int size);
+R2DTexture *create_glow_texture(R2D *renderer, int size);
 
 #endif // RENDER_H
