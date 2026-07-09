@@ -5,9 +5,13 @@
 #include "item.h"
 #include "skill.h"
 #include "gametime.h"
+#include "minimap.h"
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 4u   // v2: hotbar; v3: görevler; v4: gün+saat
+#define SAVE_VERSION 5u   // v2: hotbar; v3: görevler; v4: gün+saat; v5: keşif haritası
+
+// Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
+#define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
 
 // --- Yazma/okuma yardımcıları: her alan tek tek, hata tek noktadan ---
 // fwrite/fread sayı döndürür; 1 değilse dosya kesik/bozuk demektir.
@@ -88,6 +92,13 @@ bool save_game(const char *path, const Player *p,
     int day; float hours;
     gametime_get(&day, &hours);
     ok = ok && w32(f, day) && wf(f, hours);
+
+    // Keşif haritası (v5) — bit-paketli
+    static Uint8 exploredBuf[EXPLORED_BUF_CAP];
+    int exploredBytes = minimap_pack_explored(exploredBuf, EXPLORED_BUF_CAP);
+    ok = ok && w32(f, exploredBytes);
+    if (ok && exploredBytes > 0)
+        ok = fwrite(exploredBuf, (size_t)exploredBytes, 1, f) == 1;
 
     fclose(f);
     if (!ok)
@@ -182,6 +193,15 @@ bool load_game(const char *path, Player *p,
     float tmpHours;
     ok = ok && r32(f, &tmpDay) && rf(f, &tmpHours);
 
+    // Keşif haritası (v5)
+    static Uint8 exploredBuf[EXPLORED_BUF_CAP];
+    Sint32 exploredBytes = 0;
+    ok = ok && r32(f, &exploredBytes);
+    if (ok && (exploredBytes < 0 || exploredBytes > (Sint32)EXPLORED_BUF_CAP))
+        ok = false;   // bozuk boyut
+    if (ok && exploredBytes > 0)
+        ok = fread(exploredBuf, (size_t)exploredBytes, 1, f) == 1;
+
     fclose(f);
     if (!ok) {
         SDL_Log("Save okunamadi (bozuk dosya): %s", path);
@@ -195,5 +215,7 @@ bool load_game(const char *path, Player *p,
     *hb = tmpHb;
     memcpy(quests, tmpQ, sizeof(tmpQ));
     gametime_set(tmpDay, tmpHours);
+    if (exploredBytes > 0)
+        minimap_unpack_explored(exploredBuf, exploredBytes);
     return true;
 }

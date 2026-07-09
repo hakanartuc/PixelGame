@@ -45,4 +45,7 @@ void npc_render_all(SDL_Renderer *renderer, SDL_Texture **npcTextures,
 // İçerideki (indoors) NPC seçilmez — gece dükkan da böyle kapanır.
 int npc_nearest_in_range(float px, float py);
 
+// NPC'nin anlık konumu (minimap vb. için). İçerideyse false (görünmez).
+bool npc_visible_pos(int i, float *x, float *y);
+
 #endif

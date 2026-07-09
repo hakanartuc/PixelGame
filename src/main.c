@@ -26,6 +26,9 @@
 #include "quest.h"
 #include "gametime.h"
 #include "decor.h"
+#include "audio.h"
+#include "music.h"
+#include "minimap.h"
 
 int main(int argc, char *argv[])
 {
@@ -154,6 +157,15 @@ int main(int argc, char *argv[])
     decor_set_texture_sizes(decor_textures);
 
     gametime_init();   // gün 1, 08:00
+    audio_init();      // başarısızsa oyun sessiz devam eder
+    music_init();      // arka plan müziği (mood'a göre, crossfade)
+
+    // Ölüm akışı: timer > 0 iken dünya donar, ekran kararır; bitince köyde diril
+    float deathTimer = 0.0f;
+    int deathGoldLost = 0;
+
+    bool questLogOpen = false;
+    bool minimapOpen = true;   // M ile kapatılabilir
 
     // NPC'ler: texture + diyalog dosyaları (yüklenemeyen NPC konuşamaz, oyun çökmez)
     SDL_Texture *npc_textures[NPC_COUNT];
@@ -248,6 +260,7 @@ int main(int argc, char *argv[])
     // Harita: Tiled CSV'den; yoksa eski test haritası (generate_map)
     if (!tilemap_load_csv("assets/maps/world.csv"))
         generate_map();
+    minimap_init(renderer);   // harita boyutu belli olduktan SONRA
 
     // Bölge splash durumu: bölge değişince ad 3 sn görünür
     int currentRegion = -1;
@@ -305,9 +318,13 @@ int main(int argc, char *argv[])
                     {
                         skillsOpen = false; // 5) sonra skill paneli
                     }
+                    else if (questLogOpen)
+                    {
+                        questLogOpen = false; // 6) sonra quest log
+                    }
                     else
                     {
-                        gameState = GAME_PAUSED; // 6) hicbiri yoksa MENU AC
+                        gameState = GAME_PAUSED; // 7) hicbiri yoksa MENU AC
                         menuScreen = MENU_MAIN;
                     }
                 }
@@ -442,6 +459,17 @@ int main(int argc, char *argv[])
                 else if (event.key.key == SDLK_K && gameState == GAME_PLAYING)
                 {
                     skillsOpen = !skillsOpen;
+                    audio_play(SFX_UI);
+                }
+                else if (event.key.key == SDLK_J && gameState == GAME_PLAYING)
+                {
+                    questLogOpen = !questLogOpen;
+                    audio_play(SFX_UI);
+                }
+                else if (event.key.key == SDLK_M && gameState == GAME_PLAYING)
+                {
+                    minimapOpen = !minimapOpen;
+                    audio_play(SFX_UI);
                 }
                 else if (event.key.key == SDLK_F && gameState == GAME_PLAYING)
                 {
@@ -483,6 +511,8 @@ int main(int argc, char *argv[])
                         SDL_GetWindowSize(window, &mw, &mh);
                         MenuAction act = menu_handle_click(&menuScreen,
                                                            (float)event.button.x, (float)event.button.y, mw, mh);
+                        if (act != MENU_ACTION_NONE)
+                            audio_play(SFX_UI);
                         if (act == MENU_ACTION_RESUME)
                             gameState = GAME_PLAYING;
                         else if (act == MENU_ACTION_QUIT)
@@ -523,6 +553,7 @@ int main(int argc, char *argv[])
                                 inventory_add(&inventory, it, 1, 0))
                             {
                                 player.gold -= it->value;
+                                audio_play(SFX_UI);
                                 char buf[FLOAT_TEXT_LEN];
                                 snprintf(buf, sizeof(buf), "-%d g", it->value);
                                 SDL_Color red = { 255, 140, 120, 255 };
@@ -543,6 +574,7 @@ int main(int argc, char *argv[])
                             // Altın hücresi: al + bildir
                             Loot *l = &loots[openLootIndex];
                             player.gold += l->gold;
+                            audio_play(SFX_LOOT);
                             char buf[FLOAT_TEXT_LEN];
                             snprintf(buf, sizeof(buf), "+%d Gold", l->gold);
                             SDL_Color goldCol = { 255, 210, 60, 255 };
@@ -566,6 +598,7 @@ int main(int argc, char *argv[])
                                 if (inventory_add(&inventory, stack->type, stack->count,
                                                   stack->plusLevel))
                                 {
+                                    audio_play(SFX_LOOT);
                                     stack->type = NULL;
                                     stack->count = 0;
                                     stack->plusLevel = 0;
@@ -630,6 +663,7 @@ int main(int argc, char *argv[])
                                     // Dükkan açıkken sağ tık = SAT (alışın yarısı, plus dahil)
                                     int price = item_value(st) / 2;
                                     player.gold += price;
+                                    audio_play(SFX_UI);
                                     st->count--;
                                     if (st->count <= 0)
                                     {
@@ -674,7 +708,24 @@ int main(int argc, char *argv[])
         int winW, winH;
         SDL_GetWindowSize(window, &winW, &winH); // pencere boyutunu al (dinamik olarak, pencere yeniden boyutlandırılabilir)
 
-        if (gameState == GAME_PLAYING)
+        // ÖLÜM EKRANI: dünya donuk, sadece geri sayım (bitince köyde diril)
+        if (deathTimer > 0.0f)
+        {
+            deathTimer -= dt;
+            if (deathTimer <= 0.0f)
+            {
+                player.rect.x = SPAWN_X;
+                player.rect.y = SPAWN_Y;
+                player.health = player.maxHealth;
+                player.state = PLAYER_IDLE;
+                player.attacking = false;
+                player.attackHit = false;
+                player.targetMobId = 0;
+                // (uzakta aggro'lu moblar leash'le kendiliğinden kampa döner)
+            }
+        }
+
+        if (gameState == GAME_PLAYING && deathTimer <= 0.0f)
         {
 
             const bool *keys = SDL_GetKeyboardState(NULL); // basılı tuşların anlık görüntüsü (SDL'e ait, free etme)
@@ -710,6 +761,7 @@ int main(int argc, char *argv[])
                         inventory_consume(&inventory, hs->itemType))
                     {
                         player.itemCd[typeIdx] = hs->itemType->useCooldown;
+                        audio_play(SFX_POTION);
                         player.health += hs->itemType->healAmount;
                         if (player.health > player.maxHealth)
                             player.health = player.maxHealth;
@@ -869,6 +921,7 @@ int main(int argc, char *argv[])
 
                         target->e.health -= hit.damage;
                         target->e.hitFlash = 0.15f;
+                        audio_play(hit.crit ? SFX_CRIT : SFX_HIT);
 
                         // Vurulan mob + kamp arkadaşları alarma geçer (grup aggro)
                         target->aggro = true;
@@ -897,6 +950,7 @@ int main(int argc, char *argv[])
 
                                 // Yeni seviye ability açtıysa hotbar'a otomatik koy
                                 hotbar_place_unlocks(&hotbar, player.skills);
+                                audio_play(SFX_LEVELUP);
                             }
                         }
 
@@ -971,6 +1025,49 @@ int main(int argc, char *argv[])
                 }
             }
 
+            // ÖLÜM: can bitti → ölüm ekranı başlat + %10 altın cezası
+            if (player.health <= 0.0f && deathTimer <= 0.0f)
+            {
+                deathTimer = 2.5f;
+                deathGoldLost = player.gold / 10;
+                player.gold -= deathGoldLost;
+                player.autoAttack = false;
+                player.targetMobId = 0;
+                dialogNpc = -1;   // açık UI'lar ölümle kapanır
+                shopOpen = false;
+                audio_play(SFX_DEATH);
+            }
+
+            // Minimap keşfi (fog of war): oyuncunun çevresini aç
+            minimap_reveal(renderer, px, py);
+
+            // --- MÜZİK MOOD'U: savaş > bölge; gece açık arazi tekinsizleşir ---
+            // Savaş: yakında seni kovalayan/sana saldıran mob var mı?
+            bool inCombat = false;
+            for (int i = 0; i < mobCount && !inCombat; i++)
+            {
+                if (!mobs[i].e.alive) continue;
+                if (mobs[i].state != MOB_CHASE && mobs[i].state != MOB_ATTACK) continue;
+                float mdx = (mobs[i].e.rect.x + mobs[i].e.rect.w / 2.0f) - px;
+                float mdy = (mobs[i].e.rect.y + mobs[i].e.rect.h / 2.0f) - py;
+                if (mdx * mdx + mdy * mdy < 500.0f * 500.0f)
+                    inCombat = true;
+            }
+
+            MusicMood mood;
+            if (inCombat)
+            {
+                mood = MOOD_COMBAT;
+            }
+            else
+            {
+                int mreg = region_at(px, py);
+                mood = (mreg >= 0) ? REGIONS[mreg].mood : MOOD_WILD;
+                if (mood == MOOD_WILD && gametime_is_night())
+                    mood = MOOD_DANGER;   // gece açık arazi güvenli değil
+            }
+            music_set_mood(mood);
+
             loot_update_all(loots, MAX_LOOT, dt);
 
             floattext_update_all(floatTexts, MAX_FLOAT_TEXTS, dt);
@@ -995,6 +1092,8 @@ int main(int argc, char *argv[])
             if (splashTimer > 0.0f)
                 splashTimer -= dt;
         }
+
+        music_update(dt);   // fade + loop besleme (menüde/ölümde de akar)
 
         SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
         SDL_RenderClear(renderer);                            // ekranı temizle (arka plan rengini doldur)
@@ -1057,6 +1156,40 @@ int main(int argc, char *argv[])
         // Hotbar (alt-orta): skill CD'leri + pot adetleri
         hotbar_render(&hotbar, renderer, itemIconTex, &itemTex, gameFont,
                       player.abilityCd, player.itemCd, &inventory, winW, winH);
+
+        if (minimapOpen)
+            minimap_render(renderer, player.rect.x + player.rect.w / 2.0f,
+                           player.rect.y + player.rect.h / 2.0f,
+                           mobs, mobCount, winW, winH);
+
+        if (questLogOpen)
+            quest_log_render(questStatus, renderer, gameFont,
+                             (float)winW - 340.0f - 20.0f, 60.0f);
+
+        // Ölüm ekranı: koyu kızıl karartma + yazılar (her şeyin üstünde, menü hariç)
+        if (deathTimer > 0.0f && splashFont != NULL)
+        {
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 40, 0, 0, 200);
+            SDL_FRect dead = { 0, 0, (float)winW, (float)winH };
+            SDL_RenderFillRect(renderer, &dead);
+
+            int tw = 0, th = 0;
+            TTF_GetStringSize(splashFont, "Oldun", 0, &tw, &th);
+            SDL_Color red = { 255, 80, 80, 255 };
+            draw_text(renderer, splashFont, "Oldun",
+                      (winW - tw) / 2.0f, winH * 0.4f, red);
+
+            if (gameFont != NULL && deathGoldLost > 0)
+            {
+                char buf[32];
+                snprintf(buf, sizeof(buf), "-%d Gold", deathGoldLost);
+                TTF_GetStringSize(gameFont, buf, 0, &tw, &th);
+                SDL_Color gold = { 255, 210, 60, 255 };
+                draw_text(renderer, gameFont, buf,
+                          (winW - tw) / 2.0f, winH * 0.4f + 50.0f, gold);
+            }
+        }
 
         // Bölge adı splash'i (üst-orta, son 1 sn'de solar)
         if (splashTimer > 0.0f && splashText != NULL && splashFont != NULL)
@@ -1129,6 +1262,9 @@ int main(int argc, char *argv[])
     if (glowTex)
         SDL_DestroyTexture(glowTex);
 
+    minimap_quit();
+    music_quit();
+    audio_quit();
     item_textures_free(&itemTex);
     font_close(gameFont);
     font_close(splashFont);

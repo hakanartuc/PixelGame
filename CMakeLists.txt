@@ -41,6 +41,9 @@ add_executable(game
     src/quest.c
     src/gametime.c
     src/decor.c
+    src/audio.c
+    src/music.c
+    src/minimap.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle
 target_link_libraries(game PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)   # ← SDL3_ttf

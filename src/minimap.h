@@ -1,0 +1,29 @@
+#ifndef MINIMAP_H
+#define MINIMAP_H
+#include <SDL3/SDL.h>
+#include <stdbool.h>
+#include "common.h"
+#include "mob.h"
+
+// Minimap + fog of war: gidilen yerler açılır (tile rengiyle), gerisi karanlık.
+// Harita bir kez texture'a işlenir; her kare yalnız YENİ açılan tile'lar eklenir.
+// Üstüne canlı noktalar: oyuncu (beyaz), mob (kırmızı), NPC (yeşil).
+// M ile açılır/kapanır (main). Keşif durumu save v5'te saklanır.
+
+void minimap_init(SDL_Renderer *renderer);   // harita boyutunda target texture
+void minimap_quit(void);
+
+// Oyuncunun çevresini keşfet (her kare çağrılır; yeni tile'ları texture'a işler)
+void minimap_reveal(SDL_Renderer *renderer, float worldX, float worldY);
+
+// Sağ-alt köşeye çiz (noktalarla birlikte)
+void minimap_render(SDL_Renderer *renderer, float playerX, float playerY,
+                    const Mob *mobs, int mobCount, int winW, int winH);
+
+// --- Save köprüsü (bit-paketli keşif matrisi) ---
+// pack: out'a yazar, yazılan byte sayısını döner (cap yetmezse 0).
+int  minimap_pack_explored(Uint8 *out, int cap);
+// unpack: yükleme sonrası çağrılır; texture bir sonraki render'da yeniden işlenir.
+void minimap_unpack_explored(const Uint8 *in, int bytes);
+
+#endif

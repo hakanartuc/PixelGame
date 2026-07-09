@@ -96,6 +96,15 @@ void npc_update(float dt, float hours)
     }
 }
 
+bool npc_visible_pos(int i, float *x, float *y)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= 8 || npcState[i].hidden)
+        return false;
+    *x = npcState[i].x;
+    *y = npcState[i].y;
+    return true;
+}
+
 int npc_nearest_in_range(float px, float py)
 {
     int best = -1;

@@ -1,5 +1,7 @@
 #ifndef QUEST_H
 #define QUEST_H
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <stdbool.h>
 #include "mob.h"
 
@@ -40,5 +42,9 @@ int quest_find(const char *id);
 // Öldürme kancası: aktif görevlerin sayaçlarını ilerletir.
 // Bu ölümle DONE'a geçen görevin indeksi döner (-1 = yok; UI bildirimi için).
 int quest_on_kill(QuestStatus *status, const MobType *killed);
+
+// Quest log paneli (J): tüm görevler — durum, ilerleme çubuğu, ödül.
+void quest_log_render(const QuestStatus *status, SDL_Renderer *renderer,
+                      TTF_Font *font, float panelX, float panelY);
 
 #endif
