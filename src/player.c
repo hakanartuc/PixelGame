@@ -2,6 +2,7 @@
 #include <stdlib.h> // rand, RAND_MAX
 #include "common.h"
 #include "tilemap.h"
+#include "decor.h"   // ev tabanları katı (hareket kontrolü)
 #include "player.h"
 #include "equipment.h" // ← EKLE: Equipment tam tanim + EQUIP_SLOT_COUNT + EquipSlot + slot_zorder
 #include "item.h"      // ← EKLE: ItemStack + ITEM_TYPES
@@ -200,16 +201,16 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
         dx /= len;
         dy /= len;
 
-        // X ekseni
+        // X ekseni (tile + dekor/ev tabanı katı)
         float newX = p->rect.x + dx * p->speed * dt;
         SDL_FRect fx = feet_box(newX, p->rect.y, p->rect.w, p->rect.h);
-        if (!box_hits_solid(fx))
+        if (!box_hits_solid(fx) && !decor_blocks(fx))
             p->rect.x = newX;
 
         // Y ekseni
         float newY = p->rect.y + dy * p->speed * dt;
         SDL_FRect fy = feet_box(p->rect.x, newY, p->rect.w, p->rect.h);
-        if (!box_hits_solid(fy))
+        if (!box_hits_solid(fy) && !decor_blocks(fy))
             p->rect.y = newY;
 
         // YÖN belirleme (4 yön — saldırı sırasında değiştirme)

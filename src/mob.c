@@ -3,7 +3,21 @@
 #include "common.h"
 #include "font.h"
 #include "tilemap.h"
+#include "decor.h"
 #include "mob.h"
+
+// Önerilen kaydırmayı tile/dekor çarpışmasına göre uygula.
+// Eksen ayrı denenir → duvar boyunca kayma (oyuncu hareketiyle aynı desen).
+static void mob_move(Mob *m, float dx, float dy)
+{
+    SDL_FRect fx = feet_box(m->e.rect.x + dx, m->e.rect.y, m->e.rect.w, m->e.rect.h);
+    if (!box_hits_solid(fx) && !decor_blocks(fx))
+        m->e.rect.x += dx;
+
+    SDL_FRect fy = feet_box(m->e.rect.x, m->e.rect.y + dy, m->e.rect.w, m->e.rect.h);
+    if (!box_hits_solid(fy) && !decor_blocks(fy))
+        m->e.rect.y += dy;
+}
 
 #define RESPAWN_DELAY 3.0f   // mob ölünce kaç saniye sonra yenisi doğar
 #define SEPARATION_RADIUS 70.0f   // bu mesafeden yakın mob'lar iter
@@ -146,8 +160,9 @@ void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures
 
     if (!m->e.alive && !m->dying) return;   // ne canlı ne ölüyorsa çizme
 
-    // Aktif animasyon clip'i: durum + yön
-    const AnimClip *clip = &m->type->anims[m->state][m->e.facing];
+    // Aktif animasyon clip'i: durum + yön (RETURN'un kendi satırı yok → koşma clip'i)
+    MobState animState = (m->state == MOB_RETURN) ? MOB_CHASE : m->state;
+    const AnimClip *clip = &m->type->anims[animState][m->e.facing];
 
     // Kaynak: clip'in başlangıcından currentFrame kadar kay (clip'in kendi kare boyutuyla)
     SDL_FRect src = {
@@ -206,7 +221,8 @@ void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures
     #endif
 }
 
-void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, float dt)
+void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, float dt,
+                float detectMul)
 {
     if (m->type == NULL) return;   // boş slot (hiç mob doğmamış) → atla
     
@@ -230,10 +246,9 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
 
     if (!m->e.alive) return;   // ölü (ve death anim bitmiş) → işlem yok
 
-    // Flaş ve knockback
+    // Flaş ve knockback (itilme de duvara çarpar)
     if (m->e.hitFlash > 0.0f) m->e.hitFlash -= dt;
-    m->e.rect.x += m->e.knockbackX * dt;
-    m->e.rect.y += m->e.knockbackY * dt;
+    mob_move(m, m->e.knockbackX * dt, m->e.knockbackY * dt);
     float damping = 12.0f;
     m->e.knockbackX -= m->e.knockbackX * damping * dt;
     m->e.knockbackY -= m->e.knockbackY * damping * dt;
@@ -244,8 +259,48 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
     float dy = targetY - (m->e.rect.y + m->e.rect.h/2.0f);
     float dist = SDL_sqrtf(dx*dx + dy*dy);
 
-    float detectRange = m->type->detectRange;
+    float detectRange = m->type->detectRange * detectMul;   // gece daha uzağı görür
     float attackRange = m->type->attackRange;
+
+    // --- LEASH: kamptan çok uzaklaştıysa peşi bırak, eve dön ---
+    float hdx = m->homeX - (m->e.rect.x + m->e.rect.w/2.0f);
+    float hdy = m->homeY - (m->e.rect.y + m->e.rect.h/2.0f);
+    float homeDist = SDL_sqrtf(hdx*hdx + hdy*hdy);
+
+    if (m->state != MOB_RETURN && homeDist > MOB_LEASH_RANGE) {
+        m->state = MOB_RETURN;
+        m->attacking = false;
+        m->aggro = false;   // alarm biter — dönünce normal algıya döner
+    }
+
+    if (m->state == MOB_RETURN) {
+        // Dönüşte hızla iyileşir (KO tarzı: kite/tren istismarı boşa düşer)
+        m->e.health += m->e.maxHealth * MOB_RETURN_HEAL_RATE * dt;
+        if (m->e.health > m->e.maxHealth) m->e.health = m->e.maxHealth;
+
+        if (homeDist > 8.0f) {
+            // Yön eve doğru
+            if (SDL_fabsf(hdx) > SDL_fabsf(hdy)) {
+                m->e.facing = 2;
+                m->e.facingLeft = (hdx < 0);
+            } else {
+                m->e.facing = (hdy < 0) ? 1 : 0;
+            }
+            mob_move(m, hdx/homeDist * m->e.speed * dt, hdy/homeDist * m->e.speed * dt);
+
+            // Koşma animasyonu (RETURN'un kendi satırı yok)
+            const AnimClip *clip = &m->type->anims[MOB_CHASE][m->e.facing];
+            m->animTimer += dt;
+            if (m->animTimer >= clip->frameDuration) {
+                m->animTimer -= clip->frameDuration;
+                m->currentFrame = (m->currentFrame + 1) % clip->frameCount;
+            }
+            m->lastState = MOB_RETURN;
+        } else {
+            m->state = MOB_IDLE;   // vardı — normal AI'a dön
+        }
+        return;   // dönüş sırasında algı/saldırı yok
+    }
 
     if (m->attacking) {
         // --- SALDIRI SÜRÜYOR: tek-seferlik animasyon ---
@@ -276,8 +331,8 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
     else {
         // --- SALDIRI YOK: idle / chase ---
 
-        // Yön: oyuncuya doğru (menzildeyse)
-        if (dist > 0.0f && dist < detectRange) {
+        // Yön: oyuncuya doğru (menzildeyse ya da alarmdaysa)
+        if (dist > 0.0f && (dist < detectRange || m->aggro)) {
             if (SDL_fabsf(dx) > SDL_fabsf(dy)) {
                 m->e.facing = 2;
                 m->e.facingLeft = (dx < 0);
@@ -286,8 +341,8 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
             }
         }
 
-        // Durum: chase mi idle mi
-        if (dist < detectRange && dist >= attackRange) {
+        // Durum: chase mi idle mi (aggro'lu mob menzile bakmaz — alarm verildi)
+        if ((dist < detectRange || m->aggro) && dist >= attackRange) {
             m->state = MOB_CHASE;
             if (dist > 0.0f) {
                 float nx = dx / dist, ny = dy / dist;
@@ -307,9 +362,9 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
                     }
                 }
 
-                // Oyuncuya doğru + ayrışma
-                m->e.rect.x += (nx * m->e.speed + sepX * SEPARATION_FORCE) * dt;
-                m->e.rect.y += (ny * m->e.speed + sepY * SEPARATION_FORCE) * dt;
+                // Oyuncuya doğru + ayrışma (tile/dekor çarpışmalı)
+                mob_move(m, (nx * m->e.speed + sepX * SEPARATION_FORCE) * dt,
+                            (ny * m->e.speed + sepY * SEPARATION_FORCE) * dt);
             }
         }
         else {
@@ -425,6 +480,16 @@ int mob_spawn(Mob *mobs, int maxMobs, int *nextMobId, const MobType *type, float
     }
     if (slot == -1) return 0;   // boş slot yok
 
+    // Katı zeminde (su/kaya/ev) doğma: yakında boş nokta ara.
+    // 12 denemede bulunamazsa yine de doğar (kamp tamamen kayalıksa takılmasın).
+    for (int attempt = 0; attempt < 12; attempt++) {
+        SDL_FRect fb = feet_box(x, y, 48.0f, 64.0f);
+        if (!box_hits_solid(fb) && !decor_blocks(fb))
+            break;
+        x += (randf() - 0.5f) * 250.0f;
+        y += (randf() - 0.5f) * 250.0f;
+    }
+
     int id = (*nextMobId)++;
     mobs[slot] = (Mob){
         .id = id,
@@ -434,9 +499,30 @@ int mob_spawn(Mob *mobs, int maxMobs, int *nextMobId, const MobType *type, float
                .speed = type->speed, .alive = true },
         .state = MOB_IDLE, .attackCooldown = 0.0f,
         .lastState = -1, .lastFacing = -1,
-        .zoneId = zoneId
+        .zoneId = zoneId,
+        .homeX = x + 24.0f, .homeY = y + 32.0f,   // leash referansı (rect merkezi)
     };
     return id;   // doğan mob'un ID'si
+}
+
+void mob_alert_camp(Mob *mobs, int mobCount, const Mob *victim)
+{
+    if (victim->zoneId < 0) return;   // kampsız mob alarm veremez
+
+    float vx = victim->e.rect.x + victim->e.rect.w / 2.0f;
+    float vy = victim->e.rect.y + victim->e.rect.h / 2.0f;
+
+    for (int j = 0; j < mobCount; j++) {
+        Mob *o = &mobs[j];
+        if (o == victim || !o->e.alive || o->dying) continue;
+        if (o->zoneId != victim->zoneId) continue;        // sadece kamp arkadaşları
+        if (o->state == MOB_RETURN) continue;             // dönen mob alarmı duymaz
+
+        float dx = (o->e.rect.x + o->e.rect.w / 2.0f) - vx;
+        float dy = (o->e.rect.y + o->e.rect.h / 2.0f) - vy;
+        if (SDL_sqrtf(dx * dx + dy * dy) <= MOB_AGGRO_SHARE_RANGE)
+            o->aggro = true;   // algı menzili yok sayılır → saldırıya geçer
+    }
 }
 
 void spawn_zones_update(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId, float dt)

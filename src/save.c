@@ -4,9 +4,10 @@
 #include "save.h"
 #include "item.h"
 #include "skill.h"
+#include "gametime.h"
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 3u   // v2: hotbar; v3: görev durumları
+#define SAVE_VERSION 4u   // v2: hotbar; v3: görevler; v4: gün+saat
 
 // --- Yazma/okuma yardımcıları: her alan tek tek, hata tek noktadan ---
 // fwrite/fread sayı döndürür; 1 değilse dosya kesik/bozuk demektir.
@@ -82,6 +83,11 @@ bool save_game(const char *path, const Player *p,
     ok = ok && w32(f, QUEST_COUNT);
     for (int i = 0; ok && i < QUEST_COUNT; i++)
         ok = w32(f, (Sint32)quests[i].state) && w32(f, quests[i].progress);
+
+    // Dünya saati (v4) — gametime doğrudan modülden okunur (parametre şişmesin)
+    int day; float hours;
+    gametime_get(&day, &hours);
+    ok = ok && w32(f, day) && wf(f, hours);
 
     fclose(f);
     if (!ok)
@@ -171,6 +177,11 @@ bool load_game(const char *path, Player *p,
         }
     }
 
+    // Dünya saati (v4)
+    Sint32 tmpDay;
+    float tmpHours;
+    ok = ok && r32(f, &tmpDay) && rf(f, &tmpHours);
+
     fclose(f);
     if (!ok) {
         SDL_Log("Save okunamadi (bozuk dosya): %s", path);
@@ -183,5 +194,6 @@ bool load_game(const char *path, Player *p,
     *eq = tmpEq;
     *hb = tmpHb;
     memcpy(quests, tmpQ, sizeof(tmpQ));
+    gametime_set(tmpDay, tmpHours);
     return true;
 }

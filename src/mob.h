@@ -29,8 +29,14 @@ typedef enum {
     MOB_IDLE,    // bekliyor
     MOB_CHASE,   // oyuncuyu kovalıyor
     MOB_ATTACK,  // saldırı menzilinde
-    MOB_DYING    // ölüm animasyonu oynuyor
+    MOB_DYING,   // ölüm animasyonu oynuyor
+    MOB_RETURN,  // leash: kampına dönüyor (oyuncuyu yok sayar, hızla iyileşir)
+                 // DİKKAT: anims[4][3]'te satırı YOK — animasyonu CHASE clip'idir
 } MobState;
+
+#define MOB_LEASH_RANGE 550.0f       // kamptan bu kadar uzaklaşınca peşi bırakır
+#define MOB_RETURN_HEAL_RATE 0.35f   // dönüşte saniyede max canın yüzdesi
+#define MOB_AGGRO_SHARE_RANGE 300.0f // vurulan mobun bu çaptaki kamp arkadaşları saldırır
 
 // Saldırı türü — mob nasıl saldırır
 typedef enum {
@@ -73,6 +79,8 @@ typedef struct {
     Entity e;                 // ortak çekirdek (konum, can, hareket, vuruş tepkisi)
     const MobType *type;   // mob hangi türden (goblin? ork?)
     int zoneId;           // hangi spawn bölgesinden doğdu (-1 = hiçbiri/manuel)
+    float homeX, homeY;   // doğduğu nokta (leash bunu referans alır)
+    bool aggro;           // vuruldu/kamp alarmı: algı menzili yok sayılır (leash sıfırlar)
     MobState state;         // AI durumu
     float attackCooldown;     // bir sonraki saldırıya kalan süre
     bool attackTriggered;
@@ -100,7 +108,13 @@ extern const int MOB_TYPE_COUNT;
 
 
 void mob_render(const Mob *m, SDL_Renderer *renderer, SDL_Texture **mob_textures, const Camera *camera, int targetMobId);
-void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, float dt);
+
+// detectMul: algı menzili çarpanı (gece 1.5 — gametime'dan main geçirir)
+void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, float dt,
+                float detectMul);
+
+// Grup aggro: vurulan mobun kamp arkadaşlarını (aynı zoneId, yakın) saldırıya geçir
+void mob_alert_camp(Mob *mobs, int mobCount, const Mob *victim);
 int mob_find_nearest(Mob *mobs, int mobCount, float px, float py);
 Mob *mob_find_by_id(Mob *mobs, int mobCount, int id);
 void target_hp_bar_render(SDL_Renderer *renderer, const Mob *target, int winW, TTF_Font *font);

@@ -24,6 +24,8 @@
 #include "dialog.h"
 #include "shop.h"
 #include "quest.h"
+#include "gametime.h"
+#include "decor.h"
 
 int main(int argc, char *argv[])
 {
@@ -144,6 +146,14 @@ int main(int argc, char *argv[])
     // Hotbar: açık ability'ler otomatik yerleşir (Power Strike lv1'de açık)
     Hotbar hotbar = {0};
     hotbar_place_unlocks(&hotbar, player.skills);
+
+    // Dekorlar (evler): texture + boyutları (render/collision tek kaynaktan)
+    SDL_Texture *decor_textures[16] = {0};
+    for (int i = 0; i < DECOR_COUNT && i < 16; i++)
+        decor_textures[i] = load_texture(renderer, DECORS[i].texPath);
+    decor_set_texture_sizes(decor_textures);
+
+    gametime_init();   // gün 1, 08:00
 
     // NPC'ler: texture + diyalog dosyaları (yüklenemeyen NPC konuşamaz, oyun çökmez)
     SDL_Texture *npc_textures[NPC_COUNT];
@@ -796,6 +806,9 @@ int main(int argc, char *argv[])
             player_update(&player, keys, attackPressed, dt, &weaponFx); // oyuncuyu güncelle
             fx_update(&weaponFx, dt);
 
+            gametime_update(dt);                      // dünya saati
+            npc_update(dt, gametime_hours());         // NPC rutinleri (yürü/eve gir)
+
             if (targetPressed)
             {
                 float px = player.rect.x + player.rect.w / 2.0f;
@@ -856,6 +869,10 @@ int main(int argc, char *argv[])
 
                         target->e.health -= hit.damage;
                         target->e.hitFlash = 0.15f;
+
+                        // Vurulan mob + kamp arkadaşları alarma geçer (grup aggro)
+                        target->aggro = true;
+                        mob_alert_camp(mobs, mobCount, target);
 
                         floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
                                         target->e.rect.x + target->e.rect.w / 2.0f + 10.0f,
@@ -932,13 +949,17 @@ int main(int argc, char *argv[])
                 player.pendingAbility = -1;   // skill çarpanı kullanıldı/harcandı
             }
 
-            spawn_zones_update(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId, dt);
+            // Gece tehlikesi: spawn 2x hızlı (dt şişirilir), algı menzili 1.5x
+            float nightSpawnMul = gametime_is_night() ? 2.0f : 1.0f;
+            float detectMul = gametime_is_night() ? 1.5f : 1.0f;
+            spawn_zones_update(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId,
+                               dt * nightSpawnMul);
 
             float px = player.rect.x + player.rect.w / 2.0f;
             float py = player.rect.y + player.rect.h / 2.0f;
             for (int i = 0; i < mobCount; i++)
             {
-                mob_update(&mobs[i], mobs, mobCount, px, py, dt);
+                mob_update(&mobs[i], mobs, mobCount, px, py, dt, detectMul);
 
                 // Düşman bu kare saldırdıysa ve oyuncu menzildeyse, hasarı BURADA uygula
                 if (mobs[i].attackTriggered)
@@ -978,6 +999,7 @@ int main(int argc, char *argv[])
         SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
         SDL_RenderClear(renderer);                            // ekranı temizle (arka plan rengini doldur)
         tilemap_render(renderer, tile_textures, &camera);     // haritayı çiz
+        decor_render_all(renderer, decor_textures, &camera);  // evler (zemin üstü, entity altı)
 
         PlayerLayer built[24];
         int builtCount = build_player_layers(layers, LAYER_COUNT, &equipment,
@@ -1000,19 +1022,36 @@ int main(int argc, char *argv[])
         // Hasar yazıları (mob'ların üstünde, dünya uzayında)
         floattext_render_all(floatTexts, MAX_FLOAT_TEXTS, renderer, gameFont, &camera); // ← BURAYA (present'tan önce)
 
+        // GÜN/GECE karartması: dünyanın üstüne, HUD'un altına (HUD gece de okunur)
+        Uint8 darkness = gametime_darkness();
+        if (darkness > 0)
+        {
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 10, 10, 45, darkness);
+            SDL_FRect night = { 0, 0, (float)winW, (float)winH };
+            SDL_RenderFillRect(renderer, &night);
+        }
+
         // Hedef HP bar (seçili mob varsa)
         Mob *hpTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
         target_hp_bar_render(renderer, hpTarget, winW, gameFont);
 
         health_bar_render(&player, renderer);
 
-        // Altın göstergesi (HP barının altı)
+        // Altın göstergesi (HP barının altı) + saat (sağ üst)
         if (gameFont != NULL)
         {
             char goldBuf[32];
             snprintf(goldBuf, sizeof(goldBuf), "Gold %d", player.gold);
             SDL_Color goldCol = { 255, 210, 60, 255 };
             draw_text(renderer, gameFont, goldBuf, 20.0f, 48.0f, goldCol);
+
+            char clockBuf[24];
+            gametime_format(clockBuf, sizeof(clockBuf));
+            SDL_Color clockCol = { 220, 220, 235, 255 };
+            int tw = 0, th = 0;
+            TTF_GetStringSize(gameFont, clockBuf, 0, &tw, &th);
+            draw_text(renderer, gameFont, clockBuf, winW - tw - 20.0f, 20.0f, clockCol);
         }
 
         // Hotbar (alt-orta): skill CD'leri + pot adetleri
@@ -1082,6 +1121,10 @@ int main(int argc, char *argv[])
     for (int i = 0; i < NPC_COUNT; i++)
         if (npc_textures[i])
             SDL_DestroyTexture(npc_textures[i]);
+
+    for (int i = 0; i < DECOR_COUNT && i < 16; i++)
+        if (decor_textures[i])
+            SDL_DestroyTexture(decor_textures[i]);
 
     if (glowTex)
         SDL_DestroyTexture(glowTex);
