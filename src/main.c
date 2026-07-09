@@ -14,9 +14,12 @@
 #include "equipment.h"
 #include "item_textures.h"
 #include "fx.h"
+#include "skill.h"
+#include "combat.h"
 
 int main(int argc, char *argv[])
 {
+    (void)argc; (void)argv;   // SDL_main bu imzayı şart koşar, argüman kullanmıyoruz
     // 1) SDL'in video alt sistemini ayağa kaldır. SDL3 başarılıysa 'true' döner.
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
@@ -122,8 +125,11 @@ int main(int argc, char *argv[])
         .speed = PLAYER_SPEED,
         .health = 100.0f,
         .maxHealth = 100.0f,
+        .strength = 10,    // sabit taban — dağıtım yok, ileride ekipman/perk ekler
+        .dexterity = 10,
         // weaponFx her frame kusanili silahtan senkronlanir (bkz. player_update oncesi)
     };
+    skills_init(player.skills);
         
 
     ParticleSystem weaponFx;
@@ -176,6 +182,7 @@ int main(int argc, char *argv[])
     }
 
     bool inventoryOpen = false;
+    bool skillsOpen = false;
     GameState gameState = GAME_PLAYING;
     MenuScreen menuScreen = MENU_MAIN;
 
@@ -221,9 +228,13 @@ int main(int argc, char *argv[])
                     {
                         inventoryOpen = false; // 2) sonra envanter
                     }
+                    else if (skillsOpen)
+                    {
+                        skillsOpen = false; // 3) sonra skill paneli
+                    }
                     else
                     {
-                        gameState = GAME_PAUSED; // 3) hicbiri yoksa MENU AC
+                        gameState = GAME_PAUSED; // 4) hicbiri yoksa MENU AC
                         menuScreen = MENU_MAIN;
                     }
                 }
@@ -238,6 +249,10 @@ int main(int argc, char *argv[])
                 else if (event.key.key == SDLK_I && gameState == GAME_PLAYING)
                 {
                     inventoryOpen = !inventoryOpen;
+                }
+                else if (event.key.key == SDLK_K && gameState == GAME_PLAYING)
+                {
+                    skillsOpen = !skillsOpen;
                 }
                 else if (event.key.key == SDLK_F && gameState == GAME_PLAYING)
                 {
@@ -458,15 +473,38 @@ int main(int argc, char *argv[])
                     float tdy = (target->e.rect.y + target->e.rect.h / 2.0f) - (player.rect.y + player.rect.h / 2.0f);
                     float tdist = SDL_sqrtf(tdx * tdx + tdy * tdy);
 
-                    float dmg = 50.0f;
                     if (tdist <= PLAYER_ATTACK_RANGE)
                     {
-                        target->e.health -= dmg;
+                        // Combat A: hasar silah + stat + skill'den (sabit değer yok)
+                        const ItemType *weapon = equipment.slots[EQUIP_WEAPON].type;
+                        HitResult hit = combat_player_hit(&player, weapon,
+                                                          target->type->defense);
+
+                        target->e.health -= hit.damage;
                         target->e.hitFlash = 0.15f;
 
                         floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
                                         target->e.rect.x + target->e.rect.w / 2.0f + 10.0f,
-                                        target->e.rect.y, (int)dmg);
+                                        target->e.rect.y, (int)hit.damage, hit.crit);
+
+                        // Use-based XP: hasar GERÇEKTEN uygulandığında (havayı kesmek saymaz)
+                        SkillType sk = combat_weapon_skill(weapon);
+                        if (sk != SKILL_NONE)
+                        {
+                            float xp = combat_xp_for_hit(hit.damage, target->type->level,
+                                                         player.skills[sk].level);
+                            if (skill_add_xp(player.skills, sk, xp))
+                            {
+                                // Seviye atlandı — oyuncunun üstünde bildirim
+                                char buf[FLOAT_TEXT_LEN];
+                                snprintf(buf, sizeof(buf), "%s %d!",
+                                         skill_name(sk), player.skills[sk].level);
+                                SDL_Color green = { 120, 255, 120, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f, buf, green);
+                            }
+                        }
 
                         float kb = 180.0f;
                         if (tdist > 0.0f)
@@ -502,7 +540,8 @@ int main(int argc, char *argv[])
                 // Düşman bu kare saldırdıysa ve oyuncu menzildeyse, hasarı BURADA uygula
                 if (mobs[i].attackTriggered)
                 {
-                    player.health -= mobs[i].type->damage; // türe göre hasar
+                    // Mob hasarı oyuncunun zırh defansından geçer (azalan getiri)
+                    player.health -= combat_mob_damage(mobs[i].type->damage, &equipment);
                     if (player.health < 0.0f)
                         player.health = 0.0f;
                 }
@@ -554,6 +593,12 @@ int main(int argc, char *argv[])
                              built, builtCount, panelX, panelY);
             inventory_render(&inventory, renderer, itemIconTex, &itemTex, gameFont,
                              (float)panelX, (float)(panelY + 340));
+        }
+
+        if (skillsOpen)
+        {
+            // Envanter paneliyle çakışmasın diye sol tarafta
+            skill_panel_render(player.skills, renderer, gameFont, 40.0f, 40.0f);
         }
 
         if (gameState == GAME_PAUSED)                          // ← EKLE

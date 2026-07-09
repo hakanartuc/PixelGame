@@ -44,11 +44,13 @@ typedef struct {
     const char *texturePath;   // sprite dosyası
 
     // savaş/hareket istatistikleri
+    int level;                 // mob seviyesi (XP azalan getirisi + ileride UI)
     float maxHealth;
     float speed;
     float attackRange;         // saldırı menzili (türe göre — okçu uzun, melee kısa)
     float detectRange;         // oyuncuyu fark etme menzili
     float damage;              // saldırı başına hasar
+    float defense;             // defans (oyuncu hasarı 100/(100+def) ile kısılır)
     AttackType attackType;     // nasıl saldırır
 
      // Animasyon düzeni (türe özel)

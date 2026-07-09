@@ -15,11 +15,13 @@ const MobType MOB_TYPES[] = {
     {
         .name = "Goblin Maceman",
         .texturePath = "assets/characters/mobs/Goblin_Maceman.png",
+        .level = 1,
         .maxHealth = 100.0f,
         .speed = 200.0f,
         .attackRange = 60.0f,
         .detectRange = 300.0f,
         .damage = 5.0f,
+        .defense = 0.0f,
         .attackType = ATTACK_MELEE,
         .attackHitFrame = 3,
         .anims = {
@@ -53,11 +55,13 @@ const MobType MOB_TYPES[] = {
     {
         .name = "Orc Grunt",
         .texturePath = "assets/characters/mobs/Orc_Grunt.png",
+        .level = 3,
         .maxHealth = 200.0f,
         .speed = 150.0f,
         .attackRange = 70.0f,
         .detectRange = 320.0f,
         .damage = 10.0f,
+        .defense = 10.0f,
         .attackType = ATTACK_MELEE,
         .attackHitFrame = 4,
         .anims = {

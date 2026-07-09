@@ -5,6 +5,7 @@
 #include "common.h"
 #include "item_textures.h"
 #include "fx.h"
+#include "skill.h"
 
 typedef struct Equipment Equipment;   // ← forward decl (pointer için yeter)
 
@@ -55,7 +56,8 @@ typedef struct PlayerLayer {
 } PlayerLayer;
 
 // Karakterin TÜM kalıcı durumu
-typedef struct {
+// (struct etiketi combat.h'ın forward declaration'ı için gerekli)
+typedef struct Player {
     SDL_FRect rect;      // dünya konumu + mantıksal boyut (ayak izi)
     float drawW, drawH;  // ekranda çizim boyutu
 
@@ -70,6 +72,13 @@ typedef struct {
     float speed;
     float health;
     float maxHealth;
+
+    // Statlar: dağıtım yok — sabit taban (10), ileride ekipman/perk bonusu ekler.
+    // Skill'ler stat değil doğrudan hasar çarpanı verir (use-based felsefe).
+    int strength;    // hasar ölçeği
+    int dexterity;   // kritik şansı
+
+    Skill skills[SKILL_COUNT];   // use-based skill'ler (kullandıkça gelişir)
 
     // Saldırı durumu
     bool attacking;

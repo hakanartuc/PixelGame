@@ -149,6 +149,7 @@ void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
                        SDL_Texture *itemIconTex, const ItemTextures *itemTex,
                        TTF_Font *font, const Camera *camera)
 {
+    (void)font;   // şimdilik kullanılmıyor (item adı tooltip'i gelince kullanılacak)
     if (loot == NULL || loot->state != LOOT_OPEN) return;
 
     int cols = 3;

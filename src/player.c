@@ -7,11 +7,6 @@
 #include "item.h"      // ← EKLE: ItemStack + ITEM_TYPES
 
 // 0.0..1.0 arasi rastgele float
-static inline float randf(void)
-{
-    return (float)rand() / ((float)RAND_MAX + 1.0f);
-}
-
 // LPC animasyon tanımı: her durum için başlangıç satırı + kare sayısı
 // Yön, başlangıç satırına eklenir (UP=0, LEFT=1, DOWN=2, RIGHT=3)
 typedef struct

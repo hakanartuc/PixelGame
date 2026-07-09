@@ -19,6 +19,14 @@ typedef struct {
 } Camera;
 
 
+// 0..1 arası rastgele float — partikül saçılımı, hasar varyansı vb.
+// (rand() tabanlı; oyun için yeterli, kripto için değil)
+#include <stdlib.h>
+static inline float randf(void)
+{
+    return (float)rand() / ((float)RAND_MAX + 1.0f);   // [0,1) — 1.0 dahil değil
+}
+
 // Bir animasyonun sheet üzerindeki tanımı (konum + boyut + zamanlama)
 typedef struct {
     int x, y;             // sheet'te ilk karenin sol-üst köşesi (piksel)
