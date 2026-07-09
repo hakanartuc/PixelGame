@@ -49,8 +49,12 @@ void draw_text(SDL_Renderer *renderer, TTF_Font *font, const char *text,
     SDL_DestroySurface(surface);
 }
 
-void font_quit(TTF_Font *font)
+void font_close(TTF_Font *font)
 {
     if (font) TTF_CloseFont(font);
+}
+
+void font_shutdown(void)
+{
     TTF_Quit();
 }

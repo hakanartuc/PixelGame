@@ -57,8 +57,9 @@ typedef struct {
     WeaponFxType weaponFx;       // silahın partikül efekti (0 = WEAPON_FX_NONE)
 
     // --- Tüketilebilir (iksir vb.) ---
-    bool consumable;             // envanterden sağ tıkla kullanılır
+    bool consumable;             // sağ tık hotbar'a atar, hotbar tuşuyla kullanılır
     float healAmount;            // kullanınca iyileşen can
+    float useCooldown;           // kullanım sonrası bu TÜRÜN kilit süresi (sn)
 
     const char *iconSpritePath;   // ikon dosyasi (NULL → tool_icons fallback)
     SDL_FRect   iconSrc;          // o dosyadaki kare {x, y, w, h}

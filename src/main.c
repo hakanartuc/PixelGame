@@ -18,6 +18,7 @@
 #include "combat.h"
 #include "save.h"
 #include "hotbar.h"
+#include "region.h"
 
 int main(int argc, char *argv[])
 {
@@ -176,12 +177,21 @@ int main(int argc, char *argv[])
 
     int nextMobId = 1;
 
-    // Spawn bölgeleri — KO'daki "kamp"lar: bir alanda birden çok mob.
-    SpawnZone spawnZones[] = {
-        {.x = 1000.0f, .y = 300.0f, .radius = 200.0f, .type = &MOB_TYPES[0], .maxCount = 1, .respawnTimer = 0.0f}, // goblin kampı (5 mob)
-        {.x = 1500.0f, .y = 700.0f, .radius = 150.0f, .type = &MOB_TYPES[1], .maxCount = 1, .respawnTimer = 0.0f}, // ork kampı (3 mob)
-    };
-    int spawnZoneCount = (int)(sizeof(spawnZones) / sizeof(spawnZones[0]));
+    // Spawn bölgeleri BÖLGE tanımlarından kurulur (region.c) — kamplar veride,
+    // main sadece düzleştirir. Yeni kamp eklemek = region.c'ye bir satır.
+    SpawnZone spawnZones[MAX_SPAWN_ZONES];
+    int spawnZoneCount = 0;
+    for (int r = 0; r < REGION_COUNT; r++)
+    {
+        for (int c = 0; c < REGIONS[r].campCount && spawnZoneCount < MAX_SPAWN_ZONES; c++)
+        {
+            const RegionCamp *camp = &REGIONS[r].camps[c];
+            spawnZones[spawnZoneCount++] = (SpawnZone){
+                .x = camp->x, .y = camp->y, .radius = camp->radius,
+                .type = camp->type, .maxCount = camp->maxCount, .respawnTimer = 0.0f,
+            };
+        }
+    }
     spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId); // ← başlangıçta doldur
 
     // Tile texture'ları: TILE_TYPES tablosundaki path'lerden yükle.
@@ -204,8 +214,16 @@ int main(int argc, char *argv[])
     // 4) Oyun döngüsü
     bool running = true;
 
-    generate_map(); // haritayı oluştur
-    Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 2.0f};
+    // Harita: Tiled CSV'den; yoksa eski test haritası (generate_map)
+    if (!tilemap_load_csv("assets/maps/world.csv"))
+        generate_map();
+
+    // Bölge splash durumu: bölge değişince ad 3 sn görünür
+    int currentRegion = -1;
+    const char *splashText = NULL;
+    float splashTimer = 0.0f;
+    TTF_Font *splashFont = font_load("assets/fonts/PublicPixel-rv0pA.ttf", 32.0f);
+    Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 1.0f};
 
     Uint64 last = SDL_GetTicks();
 
@@ -488,10 +506,13 @@ int main(int argc, char *argv[])
 
             const bool *keys = SDL_GetKeyboardState(NULL); // basılı tuşların anlık görüntüsü (SDL'e ait, free etme)
 
-            // --- COOLDOWN'LAR: ability başına geri sayım ---
+            // --- COOLDOWN'LAR: ability + item türü başına geri sayım ---
             for (int a = 0; a < ABILITY_COUNT; a++)
                 if (player.abilityCd[a] > 0.0f)
                     player.abilityCd[a] -= dt;
+            for (int t = 0; t < ITEM_TYPE_COUNT; t++)
+                if (player.itemCd[t] > 0.0f)
+                    player.itemCd[t] -= dt;
 
             // --- HOTBAR KULLANIMI (1-8) ---
             if (hotbarPressed >= 0)
@@ -509,10 +530,13 @@ int main(int argc, char *argv[])
                 }
                 else if (hs->kind == HOTBAR_ITEM)
                 {
-                    // İksir: can fulse harcama, envanterde yoksa sessiz geç
-                    if (player.health < player.maxHealth &&
+                    // İksir: tür CD'deyse / can fulse / envanterde yoksa geç
+                    int typeIdx = (int)(hs->itemType - ITEM_TYPES);
+                    if (player.itemCd[typeIdx] <= 0.0f &&
+                        player.health < player.maxHealth &&
                         inventory_consume(&inventory, hs->itemType))
                     {
+                        player.itemCd[typeIdx] = hs->itemType->useCooldown;
                         player.health += hs->itemType->healAmount;
                         if (player.health > player.maxHealth)
                             player.health = player.maxHealth;
@@ -746,6 +770,20 @@ int main(int argc, char *argv[])
 
             camera_update(&camera, player.rect.x + player.rect.w / 2.0f,
                           player.rect.y + player.rect.h / 2.0f, winW, winH); // kamerayı güncelle - karakteri takip et
+
+            // --- BÖLGE TAKİBİ: yeni bölgeye girince adı belirir ---
+            int reg = region_at(px, py);
+            if (reg != currentRegion)
+            {
+                currentRegion = reg;
+                if (reg >= 0)
+                {
+                    splashText = REGIONS[reg].name;
+                    splashTimer = 3.0f;
+                }
+            }
+            if (splashTimer > 0.0f)
+                splashTimer -= dt;
         }
 
         SDL_SetRenderDrawColor(renderer, 155, 155, 155, 255); // arka plan rengini gri yap
@@ -788,7 +826,18 @@ int main(int argc, char *argv[])
 
         // Hotbar (alt-orta): skill CD'leri + pot adetleri
         hotbar_render(&hotbar, renderer, itemIconTex, &itemTex, gameFont,
-                      player.abilityCd, &inventory, winW, winH);
+                      player.abilityCd, player.itemCd, &inventory, winW, winH);
+
+        // Bölge adı splash'i (üst-orta, son 1 sn'de solar)
+        if (splashTimer > 0.0f && splashText != NULL && splashFont != NULL)
+        {
+            int tw = 0, th = 0;
+            TTF_GetStringSize(splashFont, splashText, 0, &tw, &th);
+            float alpha = (splashTimer < 1.0f) ? splashTimer : 1.0f;
+            SDL_Color col = { 240, 235, 210, (Uint8)(255 * alpha) };
+            draw_text(renderer, splashFont, splashText,
+                      (winW - tw) / 2.0f, winH * 0.15f, col);
+        }
         
 
         if (inventoryOpen)
@@ -836,7 +885,9 @@ int main(int argc, char *argv[])
         SDL_DestroyTexture(glowTex);
 
     item_textures_free(&itemTex);
-    font_quit(gameFont);
+    font_close(gameFont);
+    font_close(splashFont);
+    font_shutdown();   // tüm fontlar kapandıktan sonra, bir kez
 
     if (crateTex)
         SDL_DestroyTexture(crateTex);

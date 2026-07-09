@@ -92,6 +92,7 @@ typedef struct Player {
     float attackTimer;                // sonraki otomatik vuruşa kalan süre
     int pendingAbility;               // bu vuruş hangi ability (-1 = normal vuruş)
     float abilityCd[ABILITY_COUNT];   // ability başına kalan cooldown
+    float itemCd[MAX_ITEM_TYPES];     // item TÜRÜ başına kalan cooldown (pot kilidi)
     WeaponFxType weaponFx;   // aktif silah efekti (her frame kusanili silahtan senkronlanir)
 } Player;
 

@@ -38,10 +38,10 @@ void hotbar_place_unlocks(Hotbar *hb, const Skill *skills);
 bool hotbar_assign_item(Hotbar *hb, const ItemType *type);
 
 // Bar çizimi: alt-orta, tuş numarası + kısaltma/ikon + cooldown perdesi + adet.
-// abilityCd: ability başına kalan bekleme (Player'dan), invCount için envanter.
+// abilityCd: ability başına, itemCd: item TÜRÜ başına kalan bekleme (Player'dan).
 void hotbar_render(const Hotbar *hb, SDL_Renderer *renderer,
                    SDL_Texture *itemIconTex, const ItemTextures *itemTex,
-                   TTF_Font *font, const float *abilityCd,
+                   TTF_Font *font, const float *abilityCd, const float *itemCd,
                    const Inventory *inv, int winW, int winH);
 
 #endif

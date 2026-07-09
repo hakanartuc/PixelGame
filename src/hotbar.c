@@ -64,7 +64,7 @@ static int inv_total_count(const Inventory *inv, const ItemType *type)
 
 void hotbar_render(const Hotbar *hb, SDL_Renderer *renderer,
                    SDL_Texture *itemIconTex, const ItemTextures *itemTex,
-                   TTF_Font *font, const float *abilityCd,
+                   TTF_Font *font, const float *abilityCd, const float *itemCd,
                    const Inventory *inv, int winW, int winH)
 {
     float barW = HOTBAR_SLOTS * CELL + (HOTBAR_SLOTS - 1) * GAP;
@@ -116,6 +116,23 @@ void hotbar_render(const Hotbar *hb, SDL_Renderer *renderer,
             } else {
                 SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };
                 SDL_RenderTexture(renderer, itemIconTex, &src, &dst);
+            }
+
+            // Tür cooldown perdesi (skill'lerle aynı dil: alttan dolu + kalan sn)
+            float cd = itemCd[it - ITEM_TYPES];
+            if (cd > 0.0f && it->useCooldown > 0.0f) {
+                float ratio = cd / it->useCooldown;   // 1 → 0
+                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 170);
+                SDL_FRect shade = { cx, y0 + CELL * (1.0f - ratio), CELL, CELL * ratio };
+                SDL_RenderFillRect(renderer, &shade);
+
+                if (font != NULL) {
+                    char buf[8];
+                    snprintf(buf, sizeof(buf), "%d", (int)cd + 1);
+                    SDL_Color gray = { 200, 200, 210, 255 };
+                    draw_text(renderer, font, buf, cx + 18.0f, y0 + 30.0f, gray);
+                }
             }
 
             // Envanterdeki adet — 0 ise hücre soluk (tür barda kalır, KO gibi)

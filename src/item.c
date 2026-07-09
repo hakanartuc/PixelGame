@@ -54,7 +54,7 @@ const ItemType ITEM_TYPES[] = {
     // --- Tuketilebilir ---
     { .name = "Can Iksiri", .iconIndex = 5, .maxStack = 10,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
-      .consumable = true, .healAmount = 50.0f,
+      .consumable = true, .healAmount = 50.0f, .useCooldown = 10.0f,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
