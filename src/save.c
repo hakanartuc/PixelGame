@@ -6,7 +6,7 @@
 #include "skill.h"
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 1u
+#define SAVE_VERSION 2u   // v2: hotbar düzeni eklendi
 
 // --- Yazma/okuma yardımcıları: her alan tek tek, hata tek noktadan ---
 // fwrite/fread sayı döndürür; 1 değilse dosya kesik/bozuk demektir.
@@ -37,7 +37,7 @@ static bool read_stack(FILE *f, ItemStack *s)
 }
 
 bool save_game(const char *path, const Player *p,
-               const Inventory *inv, const Equipment *eq)
+               const Inventory *inv, const Equipment *eq, const Hotbar *hb)
 {
     FILE *f = fopen(path, "wb");
     if (f == NULL) {
@@ -67,6 +67,16 @@ bool save_game(const char *path, const Player *p,
     for (int i = 0; ok && i < EQUIP_SLOT_COUNT; i++)
         ok = write_stack(f, &eq->slots[i]);
 
+    // Hotbar: tür kind'a göre — skill ability indeksi, item ITEM_TYPES indeksi
+    ok = ok && w32(f, HOTBAR_SLOTS);
+    for (int i = 0; ok && i < HOTBAR_SLOTS; i++) {
+        const HotbarSlot *s = &hb->slots[i];
+        Sint32 ref = (s->kind == HOTBAR_SKILL) ? (Sint32)s->abilityId
+                   : (s->kind == HOTBAR_ITEM)  ? (Sint32)(s->itemType - ITEM_TYPES)
+                   : -1;
+        ok = w32(f, (Sint32)s->kind) && w32(f, ref);
+    }
+
     fclose(f);
     if (!ok)
         SDL_Log("Save yazilamadi (disk dolu?): %s", path);
@@ -74,7 +84,7 @@ bool save_game(const char *path, const Player *p,
 }
 
 bool load_game(const char *path, Player *p,
-               Inventory *inv, Equipment *eq)
+               Inventory *inv, Equipment *eq, Hotbar *hb)
 {
     FILE *f = fopen(path, "rb");
     if (f == NULL)
@@ -93,6 +103,7 @@ bool load_game(const char *path, Player *p,
     Player tmpP = *p;
     Inventory tmpInv = {0};
     Equipment tmpEq = {0};
+    Hotbar tmpHb = {0};
 
     bool ok = rf(f, &tmpP.rect.x) && rf(f, &tmpP.rect.y)
            && rf(f, &tmpP.health) && rf(f, &tmpP.maxHealth)
@@ -123,6 +134,22 @@ bool load_game(const char *path, Player *p,
             tmpEq.slots[i] = s;
     }
 
+    // Hotbar (v2): kind + referans (ability ya da item indeksi)
+    ok = ok && r32(f, &n);
+    for (int i = 0; ok && i < n; i++) {
+        Sint32 kind, ref;
+        ok = r32(f, &kind) && r32(f, &ref);
+        if (!ok || i >= HOTBAR_SLOTS) continue;
+        if (kind == HOTBAR_SKILL && ref >= 0 && ref < ABILITY_COUNT) {
+            tmpHb.slots[i].kind = HOTBAR_SKILL;
+            tmpHb.slots[i].abilityId = (AbilityId)ref;
+        } else if (kind == HOTBAR_ITEM && ref >= 0 && ref < ITEM_TYPE_COUNT) {
+            tmpHb.slots[i].kind = HOTBAR_ITEM;
+            tmpHb.slots[i].itemType = &ITEM_TYPES[ref];
+        }
+        // tanınmayan kind/ref → slot boş kalır (bozuk kayda tolerans)
+    }
+
     fclose(f);
     if (!ok) {
         SDL_Log("Save okunamadi (bozuk dosya): %s", path);
@@ -133,5 +160,6 @@ bool load_game(const char *path, Player *p,
     *p = tmpP;
     *inv = tmpInv;
     *eq = tmpEq;
+    *hb = tmpHb;
     return true;
 }

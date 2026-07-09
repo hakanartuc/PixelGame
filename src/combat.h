@@ -24,8 +24,12 @@ SkillType combat_weapon_skill(const ItemType *weapon);
 
 // Oyuncunun bir vuruşta vereceği hasar (Combat A formülü).
 // weapon instance olarak gelir (plus ölçeği dahil); type NULL ise silahsız.
+// abilityScale: aktif skill çarpanı (normal vuruş = 1.0).
 HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
-                            float targetDefense);
+                            float targetDefense, float abilityScale);
+
+// Silahın otomatik vuruş aralığı (silahsız/tanımsızsa varsayılan).
+float combat_attack_interval(const ItemStack *weapon);
 
 // Mob'un oyuncuya vereceği hasar: mob hasarı × varyans, oyuncu zırh
 // defansından (kuşanılı item'ların defense toplamı) geçirilir.

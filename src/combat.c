@@ -41,8 +41,15 @@ static float apply_defense(float raw, float defense)
     return raw * 100.0f / (100.0f + defense);
 }
 
+float combat_attack_interval(const ItemStack *weapon)
+{
+    if (weapon != NULL && weapon->type != NULL && weapon->type->attackInterval > 0.0f)
+        return weapon->type->attackInterval;
+    return 1.0f;   // silahsız/tanımsız varsayılanı
+}
+
 HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
-                            float targetDefense)
+                            float targetDefense, float abilityScale)
 {
     HitResult hit = {0};
 
@@ -59,7 +66,7 @@ HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
     if (sk != SKILL_NONE)
         skillScale += (float)(p->skills[sk].level - 1) * SKILL_DAMAGE_PER_LEVEL;
 
-    float raw = base * strScale * skillScale * damage_variance();
+    float raw = base * strScale * skillScale * abilityScale * damage_variance();
 
     // Kritik: DEX şansı, sabit çarpan
     float critChance = CRIT_BASE_CHANCE

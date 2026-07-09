@@ -108,6 +108,21 @@ bool inventory_add(Inventory *inv, const ItemType *type, int count, int plusLeve
     return false;   // çanta dolu
 }
 
+bool inventory_consume(Inventory *inv, const ItemType *type)
+{
+    if (type == NULL) return false;
+    for (int i = 0; i < INVENTORY_SIZE; i++) {
+        if (inv->slots[i].type != type) continue;
+        inv->slots[i].count--;
+        if (inv->slots[i].count <= 0) {
+            inv->slots[i].type = NULL;
+            inv->slots[i].plusLevel = 0;
+        }
+        return true;
+    }
+    return false;   // envanterde yok
+}
+
 // Ekran koordinatindan hangi envanter slotuna denk geldigini bulur.
 // panelX/panelY: inventory_render'a verilen panel sol-ust (AYNI degerler).
 // Donen: slot indeksi (0..INVENTORY_SIZE-1) ya da -1 (bos alana tiklandi).

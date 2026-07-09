@@ -25,4 +25,7 @@ bool inventory_add(Inventory *inv, const ItemType *type, int count, int plusLeve
 
 int inventory_slot_at(float x, float y, float panelX, float panelY);
 
+// Bu türden 1 adet düş (hotbar'dan kullanım). Yoksa false.
+bool inventory_consume(Inventory *inv, const ItemType *type);
+
 #endif

@@ -21,6 +21,7 @@ const ItemType ITEM_TYPES[] = {
     {.name = "Long Sword", .iconIndex = 4, .maxStack = 1,
   .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_ONE_HAND,
   .damage = 50.0f,                  // taban hasar (eski sabit 50 buraya taşındı)
+  .attackInterval = 1.2f,           // otomatik vuruş aralığı (sn)
   .equipSpritePath     = "assets/equipment/weapon/long_sword_140.png",   // on
   .equipSpritePathBack = "assets/equipment/weapon/long_sword_009.png",   // arka
   .equipZ = 140, .equipZBack = 9,   // dosya oneklerinden (LPC z)

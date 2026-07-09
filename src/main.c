@@ -17,6 +17,7 @@
 #include "skill.h"
 #include "combat.h"
 #include "save.h"
+#include "hotbar.h"
 
 int main(int argc, char *argv[])
 {
@@ -132,6 +133,11 @@ int main(int argc, char *argv[])
         // weaponFx her frame kusanili silahtan senkronlanir (bkz. player_update oncesi)
     };
     skills_init(player.skills);
+    player.pendingAbility = -1;   // -1 = normal vuruş (0 geçerli ability olurdu)
+
+    // Hotbar: açık ability'ler otomatik yerleşir (Power Strike lv1'de açık)
+    Hotbar hotbar = {0};
+    hotbar_place_unlocks(&hotbar, player.skills);
 
     // Başlangıç seti: tam demir set + kılıç KUŞANILI (+0), çantada 3 iksir
     equipment.slots[EQUIP_WEAPON] = (ItemStack){ &ITEM_TYPES[ITEM_LONG_SWORD], 1, 0 };
@@ -199,7 +205,7 @@ int main(int argc, char *argv[])
     bool running = true;
 
     generate_map(); // haritayı oluştur
-    Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 1.0f};
+    Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 2.0f};
 
     Uint64 last = SDL_GetTicks();
 
@@ -207,6 +213,7 @@ int main(int argc, char *argv[])
     {
         bool attackPressed = false;
         bool targetPressed = false;
+        int hotbarPressed = -1;   // bu kare basılan hotbar tuşu (0..7, -1 = yok)
         // 4a) INPUT: OS'in bu kare için kuyruğa attığı tüm olayları boşalt.
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -249,7 +256,30 @@ int main(int argc, char *argv[])
                 }
                 else if (event.key.key == SDLK_SPACE && gameState == GAME_PLAYING)
                 {
-                    attackPressed = true;
+                    // KO modeli: Space = auto-attack aç/kapa (hedef yoksa en yakını seç)
+                    if (player.autoAttack)
+                    {
+                        player.autoAttack = false;
+                    }
+                    else
+                    {
+                        if (player.targetMobId == 0)
+                        {
+                            float px = player.rect.x + player.rect.w / 2.0f;
+                            float py = player.rect.y + player.rect.h / 2.0f;
+                            player.targetMobId = mob_find_nearest(mobs, mobCount, px, py);
+                        }
+                        if (player.targetMobId != 0)
+                        {
+                            player.autoAttack = true;
+                            player.attackTimer = 0.0f;   // ilk vuruş beklemesin
+                        }
+                    }
+                }
+                else if (event.key.key >= SDLK_1 && event.key.key <= SDLK_8 &&
+                         gameState == GAME_PLAYING)
+                {
+                    hotbarPressed = (int)(event.key.key - SDLK_1);   // '1' → slot 0
                 }
                 else if (event.key.key == SDLK_Z && gameState == GAME_PLAYING)
                 {
@@ -273,7 +303,7 @@ int main(int argc, char *argv[])
                 else if (event.key.key == SDLK_F5 && gameState == GAME_PLAYING)
                 {
                     // Hızlı kayıt
-                    const char *msg = save_game(SAVE_PATH, &player, &inventory, &equipment)
+                    const char *msg = save_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar)
                                     ? "Kaydedildi" : "Kayit HATASI";
                     SDL_Color white = { 255, 255, 255, 255 };
                     floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
@@ -283,7 +313,7 @@ int main(int argc, char *argv[])
                 else if (event.key.key == SDLK_F9 && gameState == GAME_PLAYING)
                 {
                     // Hızlı yükleme (dünya durumu değişmez, sadece oyuncu+eşyalar)
-                    if (load_game(SAVE_PATH, &player, &inventory, &equipment))
+                    if (load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar))
                     {
                         SDL_Color white = { 255, 255, 255, 255 };
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
@@ -410,28 +440,8 @@ int main(int argc, char *argv[])
                                 ItemStack *st = &inventory.slots[slot];
                                 if (st->type != NULL && st->type->consumable)
                                 {
-                                    // Tüketilebilir: iç (can zaten fulse harcama)
-                                    if (player.health < player.maxHealth)
-                                    {
-                                        player.health += st->type->healAmount;
-                                        if (player.health > player.maxHealth)
-                                            player.health = player.maxHealth;
-
-                                        char buf[FLOAT_TEXT_LEN];
-                                        snprintf(buf, sizeof(buf), "+%d HP",
-                                                 (int)st->type->healAmount);
-                                        SDL_Color green = { 120, 255, 120, 255 };
-                                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
-                                                             player.rect.x + player.rect.w / 2.0f,
-                                                             player.rect.y - 10.0f, buf, green);
-
-                                        st->count--;
-                                        if (st->count <= 0)
-                                        {
-                                            st->type = NULL;
-                                            st->plusLevel = 0;
-                                        }
-                                    }
+                                    // Tüketilebilir: hotbar'a ata (içmek hotbar tuşuyla)
+                                    hotbar_assign_item(&hotbar, st->type);
                                 }
                                 else
                                 {
@@ -463,6 +473,71 @@ int main(int argc, char *argv[])
         {
 
             const bool *keys = SDL_GetKeyboardState(NULL); // basılı tuşların anlık görüntüsü (SDL'e ait, free etme)
+
+            // --- COOLDOWN'LAR: ability başına geri sayım ---
+            for (int a = 0; a < ABILITY_COUNT; a++)
+                if (player.abilityCd[a] > 0.0f)
+                    player.abilityCd[a] -= dt;
+
+            // --- HOTBAR KULLANIMI (1-8) ---
+            if (hotbarPressed >= 0)
+            {
+                HotbarSlot *hs = &hotbar.slots[hotbarPressed];
+                if (hs->kind == HOTBAR_SKILL)
+                {
+                    // Skill vuruşu: CD bitti + şu an savurmuyor → bu vuruşu skill yap.
+                    // (Menzil/hedef doğrulaması aşağıdaki ortak blokta; geçemezse iptal olur)
+                    if (player.abilityCd[hs->abilityId] <= 0.0f && !player.attacking)
+                    {
+                        attackPressed = true;
+                        player.pendingAbility = (int)hs->abilityId;
+                    }
+                }
+                else if (hs->kind == HOTBAR_ITEM)
+                {
+                    // İksir: can fulse harcama, envanterde yoksa sessiz geç
+                    if (player.health < player.maxHealth &&
+                        inventory_consume(&inventory, hs->itemType))
+                    {
+                        player.health += hs->itemType->healAmount;
+                        if (player.health > player.maxHealth)
+                            player.health = player.maxHealth;
+
+                        char buf[FLOAT_TEXT_LEN];
+                        snprintf(buf, sizeof(buf), "+%d HP", (int)hs->itemType->healAmount);
+                        SDL_Color green = { 120, 255, 120, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f, buf, green);
+                    }
+                }
+            }
+
+            // --- AUTO-ATTACK: hedef seçiliyken silah hızında normal vuruş ---
+            if (player.autoAttack)
+            {
+                Mob *aaTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                if (aaTarget == NULL)
+                {
+                    player.autoAttack = false;   // hedef öldü/yok → dur
+                }
+                else
+                {
+                    player.attackTimer -= dt;
+                    // Menzil dışıysa zamanlayıcı 0'da bekler, menzile girince hemen vurur
+                    if (player.attackTimer <= 0.0f && !player.attacking && !attackPressed)
+                    {
+                        float adx = (aaTarget->e.rect.x + aaTarget->e.rect.w / 2.0f) - (player.rect.x + player.rect.w / 2.0f);
+                        float ady = (aaTarget->e.rect.y + aaTarget->e.rect.h / 2.0f) - (player.rect.y + player.rect.h / 2.0f);
+                        if (SDL_sqrtf(adx * adx + ady * ady) <= PLAYER_ATTACK_RANGE)
+                        {
+                            attackPressed = true;
+                            player.pendingAbility = -1;   // normal vuruş
+                            player.attackTimer = combat_attack_interval(&equipment.slots[EQUIP_WEAPON]);
+                        }
+                    }
+                }
+            }
 
             // --- SALDIRI GEÇERLİLİĞİ (KO tarzı): hedef yoksa ya da menzil dışıysa saldırma ---
             if (attackPressed)
@@ -496,9 +571,19 @@ int main(int argc, char *argv[])
                         {
                             player.facing = (tdy < 0) ? DIR_UP : DIR_DOWN;
                         }
+
+                        // Skill vuruşu kesinleşti → cooldown ŞİMDİ başlar
+                        // (vuruş savrulur; hedef kaçarsa da CD yanar, KO gibi)
+                        if (player.pendingAbility >= 0)
+                            player.abilityCd[player.pendingAbility] =
+                                ABILITIES[player.pendingAbility].cooldown;
                     }
                 }
             }
+            // Vuruş başlamadı ve savurma da yok → bekleyen skill çarpanını temizle.
+            // (Savurma sürerken DOKUNMA: çarpan vuruş karesinde kullanılacak)
+            if (!attackPressed && !player.attacking)
+                player.pendingAbility = -1;
 
             // Partikul efekti kusanili silahtan: silah yoksa efekt yok.
             // fxPreview aktifse silahin efektini gecici ezer (yine silah sarti var).
@@ -558,10 +643,15 @@ int main(int argc, char *argv[])
 
                     if (tdist <= PLAYER_ATTACK_RANGE)
                     {
-                        // Combat A: hasar silah instance'ından (plus dahil) + stat + skill
+                        // Combat A: hasar silah instance'ından (plus dahil) + stat + skill.
+                        // Bu vuruş bir ability ise çarpanı uygula (PS ×2, QS ×0.7)
+                        float abilityScale = (player.pendingAbility >= 0)
+                                           ? ABILITIES[player.pendingAbility].damageScale
+                                           : 1.0f;
                         const ItemStack *weapon = &equipment.slots[EQUIP_WEAPON];
                         HitResult hit = combat_player_hit(&player, weapon,
-                                                          target->type->defense);
+                                                          target->type->defense,
+                                                          abilityScale);
 
                         target->e.health -= hit.damage;
                         target->e.hitFlash = 0.15f;
@@ -586,6 +676,9 @@ int main(int argc, char *argv[])
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 10.0f, buf, green);
+
+                                // Yeni seviye ability açtıysa hotbar'a otomatik koy
+                                hotbar_place_unlocks(&hotbar, player.skills);
                             }
                         }
 
@@ -611,7 +704,8 @@ int main(int argc, char *argv[])
                         }
                     }
                 }
-                player.attackHit = true; // bu saldırıda denendi (tekrar etmesin)
+                player.attackHit = true;      // bu saldırıda denendi (tekrar etmesin)
+                player.pendingAbility = -1;   // skill çarpanı kullanıldı/harcandı
             }
 
             spawn_zones_update(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId, dt);
@@ -677,6 +771,10 @@ int main(int argc, char *argv[])
             SDL_Color goldCol = { 255, 210, 60, 255 };
             draw_text(renderer, gameFont, goldBuf, 20.0f, 48.0f, goldCol);
         }
+
+        // Hotbar (alt-orta): skill CD'leri + pot adetleri
+        hotbar_render(&hotbar, renderer, itemIconTex, &itemTex, gameFont,
+                      player.abilityCd, &inventory, winW, winH);
         
 
         if (inventoryOpen)

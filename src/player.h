@@ -6,6 +6,7 @@
 #include "item_textures.h"
 #include "fx.h"
 #include "skill.h"
+#include "ability.h"
 
 typedef struct Equipment Equipment;   // ← forward decl (pointer için yeter)
 
@@ -85,6 +86,12 @@ typedef struct Player {
     bool attacking;
     bool attackHit;
     int targetMobId;
+
+    // KO modeli: hedef seçiliyken normal vuruş otomatik döngüde
+    bool autoAttack;                  // Space ile açılır/kapanır
+    float attackTimer;                // sonraki otomatik vuruşa kalan süre
+    int pendingAbility;               // bu vuruş hangi ability (-1 = normal vuruş)
+    float abilityCd[ABILITY_COUNT];   // ability başına kalan cooldown
     WeaponFxType weaponFx;   // aktif silah efekti (her frame kusanili silahtan senkronlanir)
 } Player;
 

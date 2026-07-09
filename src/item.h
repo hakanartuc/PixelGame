@@ -46,6 +46,7 @@ typedef struct {
     EquipSlot equipSlot;         // hangi slota gider (EQUIP_NONE: kuşanılamaz)
     WeaponType weaponType;       // silahsa tipi (değilse WEAPON_NONE)
     float damage;                // silah taban hasarı (combat formülünün girdisi)
+    float attackInterval;        // silahsa: iki otomatik vuruş arası süre (0 = varsayılan)
     float defense;               // zırh/kalkan defansı (azalan getirili: 100/(100+def))
     const char *equipSpritePath; // paper-doll katmanı (kuşanınca görünen sprite, NULL: yok)
     const char *equipSpritePathBack;   // 2. katman (silah arka — yoksa NULL)
