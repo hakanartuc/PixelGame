@@ -2,6 +2,7 @@
 #define REGION_H
 #include <SDL3/SDL.h>
 #include "mob.h"
+#include "music.h"   // MusicMood — bölgenin müzik ruh hali
 
 // Bölge sistemi: tek büyük harita üstünde MANTIKSAL dikdörtgen alanlar.
 // Zorluk coğrafyaya sabittir (Gothic/Souls) — level scaling yok:
@@ -19,6 +20,7 @@ typedef struct {
 typedef struct {
     const char *name;    // splash'ta gösterilen ad
     SDL_FRect rect;      // bölge alanı (dünya pikseli)
+    MusicMood mood;      // bölge müziği (savaş bunu geçici ezer — main)
     const RegionCamp *camps;
     int campCount;
 } Region;
