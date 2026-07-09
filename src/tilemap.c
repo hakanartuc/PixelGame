@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "tilemap.h"
 
 #define FEET_H 20.0f   // ayak kutusunun yüksekliği
@@ -15,13 +17,20 @@ const TileType TILE_TYPES[] = {
 const int TILE_TYPE_COUNT = (int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0]));
 
 // --- Harita verisi: modüle özel (dışarıdan görünmez) ---
-static int tilemap[MAP_H][MAP_W];
+// Statik tavan boyutunda; gerçek boyut mapW/mapH (CSV'den ya da generate_map'ten)
+static int tilemap[MAP_H_MAX][MAP_W_MAX];
+static int mapW = 40, mapH = 30;   // generate_map varsayılanı
+
+int map_width(void)  { return mapW; }
+int map_height(void) { return mapH; }
 
 void generate_map(void)
 {
-    for (int row = 0; row < MAP_H; row++) {
-        for (int col = 0; col < MAP_W; col++) {
-            if (row == 0 || col == 0 || row == MAP_H-1 || col == MAP_W-1)
+    mapW = 40;
+    mapH = 30;
+    for (int row = 0; row < mapH; row++) {
+        for (int col = 0; col < mapW; col++) {
+            if (row == 0 || col == 0 || row == mapH-1 || col == mapW-1)
                 tilemap[row][col] = 2;        // kenar çerçevesi: su
             else
                 tilemap[row][col] = 0;        // iç: çimen
@@ -41,6 +50,62 @@ void generate_map(void)
     for (int col = 6; col <= 10; col++) tilemap[6][col] = 4;
     // Test: diken alanı
     for (int col = 6; col <= 8; col++) tilemap[8][col] = 5;
+}
+
+// Tiled CSV: her satır virgülle ayrılmış GID'ler. GID 0 = boş (çimen sayarız),
+// 1+ = tileset'teki sıra → bizim ID = GID - 1. Satır uzunlukları eşit olmalı.
+bool tilemap_load_csv(const char *path)
+{
+    FILE *f = fopen(path, "r");
+    if (f == NULL) {
+        SDL_Log("Harita bulunamadi: %s (generate_map kullanilacak)", path);
+        return false;
+    }
+
+    char line[MAP_W_MAX * 8];   // satır tamponu: tile başına "9999," bolca sığar
+    int row = 0, cols = -1;
+
+    while (row < MAP_H_MAX && fgets(line, sizeof(line), f) != NULL) {
+        // Boş satırı atla (dosya sonu newline'ı vb.)
+        if (line[0] == '\n' || line[0] == '\r' || line[0] == '\0')
+            continue;
+
+        int col = 0;
+        char *cursor = line;
+        while (col < MAP_W_MAX) {
+            char *end;
+            long gid = strtol(cursor, &end, 10);
+            if (end == cursor)
+                break;   // sayı yok → satır bitti
+
+            int id = (int)gid - 1;                       // GID → tile ID
+            if (id < 0 || id >= TILE_TYPE_COUNT) id = 0; // bilinmeyen → çimen
+            tilemap[row][col++] = id;
+
+            cursor = end;
+            if (*cursor == ',') cursor++;
+        }
+
+        if (cols == -1) cols = col;
+        if (col != cols) {
+            SDL_Log("CSV satir uzunlugu tutarsiz (satir %d: %d, beklenen %d): %s",
+                    row, col, cols, path);
+            fclose(f);
+            return false;
+        }
+        row++;
+    }
+    fclose(f);
+
+    if (row == 0 || cols <= 0) {
+        SDL_Log("CSV bos/okunamadi: %s", path);
+        return false;
+    }
+
+    mapW = cols;
+    mapH = row;
+    SDL_Log("Harita yuklendi: %s (%dx%d)", path, mapW, mapH);
+    return true;
 }
 
 // --- İçsel yardımcılar (static = sadece bu dosyada görünür) ---
@@ -89,7 +154,7 @@ int tile_at_point(float worldX, float worldY)
     int col = (int)(worldX / TILE_SIZE);
     int row = (int)(worldY / TILE_SIZE);
 
-    if (col < 0 || col >= MAP_W || row < 0 || row >= MAP_H)
+    if (col < 0 || col >= mapW || row < 0 || row >= mapH)
         return -1; // harita dışı
 
     return tilemap[row][col];
@@ -108,7 +173,7 @@ bool box_hits_solid(SDL_FRect box)
     for (int row = rowT; row <= rowB; row++) {
         for (int col = colL; col <= colR; col++) {
             // SINIR KONTROLÜ: harita dışı = katı say (oyuncu dünyadan çıkamasın)
-            if (col < 0 || col >= MAP_W || row < 0 || row >= MAP_H)
+            if (col < 0 || col >= mapW || row < 0 || row >= mapH)
                 return true; // harita dışı
 
             if(tile_is_solid(tilemap[row][col])) {
@@ -136,8 +201,22 @@ void tilemap_render(SDL_Renderer *renderer, SDL_Texture **tileTextures, const Ca
 {
     float zoom = camera->zoom;
 
-    for (int row = 0; row < MAP_H; row++) {
-        for (int col = 0; col < MAP_W; col++) {
+    // CULLING: sadece ekranda görünen tile aralığını çiz.
+    // Büyük haritada (200×150 = 30k tile) hepsini çizmek boşa draw call'dur.
+    int outW = 0, outH = 0;
+    SDL_GetCurrentRenderOutputSize(renderer, &outW, &outH);
+
+    int colL = (int)(camera->x / TILE_SIZE);
+    int rowT = (int)(camera->y / TILE_SIZE);
+    int colR = (int)((camera->x + outW / zoom) / TILE_SIZE) + 1;
+    int rowB = (int)((camera->y + outH / zoom) / TILE_SIZE) + 1;
+    if (colL < 0) colL = 0;
+    if (rowT < 0) rowT = 0;
+    if (colR > mapW) colR = mapW;
+    if (rowB > mapH) rowB = mapH;
+
+    for (int row = rowT; row < rowB; row++) {
+        for (int col = colL; col < colR; col++) {
             int tileID = tilemap[row][col];
             SDL_FRect dst = {
                 (col * TILE_SIZE - camera->x) * zoom,

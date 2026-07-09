@@ -2,13 +2,15 @@
 #define MOB_H
 
 #include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>   // TTF_Font (target_hp_bar_render)
 #include <stdbool.h>
 #include "common.h"
 #include "item.h"   // LootEntry (tür başına loot tablosu)
 
 
-#define MAX_MOBS 10
+#define MAX_MOBS 48        // dünya geneli aynı anda max mob (bölge kampları toplamı + pay)
 #define MAX_MOB_TYPES 16   // tür tablosu kapasitesi (tile'lardaki MAX_TILE_TYPES gibi)
+#define MAX_SPAWN_ZONES 32 // bölge kamplarından kurulabilecek max spawn bölgesi
 
 // Dünyada var olan, hareket eden, hasar alabilen her şeyin ortak çekirdeği.
 typedef struct {

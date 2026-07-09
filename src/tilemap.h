@@ -24,6 +24,16 @@ extern const int TILE_TYPE_COUNT;
 
 // --- Genel arayüz (başka modüller bunları kullanır) ---
 void generate_map(void);
+
+// Tiled CSV export'unu yükle (değerler GID: 0=boş, 1=ilk tile → id = GID-1).
+// Boyut dosyadan okunur (satır/sütun sayısı), tavan MAP_W_MAX×MAP_H_MAX.
+// Başarısızsa false — çağıran generate_map fallback'ine düşmeli.
+bool tilemap_load_csv(const char *path);
+
+// Gerçek harita boyutu (tile) — CSV'den ya da generate_map'ten
+int map_width(void);
+int map_height(void);
+
 void tilemap_render(SDL_Renderer *renderer, SDL_Texture **tileTextures, const Camera *camera);
 
 int  tile_at_point(float worldX, float worldY);

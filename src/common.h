@@ -6,10 +6,10 @@
 
 #define DEBUG_DRAW 0
 
-// --- Harita boyut sabitleri (birçok modül kullanır) ---
-#define TILE_SIZE 64    // bir tile kaç piksel
-#define MAP_W     40    // harita genişliği (tile)
-#define MAP_H     30    // harita yüksekliği (tile)
+// --- Harita boyut sabitleri ---
+#define TILE_SIZE 64      // bir tile kaç piksel
+#define MAP_W_MAX 256     // harita tavanı (statik dizi boyutu; gerçek boyut CSV'den)
+#define MAP_H_MAX 256
 
 // --- Kamera: dünya uzayında bir görüş penceresi ---
 typedef struct {

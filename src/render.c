@@ -1,5 +1,6 @@
 #include "render.h"
 #include "common.h"
+#include "tilemap.h"   // map_width/map_height (kamera clamp)
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -50,9 +51,9 @@ void camera_update(Camera *camera, float targetX, float targetY, int winW, int w
     camera->x = targetX - viewW / 2.0f;
     camera->y = targetY - viewH / 2.0f;
 
-    // Harita sinirlari (zoom'lu gorus alanina gore)
-    float worldW = MAP_W * TILE_SIZE;
-    float worldH = MAP_H * TILE_SIZE;
+    // Harita sinirlari (zoom'lu gorus alanina gore; gercek boyut tilemap'ten)
+    float worldW = map_width() * TILE_SIZE;
+    float worldH = map_height() * TILE_SIZE;
     if (camera->x < 0.0f) camera->x = 0.0f;
     if (camera->y < 0.0f) camera->y = 0.0f;
     if (camera->x > worldW - viewW) camera->x = worldW - viewW;
