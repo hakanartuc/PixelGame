@@ -24,6 +24,8 @@ const ItemType ITEM_TYPES[] = {
   .equipSpritePathBack = "assets/equipment/weapon/long_sword_009.png",   // arka
   .equipZ = 140, .equipZBack = 9,   // dosya oneklerinden (LPC z)
   .equipIdleRow = 8,                // silahin idle'i yok → walk row 8 ayakta durus
+  .slashOversize = true,            // 64px slash satiri bos → oversize savurma blogu
+  .weaponFx = WEAPON_FX_PINK,       // taban efekt (run sistemi gelince instance'a tasinacak)
   .plusLevel = 0,
   .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
 

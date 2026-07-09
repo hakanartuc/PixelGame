@@ -120,7 +120,8 @@ void player_render(const Player *p, SDL_Renderer *renderer, const PlayerLayer *l
 
     for (int i = 0; i < layerCount; i++)
     {
-        SDL_FRect layerSrc = src; // varsayilan: ortak src (state satiri + currentFrame)
+        SDL_FRect layerSrc = src;    // varsayilan: ortak src (state satiri + currentFrame)
+        SDL_FRect layerDst = screen; // varsayilan: ortak dst
 
         // Idle'da bu katmanin override'i varsa: farkli satir + sabit frame 0
         if (p->state == PLAYER_IDLE && layers[i].idleRowOverride >= 0)
@@ -130,7 +131,22 @@ void player_render(const Player *p, SDL_Renderer *renderer, const PlayerLayer *l
             layerSrc.y = r2 * FRAME_H;
         }
 
-        SDL_RenderTexture(renderer, layers[i].tex, &layerSrc, &screen);
+        // Slash'ta oversize katman: 192px blok + 3x buyutulmus merkezli dst
+        // (karakter oversize hucrenin merkezindeki 64px kutuda → offset sabit)
+        if (p->state == PLAYER_SLASH && layers[i].slashOversize)
+        {
+            layerSrc = (SDL_FRect){
+                .x = p->currentFrame * OVERSIZE_FRAME,
+                .y = OVERSIZE_Y + (int)p->facing * OVERSIZE_FRAME,
+                .w = OVERSIZE_FRAME,
+                .h = OVERSIZE_FRAME};
+            layerDst.x -= screen.w;
+            layerDst.y -= screen.h;
+            layerDst.w = screen.w * 3.0f; // 192/64
+            layerDst.h = screen.h * 3.0f;
+        }
+
+        SDL_RenderTexture(renderer, layers[i].tex, &layerSrc, &layerDst);
     }
 
 #if DEBUG_DRAW
@@ -279,11 +295,20 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
     // --- SILAH EFEKTI: karakter etrafinda partikul dogur ---
     if (p->weaponFx != WEAPON_FX_NONE)
     {
-          // Karakter merkezi + yone gore kilic bolgesi ofseti
-    float cx = p->rect.x + p->rect.w / 2.0f + WEAPON_FX_OFFSET[p->facing].dx;
-    float cy = p->rect.y + p->rect.h / 2.0f + WEAPON_FX_OFFSET[p->facing].dy;
+        // Yone gore kilic bolgesi ofseti; slash'ta kare-kare savurma konumu
+        float dx = WEAPON_FX_OFFSET[p->facing].dx;
+        float dy = WEAPON_FX_OFFSET[p->facing].dy;
+        if (p->state == PLAYER_SLASH)
+        {
+            float s = p->drawH / (float)FRAME_H; // sprite px → dunya px
+            dx = WEAPON_SLASH_FX_OFFSET[p->facing][p->currentFrame].dx * s;
+            dy = WEAPON_SLASH_FX_OFFSET[p->facing][p->currentFrame].dy * s;
+        }
 
-        int spawnPerFrame = 3;
+    float cx = p->rect.x + p->rect.w / 2.0f + dx;
+    float cy = p->rect.y + p->rect.h / 2.0f + dy;
+
+        int spawnPerFrame = (p->weaponFx == WEAPON_FX_ICE) ? 6 : 3; // firtina daha yogun
         for (int k = 0; k < spawnPerFrame; k++)
         {
             // Dogum noktasi: kilic bolgesi civarinda dar sacilim (govde geneli degil)
@@ -293,13 +318,50 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
             float vx, vy, life, size;
             Uint8 pr, pg, pb;
 
-            if (p->weaponFx == WEAPON_FX_FLAME) {
+            switch (p->weaponFx) {
+            case WEAPON_FX_FLAME: // yukari savrulan alev dilleri
                 vx = (randf() - 0.5f) * 40.0f;
                 vy = -60.0f - randf() * 60.0f;
                 life = 0.3f + randf() * 0.3f;
                 size = 8.0f + randf() * 10.0f;
                 pr = 255; pg = (Uint8)(200 + rand() % 55); pb = (Uint8)(rand() % 80);
-            } else {
+                break;
+            case WEAPON_FX_ICE: // silah cevresinde donen buz firtinasi
+            {
+                // Silah-boyu sacilimin (ox/oy) ustune kucuk cember: girdap silah boyunca dagilir
+                float ang = randf() * 6.2832f;
+                float rad = 3.0f + randf() * 5.0f;
+                ox += SDL_cosf(ang) * rad;
+                oy += SDL_sinf(ang) * rad * 0.6f;
+                float spin = 28.0f + randf() * 18.0f;
+                vx = -SDL_sinf(ang) * spin;
+                vy = SDL_cosf(ang) * spin * 0.6f + 10.0f;
+                life = 0.25f + randf() * 0.25f;
+                size = 5.0f + randf() * 7.0f;
+                if (rand() % 2) { // beyaz kristal / mavi yelpaze — yari yariya
+                    pr = 255; pg = 255; pb = 255;
+                } else {
+                    float tone = randf(); // 0 = koyu buz mavisi, 1 = acik mavi
+                    pr = (Uint8)(60 + tone * 120.0f);
+                    pg = (Uint8)(140 + tone * 90.0f);
+                    pb = 255;
+                }
+                break;
+            }
+            case WEAPON_FX_POISON: // yavas yukselen zehir kabarciklari
+            {
+                vx = (randf() - 0.5f) * 25.0f;
+                vy = -25.0f - randf() * 35.0f;
+                life = 0.4f + randf() * 0.4f;
+                size = 6.0f + randf() * 8.0f;
+                float tone = randf(); // uc ayri ton grubu — koyu / toksik / sari-yesil
+                if (tone < 0.33f)      { pr = (Uint8)(25 + rand() % 20);  pg = (Uint8)(110 + rand() % 40); pb = 30; }
+                else if (tone < 0.66f) { pr = (Uint8)(50 + rand() % 30);  pg = (Uint8)(190 + rand() % 50); pb = 50; }
+                else                   { pr = (Uint8)(140 + rand() % 40); pg = 255;                        pb = 60; }
+                break;
+            }
+            default: // WEAPON_FX_PINK — her yone sacilan enerji
+            {
                 float angR = randf() * 6.2832f;
                 float spd = 20.0f + randf() * 50.0f;
                 vx = SDL_cosf(angR) * spd;
@@ -307,6 +369,8 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
                 life = 0.3f + randf() * 0.4f;
                 size = 6.0f + randf() * 8.0f;
                 pr = 255; pg = (Uint8)(40 + rand() % 60); pb = (Uint8)(180 + rand() % 50);
+                break;
+            }
             }
             fx_spawn(fx, ox, oy, vx, vy, life, size, pr, pg, pb, p->weaponFx);
         }
@@ -373,6 +437,7 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
             out[n].tex = texFront;
             out[n].z = z;
             out[n].idleRowOverride = idleRow;
+            out[n].slashOversize = st->type->slashOversize;
             n++;
         }
 
@@ -383,6 +448,7 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
             out[n].tex = texBack;
             out[n].z = st->type->equipZBack;
             out[n].idleRowOverride = idleRow;
+            out[n].slashOversize = st->type->slashOversize;
             n++;
         }
     }

@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include <stdbool.h>
 #include "common.h"
+#include "fx.h"   // WeaponFxType
 
 #define MAX_ITEM_TYPES 32   // ITEM_TYPES kapasitesi (paralel diziler icin sabit boyut)
 
@@ -49,6 +50,8 @@ typedef struct {
     int equipZ;                  // ön katman z (LPC dosya öneki; 0 = slot_zorder varsayılanı)
     int equipZBack;              // arka katman z (equipSpritePathBack varsa zorunlu)
     int equipIdleRow;            // idle'da çizilecek satır (0 = yok, sheet'in kendi idle'ı oynar)
+    bool slashOversize;          // slash'ı oversize bloktan çiz (64px slash satırı boş silahlar)
+    WeaponFxType weaponFx;       // silahın partikül efekti (0 = WEAPON_FX_NONE)
     int plusLevel;               // +0..+8 (parlama efekti için)
 
     const char *iconSpritePath;   // ikon dosyasi (NULL → tool_icons fallback)

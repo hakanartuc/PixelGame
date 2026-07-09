@@ -84,6 +84,11 @@ void fx_render(ParticleSystem *fx, SDL_Renderer *renderer,
             cr = 255;
             cg = (Uint8)(p->g * t);
             cb = (Uint8)(p->b * t * t);
+        } else if (p->fxType == WEAPON_FX_ICE) {
+            // Buz: yeni=beyaz-mavi, olurken maviye doner (kirmizi duser)
+            cr = (Uint8)(p->r * t);
+            cg = p->g;
+            cb = p->b;
         } else {
             // Pembe (ve digerleri): sabit renk, sadece soner
             cr = p->r;

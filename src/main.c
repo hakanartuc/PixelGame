@@ -91,9 +91,9 @@ int main(int argc, char *argv[])
     // Katmanlar ÇİZİM SIRASINDA (alttan üste). Yeni parça eklemek = buraya bir satır.
     // base katmanlar: body → head → face. { texture, z } — z = LPC dosya öneki (çizim sırası, küçük=arka).
     PlayerLayer layers[] = {
-        {load_texture(renderer, "assets/characters/body/male/light.png"), 10, -1},
-        {load_texture(renderer, "assets/characters/head/male/human_light.png"), 100, -1},
-        {load_texture(renderer, "assets/characters/face/male/neutral_light.png"), 101, -1},
+        {load_texture(renderer, "assets/characters/body/male/light.png"), 10, -1, false},
+        {load_texture(renderer, "assets/characters/head/male/human_light.png"), 100, -1, false},
+        {load_texture(renderer, "assets/characters/face/male/neutral_light.png"), 101, -1, false},
     };
 
     SDL_Texture *glowTex = create_glow_texture(renderer, 64);
@@ -122,12 +122,13 @@ int main(int argc, char *argv[])
         .speed = PLAYER_SPEED,
         .health = 100.0f,
         .maxHealth = 100.0f,
-        .weaponFx = WEAPON_FX_PINK,
+        // weaponFx her frame kusanili silahtan senkronlanir (bkz. player_update oncesi)
     };
         
 
     ParticleSystem weaponFx;
     fx_init(&weaponFx);
+    int fxPreview = -1; // -1 = kapali; F ile efekt onizleme (silahin efektini gecici ezer, test)
 
     // Mob texture'ları: her tür için sprite yükle (TILE_TYPES gibi)
     SDL_Texture *mob_textures[MAX_MOB_TYPES] = {0};
@@ -240,8 +241,10 @@ int main(int argc, char *argv[])
                 }
                 else if (event.key.key == SDLK_F && gameState == GAME_PLAYING)
                 {
-                    // Efekt tipleri arasinda gecis (test)
-                    player.weaponFx = (player.weaponFx + 1) % 3;  // NONE/PINK/FLAME
+                    // Efekt onizleme dongusu (test): kapali → NONE → PINK → ... → kapali
+                    fxPreview++;
+                    if (fxPreview >= WEAPON_FX_COUNT)
+                        fxPreview = -1;
                 }
             }
             else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
@@ -398,6 +401,13 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+
+            // Partikul efekti kusanili silahtan: silah yoksa efekt yok.
+            // fxPreview aktifse silahin efektini gecici ezer (yine silah sarti var).
+            const ItemType *wpnType = equipment.slots[EQUIP_WEAPON].type;
+            player.weaponFx = (wpnType == NULL) ? WEAPON_FX_NONE
+                            : (fxPreview >= 0) ? (WeaponFxType)fxPreview
+                            : wpnType->weaponFx;
 
             player_update(&player, keys, attackPressed, dt, &weaponFx); // oyuncuyu güncelle
             fx_update(&weaponFx, dt);

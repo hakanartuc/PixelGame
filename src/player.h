@@ -13,6 +13,11 @@ typedef struct Equipment Equipment;   // ← forward decl (pointer için yeter)
 #define FRAME_H 64
 #define LPC_SHEET_COLS 13    // sheet 13 sütun
 
+// ULPC tam sheet'te oversize bölge: 54 standart satırdan sonra, 192×192 hücreler.
+// Slash bloğu bölgenin ilk 4 satırı (yön sırası up/left/down/right, 6 kare).
+#define OVERSIZE_Y 3456      // 54 * 64
+#define OVERSIZE_FRAME 192
+
 // LPC'de karakterin ayağı hücrenin neresinde (collision/feet hizası için)
 // LPC karakterleri 64px hücrede, ayak ~y=58 civarı (ölçeceğiz, şimdilik tahmin)
 #define SPRITE_FEET_Y 61
@@ -46,6 +51,7 @@ typedef struct PlayerLayer {
     SDL_Texture *tex;
     int z;
     int idleRowOverride;  // -1 = yok (base satirini kullan), >=0 = idle'da bu satiri ciz
+    bool slashOversize;   // slash'ta 64px satir yerine oversize blogu ciz (silah katmanlari)
 } PlayerLayer;
 
 // Karakterin TÜM kalıcı durumu
@@ -69,7 +75,7 @@ typedef struct {
     bool attacking;
     bool attackHit;
     int targetMobId;
-    WeaponFxType weaponFx;   // su an aktif silah efekti (ileride silahtan gelecek)
+    WeaponFxType weaponFx;   // aktif silah efekti (her frame kusanili silahtan senkronlanir)
 } Player;
 
 
