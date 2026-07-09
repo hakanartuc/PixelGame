@@ -337,6 +337,20 @@ int main(int argc, char *argv[])
                             gameState = GAME_PLAYING;
                         else if (act == MENU_ACTION_QUIT)
                             running = false;
+                        else if (act == MENU_ACTION_SAVE || act == MENU_ACTION_LOAD)
+                        {
+                            // F5/F9 ile aynı yol; bildirim oyuna dönünce görünür
+                            bool ok = (act == MENU_ACTION_SAVE)
+                                    ? save_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar)
+                                    : load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar);
+                            const char *msg = !ok ? ((act == MENU_ACTION_SAVE) ? "Kayit HATASI" : "Kayit bulunamadi")
+                                            : (act == MENU_ACTION_SAVE) ? "Kaydedildi" : "Yuklendi";
+                            SDL_Color white = { 255, 255, 255, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f, msg, white);
+                            gameState = GAME_PLAYING;   // işlem sonrası oyuna dön
+                        }
                     }
                     // menu acikken oyun tiklamasi islenmez
                 }

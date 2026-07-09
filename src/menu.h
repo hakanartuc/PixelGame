@@ -19,6 +19,8 @@ typedef enum {
 typedef enum {
     MENU_ACTION_NONE,    // bir sey olmadi / tiklama bos alana
     MENU_ACTION_RESUME,  // oyuna don
+    MENU_ACTION_SAVE,    // oyunu kaydet (main halleder — menu dosya bilmez)
+    MENU_ACTION_LOAD,    // kayittan yukle
     MENU_ACTION_QUIT,    // oyundan cik
 } MenuAction;
 

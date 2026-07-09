@@ -49,8 +49,10 @@ void menu_render(SDL_Renderer *renderer, TTF_Font *font,
 
     // 2) Ekrana gore butonlar
     if (screen == MENU_MAIN) {
-        draw_button(renderer, font, menu_button_rect(0, 2, winW, winH), "Devam Et");
-        draw_button(renderer, font, menu_button_rect(1, 2, winW, winH), "Oyundan Çık");
+        draw_button(renderer, font, menu_button_rect(0, 4, winW, winH), "Devam Et");
+        draw_button(renderer, font, menu_button_rect(1, 4, winW, winH), "Kaydet");
+        draw_button(renderer, font, menu_button_rect(2, 4, winW, winH), "Yükle");
+        draw_button(renderer, font, menu_button_rect(3, 4, winW, winH), "Oyundan Çık");
     }
     else if (screen == MENU_CONFIRM_QUIT) {
         // Baslik
@@ -72,11 +74,19 @@ void menu_render(SDL_Renderer *renderer, TTF_Font *font,
 MenuAction menu_handle_click(MenuScreen *screen, float mx, float my, int winW, int winH)
 {
     if (*screen == MENU_MAIN) {
-        SDL_FRect resume = menu_button_rect(0, 2, winW, winH);
-        SDL_FRect quit   = menu_button_rect(1, 2, winW, winH);
+        SDL_FRect resume = menu_button_rect(0, 4, winW, winH);
+        SDL_FRect save   = menu_button_rect(1, 4, winW, winH);
+        SDL_FRect load   = menu_button_rect(2, 4, winW, winH);
+        SDL_FRect quit   = menu_button_rect(3, 4, winW, winH);
         if (mx >= resume.x && mx < resume.x + resume.w &&
             my >= resume.y && my < resume.y + resume.h)
             return MENU_ACTION_RESUME;
+        if (mx >= save.x && mx < save.x + save.w &&
+            my >= save.y && my < save.y + save.h)
+            return MENU_ACTION_SAVE;
+        if (mx >= load.x && mx < load.x + load.w &&
+            my >= load.y && my < load.y + load.h)
+            return MENU_ACTION_LOAD;
         if (mx >= quit.x && mx < quit.x + quit.w &&
             my >= quit.y && my < quit.y + quit.h) {
             *screen = MENU_CONFIRM_QUIT;   // onay ekranina gec
