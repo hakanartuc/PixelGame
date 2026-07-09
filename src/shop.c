@@ -1,0 +1,84 @@
+#include <stdio.h>
+#include "shop.h"
+#include "font.h"
+
+// Satır yerleşimi — çizim ve tıklama aynı ölçüleri kullanır (desenkron olmaz)
+#define SHOP_ROW_H 44.0f
+#define SHOP_PAD 16.0f
+#define SHOP_W 300.0f
+
+const ShopEntry SHOP_STOCK[] = {
+    { &ITEM_TYPES[ITEM_POTION_HP] },
+    { &ITEM_TYPES[ITEM_LONG_SWORD] },
+    { &ITEM_TYPES[ITEM_HELMET_IRON] },
+    { &ITEM_TYPES[ITEM_CHEST_IRON] },
+    { &ITEM_TYPES[ITEM_LEGS_IRON] },
+};
+const int SHOP_STOCK_COUNT = (int)(sizeof(SHOP_STOCK) / sizeof(SHOP_STOCK[0]));
+
+void shop_render(SDL_Renderer *renderer, TTF_Font *font,
+                 SDL_Texture *itemIconTex, const ItemTextures *itemTex,
+                 int playerGold, float panelX, float panelY)
+{
+    float panelH = SHOP_STOCK_COUNT * SHOP_ROW_H + SHOP_PAD * 2 + 56.0f;
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 25, 25, 35, 240);
+    SDL_FRect panel = { panelX, panelY, SHOP_W, panelH };
+    SDL_RenderFillRect(renderer, &panel);
+    SDL_SetRenderDrawColor(renderer, 200, 200, 210, 255);
+    SDL_RenderRect(renderer, &panel);
+
+    if (font == NULL) return;
+
+    SDL_Color white  = { 255, 255, 255, 255 };
+    SDL_Color gold   = { 255, 210, 60, 255 };
+    SDL_Color dim    = { 150, 150, 160, 255 };
+
+    draw_text(renderer, font, "Dukkan", panelX + SHOP_PAD, panelY + 8.0f, white);
+
+    float rowY = panelY + SHOP_PAD + 30.0f;
+    for (int i = 0; i < SHOP_STOCK_COUNT; i++) {
+        const ItemType *it = SHOP_STOCK[i].type;
+
+        // Satır zemini
+        SDL_SetRenderDrawColor(renderer, 50, 50, 65, 255);
+        SDL_FRect row = { panelX + 8.0f, rowY, SHOP_W - 16.0f, SHOP_ROW_H - 6.0f };
+        SDL_RenderFillRect(renderer, &row);
+
+        // İkon (envanterle aynı fallback zinciri)
+        SDL_FRect dst = { row.x + 4.0f, rowY + 3.0f, 32.0f, 32.0f };
+        SDL_Texture *icon = item_icon_tex(itemTex, it);
+        if (icon != NULL) {
+            SDL_RenderTexture(renderer, icon, &it->iconSrc, &dst);
+        } else {
+            SDL_FRect src = { it->iconIndex * 16.0f, 0, 16, 16 };
+            SDL_RenderTexture(renderer, itemIconTex, &src, &dst);
+        }
+
+        // Ad + fiyat (altın yetmiyorsa fiyat soluk)
+        draw_text(renderer, font, it->name, row.x + 44.0f, rowY + 4.0f, white);
+        char price[16];
+        snprintf(price, sizeof(price), "%d g", it->value);
+        draw_text(renderer, font, price, row.x + 44.0f, rowY + 20.0f,
+                  (playerGold >= it->value) ? gold : dim);
+
+        rowY += SHOP_ROW_H;
+    }
+
+    // Alt bilgi: satış ipucu
+    SDL_Color hint = { 170, 200, 255, 255 };
+    draw_text(renderer, font, "Sat: envanterde sag tik", panelX + SHOP_PAD, rowY + 4.0f, hint);
+}
+
+int shop_entry_at(float x, float y, float panelX, float panelY)
+{
+    float rowY = panelY + SHOP_PAD + 30.0f;
+    for (int i = 0; i < SHOP_STOCK_COUNT; i++) {
+        SDL_FRect row = { panelX + 8.0f, rowY, SHOP_W - 16.0f, SHOP_ROW_H - 6.0f };
+        if (x >= row.x && x < row.x + row.w && y >= row.y && y < row.y + row.h)
+            return i;
+        rowY += SHOP_ROW_H;
+    }
+    return -1;
+}

@@ -1,0 +1,9 @@
+# Koylu Osman — sohbet/yonlendirme
+[start]
+text: Guneydeki bataklige gitme derim. Orklar yuvalanmis, ustune bir de dikenler...
+opt: Baska ne var ne yok? -> haber
+opt: Uyari icin saol. -> end
+
+[haber]
+text: Dogudaki karanlik ormanin derinliginde eski bir gecit varmis derler. Kimse donup anlatamadi ama.
+opt: Ilginc... -> end

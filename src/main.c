@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h> // platformlar arası 'main' köprülemesi (mobil/web için de gerekli)
 #include <stdbool.h>
+#include <string.h>   // diyalog hedef karşılaştırmaları
 #include "font.h"
 #include "common.h"
 #include "menu.h"
@@ -19,6 +20,10 @@
 #include "save.h"
 #include "hotbar.h"
 #include "region.h"
+#include "npc.h"
+#include "dialog.h"
+#include "shop.h"
+#include "quest.h"
 
 int main(int argc, char *argv[])
 {
@@ -140,6 +145,22 @@ int main(int argc, char *argv[])
     Hotbar hotbar = {0};
     hotbar_place_unlocks(&hotbar, player.skills);
 
+    // NPC'ler: texture + diyalog dosyaları (yüklenemeyen NPC konuşamaz, oyun çökmez)
+    SDL_Texture *npc_textures[NPC_COUNT];
+    Dialog npcDialogs[NPC_COUNT];
+    bool npcDialogOk[NPC_COUNT];
+    for (int i = 0; i < NPC_COUNT; i++)
+    {
+        npc_textures[i] = load_texture(renderer, NPCS[i].sheetPath);
+        npcDialogOk[i] = dialog_load(&npcDialogs[i], NPCS[i].dialogFile);
+    }
+    int dialogNpc = -1;    // konuşulan NPC (-1 = diyalog kapalı)
+    int dialogNode = -1;   // aktif diyalog düğümü
+    bool shopOpen = false;
+    int nearestNpc = -1;   // E prompt'u için (her kare güncellenir)
+
+    QuestStatus questStatus[MAX_QUESTS] = {0};   // hepsi NOT_STARTED
+
     // Başlangıç seti: tam demir set + kılıç KUŞANILI (+0), çantada 3 iksir
     equipment.slots[EQUIP_WEAPON] = (ItemStack){ &ITEM_TYPES[ITEM_LONG_SWORD], 1, 0 };
     equipment.slots[EQUIP_HELMET] = (ItemStack){ &ITEM_TYPES[ITEM_HELMET_IRON], 1, 0 };
@@ -258,17 +279,25 @@ int main(int argc, char *argv[])
                         loots[openLootIndex].state = LOOT_CLOSING; // 1) once loot popup
                         openLootIndex = -1;
                     }
+                    else if (dialogNpc >= 0)
+                    {
+                        dialogNpc = -1; // 2) sonra diyalog
+                    }
+                    else if (shopOpen)
+                    {
+                        shopOpen = false; // 3) sonra dukkan
+                    }
                     else if (inventoryOpen)
                     {
-                        inventoryOpen = false; // 2) sonra envanter
+                        inventoryOpen = false; // 4) sonra envanter
                     }
                     else if (skillsOpen)
                     {
-                        skillsOpen = false; // 3) sonra skill paneli
+                        skillsOpen = false; // 5) sonra skill paneli
                     }
                     else
                     {
-                        gameState = GAME_PAUSED; // 4) hicbiri yoksa MENU AC
+                        gameState = GAME_PAUSED; // 6) hicbiri yoksa MENU AC
                         menuScreen = MENU_MAIN;
                     }
                 }
@@ -297,7 +326,100 @@ int main(int argc, char *argv[])
                 else if (event.key.key >= SDLK_1 && event.key.key <= SDLK_8 &&
                          gameState == GAME_PLAYING)
                 {
-                    hotbarPressed = (int)(event.key.key - SDLK_1);   // '1' → slot 0
+                    if (dialogNpc >= 0)
+                    {
+                        // Diyalog açıkken sayılar SEÇENEK seçer (hotbar devre dışı)
+                        Dialog *dlg = &npcDialogs[dialogNpc];
+                        DialogNode *node = &dlg->nodes[dialogNode];
+                        int sel = (int)(event.key.key - SDLK_1);
+                        if (sel < node->optCount)
+                        {
+                            const char *target = node->opts[sel].target;
+                            if (strcmp(target, "end") == 0)
+                            {
+                                dialogNpc = -1;
+                            }
+                            else if (strcmp(target, "shop") == 0)
+                            {
+                                shopOpen = true;
+                                inventoryOpen = true;   // satış için çanta da açık
+                                dialogNpc = -1;
+                            }
+                            else if (strncmp(target, "accept:", 7) == 0)
+                            {
+                                int q = quest_find(target + 7);
+                                if (q >= 0 && questStatus[q].state == QUEST_NOT_STARTED)
+                                {
+                                    questStatus[q].state = QUEST_ACTIVE;
+                                    questStatus[q].progress = 0;
+                                    char buf[FLOAT_TEXT_LEN];
+                                    snprintf(buf, sizeof(buf), "Gorev: %s", QUESTS[q].name);
+                                    SDL_Color cyan = { 90, 220, 255, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f, buf, cyan);
+                                }
+                                int nx = dialog_find(dlg, "accepted");
+                                if (nx >= 0) dialogNode = nx; else dialogNpc = -1;
+                            }
+                            else if (strncmp(target, "complete:", 9) == 0)
+                            {
+                                int q = quest_find(target + 9);
+                                if (q >= 0 && questStatus[q].state == QUEST_DONE)
+                                {
+                                    questStatus[q].state = QUEST_REWARDED;
+                                    player.gold += QUESTS[q].rewardGold;
+                                    char buf[FLOAT_TEXT_LEN];
+                                    snprintf(buf, sizeof(buf), "+%d Gold", QUESTS[q].rewardGold);
+                                    SDL_Color gold = { 255, 210, 60, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f, buf, gold);
+                                }
+                                int nx = dialog_find(dlg, "rewarded");
+                                if (nx >= 0) dialogNode = nx; else dialogNpc = -1;
+                            }
+                            else
+                            {
+                                // Normal düğüm geçişi
+                                int nx = dialog_find(dlg, target);
+                                if (nx >= 0) dialogNode = nx;
+                                else { SDL_Log("Diyalog hedefi yok: %s", target); dialogNpc = -1; }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        hotbarPressed = (int)(event.key.key - SDLK_1);   // '1' → slot 0
+                    }
+                }
+                else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
+                         dialogNpc < 0)
+                {
+                    // Menzildeki NPC ile konuş — giriş düğümü görev durumuna göre
+                    if (nearestNpc >= 0 && npcDialogOk[nearestNpc])
+                    {
+                        const char *entry = "start";
+                        if (NPCS[nearestNpc].questId != NULL)
+                        {
+                            int q = quest_find(NPCS[nearestNpc].questId);
+                            if (q >= 0)
+                            {
+                                switch (questStatus[q].state) {
+                                    case QUEST_ACTIVE:   entry = "active";   break;
+                                    case QUEST_DONE:     entry = "done";     break;
+                                    case QUEST_REWARDED: entry = "rewarded"; break;
+                                    default:             entry = "start";    break;
+                                }
+                            }
+                        }
+                        dialogNode = dialog_find(&npcDialogs[nearestNpc], entry);
+                        if (dialogNode >= 0)
+                        {
+                            dialogNpc = nearestNpc;
+                            player.autoAttack = false;   // konuşurken savaş durur
+                        }
+                    }
                 }
                 else if (event.key.key == SDLK_Z && gameState == GAME_PLAYING)
                 {
@@ -321,7 +443,7 @@ int main(int argc, char *argv[])
                 else if (event.key.key == SDLK_F5 && gameState == GAME_PLAYING)
                 {
                     // Hızlı kayıt
-                    const char *msg = save_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar)
+                    const char *msg = save_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus)
                                     ? "Kaydedildi" : "Kayit HATASI";
                     SDL_Color white = { 255, 255, 255, 255 };
                     floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
@@ -331,7 +453,7 @@ int main(int argc, char *argv[])
                 else if (event.key.key == SDLK_F9 && gameState == GAME_PLAYING)
                 {
                     // Hızlı yükleme (dünya durumu değişmez, sadece oyuncu+eşyalar)
-                    if (load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar))
+                    if (load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus))
                     {
                         SDL_Color white = { 255, 255, 255, 255 };
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
@@ -359,8 +481,8 @@ int main(int argc, char *argv[])
                         {
                             // F5/F9 ile aynı yol; bildirim oyuna dönünce görünür
                             bool ok = (act == MENU_ACTION_SAVE)
-                                    ? save_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar)
-                                    : load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar);
+                                    ? save_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus)
+                                    : load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus);
                             const char *msg = !ok ? ((act == MENU_ACTION_SAVE) ? "Kayit HATASI" : "Kayit bulunamadi")
                                             : (act == MENU_ACTION_SAVE) ? "Kaydedildi" : "Yuklendi";
                             SDL_Color white = { 255, 255, 255, 255 };
@@ -379,8 +501,31 @@ int main(int argc, char *argv[])
 
                     bool handled = false;
 
+                    // 0) Dükkan açıksa: stok satırına tıklama = satın al (ekran koordinatı)
+                    if (shopOpen)
+                    {
+                        int entry = shop_entry_at((float)event.button.x, (float)event.button.y,
+                                                  40.0f, 40.0f);
+                        if (entry >= 0)
+                        {
+                            const ItemType *it = SHOP_STOCK[entry].type;
+                            if (player.gold >= it->value &&
+                                inventory_add(&inventory, it, 1, 0))
+                            {
+                                player.gold -= it->value;
+                                char buf[FLOAT_TEXT_LEN];
+                                snprintf(buf, sizeof(buf), "-%d g", it->value);
+                                SDL_Color red = { 255, 140, 120, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f, buf, red);
+                            }
+                            handled = true;
+                        }
+                    }
+
                     // 1) Popup açıksa: item'e mi, yoksa dışarı mı tıklandı?
-                    if (openLootIndex >= 0)
+                    if (!handled && openLootIndex >= 0)
                     {
                         int itemIdx = loot_popup_item_at(&loots[openLootIndex], worldX, worldY);
                         if (itemIdx == LOOT_CELL_GOLD)
@@ -470,7 +615,25 @@ int main(int argc, char *argv[])
                             if (slot >= 0)
                             {
                                 ItemStack *st = &inventory.slots[slot];
-                                if (st->type != NULL && st->type->consumable)
+                                if (shopOpen && st->type != NULL)
+                                {
+                                    // Dükkan açıkken sağ tık = SAT (alışın yarısı, plus dahil)
+                                    int price = item_value(st) / 2;
+                                    player.gold += price;
+                                    st->count--;
+                                    if (st->count <= 0)
+                                    {
+                                        st->type = NULL;
+                                        st->plusLevel = 0;
+                                    }
+                                    char buf[FLOAT_TEXT_LEN];
+                                    snprintf(buf, sizeof(buf), "+%d g", price);
+                                    SDL_Color gold = { 255, 210, 60, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f, buf, gold);
+                                }
+                                else if (st->type != NULL && st->type->consumable)
                                 {
                                     // Tüketilebilir: hotbar'a ata (içmek hotbar tuşuyla)
                                     hotbar_assign_item(&hotbar, st->type);
@@ -739,6 +902,29 @@ int main(int argc, char *argv[])
                             loot_spawn(loots, MAX_LOOT, target->e.rect.x, target->e.rect.y,
                                        target->type->lootTable, target->type->lootTableCount,
                                        target->type->goldMin, target->type->goldMax);
+
+                            // Görev sayaçları: bu türü hedefleyen aktif görevler ilerler
+                            int qDone = quest_on_kill(questStatus, target->type);
+                            for (int q = 0; q < QUEST_COUNT; q++)
+                            {
+                                if (QUESTS[q].targetMob != target->type) continue;
+                                if (questStatus[q].state != QUEST_ACTIVE) continue;
+                                char buf[FLOAT_TEXT_LEN];
+                                snprintf(buf, sizeof(buf), "%s %d/%d", QUESTS[q].name,
+                                         questStatus[q].progress, QUESTS[q].targetCount);
+                                SDL_Color cyan = { 90, 220, 255, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f, buf, cyan);
+                            }
+                            if (qDone >= 0)
+                            {
+                                SDL_Color green = { 120, 255, 120, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 30.0f,
+                                                     "Gorev tamam! Odul icin don.", green);
+                            }
                         }
                     }
                 }
@@ -771,6 +957,9 @@ int main(int argc, char *argv[])
             camera_update(&camera, player.rect.x + player.rect.w / 2.0f,
                           player.rect.y + player.rect.h / 2.0f, winW, winH); // kamerayı güncelle - karakteri takip et
 
+            // E prompt'u için menzildeki en yakın NPC
+            nearestNpc = npc_nearest_in_range(px, py);
+
             // --- BÖLGE TAKİBİ: yeni bölgeye girince adı belirir ---
             int reg = region_at(px, py);
             if (reg != currentRegion)
@@ -800,6 +989,8 @@ int main(int argc, char *argv[])
 
         for (int i = 0; i < mobCount; i++)
             mob_render(&mobs[i], renderer, mob_textures, &camera, player.targetMobId);
+
+        npc_render_all(renderer, npc_textures, &camera, gameFont, nearestNpc);
 
         if (openLootIndex >= 0)
             loot_popup_render(renderer, &loots[openLootIndex], itemIconTex, &itemTex, gameFont, &camera);
@@ -856,6 +1047,13 @@ int main(int argc, char *argv[])
             skill_panel_render(player.skills, renderer, gameFont, 40.0f, 40.0f);
         }
 
+        if (shopOpen)
+            shop_render(renderer, gameFont, itemIconTex, &itemTex, player.gold, 40.0f, 40.0f);
+
+        if (dialogNpc >= 0)
+            dialog_render(&npcDialogs[dialogNpc], dialogNode, NPCS[dialogNpc].name,
+                          renderer, gameFont, winW, winH);
+
         if (gameState == GAME_PAUSED)                          // ← EKLE
             menu_render(renderer, gameFont, menuScreen, winW, winH);
 
@@ -881,6 +1079,10 @@ int main(int argc, char *argv[])
     }
 
         
+    for (int i = 0; i < NPC_COUNT; i++)
+        if (npc_textures[i])
+            SDL_DestroyTexture(npc_textures[i]);
+
     if (glowTex)
         SDL_DestroyTexture(glowTex);
 

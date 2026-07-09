@@ -1,0 +1,11 @@
+# Tuccar Baran — vendor
+[start]
+text: Hos geldin yolcu! Ovada dukkan actim ama goblinler yuzunden kervan gelmiyor. Bakmak bedava.
+opt: Neler satiyorsun? -> shop
+opt: Sen kimsin? -> kim
+opt: Hoscakal. -> end
+
+[kim]
+text: Baran derler bana. Bu ovanin tek tuccariyim. Iyi mal, adil fiyat.
+opt: Dukkani goster. -> shop
+opt: Hoscakal. -> end

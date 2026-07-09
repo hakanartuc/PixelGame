@@ -1,0 +1,28 @@
+# Yasli Kemal — gorev veren (goblin_derdi)
+# Giris dugumu gorev durumuna gore koddan secilir:
+# NOT_STARTED->start, ACTIVE->active, DONE->done, REWARDED->rewarded
+[start]
+text: Ah, bir maceraci! Tam zamaninda geldin. Goblinler ovayi sardi, surulerimize saldiriyorlar.
+opt: Yardim edebilirim. -> gorev
+opt: Benim isim var. -> end
+
+[gorev]
+text: 5 goblin oldur, sana 100 altin veririm. Kamplari kuzeydogudaki yol boyunda.
+opt: Kabul ediyorum. -> accept:goblin_derdi
+opt: Belki sonra. -> end
+
+[accepted]
+text: Cesur yureklisin evlat. Dikkatli ol, sopalariyla fena vururlar.
+opt: Merak etme. -> end
+
+[active]
+text: Goblinler hala ortalikta dolasiyor. Isini bitir, odulun burada hazir.
+opt: Ugrasiyorum. -> end
+
+[done]
+text: Hepsini oldurdun demek! Ova sana borclu. Al bakalim, soz verdigim altin.
+opt: Tesekkurler. -> complete:goblin_derdi
+
+[rewarded]
+text: Tekrar hos geldin evlat. Sayende suruler guvende.
+opt: Onemli degil. -> end

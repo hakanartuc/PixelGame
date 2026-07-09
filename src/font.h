@@ -14,6 +14,11 @@ TTF_Font *font_load(const char *path, float size);
 void draw_text(SDL_Renderer *renderer, TTF_Font *font, const char *text,
                float x, float y, SDL_Color color);
 
+// Uzun metni wrapW pikselde sarıp çizer (diyalog kutusu için).
+// Dönen değer: çizilen bloğun yüksekliği (sonraki satırı altına koymak için).
+float draw_text_wrapped(SDL_Renderer *renderer, TTF_Font *font, const char *text,
+                        float x, float y, float wrapW, SDL_Color color);
+
 // Tek bir fontu kapat (yüklenen her font için bir kez).
 void font_close(TTF_Font *font);
 

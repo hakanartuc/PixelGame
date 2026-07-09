@@ -35,6 +35,10 @@ add_executable(game
     src/ability.c
     src/hotbar.c
     src/region.c
+    src/npc.c
+    src/dialog.c
+    src/shop.c
+    src/quest.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle
 target_link_libraries(game PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)   # ← SDL3_ttf

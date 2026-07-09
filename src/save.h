@@ -5,6 +5,7 @@
 #include "inventory.h"
 #include "equipment.h"
 #include "hotbar.h"
+#include "quest.h"
 
 // Basit binary save/load — v1 kapsamı: oyuncu (konum/can/stat/skill/gold),
 // envanter ve ekipman. Dünya durumu (mob/loot) KAYDEDİLMEZ; yükleyince
@@ -18,10 +19,12 @@
 
 // Başarılıysa true. Hata SDL_Log'a yazılır, oyun çökmez.
 bool save_game(const char *path, const Player *p,
-               const Inventory *inv, const Equipment *eq, const Hotbar *hb);
+               const Inventory *inv, const Equipment *eq, const Hotbar *hb,
+               const QuestStatus *quests);
 
 // Başarılıysa true (dosya yoksa/bozuksa false — mevcut durum korunur).
 bool load_game(const char *path, Player *p,
-               Inventory *inv, Equipment *eq, Hotbar *hb);
+               Inventory *inv, Equipment *eq, Hotbar *hb,
+               QuestStatus *quests);
 
 #endif

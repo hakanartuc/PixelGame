@@ -4,21 +4,21 @@
 // LPC ekipman sheet'leri izole parca icerdiginden bu kare temiz ikon verir.
 const ItemType ITEM_TYPES[] = {
     // --- Kusanilamaz (tool_icons fallback: iconSpritePath = NULL) ---
-    { .name = "Yay",    .iconIndex = 0, .maxStack = 1,
+    { .name = "Yay",    .iconIndex = 0, .maxStack = 1, .value = 15,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .equipSpritePath = NULL,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
-    { .name = "Kazma",  .iconIndex = 2, .maxStack = 1,
+    { .name = "Kazma",  .iconIndex = 2, .maxStack = 1, .value = 10,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .equipSpritePath = NULL,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
-    { .name = "Mesale", .iconIndex = 9, .maxStack = 99,
+    { .name = "Mesale", .iconIndex = 9, .maxStack = 99, .value = 5,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .equipSpritePath = NULL,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
 
     // --- Silah: farkli grid (Adim 5), simdilik tool_icons fallback ---
-    {.name = "Long Sword", .iconIndex = 4, .maxStack = 1,
+    {.name = "Long Sword", .iconIndex = 4, .maxStack = 1, .value = 200,
   .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_ONE_HAND,
   .damage = 50.0f,                  // taban hasar (eski sabit 50 buraya taşındı)
   .attackInterval = 1.2f,           // otomatik vuruş aralığı (sn)
@@ -32,19 +32,19 @@ const ItemType ITEM_TYPES[] = {
   .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
 
     // --- Zirh: kendi LPC sheet'inin idle-down karesi (izole parca = temiz ikon) ---
-    { .name = "Demir Miger", .iconIndex = 1, .maxStack = 1,
+    { .name = "Demir Miger", .iconIndex = 1, .maxStack = 1, .value = 120,
       .equipable = true, .equipSlot = EQUIP_HELMET, .weaponType = WEAPON_NONE,
       .defense = 8.0f,
       .equipSpritePath = "assets/equipment/head/armet_ceramic.png",
       .iconSpritePath = "assets/equipment/head/armet_ceramic.png",
       .iconSrc = { 0, 1536, 64, 64 } },
-    { .name = "Demir Zirh", .iconIndex = 8, .maxStack = 1,
+    { .name = "Demir Zirh", .iconIndex = 8, .maxStack = 1, .value = 200,
       .equipable = true, .equipSlot = EQUIP_CHEST, .weaponType = WEAPON_NONE,
       .defense = 15.0f,
       .equipSpritePath = "assets/equipment/torso/plate_ceramic.png",
       .iconSpritePath = "assets/equipment/torso/plate_ceramic.png",
       .iconSrc = { 0, 1536, 64, 64 } },
-    { .name = "Demir Pantolon", .iconIndex = 3, .maxStack = 1,
+    { .name = "Demir Pantolon", .iconIndex = 3, .maxStack = 1, .value = 150,
       .equipable = true, .equipSlot = EQUIP_LEGS, .weaponType = WEAPON_NONE,
       .defense = 10.0f,
       .equipSpritePath = "assets/equipment/legs/hose_brown.png",
@@ -52,7 +52,7 @@ const ItemType ITEM_TYPES[] = {
       .iconSrc = { 0, 1536, 64, 64 } },
 
     // --- Tuketilebilir ---
-    { .name = "Can Iksiri", .iconIndex = 5, .maxStack = 10,
+    { .name = "Can Iksiri", .iconIndex = 5, .maxStack = 10, .value = 25,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .consumable = true, .healAmount = 50.0f, .useCooldown = 10.0f,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
@@ -75,4 +75,10 @@ float item_defense(const ItemStack *s)
 {
     if (s == NULL || s->type == NULL) return 0.0f;
     return s->type->defense * plus_scale(s->plusLevel);
+}
+
+int item_value(const ItemStack *s)
+{
+    if (s == NULL || s->type == NULL) return 0;
+    return (int)(s->type->value * plus_scale(s->plusLevel));
 }

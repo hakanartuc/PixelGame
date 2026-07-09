@@ -49,6 +49,33 @@ void draw_text(SDL_Renderer *renderer, TTF_Font *font, const char *text,
     SDL_DestroySurface(surface);
 }
 
+float draw_text_wrapped(SDL_Renderer *renderer, TTF_Font *font, const char *text,
+                        float x, float y, float wrapW, SDL_Color color)
+{
+    if (font == NULL || text == NULL || text[0] == '\0') return 0.0f;
+
+    // draw_text ile aynı akış; tek fark _Wrapped render (satır sonlarını TTF sarar)
+    SDL_Surface *surface = TTF_RenderText_Blended_Wrapped(font, text, 0, color, (int)wrapW);
+    if (surface == NULL) {
+        SDL_Log("Metin render basarisiz: %s", SDL_GetError());
+        return 0.0f;
+    }
+
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    if (texture == NULL) {
+        SDL_DestroySurface(surface);
+        return 0.0f;
+    }
+
+    SDL_FRect dst = { x, y, (float)surface->w, (float)surface->h };
+    SDL_RenderTexture(renderer, texture, NULL, &dst);
+
+    float h = (float)surface->h;
+    SDL_DestroyTexture(texture);
+    SDL_DestroySurface(surface);
+    return h;
+}
+
 void font_close(TTF_Font *font)
 {
     if (font) TTF_CloseFont(font);

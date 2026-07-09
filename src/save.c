@@ -6,7 +6,7 @@
 #include "skill.h"
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 2u   // v2: hotbar düzeni eklendi
+#define SAVE_VERSION 3u   // v2: hotbar; v3: görev durumları
 
 // --- Yazma/okuma yardımcıları: her alan tek tek, hata tek noktadan ---
 // fwrite/fread sayı döndürür; 1 değilse dosya kesik/bozuk demektir.
@@ -37,7 +37,8 @@ static bool read_stack(FILE *f, ItemStack *s)
 }
 
 bool save_game(const char *path, const Player *p,
-               const Inventory *inv, const Equipment *eq, const Hotbar *hb)
+               const Inventory *inv, const Equipment *eq, const Hotbar *hb,
+               const QuestStatus *quests)
 {
     FILE *f = fopen(path, "wb");
     if (f == NULL) {
@@ -77,6 +78,11 @@ bool save_game(const char *path, const Player *p,
         ok = w32(f, (Sint32)s->kind) && w32(f, ref);
     }
 
+    // Görev durumları (v3)
+    ok = ok && w32(f, QUEST_COUNT);
+    for (int i = 0; ok && i < QUEST_COUNT; i++)
+        ok = w32(f, (Sint32)quests[i].state) && w32(f, quests[i].progress);
+
     fclose(f);
     if (!ok)
         SDL_Log("Save yazilamadi (disk dolu?): %s", path);
@@ -84,7 +90,8 @@ bool save_game(const char *path, const Player *p,
 }
 
 bool load_game(const char *path, Player *p,
-               Inventory *inv, Equipment *eq, Hotbar *hb)
+               Inventory *inv, Equipment *eq, Hotbar *hb,
+               QuestStatus *quests)
 {
     FILE *f = fopen(path, "rb");
     if (f == NULL)
@@ -104,6 +111,8 @@ bool load_game(const char *path, Player *p,
     Inventory tmpInv = {0};
     Equipment tmpEq = {0};
     Hotbar tmpHb = {0};
+    QuestStatus tmpQ[MAX_QUESTS];
+    memset(tmpQ, 0, sizeof(tmpQ));
 
     bool ok = rf(f, &tmpP.rect.x) && rf(f, &tmpP.rect.y)
            && rf(f, &tmpP.health) && rf(f, &tmpP.maxHealth)
@@ -150,6 +159,18 @@ bool load_game(const char *path, Player *p,
         // tanınmayan kind/ref → slot boş kalır (bozuk kayda tolerans)
     }
 
+    // Görev durumları (v3)
+    ok = ok && r32(f, &n);
+    for (int i = 0; ok && i < n; i++) {
+        Sint32 state, progress;
+        ok = r32(f, &state) && r32(f, &progress);
+        if (ok && i < MAX_QUESTS &&
+            state >= QUEST_NOT_STARTED && state <= QUEST_REWARDED) {
+            tmpQ[i].state = (QuestState)state;
+            tmpQ[i].progress = progress;
+        }
+    }
+
     fclose(f);
     if (!ok) {
         SDL_Log("Save okunamadi (bozuk dosya): %s", path);
@@ -161,5 +182,6 @@ bool load_game(const char *path, Player *p,
     *inv = tmpInv;
     *eq = tmpEq;
     *hb = tmpHb;
+    memcpy(quests, tmpQ, sizeof(tmpQ));
     return true;
 }

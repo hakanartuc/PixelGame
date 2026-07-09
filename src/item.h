@@ -40,6 +40,7 @@ typedef struct {
     const char *name;
     int iconIndex;               // envanter ikonu (Tool_Icons'ta sıra)
     int maxStack;
+    int value;                   // vendor alış fiyatı (satış = yarısı)
 
     // --- Ekipman bilgileri ---
     bool equipable;              // kuşanılabilir mi
@@ -79,6 +80,7 @@ typedef struct {
 // Instance değerleri: tür tabanı × plus ölçeği (combat bunları kullanır)
 float item_damage(const ItemStack *s);    // silah değilse 0
 float item_defense(const ItemStack *s);   // zırh/kalkan değilse 0
+int   item_value(const ItemStack *s);     // instance fiyatı (plus dahil)
 
 // Loot tablosu girdisi: mob ölünce her girdi için ayrı zar atılır
 typedef struct {
