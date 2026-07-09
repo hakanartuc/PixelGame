@@ -2,6 +2,7 @@
 #include <string.h>
 #include "quest.h"
 #include "font.h"
+#include "ui_theme.h"
 
 // Görev tanımları — içerik büyüdükçe buraya satır eklenir (ITEM_TYPES deseni)
 const QuestDef QUESTS[] = {
@@ -27,12 +28,7 @@ void quest_log_render(const QuestStatus *status, SDL_Renderer *renderer,
     float panelW = 340.0f;
     float panelH = QUEST_COUNT * rowH + pad * 2 + 30.0f;
 
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, 25, 25, 35, 240);
-    SDL_FRect panel = { panelX, panelY, panelW, panelH };
-    SDL_RenderFillRect(renderer, &panel);
-    SDL_SetRenderDrawColor(renderer, 200, 200, 210, 255);
-    SDL_RenderRect(renderer, &panel);
+    ui_panel(renderer, panelX, panelY, panelW, panelH);
 
     if (font == NULL) return;
 

@@ -5,6 +5,7 @@
 #include "loot.h"
 #include "item.h"
 #include "item_textures.h"
+#include "ui_theme.h"
 
 
 #define CRATE_SCALE  1.2f
@@ -187,12 +188,8 @@ void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
     float panelX = ((loot->rect.x + loot->rect.w / 2.0f) - panelW / 2.0f - camera->x) * zoom;
     float panelY = (loot->rect.y - panelH - 10.0f - camera->y) * zoom;
 
-    // Panel arka planı (boyutlar da zoom'lu)
-    SDL_SetRenderDrawColor(renderer, 30, 30, 40, 235);
-    SDL_FRect panel = { panelX, panelY, panelW * zoom, panelH * zoom };
-    SDL_RenderFillRect(renderer, &panel);
-    SDL_SetRenderDrawColor(renderer, 200, 200, 210, 255);
-    SDL_RenderRect(renderer, &panel);
+    // Panel arka planı (boyutlar da zoom'lu; tema)
+    ui_panel(renderer, panelX, panelY, panelW * zoom, panelH * zoom);
 
     for (int k = 0; k < loot->itemCount; k++) {
         if (loot->items[k].type == NULL) continue;
@@ -200,9 +197,7 @@ void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
         float cx = panelX + (pad + col * cellSize) * zoom;
         float cy = panelY + (pad + row * cellSize) * zoom;
 
-        SDL_SetRenderDrawColor(renderer, 60, 60, 75, 255);
-        SDL_FRect cell = { cx, cy, (cellSize - 4) * zoom, (cellSize - 4) * zoom };
-        SDL_RenderFillRect(renderer, &cell);
+        ui_cell(renderer, cx, cy, (cellSize - 4) * zoom, (cellSize - 4) * zoom);
 
         const ItemType *it = loot->items[k].type;
         SDL_FRect dst = { cx + 6 * zoom, cy + 6 * zoom, 32 * zoom, 32 * zoom };
@@ -231,9 +226,7 @@ void loot_popup_render(SDL_Renderer *renderer, const Loot *loot,
         float cx = panelX + (pad + col * cellSize) * zoom;
         float cy = panelY + (pad + row * cellSize) * zoom;
 
-        SDL_SetRenderDrawColor(renderer, 60, 60, 75, 255);
-        SDL_FRect cell = { cx, cy, (cellSize - 4) * zoom, (cellSize - 4) * zoom };
-        SDL_RenderFillRect(renderer, &cell);
+        ui_cell(renderer, cx, cy, (cellSize - 4) * zoom, (cellSize - 4) * zoom);
 
         // Kese: içi dolu altın karesi (ikon gelene kadar temsili)
         SDL_SetRenderDrawColor(renderer, 255, 210, 60, 255);

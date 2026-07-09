@@ -1,6 +1,7 @@
 #include "equipment.h"
 #include "inventory.h"
 #include "player.h"
+#include "ui_theme.h"
 
 // Slotlarin panel-ici konumlari (sol-ust kose orijin). KO yerlesimi.
 // Orta sutun ~ paper-doll; sag sutun zirh; sol sutun aksesuar; alt silah/kalkan.
@@ -133,12 +134,8 @@ void equipment_render(const Equipment *eq, SDL_Renderer *renderer,
     const int PANEL_W = 400;
     const int PANEL_H = 340;
 
-    // 1) Panel arkaplani (koyu yari-saydam)
-    SDL_FRect bg = { (float)panelX, (float)panelY, (float)PANEL_W, (float)PANEL_H };
-    SDL_SetRenderDrawColor(renderer, 30, 30, 40, 230);
-    SDL_RenderFillRect(renderer, &bg);
-    SDL_SetRenderDrawColor(renderer, 200, 200, 210, 255);
-    SDL_RenderRect(renderer, &bg);
+    // 1) Panel arkaplani (tema: ahşap çerçeve)
+    ui_panel(renderer, (float)panelX, (float)panelY, (float)PANEL_W, (float)PANEL_H);
 
     // 2) Paper-doll onizleme: idle-down, tum giyili katmanlar. built[] zaten z-sirali.
     
@@ -160,11 +157,11 @@ void equipment_render(const Equipment *eq, SDL_Renderer *renderer,
         SDL_FRect cell = { (float)(panelX + sp.x), (float)(panelY + sp.y),
                            EQUIP_SLOT_SIZE, EQUIP_SLOT_SIZE };
 
-        // bos hucre cercevesi
-        SDL_SetRenderDrawColor(renderer, 70, 70, 85, 255);
-        SDL_RenderFillRect(renderer, &cell);
-        SDL_SetRenderDrawColor(renderer, 140, 140, 155, 255);
-        SDL_RenderRect(renderer, &cell);
+        // hucre: dolu ten, bos gri (tema)
+        if (eq->slots[s].type != NULL)
+            ui_cell(renderer, cell.x, cell.y, cell.w, cell.h);
+        else
+            ui_cell_gray(renderer, cell.x, cell.y, cell.w, cell.h);
 
         // dolu ise ikon bas (envanter ikonu, 16x16 → hucreye olcekli)
         const ItemStack *st = &eq->slots[s];

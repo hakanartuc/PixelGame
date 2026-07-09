@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "skill.h"
 #include "font.h"
+#include "ui_theme.h"
 
 // Seviye eşiği: 100 × level^1.5 — erken seviyeler hızlı, sonrası yavaşlar.
 // Eğri ayarı tek yerden: burayı değiştirmek tüm sistemi ayarlar.
@@ -73,11 +74,7 @@ void skill_panel_render(const Skill *skills, SDL_Renderer *renderer,
     float panelW = 360.0f;
     float panelH = SKILL_COUNT * rowH + pad * 2 + 30.0f;   // +30 başlık
 
-    SDL_SetRenderDrawColor(renderer, 25, 25, 35, 240);
-    SDL_FRect panel = { panelX, panelY, panelW, panelH };
-    SDL_RenderFillRect(renderer, &panel);
-    SDL_SetRenderDrawColor(renderer, 200, 200, 210, 255);
-    SDL_RenderRect(renderer, &panel);
+    ui_panel(renderer, panelX, panelY, panelW, panelH);
 
     if (font != NULL) {
         SDL_Color white = { 255, 255, 255, 255 };

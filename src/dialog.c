@@ -2,6 +2,7 @@
 #include <string.h>
 #include "dialog.h"
 #include "font.h"
+#include "ui_theme.h"
 
 // Satır sonundaki \n ve \r'ı kırp
 static void chomp(char *s)
@@ -120,12 +121,7 @@ void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
     float px = (winW - panelW) / 2.0f;
     float py = winH - panelH - 80.0f;   // hotbar (~60px) + boşluk
 
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, 20, 20, 30, 235);
-    SDL_FRect panel = { px, py, panelW, panelH };
-    SDL_RenderFillRect(renderer, &panel);
-    SDL_SetRenderDrawColor(renderer, 200, 200, 210, 255);
-    SDL_RenderRect(renderer, &panel);
+    ui_panel(renderer, px, py, panelW, panelH);
 
     if (font == NULL) return;
 

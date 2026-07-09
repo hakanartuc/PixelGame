@@ -1,4 +1,5 @@
 #include "menu.h"
+#include "ui_theme.h"
 
 // --- Buton yerlesimi: ekran ortasinda dikey istif ---
 // Tek kaynak: hem cizim hem tiklama bu olculeri kullanir (desenkron olmaz).
@@ -24,18 +25,14 @@ static SDL_FRect menu_button_rect(int i, int count, int winW, int winH)
 static void draw_button(SDL_Renderer *renderer, TTF_Font *font,
                         SDL_FRect r, const char *label)
 {
-    SDL_SetRenderDrawColor(renderer, 45, 45, 60, 255);
-    SDL_RenderFillRect(renderer, &r);
-    SDL_SetRenderDrawColor(renderer, 200, 200, 210, 255);
-    SDL_RenderRect(renderer, &r);
+    ui_button(renderer, r.x, r.y, r.w, r.h);   // perçinli ten buton (tema)
 
     if (font != NULL) {
         int tw = 0, th = 0;
         TTF_GetStringSize(font, label, 0, &tw, &th);
-        SDL_Color white = { 255, 255, 255, 255 };
         draw_text(renderer, font, label,
                   r.x + (r.w - tw) / 2.0f,
-                  r.y + (r.h - th) / 2.0f, white);
+                  r.y + (r.h - th) / 2.0f, UI_TEXT_DARK);   // açık zeminde koyu
     }
 }
 

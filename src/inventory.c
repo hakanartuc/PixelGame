@@ -2,6 +2,7 @@
 #include "inventory.h"
 #include "font.h"
 #include "item_textures.h"
+#include "ui_theme.h"
 
 void inventory_render(const Inventory *inv, SDL_Renderer *renderer,
                       SDL_Texture *itemIconTex, const ItemTextures *itemTex,
@@ -15,12 +16,8 @@ void inventory_render(const Inventory *inv, SDL_Renderer *renderer,
     float panelW = cols * cellSize + pad * 2;
     float panelH = rows * cellSize + pad * 2 + 30.0f;   // +30 başlık için
 
-    // Panel arka planı
-    SDL_SetRenderDrawColor(renderer, 25, 25, 35, 240);
-    SDL_FRect panel = { panelX, panelY, panelW, panelH };
-    SDL_RenderFillRect(renderer, &panel);
-    SDL_SetRenderDrawColor(renderer, 200, 200, 210, 255);
-    SDL_RenderRect(renderer, &panel);
+    // Panel arka planı (tema: ahşap çerçeve)
+    ui_panel(renderer, panelX, panelY, panelW, panelH);
 
     // Başlık
     if (font != NULL) {
@@ -35,12 +32,11 @@ void inventory_render(const Inventory *inv, SDL_Renderer *renderer,
         float cx = panelX + pad + col * cellSize;
         float cy = gridY + row * cellSize;
 
-        // Hücre arka planı (her slot — boş da olsa)
-        SDL_SetRenderDrawColor(renderer, 50, 50, 65, 255);
-        SDL_FRect cell = { cx, cy, cellSize - 6, cellSize - 6 };
-        SDL_RenderFillRect(renderer, &cell);
-        SDL_SetRenderDrawColor(renderer, 90, 90, 105, 255);
-        SDL_RenderRect(renderer, &cell);
+        // Hücre arka planı (her slot — boş da olsa; dolu slot vurgulu ten)
+        if (inv->slots[i].type != NULL)
+            ui_cell(renderer, cx, cy, cellSize - 6, cellSize - 6);
+        else
+            ui_cell_gray(renderer, cx, cy, cellSize - 6, cellSize - 6);
 
         // Dolu slotsa ikon ciz
         if (inv->slots[i].type != NULL) {

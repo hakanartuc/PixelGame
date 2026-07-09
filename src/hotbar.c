@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "hotbar.h"
 #include "font.h"
+#include "ui_theme.h"
 
 #define CELL 48.0f
 #define GAP 6.0f
@@ -75,18 +76,19 @@ void hotbar_render(const Hotbar *hb, SDL_Renderer *renderer,
         float cx = x0 + i * (CELL + GAP);
         const HotbarSlot *s = &hb->slots[i];
 
-        // Hücre zemini (envanterle aynı görsel dil)
-        SDL_SetRenderDrawColor(renderer, 25, 25, 35, 220);
+        // Hücre zemini (tema: dolu ten, boş gri)
         SDL_FRect cell = { cx, y0, CELL, CELL };
-        SDL_RenderFillRect(renderer, &cell);
+        if (s->kind != HOTBAR_EMPTY)
+            ui_cell(renderer, cell.x, cell.y, cell.w, cell.h);
+        else
+            ui_cell_gray(renderer, cell.x, cell.y, cell.w, cell.h);
 
         if (s->kind == HOTBAR_SKILL) {
             const AbilityDef *a = &ABILITIES[s->abilityId];
 
-            // Kısaltma (ikon gelene kadar) — ortalanmış kabaca
+            // Kısaltma (ikon gelene kadar) — ten zeminde koyu metin
             if (font != NULL) {
-                SDL_Color white = { 235, 235, 245, 255 };
-                draw_text(renderer, font, a->abbrev, cx + 10.0f, y0 + 16.0f, white);
+                draw_text(renderer, font, a->abbrev, cx + 10.0f, y0 + 16.0f, UI_TEXT_DARK);
             }
 
             // Cooldown perdesi: kalan süreye oranlı, alttan dolu
@@ -150,14 +152,11 @@ void hotbar_render(const Hotbar *hb, SDL_Renderer *renderer,
             }
         }
 
-        // Çerçeve + tuş numarası (her hücrede)
-        SDL_SetRenderDrawColor(renderer, 120, 120, 140, 255);
-        SDL_RenderRect(renderer, &cell);
+        // Tuş numarası (çerçeve tema hücresinden geliyor)
         if (font != NULL) {
             char key[4];
             snprintf(key, sizeof(key), "%d", i + 1);
-            SDL_Color dim = { 160, 160, 175, 255 };
-            draw_text(renderer, font, key, cx + 2.0f, y0 + 1.0f, dim);
+            draw_text(renderer, font, key, cx + 3.0f, y0 + 2.0f, UI_TEXT_DARK);
         }
     }
 }

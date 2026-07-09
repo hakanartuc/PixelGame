@@ -29,6 +29,7 @@
 #include "audio.h"
 #include "music.h"
 #include "minimap.h"
+#include "ui_theme.h"
 
 int main(int argc, char *argv[])
 {
@@ -45,6 +46,8 @@ int main(int argc, char *argv[])
         // hata — ama oyunu çökertme, font olmadan devam edilebilir
         SDL_Log("Font sistemi baslatilamadi");
     }
+    // NOT: CuteFantasy-5x9.ttf glyph seti eksik çıktı (boşluk bile kutu basıyor) —
+    // Public Pixel'e dönüldü. Cute font ancak eksik glyph'ler tamamlanırsa kullanılır.
     TTF_Font *gameFont = font_load("assets/fonts/PublicPixel-rv0pA.ttf", 16.0f);
     if (gameFont == NULL)
     {
@@ -157,6 +160,7 @@ int main(int argc, char *argv[])
     decor_set_texture_sizes(decor_textures);
 
     gametime_init();   // gün 1, 08:00
+    ui_theme_init(renderer);   // panel/hücre/buton sprite'ları
     audio_init();      // başarısızsa oyun sessiz devam eder
     music_init();      // arka plan müziği (mood'a göre, crossfade)
 
@@ -1263,6 +1267,7 @@ int main(int argc, char *argv[])
         SDL_DestroyTexture(glowTex);
 
     minimap_quit();
+    ui_theme_quit();
     music_quit();
     audio_quit();
     item_textures_free(&itemTex);

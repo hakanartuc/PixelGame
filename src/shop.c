@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "shop.h"
 #include "font.h"
+#include "ui_theme.h"
 
 // Satır yerleşimi — çizim ve tıklama aynı ölçüleri kullanır (desenkron olmaz)
 #define SHOP_ROW_H 44.0f
@@ -22,12 +23,7 @@ void shop_render(SDL_Renderer *renderer, TTF_Font *font,
 {
     float panelH = SHOP_STOCK_COUNT * SHOP_ROW_H + SHOP_PAD * 2 + 56.0f;
 
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, 25, 25, 35, 240);
-    SDL_FRect panel = { panelX, panelY, SHOP_W, panelH };
-    SDL_RenderFillRect(renderer, &panel);
-    SDL_SetRenderDrawColor(renderer, 200, 200, 210, 255);
-    SDL_RenderRect(renderer, &panel);
+    ui_panel(renderer, panelX, panelY, SHOP_W, panelH);
 
     if (font == NULL) return;
 
@@ -41,10 +37,9 @@ void shop_render(SDL_Renderer *renderer, TTF_Font *font,
     for (int i = 0; i < SHOP_STOCK_COUNT; i++) {
         const ItemType *it = SHOP_STOCK[i].type;
 
-        // Satır zemini
-        SDL_SetRenderDrawColor(renderer, 50, 50, 65, 255);
+        // Satır zemini (tema hücresi)
         SDL_FRect row = { panelX + 8.0f, rowY, SHOP_W - 16.0f, SHOP_ROW_H - 6.0f };
-        SDL_RenderFillRect(renderer, &row);
+        ui_cell_gray(renderer, row.x, row.y, row.w, row.h);
 
         // İkon (envanterle aynı fallback zinciri)
         SDL_FRect dst = { row.x + 4.0f, rowY + 3.0f, 32.0f, 32.0f };
