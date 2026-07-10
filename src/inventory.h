@@ -8,7 +8,8 @@
 #include "item.h"
 #include "item_textures.h"
 
-#define INVENTORY_SIZE 20   // çanta slot sayısı
+#define INVENTORY_SIZE 35   // çanta slot sayısı (7×5 — F10 test seti + meslek malzemeleri sığar)
+#define INV_COLS 7          // panel sütun sayısı (render + slot_at aynı kaynak)
 
 // Oyuncunun çantası — item slotları
 typedef struct {

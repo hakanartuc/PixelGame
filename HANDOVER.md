@@ -48,8 +48,9 @@ WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/is
 - Perk eşiği 25'ten başlar; test F10 ile.
 
 ## Sıradaki iş
-**Meslek 5/5** (PROGRESS #1): Oduculuk ürünleri + minimal yay savaşı (ok craft, Yay kuşanılır,
-oyuncu projectile, Archery). Sonrası: av → mob fazları (Slime → Skeleton+mermi → çöl/volkan).
+**Av & kontrat panosu** (PROGRESS #2): hayvanlar (Cute_Fantasy Animals), deri/et,
+Witcher tarzı ilan panosu. Sonrası: mob fazları (Slime → Skeleton+mermi → çöl/volkan).
+Meslek paketi 5/5 TAMAM (okçuluk dahil — PROGRESS Faz 13-17).
 
 Tamamlananlar (2026-07-10): GPU-3 (shader gece aydınlatması + shake + vinyet),
 **Suç & İtibar paketi** (NPC ölümü, muhafız, Sneak + mob şüphesi, bölgesel bounty+itibar; save v8),

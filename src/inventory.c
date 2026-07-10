@@ -8,8 +8,8 @@ void inventory_render(const Inventory *inv, R2D *renderer,
                       R2DTexture *itemIconTex, const ItemTextures *itemTex,
                       TTF_Font *font, float panelX, float panelY)
 {
-    int cols = 5;
-    int rows = (INVENTORY_SIZE + cols - 1) / cols;   // 20/5 = 4 satır
+    int cols = INV_COLS;
+    int rows = (INVENTORY_SIZE + cols - 1) / cols;   // 35/7 = 5 satır
     float cellSize = 56.0f;
     float pad = 16.0f;
 
@@ -154,7 +154,7 @@ bool inventory_consume_n(Inventory *inv, const ItemType *type, int n)
 int inventory_slot_at(float x, float y, float panelX, float panelY)
 {
     // inventory_render'daki AYNI matematik (tek kaynak — desenkronize olmasin)
-    int cols = 5;
+    int cols = INV_COLS;
     float cellSize = 56.0f;
     float pad = 16.0f;
     float gridY = panelY + pad + 30.0f;   // baslik altindan basliyor (render ile ayni)

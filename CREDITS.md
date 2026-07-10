@@ -23,6 +23,21 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
 - Dosyalar: `assets/characters/mobs/`
 - TODO: kaynak/lisans kaydı buraya (indirildiği sayfa bulunup eklenecek).
 
+### Bows and Arrows ikonları (yay/ok envanter ikonları)
+- Kaynak: `~/Downloads/opengameart bows/` paketi (Bows.png, Arrows.png kırpmaları)
+- Dosyalar: `assets/icons/items/bow_icon.png, arrow_icon.png`
+- TODO: opengameart sayfası + yazar + lisans teyidi (mobil dağıtım öncesi şart).
+
+### ULPC Great Bow + nişan oku (yay paper-doll katmanları)
+- Yapımcılar: wulax (temel yay), daneeklu (great bow), pvigier (walk animasyonları),
+  bluecarrot16 (katman ayrımı, v3 taban uyarlaması)
+- Kaynaklar: https://opengameart.org/content/lpc-weapons-two-bows-a-spear-and-a-trident
+  ve https://opengameart.org/content/lpc-walk-animations-for-bows
+- Dosya: `assets/equipment/weapon/great_bow_140.png`
+  (tam sheet'e bizce kompoze edildi; yalnız shoot satırları çizili, nişan oku gömülü)
+- Lisans: LPC parçaları (CC-BY-SA 3.0 / GPL 3.0 karışık — generator credits çıktısı
+  `lpc_male_item_animations_2026-07-10T17-38-07/credits/` klasöründe)
+
 ### LPC Hand Tools (kazma/balta/çekiç smash katmanları)
 - Yapımcılar: bluecarrot16, Pierre Vigier, Tuomo Untinen, Johannes Sjölund (wulax), Inboxninja
 - Kaynak: https://opengameart.org/content/lpc-hand-tools

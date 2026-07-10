@@ -86,6 +86,8 @@ typedef struct {
                           // 1'e ulaşınca aggro — algı ikili değil, "fark edilme süreci"
     float alertFlash;     // aggro anında baş üstü "!" süresi (sn)
     float bleedDps, bleedTime;   // Kanatma perki DoT'u (main işler — ölüm/loot orada)
+    int arrowsHit;        // saplanan ok sayısı — ölünce ~%30'u lootta geri (Faz 5)
+    float slowMult, slowTimer;   // Buz Oku: süre boyunca hız çarpanı (0 = etkisiz)
     MobState state;         // AI durumu
     float attackCooldown;     // bir sonraki saldırıya kalan süre
     bool attackTriggered;

@@ -5,10 +5,17 @@
 // LPC ekipman sheet'leri izole parca icerdiginden bu kare temiz ikon verir.
 const ItemType ITEM_TYPES[] = {
     // --- Kusanilamaz (tool_icons fallback: iconSpritePath = NULL) ---
-    { .name = "Yay",    .iconIndex = 0, .maxStack = 1, .value = 15,
-      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
-      .equipSpritePath = NULL,
-      .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
+    { .name = "Yay",    .iconIndex = 0, .maxStack = 1, .value = 180,
+      .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_BOW,
+      .damage = 32.0f,                 // taban (DEX ölçekli; melee DPS'in ~yarısı)
+      .attackInterval = 1.6f,          // çekme 0.9sn + toparlanma
+      // ULPC great bow (çelik): sheet'te YALNIZ shoot satırları çizili (16-19,
+      // nişan oku gömülü) — yay araçlar gibi yalnız çekme sırasında görünür.
+      // (walk/idle katmanlı yay varyantı bulunursa equipIdleRow ile bağlanır)
+      .equipSpritePath = "assets/equipment/weapon/great_bow_140.png",
+      .equipZ = 140,
+      .iconSpritePath = "assets/icons/items/bow_icon.png",
+      .iconSrc = { 0, 0, 33, 34 } },
     { .name = "Kazma",  .iconIndex = 2, .maxStack = 1, .value = 10,
       .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_TOOL,
       .equipSpritePath     = "assets/equipment/weapon/pickaxe_fg.png",   // smash128 on
@@ -194,6 +201,12 @@ const ItemType ITEM_TYPES[] = {
     { .name = "Dayanıklılık Taşı", .iconIndex = 0, .maxStack = 10, .value = 120,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 160, 0, 16, 16 } },
+
+    // --- Faz 5: okçuluk ---
+    { .name = "Ok", .iconIndex = 0, .maxStack = 99, .value = 2,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/arrow_icon.png",
+      .iconSrc = { 0, 0, 32, 32 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

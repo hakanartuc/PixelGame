@@ -43,6 +43,8 @@ typedef enum {
     WEAPON_DUAL,       // çift tek-el (WEAPON + SHIELD'e tek-el)
     WEAPON_TOOL,       // toplama aracı (kazma/balta): WEAPON slotuna takılır,
                        // SALDIRAMAZ ("Silah kuşan!") — toplama savurması için
+    WEAPON_BOW,        // yay: iki el (SHIELD kilitli), köklü atış + ok tüketir,
+                       // hasar DEX ile ölçeklenir, skill = Archery
 } WeaponType;
 
 // Item TÜRÜ — bir kez tanımlanır, tüm o item'ler paylaşır
@@ -179,6 +181,8 @@ typedef enum {
     ITEM_STONE_DEF,
     ITEM_STONE_MP,
     ITEM_STONE_STA,
+    // Meslek paketi (Faz 5): oduculuk ürünleri + okçuluk
+    ITEM_ARROW,           // Ok (yay mühimmatı — atış başına 1, leşten ~%30 geri)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

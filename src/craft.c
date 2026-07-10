@@ -81,6 +81,17 @@ const RecipeDef RECIPES[] = {
       .in1Item = ITEM_ESSENCE_TOXIC, .in1Count = 3, .in2Item = -1,
       .outItem = ITEM_RUNE_POISON, .outCount = 1, .work = 5.0f, .xp = 18.0f,
       .minSkill = 10 },
+
+    // Ocak — oduculuk ürünleri (Faz 5): ok ve yay (odunun craft anlamı).
+    // SONA eklendi: save v10 öğrenilen-tarif bayrakları İNDEKSLE saklanır,
+    // ortaya ekleme eski kayıtları kaydırırdı.
+    { .station = STATION_SMITH, .name = "Ok x10",
+      .in1Item = ITEM_WOOD, .in1Count = 1, .in2Item = ITEM_INGOT_COPPER, .in2Count = 1,
+      .outItem = ITEM_ARROW, .outCount = 10, .work = 4.0f, .xp = 6.0f },
+    { .station = STATION_SMITH, .name = "Yay",
+      .in1Item = ITEM_WOOD, .in1Count = 2, .in2Item = ITEM_INGOT_IRON, .in2Count = 1,
+      .outItem = ITEM_BOW, .outCount = 1, .work = 8.0f, .xp = 14.0f,
+      .minSkill = 5 },
 };
 const int RECIPE_COUNT = (int)(sizeof(RECIPES) / sizeof(RECIPES[0]));
 

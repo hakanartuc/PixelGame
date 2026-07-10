@@ -37,6 +37,10 @@ typedef struct Equipment Equipment;   // ← forward decl (pointer için yeter)
 #define PLAYER_ATTACK_RANGE 80.0f
 #define PLAYER_ATTACK_HIT_FRAME 3   // slash'ın vuruş karesi (6 karelik slash'ta ~3)
 
+// Yay (Faz 5): köklü atış — çekme boyunca durulur, WASD iptal eder
+#define PLAYER_BOW_RANGE 340.0f          // atış menzili (melee 80'in ~4x'ü, algı sınırı üstü)
+#define PLAYER_SHOOT_RELEASE_FRAME 9     // 13 karelik shoot'ta ipin bırakıldığı kare
+
 
 // LPC yön sırası (sheet satır sırası): 0=yukarı, 1=sol, 2=aşağı, 3=sağ
 typedef enum {
@@ -52,7 +56,8 @@ typedef enum {
     PLAYER_WALK,    // yürüme (satır 8-11, 9 kare)
     PLAYER_SLASH,   // kılıç saldırısı (satır 12-15, 6 kare)
     PLAYER_CAST,    // spellcast (satır 0-3, 7 kare) — simya kaynatma/büyü
-    // ileride: THRUST, SHOOT, HURT, RUN, DEATH...
+    PLAYER_SHOOT,   // yay çekme (satır 16-19, 13 kare) — KÖKLÜ: hareket iptal eder
+    // ileride: THRUST, HURT, RUN, DEATH...
 } PlayerState;
 
 // player.h — AnimClip gibi
@@ -123,6 +128,12 @@ typedef struct Player {
     bool attacking;
     bool attackHit;
     int targetMobId;
+
+    // Yay durumu (Faz 5): main her kare bowEquipped yazar; attackPressed
+    // yay kuşanılıyken slash yerine SHOOT başlatır. Hareket atışı iptal eder.
+    bool bowEquipped;
+    bool shooting;       // çekme animasyonu sürüyor
+    bool shotReleased;   // bu çekmede ok çıktı mı (release karesinde main atar)
 
     // KO modeli: hedef seçiliyken normal vuruş otomatik döngüde
     bool autoAttack;                  // Space ile açılır/kapanır

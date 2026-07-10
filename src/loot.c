@@ -49,15 +49,15 @@ static int roll_plus(int maxPlus)
     return plus;
 }
 
-bool loot_spawn(Loot *loots, int maxLoot, float x, float y,
-                const LootEntry *table, int tableCount, int goldMin, int goldMax)
+int loot_spawn(Loot *loots, int maxLoot, float x, float y,
+               const LootEntry *table, int tableCount, int goldMin, int goldMax)
 {
     // Boş slot bul
     int slot = -1;
     for (int i = 0; i < maxLoot; i++) {
         if (!loots[i].active) { slot = i; break; }
     }
-    if (slot == -1) return false;   // doluysa düşürme
+    if (slot == -1) return -1;   // doluysa düşürme
 
     // 1) Kasayı kur
     loots[slot] = (Loot){
@@ -82,7 +82,7 @@ bool loot_spawn(Loot *loots, int maxLoot, float x, float y,
     if (goldMax < goldMin) goldMax = goldMin;
     loots[slot].gold = goldMin + rand() % (goldMax - goldMin + 1);
 
-    return true;
+    return slot;
 }
 
 void loot_render_all(Loot *loots, int maxLoot, R2D *renderer, R2DTexture *crateTex, const Camera *camera)

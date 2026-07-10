@@ -23,6 +23,7 @@ SkillType combat_weapon_skill(const ItemType *weapon)
         case WEAPON_DUAL:      return SKILL_ONE_HANDED;
         case WEAPON_TWO_HAND:  return SKILL_TWO_HANDED;
         case WEAPON_SHIELD:    return SKILL_BLOCK;
+        case WEAPON_BOW:       return SKILL_ARCHERY;
         default:               return SKILL_NONE;
     }
 }
@@ -59,8 +60,11 @@ HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
     bool armed = (weapon != NULL && weapon->type != NULL);
     float base = armed ? item_damage(weapon) : UNARMED_DAMAGE;
 
-    // STR ölçeği (taban 10 = çarpansız)
-    float strScale = 1.0f + (float)(p->strength - STAT_BASE) * STR_DAMAGE_PER_POINT;
+    // STR ölçeği (taban 10 = çarpansız) — yay DEX ile ölçeklenir (nişancı statı;
+    // DEX zaten crit verir, yayda hasara da işler — DEX taşlarına ikinci anlam)
+    bool isBow = armed && weapon->type->weaponType == WEAPON_BOW;
+    int dmgStat = isBow ? p->dexterity : p->strength;
+    float strScale = 1.0f + (float)(dmgStat - STAT_BASE) * STR_DAMAGE_PER_POINT;
 
     // Skill bonusu — silahın geliştirdiği skill'in seviyesinden
     float skillScale = 1.0f;

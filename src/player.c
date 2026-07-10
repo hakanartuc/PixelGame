@@ -24,6 +24,7 @@ static const LpcAnim PLAYER_ANIMS[] = {
     [PLAYER_WALK] = {.startRow = 8, .frameCount = 9, .frameDur = 0.08f, .loop = true}, // satır 8-11
     [PLAYER_SLASH] = {.startRow = 12, .frameCount = 6, .frameDur = 0.08f, .loop = false},
     [PLAYER_CAST] = {.startRow = 0, .frameCount = 7, .frameDur = 0.12f, .loop = true}, // spellcast 0-3
+    [PLAYER_SHOOT] = {.startRow = 16, .frameCount = 13, .frameDur = 0.07f, .loop = false}, // yay 16-19 (~0.9sn)
 };
 
 // Silahin bir karedeki eldeki konumu
@@ -253,10 +254,18 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
         }
     }
 
+    // Köklü atış: çekme sürerken hareket atışı İPTAL eder (ok tüketilmez)
+    if (p->shooting && moving)
+        p->shooting = false;
+
     // --- DURUM (state) belirleme ---
     if (p->attacking)
     {
         p->state = PLAYER_SLASH;
+    }
+    else if (p->shooting)
+    {
+        p->state = PLAYER_SHOOT;
     }
     else if (moving)
     {
@@ -271,14 +280,23 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
         p->state = PLAYER_IDLE;
     }
 
-    // --- Yeni saldırı başlat ---
-    if (attackPressed && !p->attacking)
+    // --- Yeni saldırı başlat: yay kuşanılıysa çekme, değilse savurma ---
+    if (attackPressed && !p->attacking && !p->shooting)
     {
-        p->attacking = true;
-        p->state = PLAYER_SLASH;
+        if (p->bowEquipped)
+        {
+            p->shooting = true;
+            p->state = PLAYER_SHOOT;
+            p->shotReleased = false;
+        }
+        else
+        {
+            p->attacking = true;
+            p->state = PLAYER_SLASH;
+            p->attackHit = false;
+        }
         p->currentFrame = 0;
         p->animTimer = 0.0f;
-        p->attackHit = false;
     }
 
     // --- ANİMASYON ilerlet ---
@@ -307,11 +325,15 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
             }
             else
             {
-                // tek-seferlik (slash) bitti
+                // tek-seferlik (slash/shoot) bitti
                 p->currentFrame = anim->frameCount - 1;
                 if (p->state == PLAYER_SLASH)
                 {
                     p->attacking = false; // saldırı bitti
+                }
+                else if (p->state == PLAYER_SHOOT)
+                {
+                    p->shooting = false;  // çekme bitti (ok release karesinde çıktı)
                 }
             }
         }

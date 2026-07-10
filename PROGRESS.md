@@ -125,10 +125,26 @@ Güncelleme: 2026-07-10
   ("İşlem iptal edildi" eklendi); F efekt önizleme tuşu KALDIRILDI (rün efektini eziyordu);
   Long Sword'un kalıcı PINK tür efekti kaldırıldı (efekt yalnız rün/kaplamadan)
 
+### Faz 17 — Meslek paketi 5/5: Okçuluk & Yay becerileri
+- WEAPON_BOW: iki el (kalkan kilidi), hasar DEX ölçekli (+%2/puan), skill Archery (hasar bazlı XP)
+- Köklü atış: Space → çekme (LPC shoot 16-19, ~0.9sn, release kare 9); WASD çekmeyi İPTAL eder (ok yanmaz);
+  menzil 340px (melee 80) — CD/stamina trigger'da yanar (KO "hedef kaçsa da yanar" kuralı)
+- Güdümlü ok: hasar VARIŞTA (crit + sinsi ok ×2 + rün zehir/pembe + aggro + hafif itme); çizgi görseli
+- Ok ekonomisi: atış 1 ok; saplananların ~%30'u leşten geri (Mob.arrowsHit); "Ok yok!" + sayaç HUD
+- Tarifler (ocak, dizin SONU — save v10 indeks uyumu): Ok x10 = 1 Odun + 1 Bakır Külçe; Yay = 2 Odun + 1 Demir Külçe (Smithing 5)
+- Vendor: Yay 180g + Ok 2g; F10: yay + 50 ok + Archery XP
+- 5 yay becerisi (Archery merdiveni, hepsi STAMINA tüketir — havuzun ilk gerçek tüketicisi):
+  GO(1: ×2.2, 6s, 20) · BO(10: %40 yavaş 3sn, 10s, 15) · GS(20: 140px geri sıçrama, 8s, 25) ·
+  YA(30: tek hedefe 3 ok ×0.6, 12s, 30; hedef ölürse yakına) · AO(45: varışta patlama 90px ×0.6, 15s, 35)
+- Silah-beceri eşleşmesi: PS/QS↔melee, yay becerileri↔yay ("Yay gerekli!" / CD boşa yanmaz);
+  stamina yetmezse "Nefesin yetmiyor!" (CD yanmaz); Mob.slowMult/slowTimer altyapısı
+- Envanter 20 → 35 slot (7×5; paneller y=20'ye alındı; save slot sayısını yazdığından uyum bozulmadı)
+- ULPC great bow görseli (shoot satırları + gömülü nişan oku); yay yalnız çekmede görünür
+  (bu varyantta walk/idle katmanı yok — normal/recurve bow indirilirse idle/walk görseli bağlanır)
+- Yayla NPC hedeflenemez (uzaktan tanıksız suç dengesi ayrı iş — ertelendi)
+
 ## 🔜 Kalanlar (öncelik sırası)
-1. **Meslek paketi 5/5** (kararlar verildi, plan 2026-07-10):
-   - F5: Oduculuk ürünleri + minimal yay savaşı (ok craft, Yay kuşanılır, oyuncu projectile, Archery)
-   - Boss scroll/taş dropları (yüksek kademe) mob fazlarıyla gelecek
+1. **Boss scroll/taş dropları** (yüksek kademe) mob fazlarıyla gelecek; yay walk/idle görseli (asset gelince)
 2. **Av & kontrat panosu**: hayvanlar (Cute_Fantasy Animals), deri/et, Witcher tarzı ilan panosu
 3. **Mob fazları** (araya serpiştirilir): Slime ailesi → Skeleton ailesi (+ok/mermi sistemi) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla)
 4. **İç mekanlar/zindanlar**: kapı→ayrı harita, Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate

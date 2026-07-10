@@ -30,9 +30,9 @@ typedef struct {
 
 // Boş slota bir loot (kasa) düşür; içerik verilen tablodan roll'lanır.
 // Her tablo girdisi için ayrı zar atılır, silah/zırh plus'ı da burada roll'lanır.
-// Başarılıysa true.
-bool loot_spawn(Loot *loots, int maxLoot, float x, float y,
-                const LootEntry *table, int tableCount, int goldMin, int goldMax);
+// Dönen: kasa indeksi (çağıran içine ekleme yapabilir — ok geri kazanımı), -1 = yer yok.
+int loot_spawn(Loot *loots, int maxLoot, float x, float y,
+               const LootEntry *table, int tableCount, int goldMin, int goldMax);
 
 // Tüm loot'ları çiz.
 void loot_render_all(Loot *loots, int maxLoot, R2D *renderer, R2DTexture *crateTex, const Camera *camera);

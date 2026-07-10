@@ -264,8 +264,12 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
                 float detectMul)
 {
     if (m->type == NULL) return;   // boş slot (hiç mob doğmamış) → atla
-    
+
     m->attackTriggered = false;
+
+    // Buz Oku yavaşlatması: süre boyunca hareket hızı çarpanı düşük
+    float slowK = (m->slowTimer > 0.0f) ? m->slowMult : 1.0f;
+    if (m->slowTimer > 0.0f) m->slowTimer -= dt;
 
     // Ölüm animasyonu oynuyorsa: sadece onu ilerlet, AI çalışmaz
     if (m->dying) {
@@ -326,7 +330,8 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
             } else {
                 m->e.facing = (hdy < 0) ? 1 : 0;
             }
-            mob_move(m, hdx/homeDist * m->e.speed * dt, hdy/homeDist * m->e.speed * dt);
+            mob_move(m, hdx/homeDist * m->e.speed * slowK * dt,
+                        hdy/homeDist * m->e.speed * slowK * dt);
 
             // Koşma animasyonu (RETURN'un kendi satırı yok)
             const AnimClip *clip = &m->type->anims[MOB_CHASE][m->e.facing];
@@ -421,8 +426,8 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
                 }
 
                 // Oyuncuya doğru + ayrışma (tile/dekor çarpışmalı)
-                mob_move(m, (nx * m->e.speed + sepX * SEPARATION_FORCE) * dt,
-                            (ny * m->e.speed + sepY * SEPARATION_FORCE) * dt);
+                mob_move(m, (nx * m->e.speed * slowK + sepX * SEPARATION_FORCE) * dt,
+                            (ny * m->e.speed * slowK + sepY * SEPARATION_FORCE) * dt);
             }
         }
         else {

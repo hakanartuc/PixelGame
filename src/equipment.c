@@ -56,17 +56,18 @@ bool equip_from_inventory(Equipment *eq, Inventory *inv, int invSlotIndex)
     if (targetSlot == EQUIP_WEAPON || targetSlot == EQUIP_SHIELD) {
         WeaponType wt = item->weaponType;
 
-        if (wt == WEAPON_TWO_HAND) {
-            // Çift el: hem WEAPON hem SHIELD slotu boşalmalı (ikisini de çıkar)
+        if (wt == WEAPON_TWO_HAND || wt == WEAPON_BOW) {
+            // Çift el (yay dahil): hem WEAPON hem SHIELD slotu boşalmalı
             if (!unequip_to_inventory(eq, inv, EQUIP_WEAPON)) return false;
             if (!unequip_to_inventory(eq, inv, EQUIP_SHIELD)) return false;
             // İki-el silahı WEAPON'a koy (SHIELD boş kalır = kilitli)
             targetSlot = EQUIP_WEAPON;
         }
         else if (wt == WEAPON_SHIELD) {
-            // Kalkan: WEAPON two-hand ise kuşanılamaz (iki el dolu)
+            // Kalkan: WEAPON iki elli ise kuşanılamaz (iki el dolu)
             if (eq->slots[EQUIP_WEAPON].type != NULL &&
-                eq->slots[EQUIP_WEAPON].type->weaponType == WEAPON_TWO_HAND) {
+                (eq->slots[EQUIP_WEAPON].type->weaponType == WEAPON_TWO_HAND ||
+                 eq->slots[EQUIP_WEAPON].type->weaponType == WEAPON_BOW)) {
                 return false;   // iki-el silah varken kalkan takılamaz
             }
             targetSlot = EQUIP_SHIELD;
