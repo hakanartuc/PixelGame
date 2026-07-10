@@ -118,6 +118,12 @@ typedef enum {
     ITEM_HERB_RED,      // Kızılot (ova bitkisi)
     ITEM_HERB_BLUE,     // Ayotu (bataklık bitkisi)
     ITEM_WOOD,          // Odun
+    // Meslek paketi (Faz 2): craft araç/ara ürün/çıktılar
+    ITEM_HAMMER,        // Çekiç (demircilik aracı — Demirci görev ödülü)
+    ITEM_INGOT_COPPER,  // Bakır Külçe
+    ITEM_INGOT_IRON,    // Demir Külçe
+    ITEM_SWORD_COPPER,  // Bakır Kılıç (ilk craft silahı)
+    ITEM_POTION_BIG,    // Büyük Can İksiri
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

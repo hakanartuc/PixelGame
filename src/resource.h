@@ -14,7 +14,7 @@
 // Araç şartı: KUŞANILI olmalı (silah slotu — WEAPON_TOOL).
 
 #define RESOURCE_INTERACT_RANGE 80.0f
-#define MAX_RESOURCES 32
+#define MAX_RESOURCES 64
 
 typedef struct {
     const char *texPath;   // sprite sheet (assets/decor/*)

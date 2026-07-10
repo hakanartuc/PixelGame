@@ -18,7 +18,7 @@ const NpcDef NPCS[] = {
     { .name = "Tüccar Baran",
       .sheetPath = "assets/characters/npcs/Bartender_Bruno.png",
       .dialogFile = "assets/dialogs/merchant.txt",
-      .isVendor = true, .questId = NULL,
+      .isVendor = true, .questId = "simya_masa",
       .schedule = {
           { .hour =  8.0f, .x = T(10),   .y = T(5),   .indoors = false },  // dükkan başı
           { .hour = 20.0f, .x = T(10),   .y = T(4.2f), .indoors = true },  // eve girer
@@ -41,6 +41,14 @@ const NpcDef NPCS[] = {
           { .hour = 15.0f, .x = T(7),    .y = T(11),   .indoors = false }, // tarlaya dönüş
           { .hour = 19.0f, .x = T(6),    .y = T(10.2f), .indoors = true },
       }, .stopCount = 4 },
+    { .name = "Demirci Mahir",
+      .sheetPath = "assets/characters/npcs/Miner_Mike.png",
+      .dialogFile = "assets/dialogs/demirci.txt",
+      .isVendor = false, .questId = "demirci_ocak",
+      .schedule = {
+          { .hour =  7.0f, .x = T(8), .y = T(7.6f), .indoors = false },  // ocak başı
+          { .hour = 21.0f, .x = T(8), .y = T(6.4f), .indoors = true },   // gece kapanır
+      }, .stopCount = 2 },
     { .name = "Muhafız",
       .sheetPath = "assets/characters/npcs/Guard_Swordman.png",
       .dialogFile = "assets/dialogs/guard.txt",

@@ -119,6 +119,25 @@ bool inventory_consume(Inventory *inv, const ItemType *type)
     return false;   // envanterde yok
 }
 
+int inventory_count(const Inventory *inv, const ItemType *type)
+{
+    if (type == NULL) return 0;
+    int total = 0;
+    for (int i = 0; i < INVENTORY_SIZE; i++)
+        if (inv->slots[i].type == type)
+            total += inv->slots[i].count;
+    return total;
+}
+
+bool inventory_consume_n(Inventory *inv, const ItemType *type, int n)
+{
+    if (inventory_count(inv, type) < n)
+        return false;   // yetersiz — hiçbirine dokunma
+    while (n-- > 0)
+        inventory_consume(inv, type);
+    return true;
+}
+
 // Ekran koordinatindan hangi envanter slotuna denk geldigini bulur.
 // panelX/panelY: inventory_render'a verilen panel sol-ust (AYNI degerler).
 // Donen: slot indeksi (0..INVENTORY_SIZE-1) ya da -1 (bos alana tiklandi).

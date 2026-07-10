@@ -1,12 +1,34 @@
-# Tüccar Baran — vendor
+# Tüccar Baran — vendor + simya kazanı görevi (simya_masa)
 [start]
 text: Hoş geldin yolcu! Ovada dükkan açtım ama goblinler yüzünden kervan gelmiyor. Bakmak bedava.
 opt: Neler satıyorsun? -> shop
-opt: Sen kimsin? -> kim
+opt: Arkadaki kazan ne işe yarıyor? -> kazan
 opt: Zor günlerdesin, şu parayı al dostum. (30g) -> bagis
 req: gold >= 30
 fx: gold -= 30
 fx: rep += 3
+opt: Hoşçakal. -> end
+
+[kazan]
+text: Simya kazanım — iksir kaynatırım arada. Kullanmak mı istiyorsun? Bana 3 Kızılot getir, malzemesiz kazan kaynamaz.
+opt: Getiririm. -> accept:simya_masa
+opt: Belki sonra. -> end
+
+[accepted]
+text: Kızılot ovada yetişir, kırmızı çiçekler. Elinle koparabilirsin.
+opt: Tamam. -> end
+
+[active]
+text: Kızılotlar nerede kaldı? 3 tane — kazan bekliyor.
+opt: Topluyorum. -> end
+
+[done]
+text: İşte bu! Al, kazan senindir de. İki Kızılot bir Can İksiri eder — gerisini kendin keşfet.
+opt: Sağol Baran. -> complete:simya_masa
+
+[rewarded]
+text: Kazan arkada, istediğin gibi kaynat. İyi mal, adil fiyat — dükkan da her zaman açık.
+opt: Dükkanı göster. -> shop
 opt: Hoşçakal. -> end
 
 [kim]

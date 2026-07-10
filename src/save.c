@@ -9,7 +9,8 @@
 #include "npc.h"
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 8u   // ...; v6: perk; v7: suç; v8: bölgesel bounty/itibar + lastCrimeDay
+#define SAVE_VERSION 9u   // ...; v7: suç; v8: bölgesel bounty/itibar; v9: NPC listesi
+                          // değişti (Demirci eklendi — npcAlive indeksleri kaydı)
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)

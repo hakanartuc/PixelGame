@@ -424,6 +424,27 @@ void health_bar_render(const Player *p, R2D *renderer)
     // 3) Çerçeve - barın kenarı
     r2d_set_color(renderer, 255, 255, 255, 255);
     r2d_rect(renderer, &bg);
+
+    // 4) Mana (mavi) + Stamina (sari) — ince barlar HP'nin altinda.
+    //    Tuketen sistemler gelecekte; stat basma havuzlari buyutecek (Faz 4)
+    float mRatio = (p->maxMana > 0.0f) ? p->mana / p->maxMana : 0.0f;
+    float sRatio = (p->maxStamina > 0.0f) ? p->stamina / p->maxStamina : 0.0f;
+    if (mRatio > 1.0f) mRatio = 1.0f;
+    if (sRatio > 1.0f) sRatio = 1.0f;
+
+    SDL_FRect mBg = { barX, barY + barH + 4.0f, barW, 8.0f };
+    r2d_set_color(renderer, 20, 25, 55, 255);
+    r2d_fill_rect(renderer, &mBg);
+    SDL_FRect mFill = { mBg.x, mBg.y, barW * mRatio, mBg.h };
+    r2d_set_color(renderer, 70, 120, 255, 255);
+    r2d_fill_rect(renderer, &mFill);
+
+    SDL_FRect sBg = { barX, mBg.y + 12.0f, barW, 8.0f };
+    r2d_set_color(renderer, 50, 45, 15, 255);
+    r2d_fill_rect(renderer, &sBg);
+    SDL_FRect sFill = { sBg.x, sBg.y, barW * sRatio, sBg.h };
+    r2d_set_color(renderer, 235, 200, 60, 255);
+    r2d_fill_rect(renderer, &sFill);
 }
 
 int build_player_layers(const PlayerLayer *base, int baseCount,

@@ -83,6 +83,11 @@ typedef struct Player {
     float health;
     float maxHealth;
 
+    // Mana + Stamina havuzları: tüketen sistemler (büyü/dodge) gelecekte —
+    // barlar şimdiden HUD'da (stat basma da bu havuzları büyütecek, Faz 4)
+    float mana, maxMana;
+    float stamina, maxStamina;
+
     // Statlar: dağıtım yok — sabit taban (10), ileride ekipman/perk bonusu ekler.
     // Skill'ler stat değil doğrudan hasar çarpanı verir (use-based felsefe).
     int strength;    // hasar ölçeği

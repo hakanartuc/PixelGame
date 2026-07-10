@@ -98,8 +98,14 @@ Güncelleme: 2026-07-10
    - F2: istasyonlar (ocak/masa/sunak) + craft UI + tarif sistemi (hibrit) + Smithing üretim/+basma
      (başarısızlık: plus-1+malzeme) + Alchemy iksirleri
    - F3: blueprint/scroll loot ekonomisi (mob/boss dropları) + öğretmen NPC'ler (Demirci, train: aksiyonu)
-   - F4: Enchanting — öz→rün (moba/biyoma bağlı), üzerine basılır, seviyeye bağlı başarısızlık;
-     weaponFx ItemStack'e taşınır (save)
+   - F4: Enchanting sunağı — İKİ iş (kararlar 2026-07-10):
+     a) öz→rün (moba/biyoma bağlı), üzerine basılır, seviyeye bağlı başarısızlık;
+        weaponFx ItemStack'e taşınır (save)
+     b) STAT BASMA: silah/zırha 2 slot + kademe I-III (aynı stat tekrar basılınca yükselir);
+        statlar: STR/DEX/HP/DEF/MP/STA (havuzlar HUD'da hazır) — kombata bağlanır
+        (STR→hasar, DEX→crit, HP→max can, DEF→defans, MP/STA→havuz büyümesi);
+        malzeme: stat scroll'u + külçe; scroll kaynağı: mob dropu (%6-8, tür moba göre) +
+        vendor (düşük kademe, ÇOK nadir + pahalı) + boss (yüksek kademe, mob fazlarıyla)
    - F5: Oduculuk ürünleri + minimal yay savaşı (ok craft, Yay kuşanılır, oyuncu projectile, Archery)
 2. **Av & kontrat panosu**: hayvanlar (Cute_Fantasy Animals), deri/et, Witcher tarzı ilan panosu
 3. **Mob fazları** (araya serpiştirilir): Slime ailesi → Skeleton ailesi (+ok/mermi sistemi) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla)

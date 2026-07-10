@@ -1,0 +1,26 @@
+# Demirci Mahir — ocak sahibi, tanışma görevi (demirci_ocak)
+[start]
+text: Hoş geldin yabancı. Bu ocak dededen kalma — öyle her gelene kullandırtmam. Ama işini kanıtlarsan başka.
+opt: Nasıl kanıtlayayım? -> gorev
+opt: Sadece bakıyordum. -> end
+
+[gorev]
+text: Bana 5 bakır cevheri getir. Doğudaki kayalıklarda bulursun — kazman varsa tabii. Getirirsen ocağı açarım, üstüne çekicimi de veririm.
+opt: Anlaştık. -> accept:demirci_ocak
+opt: Belki sonra. -> end
+
+[accepted]
+text: Kazmayı Baran satar. Kayalıklar köyün doğusunda — goblinlere dikkat et.
+opt: Hallederim. -> end
+
+[active]
+text: Cevherler nerede? 5 bakır cevheri — ocak bekliyor.
+opt: Uğraşıyorum. -> end
+
+[done]
+text: Bak sen, sözünün eriymişsin! Al şu çekici — ocak artık senin de sayılır. Külçe dökmeyi öğren, gerisi gelir.
+opt: Sağol usta. -> complete:demirci_ocak
+
+[rewarded]
+text: Ocak orada, çekicin elinde. Demir külçe için Smithing'in gelişmeli — acele etme, bakırla başla.
+opt: Anlaşıldı. -> end

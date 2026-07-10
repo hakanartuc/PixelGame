@@ -147,8 +147,10 @@ void equipment_render(const Equipment *eq, R2D *renderer,
         SDL_FRect srcDoll = { 0, 24 * FRAME_H, FRAME_W, FRAME_H };
         SDL_FRect dstDoll = { (float)DOLL_X, (float)DOLL_Y,
                               (float)(FRAME_W * DOLL_SCALE), (float)(FRAME_H * DOLL_SCALE) };
-        for (int i = 0; i < builtCount; i++)
+        for (int i = 0; i < builtCount; i++) {
+            if (built[i].smash128) continue;   // arac sheet'inde idle yok — cop basar
             r2d_draw_texture(renderer, built[i].tex, &srcDoll, &dstDoll);
+        }
     
     
     // 3) Slot kutulari (EQUIP_SLOT_POS tablosu). Dolu slot → item ikonu.

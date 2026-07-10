@@ -29,4 +29,10 @@ int inventory_slot_at(float x, float y, float panelX, float panelY);
 // Bu türden 1 adet düş (hotbar'dan kullanım). Yoksa false.
 bool inventory_consume(Inventory *inv, const ItemType *type);
 
+// Bu türden toplam kaç adet var (tüm yığınlar; plus farkı gözetmez)
+int inventory_count(const Inventory *inv, const ItemType *type);
+
+// Bu türden N adet düş (craft/görev teslimi). Yetersizse HİÇBİRİNİ düşmez, false.
+bool inventory_consume_n(Inventory *inv, const ItemType *type, int n);
+
 #endif

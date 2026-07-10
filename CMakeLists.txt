@@ -51,6 +51,7 @@ add_executable(game
     src/guard.c
     src/sneak.c
     src/resource.c
+    src/craft.c
     src/r2d.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle

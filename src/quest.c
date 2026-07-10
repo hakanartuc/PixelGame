@@ -8,6 +8,14 @@
 const QuestDef QUESTS[] = {
     { .id = "goblin_derdi", .name = "Goblin Derdi",
       .targetMob = &MOB_TYPES[0], .targetCount = 5, .rewardGold = 100 },
+
+    // Meslek tanışma görevleri (FETCH) — teslim = istasyon İZNİ (REWARDED kontrolü)
+    { .id = "demirci_ocak", .name = "Demircinin Sınavı",
+      .targetMob = NULL, .targetCount = 5, .rewardGold = 0,
+      .fetchItem = ITEM_ORE_COPPER, .fetchCount = 5, .rewardItem = ITEM_HAMMER },
+    { .id = "simya_masa", .name = "Baran'ın Kazanı",
+      .targetMob = NULL, .targetCount = 3, .rewardGold = 15,
+      .fetchItem = ITEM_HERB_RED, .fetchCount = 3, .rewardItem = -1 },
 };
 const int QUEST_COUNT = (int)(sizeof(QUESTS) / sizeof(QUESTS[0]));
 
