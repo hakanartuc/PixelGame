@@ -83,7 +83,11 @@ typedef struct Player {
     int strength;    // hasar ölçeği
     int dexterity;   // kritik şansı
     int gold;        // para (loot'tan gelir, vendor'da harcanacak)
-    int bounty;      // suç bedeli (tanıklı suçla birikir; muhafız Faz 2'de tahsil eder)
+
+    // Suç & itibar — BÖLGE BAŞINA (indeks: region_at; -1 dışarısı → 0'a düşer)
+    int bounty[MAX_REGIONS];        // yasal borç: tanıklı suçla birikir, ödenince silinir
+    float reputation[MAX_REGIONS];  // toplumsal hafıza (-100..+100): ödeme DÜZELTMEZ
+    int lastCrimeDay;               // son suç günü (suçsuz gün → itibar 0'a doğru +1)
 
     Skill skills[SKILL_COUNT];   // use-based skill'ler (kullandıkça gelişir)
 

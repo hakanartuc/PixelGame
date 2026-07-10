@@ -38,6 +38,13 @@
 
 #define BASE_MAX_HP 100.0f   // oyuncu taban canı (perk bonusları üstüne biner)
 
+// Bölge indeksi (dünya konumundan); bölge dışı → 0 (Yeşil Ova varsayılan)
+static int region_of(float x, float y)
+{
+    int r = region_at(x, y);
+    return (r < 0 || r >= MAX_REGIONS) ? 0 : r;
+}
+
 // Mob ölümü — saldırıdan da kanamadan da aynı yol: animasyon + loot + görev.
 // (İki yerden çağrılır; kopya kod desenkron olmasın diye tek fonksiyon)
 static void mob_die(Mob *target, Loot *loots, QuestStatus *questStatus,
@@ -253,12 +260,18 @@ int main(int argc, char *argv[])
     gametime_init();   // gün 1, 08:00
     npc_reset();       // NPC'ler canlı + tam canla başlar (statik durum sıfırdan gelir)
 
-    // Muhafız beyni: NPCS içindeki isGuard girdisine bağlanır
+    // Muhafız beyni: NPCS içindeki isGuard girdisine bağlanır.
+    // Yetki alanı = nöbet noktasının bölgesi (bounty bölgesel — muhafız kendi bölgesini tahsil eder)
     int guardIdx = -1;
     for (int i = 0; i < NPC_COUNT; i++)
         if (NPCS[i].isGuard) { guardIdx = i; break; }
+    int guardRegion = 0;
     if (guardIdx >= 0)
+    {
         guard_init(guardIdx);
+        guardRegion = region_of(NPCS[guardIdx].schedule[0].x, NPCS[guardIdx].schedule[0].y);
+    }
+    int lastSeenDay = gametime_day();   // günlük itibar toparlanması için gün takibi
     ui_theme_init(renderer);   // panel/hücre/buton sprite'ları
     audio_init();      // başarısızsa oyun sessiz devam eder
     music_init();      // arka plan müziği (mood'a göre, crossfade)
@@ -480,14 +493,15 @@ int main(int argc, char *argv[])
                          (event.key.key == SDLK_1 || event.key.key == SDLK_2))
                 {
                     // Yakalama paneli: [1] cezayı öde  [2] karşı koy
+                    // (ödeme yasal borcu siler — İTİBARI DÜZELTMEZ, karar defteri)
                     if (event.key.key == SDLK_1)
                     {
-                        if (player.gold >= player.bounty)
+                        if (player.gold >= player.bounty[guardRegion])
                         {
                             char buf[FLOAT_TEXT_LEN];
-                            snprintf(buf, sizeof(buf), "-%d g (ceza)", player.bounty);
-                            player.gold -= player.bounty;
-                            player.bounty = 0;
+                            snprintf(buf, sizeof(buf), "-%d g (ceza)", player.bounty[guardRegion]);
+                            player.gold -= player.bounty[guardRegion];
+                            player.bounty[guardRegion] = 0;
                             catchOpen = false;
                             audio_play(SFX_UI);
                             SDL_Color white = { 255, 255, 255, 255 };
@@ -505,7 +519,8 @@ int main(int argc, char *argv[])
                     }
                     else   // karşı koy
                     {
-                        player.bounty += CRIME_BOUNTY_RESIST;
+                        player.bounty[guardRegion] += CRIME_BOUNTY_RESIST;
+                        player.lastCrimeDay = gametime_day();
                         guard_set_hostile(true);
                         catchOpen = false;
                         SDL_Color red = { 255, 80, 80, 255 };
@@ -538,20 +553,36 @@ int main(int argc, char *argv[])
                             }
                             else if (strncmp(target, "accept:", 7) == 0)
                             {
-                                int q = quest_find(target + 7);
-                                if (q >= 0 && questStatus[q].state == QUEST_NOT_STARTED)
+                                // Dip itibarda güven yok — yeni görev verilmez
+                                float dnx, dny;
+                                int dRegion = npc_visible_pos(dialogNpc, &dnx, &dny)
+                                            ? region_of(dnx, dny) : 0;
+                                if (player.reputation[dRegion] <= REP_NO_QUESTS)
                                 {
-                                    questStatus[q].state = QUEST_ACTIVE;
-                                    questStatus[q].progress = 0;
-                                    char buf[FLOAT_TEXT_LEN];
-                                    snprintf(buf, sizeof(buf), "Gorev: %s", QUESTS[q].name);
-                                    SDL_Color cyan = { 90, 220, 255, 255 };
+                                    SDL_Color red = { 255, 120, 100, 255 };
                                     floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                          player.rect.x + player.rect.w / 2.0f,
-                                                         player.rect.y - 10.0f, buf, cyan);
+                                                         player.rect.y - 10.0f,
+                                                         "Sana guven olmaz...", red);
+                                    dialogNpc = -1;
                                 }
-                                int nx = dialog_find(dlg, "accepted");
-                                if (nx >= 0) dialogNode = nx; else dialogNpc = -1;
+                                else
+                                {
+                                    int q = quest_find(target + 7);
+                                    if (q >= 0 && questStatus[q].state == QUEST_NOT_STARTED)
+                                    {
+                                        questStatus[q].state = QUEST_ACTIVE;
+                                        questStatus[q].progress = 0;
+                                        char buf[FLOAT_TEXT_LEN];
+                                        snprintf(buf, sizeof(buf), "Gorev: %s", QUESTS[q].name);
+                                        SDL_Color cyan = { 90, 220, 255, 255 };
+                                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                             player.rect.x + player.rect.w / 2.0f,
+                                                             player.rect.y - 10.0f, buf, cyan);
+                                    }
+                                    int nx = dialog_find(dlg, "accepted");
+                                    if (nx >= 0) dialogNode = nx; else dialogNpc = -1;
+                                }
                             }
                             else if (strncmp(target, "complete:", 9) == 0)
                             {
@@ -560,6 +591,13 @@ int main(int argc, char *argv[])
                                 {
                                     questStatus[q].state = QUEST_REWARDED;
                                     player.gold += QUESTS[q].rewardGold;
+
+                                    // Bölgeye hizmet: itibar yükselir
+                                    float qnx, qny;
+                                    int qRegion = npc_visible_pos(dialogNpc, &qnx, &qny)
+                                                ? region_of(qnx, qny) : 0;
+                                    rep_add(&player.reputation[qRegion], REP_QUEST);
+
                                     char buf[FLOAT_TEXT_LEN];
                                     snprintf(buf, sizeof(buf), "+%d Gold", QUESTS[q].rewardGold);
                                     SDL_Color gold = { 255, 210, 60, 255 };
@@ -587,18 +625,27 @@ int main(int argc, char *argv[])
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
                          dialogNpc < 0)
                 {
-                    // Bounty'liyken kimse konuşmaz — suçluya kapılar kapalı
-                    // (şimdilik global; Faz 4'te bölge itibarıyla bölgeselleşir)
-                    if (nearestNpc >= 0 && player.bounty > 0)
+                    // NPC'nin bölgesinde bounty ya da dip itibar → kapılar kapalı
+                    float npx = 0.0f, npy = 0.0f;
+                    int npcRegion = 0;
+                    if (nearestNpc >= 0 && npc_visible_pos(nearestNpc, &npx, &npy))
+                        npcRegion = region_of(npx, npy);
+
+                    if (nearestNpc >= 0 && player.bounty[npcRegion] > 0)
                     {
-                        float nx, ny;
-                        if (npc_visible_pos(nearestNpc, &nx, &ny))
-                        {
-                            SDL_Color red = { 255, 120, 100, 255 };
-                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
-                                                 nx, ny - 100.0f,
-                                                 "Once cezani ode!", red);
-                        }
+                        SDL_Color red = { 255, 120, 100, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             npx, npy - 100.0f,
+                                             "Once cezani ode!", red);
+                    }
+                    else if (nearestNpc >= 0 &&
+                             player.reputation[npcRegion] <= REP_TALK_REFUSE)
+                    {
+                        // Ceza ödense bile toplum unutmaz — katil damgası
+                        SDL_Color red = { 255, 120, 100, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             npx, npy - 100.0f,
+                                             "Seninle isim olmaz!", red);
                     }
                     // Menzildeki NPC ile konuş — giriş düğümü görev durumuna göre
                     else if (nearestNpc >= 0 && npcDialogOk[nearestNpc])
@@ -804,13 +851,18 @@ int main(int argc, char *argv[])
                         if (entry >= 0)
                         {
                             const ItemType *it = SHOP_STOCK[entry].type;
-                            if (player.gold >= it->value &&
+                            // Fiyat itibara göre: dip itibarda ×1.5, saygın müşteriye ×0.9
+                            int shopRegion = region_of(player.rect.x, player.rect.y);
+                            int buyPrice = (int)(it->value *
+                                                 rep_buy_mult(player.reputation[shopRegion]));
+                            if (player.gold >= buyPrice &&
                                 inventory_add(&inventory, it, 1, 0))
                             {
-                                player.gold -= it->value;
+                                player.gold -= buyPrice;
+                                rep_add(&player.reputation[shopRegion], REP_SHOPPING); // ekonomik bağ
                                 audio_play(SFX_UI);
                                 char buf[FLOAT_TEXT_LEN];
-                                snprintf(buf, sizeof(buf), "-%d g", it->value);
+                                snprintf(buf, sizeof(buf), "-%d g", buyPrice);
                                 SDL_Color red = { 255, 140, 120, 255 };
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
@@ -928,8 +980,10 @@ int main(int argc, char *argv[])
                                 ItemStack *st = &inventory.slots[slot];
                                 if (shopOpen && st->type != NULL)
                                 {
-                                    // Dükkan açıkken sağ tık = SAT (alışın yarısı, plus dahil)
-                                    int price = item_value(st) / 2;
+                                    // Dükkan açıkken sağ tık = SAT (alışın yarısı × itibar, plus dahil)
+                                    int sellRegion = region_of(player.rect.x, player.rect.y);
+                                    int price = (int)(item_value(st) / 2 *
+                                                      rep_sell_mult(player.reputation[sellRegion]));
                                     player.gold += price;
                                     audio_play(SFX_UI);
                                     st->count--;
@@ -1174,6 +1228,22 @@ int main(int argc, char *argv[])
             gametime_update(dt);                      // dünya saati
             npc_update(dt, gametime_hours());         // NPC rutinleri (yürü/eve gir)
 
+            // Günlük itibar toparlanması: suçsuz geçen gün, negatif itibar 0'a doğru +1
+            // (pozitif itibar zamanla artmaz — güven kazanmak iş ister)
+            int today = gametime_day();
+            if (today != lastSeenDay)
+            {
+                lastSeenDay = today;
+                if (player.lastCrimeDay < today - 1 || player.lastCrimeDay == 0)
+                    for (int r = 0; r < MAX_REGIONS; r++)
+                        if (player.reputation[r] < 0.0f)
+                        {
+                            player.reputation[r] += REP_DAILY;
+                            if (player.reputation[r] > 0.0f)
+                                player.reputation[r] = 0.0f;   // toparlanma 0'ı aşmaz
+                        }
+            }
+
             // --- MUHAFIZ: bounty takibi / yakalama / düşmanlık (guard.c beyni) ---
             if (guardIdx >= 0)
             {
@@ -1181,7 +1251,7 @@ int main(int argc, char *argv[])
                 GuardTick gt = guard_update(dt,
                                             player.rect.x + player.rect.w / 2.0f,
                                             player.rect.y + player.rect.h / 2.0f,
-                                            player.bounty, uiFrozen);
+                                            player.bounty[guardRegion], uiFrozen);
                 if (gt.wantCatch && !catchOpen && !uiFrozen)
                 {
                     catchOpen = true;
@@ -1368,12 +1438,16 @@ int main(int argc, char *argv[])
                             floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
                                             nx + 10.0f, ny - 60.0f, (int)hit.damage, hit.crit);
 
+                            int crimeRegion = region_of(nx, ny);   // suç işlendiği bölgeye yazılır
                             if (isGuardVictim)
                             {
                                 // Kanuna saldırı: tanık gerekmez (kanunun kendisi tanıktır).
                                 // Her vuruş suçtur; öldürmenin bedeli ayrıca sabit.
                                 int b = died ? CRIME_BOUNTY_GUARD_KILL : CRIME_BOUNTY_HIT;
-                                player.bounty += b;
+                                player.bounty[crimeRegion] += b;
+                                player.lastCrimeDay = gametime_day();
+                                rep_add(&player.reputation[crimeRegion],
+                                        died ? REP_GUARD_KILL : REP_HIT);
                                 if (!died)
                                     guard_set_hostile(true);
                                 char buf[FLOAT_TEXT_LEN];
@@ -1384,14 +1458,17 @@ int main(int argc, char *argv[])
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 24.0f, buf, red);
                             }
-                            // Suç: tanık varsa bounty (hayatta kalan kurban kendisi tanıktır);
-                            // eğilirken tanık yarıçapı düşer (sneak'in suç ayağı)
+                            // Suç: tanık varsa bounty + itibar kaybı (tanıksız suç ikisini de
+                            // etkilemez); eğilirken tanık yarıçapı düşer (sneak'in suç ayağı)
                             else if (crime_witnessed(nx, ny, victim, !died,
                                                      player.sneaking ? SNEAK_WITNESS_RANGE
                                                                      : CRIME_WITNESS_RANGE))
                             {
                                 int b = died ? CRIME_BOUNTY_MURDER : CRIME_BOUNTY_HIT;
-                                player.bounty += b;
+                                player.bounty[crimeRegion] += b;
+                                player.lastCrimeDay = gametime_day();
+                                rep_add(&player.reputation[crimeRegion],
+                                        died ? REP_MURDER : REP_HIT);
                                 char buf[FLOAT_TEXT_LEN];
                                 snprintf(buf, sizeof(buf), died ? "Cinayet! +%d bounty"
                                                                 : "Suc! +%d bounty", b);
@@ -1799,21 +1876,34 @@ int main(int argc, char *argv[])
             SDL_Color goldCol = { 255, 210, 60, 255 };
             draw_text(renderer, gameFont, goldBuf, 20.0f, 48.0f, goldCol);
 
-            // Bounty göstergesi (suç bedeli — muhafız Faz 2'de tahsil edecek)
-            if (player.bounty > 0)
+            // Bounty + itibar göstergesi (bulunduğun bölgenin değerleri)
+            int hudRegion = region_of(player.rect.x + player.rect.w / 2.0f,
+                                      player.rect.y + player.rect.h / 2.0f);
+            float hudY = 72.0f;
+            if (player.bounty[hudRegion] > 0)
             {
                 char bountyBuf[32];
-                snprintf(bountyBuf, sizeof(bountyBuf), "Bounty %d", player.bounty);
+                snprintf(bountyBuf, sizeof(bountyBuf), "Bounty %d", player.bounty[hudRegion]);
                 SDL_Color bountyCol = { 255, 90, 90, 255 };
-                draw_text(renderer, gameFont, bountyBuf, 20.0f, 72.0f, bountyCol);
+                draw_text(renderer, gameFont, bountyBuf, 20.0f, hudY, bountyCol);
+                hudY += 24.0f;
+            }
+            if (player.reputation[hudRegion] <= -1.0f || player.reputation[hudRegion] >= 1.0f)
+            {
+                char repBuf[32];
+                snprintf(repBuf, sizeof(repBuf), "Itibar %d", (int)player.reputation[hudRegion]);
+                SDL_Color repCol = player.reputation[hudRegion] < 0.0f
+                                 ? (SDL_Color){ 255, 140, 100, 255 }
+                                 : (SDL_Color){ 140, 230, 140, 255 };
+                draw_text(renderer, gameFont, repBuf, 20.0f, hudY, repCol);
+                hudY += 24.0f;
             }
 
             // Eğilme göstergesi
             if (player.sneaking)
             {
                 SDL_Color sneakCol = { 170, 170, 190, 255 };
-                draw_text(renderer, gameFont, "[Gizli]", 20.0f,
-                          player.bounty > 0 ? 96.0f : 72.0f, sneakCol);
+                draw_text(renderer, gameFont, "[Gizli]", 20.0f, hudY, sneakCol);
             }
 
             char clockBuf[24];
@@ -1897,7 +1987,9 @@ int main(int argc, char *argv[])
         }
 
         if (shopOpen)
-            shop_render(renderer, gameFont, itemIconTex, &itemTex, player.gold, 40.0f, 40.0f);
+            shop_render(renderer, gameFont, itemIconTex, &itemTex, player.gold,
+                        rep_buy_mult(player.reputation[region_of(player.rect.x, player.rect.y)]),
+                        40.0f, 40.0f);
 
         if (dialogNpc >= 0)
             dialog_render(&npcDialogs[dialogNpc], dialogNode, NPCS[dialogNpc].name,
@@ -1916,7 +2008,7 @@ int main(int argc, char *argv[])
             draw_text(renderer, gameFont, "Muhafiz: Dur! Kanunu cignedin.",
                       pX + 24.0f, pY + 22.0f, white);
             snprintf(line, sizeof(line), "Ceza: %d altin (sende: %d)",
-                     player.bounty, player.gold);
+                     player.bounty[guardRegion], player.gold);
             draw_text(renderer, gameFont, line, pX + 24.0f, pY + 54.0f, gold);
             draw_text(renderer, gameFont, "[1] Cezayi ode    [2] Karsi koy",
                       pX + 24.0f, pY + 94.0f, white);

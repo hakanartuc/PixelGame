@@ -9,7 +9,7 @@
 #include "npc.h"
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 7u   // ...; v5: keşif haritası; v6: perk seçimleri; v7: suç (bounty + npcAlive)
+#define SAVE_VERSION 8u   // ...; v6: perk; v7: suç; v8: bölgesel bounty/itibar + lastCrimeDay
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -107,8 +107,11 @@ bool save_game(const char *path, const Player *p,
         for (int t = 0; ok && t < PERK_TIERS; t++)
             ok = w32(f, p->perkChoice[s][t]);
 
-    // Suç (v7): bounty + NPC yaşam bayrakları (npc modülünden okunur)
-    ok = ok && w32(f, p->bounty);
+    // Suç (v7/v8): bölgesel bounty + itibar + son suç günü + NPC yaşam bayrakları
+    ok = ok && w32(f, MAX_REGIONS);
+    for (int r = 0; ok && r < MAX_REGIONS; r++)
+        ok = w32(f, p->bounty[r]) && wf(f, p->reputation[r]);
+    ok = ok && w32(f, p->lastCrimeDay);
     ok = ok && w32(f, NPC_COUNT);
     for (int i = 0; ok && i < NPC_COUNT; i++)
         ok = w32(f, npc_is_alive(i) ? 1 : 0);
@@ -232,10 +235,18 @@ bool load_game(const char *path, Player *p,
                 tmpP.perkChoice[s][t] = (Sint8)c;
         }
 
-    // Suç (v7): bounty + NPC yaşam bayrakları
+    // Suç (v7/v8): bölgesel bounty/itibar + son suç günü + NPC yaşam bayrakları
+    Sint32 nRegion = 0;
+    ok = ok && r32(f, &nRegion);
+    if (ok && (nRegion < 0 || nRegion > MAX_REGIONS))
+        ok = false;
+    for (int r = 0; ok && r < nRegion; r++)
+        ok = r32(f, &tmpP.bounty[r]) && rf(f, &tmpP.reputation[r]);
+    ok = ok && r32(f, &tmpP.lastCrimeDay);
+
     Sint32 nNpc = 0;
     Sint32 npcAliveFlag[16];
-    ok = ok && r32(f, &tmpP.bounty) && r32(f, &nNpc);
+    ok = ok && r32(f, &nNpc);
     if (ok && (nNpc < 0 || nNpc > 16))
         ok = false;   // bozuk sayı
     for (int i = 0; ok && i < nNpc; i++)

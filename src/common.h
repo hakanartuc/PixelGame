@@ -11,6 +11,7 @@
 #define TILE_SIZE 64      // bir tile kaç piksel
 #define MAP_W_MAX 256     // harita tavanı (statik dizi boyutu; gerçek boyut CSV'den)
 #define MAP_H_MAX 256
+#define MAX_REGIONS 8     // bölge tavanı (bounty/itibar dizileri — REGIONS sayısı bunun altında)
 
 // --- Kamera: dünya uzayında bir görüş penceresi ---
 typedef struct {

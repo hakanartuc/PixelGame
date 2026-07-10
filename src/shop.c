@@ -20,7 +20,7 @@ const int SHOP_STOCK_COUNT = (int)(sizeof(SHOP_STOCK) / sizeof(SHOP_STOCK[0]));
 
 void shop_render(R2D *renderer, TTF_Font *font,
                  R2DTexture *itemIconTex, const ItemTextures *itemTex,
-                 int playerGold, float panelX, float panelY)
+                 int playerGold, float buyMult, float panelX, float panelY)
 {
     float panelH = SHOP_STOCK_COUNT * SHOP_ROW_H + SHOP_PAD * 2 + 56.0f;
 
@@ -52,12 +52,13 @@ void shop_render(R2D *renderer, TTF_Font *font,
             r2d_draw_texture(renderer, itemIconTex, &src, &dst);
         }
 
-        // Ad + fiyat (altın yetmiyorsa fiyat soluk)
+        // Ad + fiyat (itibar çarpanlı; altın yetmiyorsa soluk)
         draw_text(renderer, font, it->name, row.x + 44.0f, rowY + 4.0f, white);
+        int shown = (int)(it->value * buyMult);
         char price[16];
-        snprintf(price, sizeof(price), "%d g", it->value);
+        snprintf(price, sizeof(price), "%d g", shown);
         draw_text(renderer, font, price, row.x + 44.0f, rowY + 20.0f,
-                  (playerGold >= it->value) ? gold : dim);
+                  (playerGold >= shown) ? gold : dim);
 
         rowY += SHOP_ROW_H;
     }

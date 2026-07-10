@@ -17,10 +17,11 @@ typedef struct {
 extern const ShopEntry SHOP_STOCK[];
 extern const int SHOP_STOCK_COUNT;
 
-// Dükkan paneli: stok listesi (ikon + ad + fiyat) + oyuncu altını
+// Dükkan paneli: stok listesi (ikon + ad + fiyat) + oyuncu altını.
+// buyMult: itibar fiyat çarpanı (rep_buy_mult) — gösterim satın almayla aynı.
 void shop_render(R2D *renderer, TTF_Font *font,
                  R2DTexture *itemIconTex, const ItemTextures *itemTex,
-                 int playerGold, float panelX, float panelY);
+                 int playerGold, float buyMult, float panelX, float panelY);
 
 // Tıklanan stok satırı (-1 = yok). shop_render ile aynı yerleşim.
 int shop_entry_at(float x, float y, float panelX, float panelY);
