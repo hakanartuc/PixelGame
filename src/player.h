@@ -18,9 +18,13 @@ typedef struct Equipment Equipment;   // ← forward decl (pointer için yeter)
 #define LPC_SHEET_COLS 13    // sheet 13 sütun
 
 // ULPC tam sheet'te oversize bölge: 54 standart satırdan sonra, 192×192 hücreler.
-// Slash bloğu bölgenin ilk 4 satırı (yön sırası up/left/down/right, 6 kare).
+// Slash bloğu bölgenin ilk 4 satır (yön sırası up/left/down/right, 6 kare).
 #define OVERSIZE_Y 3456      // 54 * 64
 #define OVERSIZE_FRAME 192
+
+// LPC Hand Tools "smash" sheet'leri: kendi başına 128px grid — satır = yön
+// (up/left/down/right), 6 kare. Araç YALNIZ savurma sırasında çizilir.
+#define SMASH_FRAME 128
 
 // LPC'de karakterin ayağı hücrenin neresinde (collision/feet hizası için)
 // LPC karakterleri 64px hücrede, ayak ~y=58 civarı (ölçeceğiz, şimdilik tahmin)
@@ -56,6 +60,7 @@ typedef struct PlayerLayer {
     int z;
     int idleRowOverride;  // -1 = yok (base satirini kullan), >=0 = idle'da bu satiri ciz
     bool slashOversize;   // slash'ta 64px satir yerine oversize blogu ciz (silah katmanlari)
+    bool smash128;        // arac katmani (LPC Hand Tools): YALNIZ slash'ta, kendi 128 grid'i
 } PlayerLayer;
 
 // Karakterin TÜM kalıcı durumu

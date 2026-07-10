@@ -9,8 +9,10 @@ const ItemType ITEM_TYPES[] = {
       .equipSpritePath = NULL,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
     { .name = "Kazma",  .iconIndex = 2, .maxStack = 1, .value = 10,
-      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
-      .equipSpritePath = NULL,
+      .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_TOOL,
+      .equipSpritePath     = "assets/equipment/weapon/pickaxe_fg.png",   // smash128 on
+      .equipSpritePathBack = "assets/equipment/weapon/pickaxe_bg.png",   // smash128 arka
+      .equipZ = 140, .equipZBack = 9,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
     { .name = "Meşale", .iconIndex = 9, .maxStack = 99, .value = 5,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
@@ -56,6 +58,29 @@ const ItemType ITEM_TYPES[] = {
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .consumable = true, .healAmount = 50.0f, .useCooldown = 10.0f,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
+
+    // --- Meslek paketi: arac + toplama malzemeleri (ikonlar sheet'lerden iconSrc ile) ---
+    { .name = "Balta", .iconIndex = 3, .maxStack = 1, .value = 15,
+      .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_TOOL,
+      .equipSpritePath     = "assets/equipment/weapon/axe_fg.png",
+      .equipSpritePathBack = "assets/equipment/weapon/axe_bg.png",
+      .equipZ = 140, .equipZBack = 9,
+      .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },   // tool_icons balta
+    { .name = "Bakır Cevheri", .iconIndex = 0, .maxStack = 99, .value = 8,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/decor/ores.png", .iconSrc = { 16, 16, 16, 16 } },
+    { .name = "Demir Cevheri", .iconIndex = 0, .maxStack = 99, .value = 12,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/decor/ores.png", .iconSrc = { 16, 0, 16, 16 } },
+    { .name = "Kızılot", .iconIndex = 0, .maxStack = 99, .value = 6,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/decor/flowers.png", .iconSrc = { 0, 0, 16, 16 } },
+    { .name = "Ayotu", .iconIndex = 0, .maxStack = 99, .value = 6,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/decor/flowers.png", .iconSrc = { 64, 80, 16, 16 } },
+    { .name = "Odun", .iconIndex = 0, .maxStack = 99, .value = 4,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/decor/outdoor_decor.png", .iconSrc = { 32, 176, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

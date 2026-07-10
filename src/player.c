@@ -119,6 +119,11 @@ void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, in
 
     for (int i = 0; i < layerCount; i++)
     {
+        // Arac katmani (smash128) yalniz savurma sirasinda gorunur:
+        // sheet'te walk/idle satiri YOK, baska state'te cizmek copluk basar
+        if (layers[i].smash128 && p->state != PLAYER_SLASH)
+            continue;
+
         SDL_FRect layerSrc = src;    // varsayilan: ortak src (state satiri + currentFrame)
         SDL_FRect layerDst = screen; // varsayilan: ortak dst
         r2d_texture_set_alpha_mod(layers[i].tex, sneakAlpha);
@@ -129,6 +134,20 @@ void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, in
             int r2 = layers[i].idleRowOverride + (int)p->facing; // silah: walk row 8 + yon
             layerSrc.x = 0;                                      // frame 0 = ayakta durus
             layerSrc.y = r2 * FRAME_H;
+        }
+
+        // Arac (smash128): kendi 128 grid'i — satir = yon, 2x merkezli dst
+        if (p->state == PLAYER_SLASH && layers[i].smash128)
+        {
+            layerSrc = (SDL_FRect){
+                .x = p->currentFrame * SMASH_FRAME,
+                .y = (int)p->facing * SMASH_FRAME,
+                .w = SMASH_FRAME,
+                .h = SMASH_FRAME};
+            layerDst.x -= screen.w / 2.0f;
+            layerDst.y -= screen.h / 2.0f;
+            layerDst.w = screen.w * 2.0f;   // 128/64
+            layerDst.h = screen.h * 2.0f;
         }
 
         // Slash'ta oversize katman: 192px blok + 3x buyutulmus merkezli dst
@@ -433,12 +452,15 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
 
         // ON katman (normal ekipman + silah onu)
         R2DTexture *texFront = item_equip_tex(itemTex, st->type);
+        bool isTool = (st->type->weaponType == WEAPON_TOOL);   // smash128 katmani
+
         if (texFront != NULL && n < outCap)
         {
             out[n].tex = texFront;
             out[n].z = z;
             out[n].idleRowOverride = idleRow;
             out[n].slashOversize = st->type->slashOversize;
+            out[n].smash128 = isTool;
             n++;
         }
 
@@ -450,6 +472,7 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
             out[n].z = st->type->equipZBack;
             out[n].idleRowOverride = idleRow;
             out[n].slashOversize = st->type->slashOversize;
+            out[n].smash128 = isTool;
             n++;
         }
     }

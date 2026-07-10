@@ -23,6 +23,13 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
 - Dosyalar: `assets/characters/mobs/`
 - TODO: kaynak/lisans kaydı buraya (indirildiği sayfa bulunup eklenecek).
 
+### LPC Hand Tools (kazma/balta/çekiç smash katmanları)
+- Yapımcılar: bluecarrot16, Pierre Vigier, Tuomo Untinen, Johannes Sjölund (wulax), Inboxninja
+- Kaynak: https://opengameart.org/content/lpc-hand-tools
+- Dosyalar: `assets/equipment/weapon/pickaxe_*.png, axe_*.png, hammer_*.png`
+- Lisans: CC-BY-SA 3.0 (axe/pickaxe/hammer ayrıca OGA-BY 3.0 seçeneğiyle —
+  mobil dağıtımda OGA-BY 3.0 tercih edilebilir, atıf şart)
+
 ## Font
 - **Public Pixel** (`assets/fonts/PublicPixel-rv0pA.ttf`) — GGBotNet,
   CC0 / public domain. https://ggbot.itch.io/public-pixel-font

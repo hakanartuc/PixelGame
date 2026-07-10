@@ -25,6 +25,9 @@ typedef enum {
     SKILL_ALCHEMY,        // iksir
     SKILL_SMITHING,       // demircilik
     SKILL_ENCHANTING,     // büyüleme
+    SKILL_MINING,         // madencilik (toplama — cevher)
+    SKILL_HERBALISM,      // bitkicilik (toplama — bitki)
+    SKILL_WOODCUTTING,    // oduculuk (toplama — odun)
     SKILL_COUNT,
     SKILL_NONE = -1,      // skill'e bağlı olmayan eylem (örn. silahsız vuruş)
 } SkillType;

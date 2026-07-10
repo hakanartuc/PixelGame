@@ -35,6 +35,7 @@
 #include "crime.h"
 #include "guard.h"
 #include "sneak.h"
+#include "resource.h"
 
 #define BASE_MAX_HP 100.0f   // oyuncu taban canı (perk bonusları üstüne biner)
 
@@ -181,6 +182,50 @@ static void on_skill_levelup(Player *player, SkillType sk, Hotbar *hotbar,
     }
 }
 
+// Toplama hız çarpanı: kademeli eşik — her 20 seviyede +0.25 (L100 = 2.25x).
+// Basamaklı bilerek: seviye eşiğini geçmenin karşılığı NET hissedilsin.
+static float gather_mult(int level)
+{
+    return 1.0f + 0.25f * (float)(level / 20);
+}
+
+// Toplama tamamlandı: miktar rulosu + envanter + XP + bildirim.
+// Dönen: süreç kapansın mı (çanta doluysa bar dolu-altında bekler, süreç yine kapanır).
+static void gather_finish(int res, Player *player, Inventory *inv,
+                          Hotbar *hotbar, FloatText *floatTexts)
+{
+    const ResourceDef *rd = &RESOURCES[res];
+    int lvl = player->skills[rd->skill].level;
+    int count = rd->minCount + (int)(randf() * (float)(rd->maxCount - rd->minCount + 1));
+    if (count > rd->maxCount) count = rd->maxCount;
+    if (randf() < (float)lvl * 0.004f) count++;   // seviye başına %0.4 bonus şansı
+
+    if (inventory_add(inv, &ITEM_TYPES[rd->itemIdx], count, 0))
+    {
+        resource_harvest(res);
+        audio_play(SFX_LOOT);
+        float xp = (rd->skill == SKILL_MINING) ? 8.0f
+                 : (rd->skill == SKILL_WOODCUTTING) ? 6.0f : 5.0f;
+        if (skill_add_xp(player->skills, rd->skill, xp))
+            on_skill_levelup(player, rd->skill, hotbar, floatTexts);
+        char buf[FLOAT_TEXT_LEN];
+        snprintf(buf, sizeof(buf), "+%d %s", count, ITEM_TYPES[rd->itemIdx].name);
+        SDL_Color green = { 150, 255, 150, 255 };
+        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                             player->rect.x + player->rect.w / 2.0f,
+                             player->rect.y - 10.0f, buf, green);
+    }
+    else
+    {
+        // Çanta dolu: ödül bekler — yer açınca tek hamle tamamlar
+        resource_add_progress(res, -0.6f);
+        SDL_Color red = { 255, 120, 100, 255 };
+        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                             player->rect.x + player->rect.w / 2.0f,
+                             player->rect.y - 10.0f, "Çanta dolu!", red);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     (void)argc; (void)argv;   // SDL_main bu imzayı şart koşar, argüman kullanmıyoruz
@@ -258,9 +303,9 @@ int main(int argc, char *argv[])
     // Katmanlar ÇİZİM SIRASINDA (alttan üste). Yeni parça eklemek = buraya bir satır.
     // base katmanlar: body → head → face. { texture, z } — z = LPC dosya öneki (çizim sırası, küçük=arka).
     PlayerLayer layers[] = {
-        {load_texture(renderer, "assets/characters/body/male/light.png"), 10, -1, false},
-        {load_texture(renderer, "assets/characters/head/male/human_light.png"), 100, -1, false},
-        {load_texture(renderer, "assets/characters/face/male/neutral_light.png"), 101, -1, false},
+        {load_texture(renderer, "assets/characters/body/male/light.png"), 10, -1, false, false},
+        {load_texture(renderer, "assets/characters/head/male/human_light.png"), 100, -1, false, false},
+        {load_texture(renderer, "assets/characters/face/male/neutral_light.png"), 101, -1, false, false},
     };
 
     R2DTexture *glowTex = create_glow_texture(renderer, 64);
@@ -317,6 +362,12 @@ int main(int argc, char *argv[])
         decor_textures[i] = load_texture(renderer, DECORS[i].texPath);
     decor_set_texture_sizes(decor_textures);
 
+    // Kaynak düğümleri (cevher/bitki/ağaç) — toplama sistemi
+    R2DTexture *resource_textures[MAX_RESOURCES] = {0};
+    for (int i = 0; i < RESOURCE_COUNT && i < MAX_RESOURCES; i++)
+        resource_textures[i] = load_texture(renderer, RESOURCES[i].texPath);
+    resource_reset();
+
     gametime_init();   // gün 1, 08:00
     npc_reset();       // NPC'ler canlı + tam canla başlar (statik durum sıfırdan gelir)
 
@@ -362,6 +413,8 @@ int main(int argc, char *argv[])
     int dialogNode = -1;   // aktif diyalog düğümü
     bool shopOpen = false;
     int nearestNpc = -1;   // E prompt'u için (her kare güncellenir)
+    int nearestRes = -1;   // E menzilindeki toplanabilir kaynak düğümü
+    int gatherRes = -1;    // aktif toplama süreci (-1 = yok): savurma döngüsü çalışır
 
     QuestStatus questStatus[MAX_QUESTS] = {0};   // hepsi NOT_STARTED
 
@@ -532,9 +585,18 @@ int main(int argc, char *argv[])
                 }
                 else if (event.key.key == SDLK_SPACE && gameState == GAME_PLAYING)
                 {
+                    // Araç kuşanılıyken SALDIRI YOK — skill sistemi silahlarla işler
+                    const ItemType *spcW = equipment.slots[EQUIP_WEAPON].type;
+                    if (spcW != NULL && spcW->weaponType == WEAPON_TOOL)
+                    {
+                        SDL_Color red = { 255, 120, 100, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f, "Silah kuşan!", red);
+                    }
                     // KO modeli: Space = auto-attack aç/kapa (hedef yoksa en yakın MOB'u seç;
                     // NPC hedefi yalnız tıklamayla gelir, Space onu da döngüye sokar)
-                    if (player.autoAttack)
+                    else if (player.autoAttack)
                     {
                         player.autoAttack = false;
                     }
@@ -825,6 +887,51 @@ int main(int argc, char *argv[])
                         {
                             dialogNpc = nearestNpc;
                             player.autoAttack = false;   // konuşurken savaş durur
+                            gatherRes = -1;              // toplama da durur
+                        }
+                    }
+                    // Kaynak toplama (NPC menzilde yoksa): SÜREÇ başlat/bırak.
+                    // Araç KUŞANILI olmalı; savurma döngüsü + ilerleme update'te işler.
+                    else if (nearestRes >= 0)
+                    {
+                        const ResourceDef *rd = &RESOURCES[nearestRes];
+
+                        if (gatherRes == nearestRes)
+                        {
+                            gatherRes = -1;   // E tekrar = süreci bırak (ilerleme durur)
+                        }
+                        else
+                        {
+                            bool hasTool = (rd->toolItem < 0) ||
+                                equipment.slots[EQUIP_WEAPON].type == &ITEM_TYPES[rd->toolItem];
+                            if (!hasTool)
+                            {
+                                char buf[FLOAT_TEXT_LEN];
+                                snprintf(buf, sizeof(buf), "%s kuşan!",
+                                         ITEM_TYPES[rd->toolItem].name);
+                                SDL_Color red = { 255, 120, 100, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f, buf, red);
+                            }
+                            else if (player.skills[rd->skill].level < rd->minSkill)
+                            {
+                                // Nadir düğüm seviye kapısı: bakırla geliş, demire yüksel
+                                char buf[FLOAT_TEXT_LEN];
+                                snprintf(buf, sizeof(buf), "Tecrüben yetmiyor (%s %d)",
+                                         skill_name(rd->skill), rd->minSkill);
+                                SDL_Color red = { 255, 120, 100, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f, buf, red);
+                            }
+                            else
+                            {
+                                gatherRes = nearestRes;
+                                player.autoAttack = false;   // toplama savaşla yarışmaz
+                                player.targetMobId = 0;
+                                targetNpc = -1;
+                            }
                         }
                     }
                 }
@@ -1255,6 +1362,41 @@ int main(int argc, char *argv[])
                 }
             }
 
+            // --- TOPLAMA SÜRECİ: savurma döngüsü + iptaller ---
+            if (gatherRes >= 0)
+            {
+                float gpx = player.rect.x + player.rect.w / 2.0f;
+                float gpy = player.rect.y + player.rect.h / 2.0f;
+                float gdx = RESOURCES[gatherRes].x - gpx;
+                float gdy = RESOURCES[gatherRes].y - gpy;
+                bool moving = keys[SDL_SCANCODE_W] || keys[SDL_SCANCODE_A] ||
+                              keys[SDL_SCANCODE_S] || keys[SDL_SCANCODE_D];
+
+                if (!resource_available(gatherRes) || moving ||
+                    SDL_sqrtf(gdx * gdx + gdy * gdy) > RESOURCE_INTERACT_RANGE * 1.4f)
+                {
+                    gatherRes = -1;   // hareket / düğüm bitti / uzaklaştı → süreç durur
+                }
+                else if (RESOURCES[gatherRes].toolItem < 0)
+                {
+                    // EL İLE toplama (bitkiler): savurma yok, bar zamanla dolar
+                    // (toplama animasyonu bulunursa buraya bağlanacak)
+                    const ResourceDef *rd = &RESOURCES[gatherRes];
+                    resource_add_progress(gatherRes,
+                        gather_mult(player.skills[rd->skill].level) * dt);
+                    if (resource_progress(gatherRes) >= rd->work)
+                    {
+                        gather_finish(gatherRes, &player, &inventory, &hotbar, floatTexts);
+                        gatherRes = -1;
+                    }
+                }
+                else if (!player.attacking && !attackPressed)
+                {
+                    attackPressed = true;          // sıradaki savurma
+                    player.pendingAbility = -1;
+                }
+            }
+
             // --- AUTO-ATTACK: hedef seçiliyken silah hızında normal vuruş ---
             if (player.autoAttack)
             {
@@ -1321,6 +1463,13 @@ int main(int argc, char *argv[])
                 }
                 else if (targetNpc >= 0 && npc_visible_pos(targetNpc, &vAimX, &vAimY))
                 {
+                    vHaveAim = true;
+                }
+                else if (gatherRes >= 0)
+                {
+                    // Toplama savurması: düğüme dön (menzil E başlangıcında sağlandı)
+                    vAimX = RESOURCES[gatherRes].x;
+                    vAimY = RESOURCES[gatherRes].y - 20.0f;
                     vHaveAim = true;
                 }
 
@@ -1390,6 +1539,7 @@ int main(int argc, char *argv[])
             if (today != lastSeenDay)
             {
                 lastSeenDay = today;
+                resource_daily_respawn();   // doğa tazelenir (cevher/bitki/ağaç)
                 if (player.lastCrimeDay < today - 1 || player.lastCrimeDay == 0)
                     for (int r = 0; r < MAX_REGIONS; r++)
                         if (player.reputation[r] < 0.0f)
@@ -1427,6 +1577,7 @@ int main(int argc, char *argv[])
                     {
                         player.health -= dmg;
                         player.gaziTimer = 5.0f;
+                        gatherRes = -1;   // muhafız vuruşu da süreci keser
                         shakeTime = shakeDur = 0.25f;
                         shakeAmp = 6.0f;
                         flashTime = FLASH_DUR;
@@ -1658,6 +1809,21 @@ int main(int argc, char *argv[])
                         }
                     }
                 }
+                else if (gatherRes >= 0 && RESOURCES[gatherRes].toolItem >= 0)
+                {
+                    // Toplama savurması: vuruş = iş ilerler (kademeli seviye çarpanı)
+                    const ResourceDef *rd = &RESOURCES[gatherRes];
+                    resource_add_progress(gatherRes,
+                        gather_mult(player.skills[rd->skill].level));
+                    audio_play(SFX_HIT);
+                    fx_burst(&weaponFx, rd->x, rd->y - 20.0f, 5, 60.0f, 210, 205, 190);
+
+                    if (resource_progress(gatherRes) >= rd->work)
+                    {
+                        gather_finish(gatherRes, &player, &inventory, &hotbar, floatTexts);
+                        gatherRes = -1;   // süreç bitti (dolu çantada da bırakılır)
+                    }
+                }
                 player.attackHit = true;      // bu saldırıda denendi (tekrar etmesin)
                 player.pendingAbility = -1;   // skill çarpanı kullanıldı/harcandı
             }
@@ -1749,6 +1915,7 @@ int main(int argc, char *argv[])
                     {
                         player.health -= dmg;
                         player.gaziTimer = 5.0f;   // Gazi buff penceresi (perk yoksa etkisiz)
+                        gatherRes = -1;            // hasar toplama sürecini keser
 
                         // His katmanı: kısa sarsıntı + kırmızı kenar flash'ı
                         shakeTime = shakeDur = 0.25f;
@@ -1916,6 +2083,7 @@ int main(int argc, char *argv[])
 
             // E prompt'u için menzildeki en yakın NPC
             nearestNpc = npc_nearest_in_range(px, py);
+            nearestRes = resource_nearest_available(px, py);
 
             // --- BÖLGE TAKİBİ: yeni bölgeye girince adı belirir ---
             int reg = region_at(px, py);
@@ -1939,6 +2107,8 @@ int main(int argc, char *argv[])
             continue;
         tilemap_render(renderer, tile_textures, &camera);     // haritayı çiz
         decor_render_all(renderer, decor_textures, &camera);  // evler (zemin üstü, entity altı)
+        resource_render_all(renderer, resource_textures, &camera, gameFont,
+                            (dialogNpc < 0 && nearestNpc < 0) ? nearestRes : -1);  // NPC önceliği
 
         PlayerLayer built[24];
         int builtCount = build_player_layers(layers, LAYER_COUNT, &equipment,
@@ -2232,6 +2402,9 @@ int main(int argc, char *argv[])
     for (int i = 0; i < DECOR_COUNT && i < 32; i++)
         if (decor_textures[i])
             r2d_texture_destroy(NULL, decor_textures[i]);
+    for (int i = 0; i < RESOURCE_COUNT && i < MAX_RESOURCES; i++)
+        if (resource_textures[i])
+            r2d_texture_destroy(NULL, resource_textures[i]);
 
     if (glowTex)
         r2d_texture_destroy(NULL, glowTex);

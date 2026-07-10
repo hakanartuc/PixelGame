@@ -5,7 +5,7 @@
 #include "common.h"
 #include "fx.h"   // WeaponFxType
 
-#define MAX_ITEM_TYPES 32   // ITEM_TYPES kapasitesi (paralel diziler icin sabit boyut)
+#define MAX_ITEM_TYPES 64   // ITEM_TYPES kapasitesi (paralel diziler icin sabit boyut)
 
 // Ekipman slotları (KO düzeni)
 typedef enum {
@@ -41,6 +41,8 @@ typedef enum {
     WEAPON_TWO_HAND,   // çift el (WEAPON dolar, SHIELD kilitlenir)
     WEAPON_SHIELD,     // kalkan (SHIELD slotu)
     WEAPON_DUAL,       // çift tek-el (WEAPON + SHIELD'e tek-el)
+    WEAPON_TOOL,       // toplama aracı (kazma/balta): WEAPON slotuna takılır,
+                       // SALDIRAMAZ ("Silah kuşan!") — toplama savurması için
 } WeaponType;
 
 // Item TÜRÜ — bir kez tanımlanır, tüm o item'ler paylaşır
@@ -109,6 +111,13 @@ typedef enum {
     ITEM_CHEST_IRON,
     ITEM_LEGS_IRON,
     ITEM_POTION_HP,
+    // Meslek paketi (Faz 1): araç + toplama malzemeleri
+    ITEM_AXE,           // Balta (oduculuk aracı)
+    ITEM_ORE_COPPER,    // Bakır Cevheri
+    ITEM_ORE_IRON,      // Demir Cevheri
+    ITEM_HERB_RED,      // Kızılot (ova bitkisi)
+    ITEM_HERB_BLUE,     // Ayotu (bataklık bitkisi)
+    ITEM_WOOD,          // Odun
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];
