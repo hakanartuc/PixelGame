@@ -1,6 +1,6 @@
 # PROGRESS — Yapılanlar ve Kalanlar
 
-Güncelleme: 2026-07-09
+Güncelleme: 2026-07-10
 
 ## ✅ Tamamlanan fazlar
 
@@ -52,10 +52,15 @@ Güncelleme: 2026-07-09
 - Oyunun tamamı portlandı (text upload, minimap target pass'leri, glow linear örnekleme)
 - Duman testi: r2d_test. Bilinen port hataları düzeltildi (sandık smear, ev boyutları, minimap batch sınırı, fx çizim sırası)
 
+### Faz 10 — GPU-3: Işık & His katmanı
+- Shader gece aydınlatması: fs_light MSL + multiply pipeline, piksel başına ambient + 32 ışık,
+  dither, altın saat; kaynaklar: ev penceresi / meydan direği / meşale (item) / silah efekti; titreşim
+- Screen shake (hasar 0.25s/6px, crit 0.15s/3px) + kırmızı hasar vinyeti (0.35s)
+- Gün döngüsü test için 5 dk'ya indirildi (tasarım değeri 10 dk — gametime.h)
+
 ## 🔜 Kalanlar (öncelik sırası)
 
-1. **GPU-3**: gece ışık sistemi (meşale/pencere ışık kaynakları), screen shake, hasar flash'ı; Vulkan/SPIR-V shader yolu (Windows/Linux/Android için)
-2. **Suç & İtibar paketi** (kararlar verildi): Sneak, tanıklı suç, bölge/hizip itibarı, bounty, **muhafız** (yakala → ceza öde / karşı koy)
+1. **Suç & İtibar paketi** (kararlar verildi): Sneak, tanıklı suç, bölge/hizip itibarı, bounty, **muhafız** (yakala → ceza öde / karşı koy)
    - **NPC öldürme** bu paketin parçası olarak eklenecek (değerlendirme 2026-07-10, özgür-dünya vizyonuna uygun):
      - Tanık mekaniğiyle birleşir: tanıklı cinayet = bounty + muhafız; tanıksız iz bırakmaz (Sneak sinerjisi)
      - Gothic/Kenshi yolu: herkes ölebilir, görevler "başarısız" olur, dünya devam eder (Skyrim'in ölümsüz NPC'si YOK;
@@ -63,14 +68,14 @@ Güncelleme: 2026-07-09
      - Kaza koruması şart: KO auto-attack yanlışlıkla NPC'ye kilitlenmemeli — NPC'ye saldırı bilinçli/ayrı eylem
      - İtibar bölgesel düşer (global karma yok) → fiyat, diyalog kapıları, muhafız tepkisi
      - Save'e npcAlive durumu gerekir (kalıcı ölüm); ölen vendor/quest-veren = o içerik kapanır (bilinçli bedel)
-3. **Diyalog koşulları**: `req:`/`fx:` (Speech skill-check, rüşvet seçenekleri)
-4. **Craft**: Smithing (+basma, risk), Alchemy (bitki→iksir), Enchanting (weaponFx instance'a taşınır)
-5. **Av & kontrat panosu**: hayvanlar (Cute_Fantasy Animals), deri/et, Witcher tarzı ilan panosu
-6. **Mob fazları** (araya serpiştirilir): Slime ailesi → Skeleton ailesi (+ok/mermi sistemi) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla)
-7. **İç mekanlar/zindanlar**: kapı→ayrı harita, Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate
-8. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
-9. **Ertelenen küçükler**: HUD perk ikon şeridi, item tooltip'leri, drag&drop, harita editörü akışı (Tiled tileset tanımı),
-   CREDITS lisans teyitleri, F10 debug kaldırma, mobil build (SDL_GPU→Vulkan/Metal)
+2. **Diyalog koşulları**: `req:`/`fx:` (Speech skill-check, rüşvet seçenekleri)
+3. **Craft**: Smithing (+basma, risk), Alchemy (bitki→iksir), Enchanting (weaponFx instance'a taşınır)
+4. **Av & kontrat panosu**: hayvanlar (Cute_Fantasy Animals), deri/et, Witcher tarzı ilan panosu
+5. **Mob fazları** (araya serpiştirilir): Slime ailesi → Skeleton ailesi (+ok/mermi sistemi) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla)
+6. **İç mekanlar/zindanlar**: kapı→ayrı harita, Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate
+7. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
+8. **Ertelenen küçükler**: HUD perk ikon şeridi, item tooltip'leri, drag&drop, harita editörü akışı (Tiled tileset tanımı),
+   CREDITS lisans teyitleri, F10 debug kaldırma, Vulkan/SPIR-V shader yolu, mobil build (SDL_GPU→Vulkan/Metal)
 
 ## Karar defteri (değişmez)
 - Sınıf yok; kimlik davranıştan: use-based skill + perk (3-seç-1) + bölge/hizip itibarı (global karma YOK)

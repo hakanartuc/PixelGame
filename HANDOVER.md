@@ -1,6 +1,6 @@
 # HANDOVER — Pixe Game
 
-Güncelleme: 2026-07-09 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
+Güncelleme: 2026-07-10 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
 
 ## Çalışma kuralları
 - **Asistan kodu yazar** (2026-07-09'dan beri), faz faz ilerler; her faz sonunda durur, Hakan test eder, onayla commit atılır.
@@ -46,6 +46,9 @@ WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş ·
 - Perk eşiği 25'ten başlar; test F10 ile.
 
 ## Sıradaki iş
-**GPU-3**: gece ışık sistemi (meşale/pencere ışıkları karanlığı deler — render target ışık haritası veya shader),
-screen shake, hasar flash'ı. Sonrası PROGRESS.md'deki mekanik yol haritası (suç/itibar/muhafız → diyalog koşulları → craft → av)
+**Suç & İtibar paketi** (PROGRESS #1, kararlar + NPC öldürme notları orada): Sneak, tanıklı suç,
+bölge itibarı, bounty, muhafız döngüsü, NPC öldürme. Sonrası: diyalog koşulları → craft → av
 ve mob fazları (Slime → Skeleton+mermi → Shroomling → çöl/volkan).
+
+GPU-3 tamamlandı (2026-07-10): shader gece aydınlatması (fs_light, ışık kaynakları, titreşim,
+altın saat) + screen shake + hasar vinyeti. Gün döngüsü test için 5 dk (gametime.h, tasarım 10 dk).
