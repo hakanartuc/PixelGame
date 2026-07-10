@@ -26,7 +26,8 @@ typedef struct {
     StationType type;
     const char *name;       // panel başlığı ("Demirci Ocağı")
     const char *texPath;
-    SDL_FRect src;
+    SDL_FRect src;          // İLK kare (sheet yatay kareli)
+    int frames;             // animasyon kare sayısı (kullanım sırasında oynar)
     float x, y;             // dünya taban-orta
     float scale;
     const char *permQuest;  // izin görevi id'si (REWARDED = izin)
@@ -46,7 +47,11 @@ typedef struct {
     float work;
     float xp;                // tamamlanınca istasyon skill'ine
     int minSkill;            // bu seviyenin altında tarif kilitli (0 = yok)
+    int blueprintItem;       // <=0 baştan açık; yoksa bu blueprint'le öğrenilir
+                             // (öğrenilenler main'de + save v10)
 } RecipeDef;
+
+#define MAX_RECIPES 32   // öğrenilen tarif dizisi tavanı (save v10)
 
 extern const RecipeDef RECIPES[];
 extern const int RECIPE_COUNT;
@@ -57,13 +62,20 @@ SkillType station_skill(StationType t);
 // E menzilindeki en yakın istasyon (-1 = yok)
 int station_nearest(float px, float py);
 
-// İstasyonları çiz (+ nearestIdx'e [E] ipucu)
+// İstasyonları çiz (+ nearestIdx'e [E] ipucu).
+// activeIdx: aktif üretimdeki istasyon — animasyon kareleri oynar (-1 = hepsi durgun)
 void station_render_all(R2D *renderer, R2DTexture **textures,
-                        const Camera *camera, TTF_Font *font, int nearestIdx);
+                        const Camera *camera, TTF_Font *font,
+                        int nearestIdx, int activeIdx);
+
+// Öğrenilen blueprint tarifleri — modül durumu (save v10 buradan okur/yazar)
+bool craft_recipe_learned(int ri);   // blueprintItem <= 0 tarifler HEP açık
+void craft_learn_recipe(int ri);
+void craft_reset_learned(void);      // yeni oyun / load öncesi
 
 // Craft paneli: istasyonun tarifleri (malzeme durumu + kilitler) + '+basma' satırı.
-// selRecipe: aktif süreçteki tarif (vurgulanır, -1 yok). Dönenler tıklama için:
-// craft_panel_recipe_at ile aynı yerleşim.
+// selRecipe: aktif süreçteki tarif (vurgulanır, -1 yok).
+// Öğrenilmemiş blueprint tarifi "???" görünür. craft_panel_recipe_at ile aynı yerleşim.
 void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skills,
                         int selRecipe, float plusChancePct, int plusCost,
                         const ItemStack *weapon,

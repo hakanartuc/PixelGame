@@ -10,11 +10,11 @@
 // İstasyonlar: köy meydanı çevresi — ocak Demirci'nin tezgahı, kazan Baran'ın arkası
 const StationDef STATIONS[] = {
     { .type = STATION_SMITH, .name = "Demirci Ocağı",
-      .texPath = "assets/decor/furnace.png", .src = { 0, 0, 16, 32 },
+      .texPath = "assets/decor/furnace.png", .src = { 0, 0, 16, 32 }, .frames = 5,
       .x = T(8), .y = T(7), .scale = 3.0f,
       .permQuest = "demirci_ocak", .ownerName = "Demirci Mahir" },
     { .type = STATION_ALCH, .name = "Simya Kazanı",
-      .texPath = "assets/decor/cauldron.png", .src = { 0, 0, 32, 32 },
+      .texPath = "assets/decor/cauldron.png", .src = { 0, 0, 32, 32 }, .frames = 6,
       .x = T(11), .y = T(5), .scale = 2.5f,
       .permQuest = "simya_masa", .ownerName = "Tüccar Baran" },
 };
@@ -35,6 +35,20 @@ const RecipeDef RECIPES[] = {
       .outItem = ITEM_SWORD_COPPER, .outCount = 1, .work = 10.0f, .xp = 18.0f,
       .minSkill = 5 },
 
+    // Ocak — blueprint'li gelişmiş tarifler (Faz 3)
+    { .station = STATION_SMITH, .name = "Demir Kılıç",
+      .in1Item = ITEM_INGOT_IRON, .in1Count = 3, .in2Item = ITEM_WOOD, .in2Count = 1,
+      .outItem = ITEM_SWORD_IRON, .outCount = 1, .work = 12.0f, .xp = 22.0f,
+      .minSkill = 15, .blueprintItem = ITEM_BP_SWORD_IRON },
+    { .station = STATION_SMITH, .name = "Demir Zırh",
+      .in1Item = ITEM_INGOT_IRON, .in1Count = 4, .in2Item = -1,
+      .outItem = ITEM_CHEST_IRON, .outCount = 1, .work = 12.0f, .xp = 20.0f,
+      .minSkill = 15, .blueprintItem = ITEM_BP_CHEST_IRON },
+    { .station = STATION_SMITH, .name = "Demir Miğfer",
+      .in1Item = ITEM_INGOT_IRON, .in1Count = 3, .in2Item = -1,
+      .outItem = ITEM_HELMET_IRON, .outCount = 1, .work = 10.0f, .xp = 16.0f,
+      .minSkill = 12, .blueprintItem = ITEM_BP_HELMET_IRON },
+
     // Simya kazanı — kaynatma (work = saniye)
     { .station = STATION_ALCH, .name = "Can İksiri",
       .in1Item = ITEM_HERB_RED, .in1Count = 2, .in2Item = -1,
@@ -43,12 +57,44 @@ const RecipeDef RECIPES[] = {
       .in1Item = ITEM_HERB_BLUE, .in1Count = 2, .in2Item = ITEM_HERB_RED, .in2Count = 1,
       .outItem = ITEM_POTION_BIG, .outCount = 1, .work = 6.0f, .xp = 14.0f,
       .minSkill = 10 },
+
+    // Kazan — blueprint'li (Faz 3)
+    { .station = STATION_ALCH, .name = "Hız İksiri",
+      .in1Item = ITEM_HERB_RED, .in1Count = 2, .in2Item = ITEM_HERB_BLUE, .in2Count = 1,
+      .outItem = ITEM_POTION_SPEED, .outCount = 1, .work = 5.0f, .xp = 12.0f,
+      .minSkill = 5, .blueprintItem = ITEM_BP_POTION_SPEED },
+    { .station = STATION_ALCH, .name = "Zehir Yağı",
+      .in1Item = ITEM_HERB_BLUE, .in1Count = 3, .in2Item = -1,
+      .outItem = ITEM_POISON_OIL, .outCount = 1, .work = 6.0f, .xp = 15.0f,
+      .minSkill = 15, .blueprintItem = ITEM_BP_POISON_OIL },
 };
 const int RECIPE_COUNT = (int)(sizeof(RECIPES) / sizeof(RECIPES[0]));
 
 SkillType station_skill(StationType t)
 {
     return (t == STATION_SMITH) ? SKILL_SMITHING : SKILL_ALCHEMY;
+}
+
+// --- Öğrenilen tarifler (blueprint'li olanlar; save v10 köprüsü) ---
+static bool learned[MAX_RECIPES];
+
+bool craft_recipe_learned(int ri)
+{
+    if (ri < 0 || ri >= RECIPE_COUNT) return false;
+    if (RECIPES[ri].blueprintItem <= 0) return true;   // temel tarif hep açık
+    return ri < MAX_RECIPES && learned[ri];
+}
+
+void craft_learn_recipe(int ri)
+{
+    if (ri >= 0 && ri < MAX_RECIPES)
+        learned[ri] = true;
+}
+
+void craft_reset_learned(void)
+{
+    for (int i = 0; i < MAX_RECIPES; i++)
+        learned[i] = false;
 }
 
 int station_nearest(float px, float py)
@@ -68,7 +114,8 @@ int station_nearest(float px, float py)
 }
 
 void station_render_all(R2D *renderer, R2DTexture **textures,
-                        const Camera *camera, TTF_Font *font, int nearestIdx)
+                        const Camera *camera, TTF_Font *font,
+                        int nearestIdx, int activeIdx)
 {
     float zoom = camera->zoom;
     for (int i = 0; i < STATION_COUNT; i++) {
@@ -81,7 +128,12 @@ void station_render_all(R2D *renderer, R2DTexture **textures,
             (s->y - h - camera->y) * zoom,
             w * zoom, h * zoom,
         };
-        r2d_draw_texture(renderer, textures[i], &s->src, &dst);
+
+        // Aktif üretimde animasyon oynar (kaynayan kazan / alazlanan ocak)
+        SDL_FRect src = s->src;
+        if (i == activeIdx && s->frames > 1)
+            src.x += s->src.w * (float)((SDL_GetTicks() / 130) % (Uint64)s->frames);
+        r2d_draw_texture(renderer, textures[i], &src, &dst);
 
         if (i == nearestIdx && font != NULL) {
             SDL_Color c = { 255, 230, 80, 255 };
@@ -145,6 +197,14 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
         SDL_FRect row = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
         if (ri == selRecipe) ui_cell_hi(renderer, row.x, row.y, row.w, row.h);
         else                 ui_cell_gray(renderer, row.x, row.y, row.w, row.h);
+
+        // Blueprint kilidi: öğrenilmemiş tarif gizemli görünür (varlığı öğretir)
+        if (!craft_recipe_learned(ri)) {
+            draw_text(renderer, font, "???", row.x + 10.0f, rowY + 4.0f, dim);
+            draw_text(renderer, font, "Blueprint gerekli", row.x + 10.0f, rowY + 20.0f, dim);
+            rowY += CRAFT_ROW_H;
+            continue;
+        }
 
         bool lvlOk = skills[sk].level >= r->minSkill;
         bool haveIn1 = inventory_count(inv, &ITEM_TYPES[r->in1Item]) >= r->in1Count;

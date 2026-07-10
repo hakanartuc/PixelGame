@@ -13,6 +13,7 @@ const ShopEntry SHOP_STOCK[] = {
     { &ITEM_TYPES[ITEM_TORCH] },       // gece hazirligi: envanterdeyken isik verir
     { &ITEM_TYPES[ITEM_PICKAXE] },     // madencilik araci
     { &ITEM_TYPES[ITEM_AXE] },         // oduculuk araci
+    { &ITEM_TYPES[ITEM_BP_POTION_SPEED] },  // Hiz Iksiri tarifi (altin gideri)
     { &ITEM_TYPES[ITEM_LONG_SWORD] },
     { &ITEM_TYPES[ITEM_HELMET_IRON] },
     { &ITEM_TYPES[ITEM_CHEST_IRON] },

@@ -494,6 +494,11 @@ int main(int argc, char *argv[])
     bool plusForge = false;   // '+basma' süreci (ocak, kuşanılı silah)
     float craftProgress = 0.0f;
 
+    // Günlük ders damgaları (öğretmenler; save'e girmez — gün başına sıfır kabulü)
+    int trainedDay[32];
+    for (int i = 0; i < 32; i++) trainedDay[i] = -1;
+    craft_reset_learned();   // blueprint tarifleri kapalı başlar (save v10 doldurur)
+
     QuestStatus questStatus[MAX_QUESTS] = {0};   // hepsi NOT_STARTED
 
     // Başlangıç seti: tam demir set + kılıç KUŞANILI (+0), çantada 3 iksir
@@ -934,6 +939,79 @@ int main(int argc, char *argv[])
                                 int nx = dialog_find(dlg, "rewarded");
                                 if (nx >= 0) dialogNode = nx; else dialogNpc = -1;
                             }
+                            else if (strncmp(target, "train:", 6) == 0)
+                            {
+                                // Öğretmen dersi: altın → XP (günde skill başına 1;
+                                // fiyat = seviye×15g, kazanç = sonraki seviyenin %40'ı)
+                                SkillType sk = SKILL_NONE;
+                                if (strcmp(target + 6, "smithing") == 0) sk = SKILL_SMITHING;
+                                else if (strcmp(target + 6, "speech") == 0) sk = SKILL_SPEECH;
+                                else if (strcmp(target + 6, "alchemy") == 0) sk = SKILL_ALCHEMY;
+
+                                SDL_Color red = { 255, 120, 100, 255 };
+                                if (sk == SKILL_NONE)
+                                {
+                                    SDL_Log("Bilinmeyen ders: %s", target);
+                                }
+                                else if (trainedDay[sk] == gametime_day())
+                                {
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f,
+                                                         "Bugün yeterince çalıştın", red);
+                                }
+                                else
+                                {
+                                    int price = player.skills[sk].level * 15;
+                                    if (player.gold < price)
+                                    {
+                                        char buf[FLOAT_TEXT_LEN];
+                                        snprintf(buf, sizeof(buf), "%dg gerekli!", price);
+                                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                             player.rect.x + player.rect.w / 2.0f,
+                                                             player.rect.y - 10.0f, buf, red);
+                                    }
+                                    else
+                                    {
+                                        player.gold -= price;
+                                        trainedDay[sk] = gametime_day();
+                                        float xp = player.skills[sk].xpToNext * 0.4f;
+                                        if (skill_add_xp(player.skills, sk, xp))
+                                            on_skill_levelup(&player, sk, &hotbar, floatTexts);
+                                        audio_play(SFX_UI);
+                                        char buf[FLOAT_TEXT_LEN];
+                                        snprintf(buf, sizeof(buf), "-%dg — %s dersi",
+                                                 price, skill_name(sk));
+                                        SDL_Color cyan = { 90, 220, 255, 255 };
+                                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                             player.rect.x + player.rect.w / 2.0f,
+                                                             player.rect.y - 10.0f, buf, cyan);
+                                    }
+                                }
+                                // düğümde kal (tekrar ders/çıkış oyuncunun elinde)
+                            }
+                            else if (strcmp(target, "buy_bp_chest") == 0)
+                            {
+                                // Demirci'den Demir Zırh çizimi (req: gold>=150 diyalogda)
+                                if (inventory_add(&inventory,
+                                                  &ITEM_TYPES[ITEM_BP_CHEST_IRON], 1, 0))
+                                {
+                                    player.gold -= 150;
+                                    audio_play(SFX_UI);
+                                    SDL_Color cyan = { 90, 220, 255, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f,
+                                                         "+Blueprint: Demir Zırh (-150g)", cyan);
+                                }
+                                else
+                                {
+                                    SDL_Color red = { 255, 120, 100, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f, "Çanta dolu!", red);
+                                }
+                            }
                             else
                             {
                                 // Normal düğüm geçişi
@@ -1153,6 +1231,10 @@ int main(int argc, char *argv[])
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_HERB_RED], 10, 0);
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_HERB_BLUE], 10, 0);
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_WOOD], 10, 0);
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_BP_SWORD_IRON], 1, 0);
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_BP_HELMET_IRON], 1, 0);
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_BP_POISON_OIL], 1, 0);
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_SCROLL_SMITHING], 2, 0);
                     player.gold += 500;
                     SDL_Log("DEBUG F10: +1M XP (savas+meslek) + craft malzeme seti + 500g");
                 }
@@ -1361,36 +1443,48 @@ int main(int argc, char *argv[])
                         {
                             const RecipeDef *r = &RECIPES[hit];
                             SkillType sk = station_skill(r->station);
-                            bool haveMats =
-                                inventory_count(&inventory, &ITEM_TYPES[r->in1Item]) >= r->in1Count &&
-                                (r->in2Item < 0 ||
-                                 inventory_count(&inventory, &ITEM_TYPES[r->in2Item]) >= r->in2Count);
 
-                            if (player.skills[sk].level < r->minSkill)
+                            if (!craft_recipe_learned(hit))
                             {
-                                char buf[FLOAT_TEXT_LEN];
-                                snprintf(buf, sizeof(buf), "%s %d gerekli!",
-                                         skill_name(sk), r->minSkill);
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
-                                                     player.rect.y - 10.0f, buf, red);
+                                                     player.rect.y - 10.0f,
+                                                     "Blueprint gerekli!", red);
+                                handled = true;
                             }
-                            else if (!haveMats)
-                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
-                                                     player.rect.x + player.rect.w / 2.0f,
-                                                     player.rect.y - 10.0f, "Malzeme eksik!", red);
-                            else if (smithSt && equipment.slots[EQUIP_WEAPON].type !=
-                                                &ITEM_TYPES[ITEM_HAMMER])
-                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
-                                                     player.rect.x + player.rect.w / 2.0f,
-                                                     player.rect.y - 10.0f, "Çekiç kuşan!", red);
                             else
                             {
-                                craftRecipe = hit;   // süreç başlar (simya: kaynama;
-                                plusForge = false;   // ocak: çekiç savurması)
-                                craftProgress = 0.0f;
+                                bool haveMats =
+                                    inventory_count(&inventory, &ITEM_TYPES[r->in1Item]) >= r->in1Count &&
+                                    (r->in2Item < 0 ||
+                                     inventory_count(&inventory, &ITEM_TYPES[r->in2Item]) >= r->in2Count);
+
+                                if (player.skills[sk].level < r->minSkill)
+                                {
+                                    char buf[FLOAT_TEXT_LEN];
+                                    snprintf(buf, sizeof(buf), "%s %d gerekli!",
+                                             skill_name(sk), r->minSkill);
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f, buf, red);
+                                }
+                                else if (!haveMats)
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f, "Malzeme eksik!", red);
+                                else if (smithSt && equipment.slots[EQUIP_WEAPON].type !=
+                                                    &ITEM_TYPES[ITEM_HAMMER])
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f, "Çekiç kuşan!", red);
+                                else
+                                {
+                                    craftRecipe = hit;   // süreç başlar (simya: kaynama;
+                                    plusForge = false;   // ocak: çekiç savurması)
+                                    craftProgress = 0.0f;
+                                }
+                                handled = true;
                             }
-                            handled = true;
                         }
                         else
                         {
@@ -1530,6 +1624,62 @@ int main(int argc, char *argv[])
                                                          player.rect.x + player.rect.w / 2.0f,
                                                          player.rect.y - 10.0f, buf, gold);
                                 }
+                                else if (st->type != NULL && st->type->scrollXp > 0.0f)
+                                {
+                                    // Öğretici parşömen: sağ tık = kullan (+XP, tükenir)
+                                    SkillType sk = (SkillType)st->type->scrollSkill;
+                                    float xp = st->type->scrollXp;
+                                    const ItemType *sct = st->type;
+                                    if (inventory_consume(&inventory, sct))
+                                    {
+                                        if (skill_add_xp(player.skills, sk, xp))
+                                            on_skill_levelup(&player, sk, &hotbar, floatTexts);
+                                        audio_play(SFX_UI);
+                                        char buf[FLOAT_TEXT_LEN];
+                                        snprintf(buf, sizeof(buf), "+%d XP %s",
+                                                 (int)xp, skill_name(sk));
+                                        SDL_Color cyan = { 90, 220, 255, 255 };
+                                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                             player.rect.x + player.rect.w / 2.0f,
+                                                             player.rect.y - 10.0f, buf, cyan);
+                                    }
+                                }
+                                else if (st->type != NULL &&
+                                         st->type >= &ITEM_TYPES[ITEM_BP_SWORD_IRON] &&
+                                         st->type <= &ITEM_TYPES[ITEM_BP_POISON_OIL])
+                                {
+                                    // Blueprint: sağ tık = tarifi KALICI öğren (tükenir)
+                                    int bpIdx = (int)(st->type - ITEM_TYPES);
+                                    bool learnedNew = false;
+                                    const char *rName = NULL;
+                                    for (int ri = 0; ri < RECIPE_COUNT && ri < MAX_RECIPES; ri++)
+                                        if (RECIPES[ri].blueprintItem == bpIdx &&
+                                            !craft_recipe_learned(ri))
+                                        {
+                                            craft_learn_recipe(ri);
+                                            learnedNew = true;
+                                            rName = RECIPES[ri].name;
+                                        }
+                                    if (learnedNew)
+                                    {
+                                        inventory_consume(&inventory, &ITEM_TYPES[bpIdx]);
+                                        audio_play(SFX_UI);
+                                        char buf[FLOAT_TEXT_LEN];
+                                        snprintf(buf, sizeof(buf), "Tarif öğrenildi: %s", rName);
+                                        SDL_Color cyan = { 90, 220, 255, 255 };
+                                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                             player.rect.x + player.rect.w / 2.0f,
+                                                             player.rect.y - 10.0f, buf, cyan);
+                                    }
+                                    else
+                                    {
+                                        SDL_Color dim = { 170, 170, 190, 255 };
+                                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                             player.rect.x + player.rect.w / 2.0f,
+                                                             player.rect.y - 10.0f,
+                                                             "Zaten biliyorsun", dim);
+                                    }
+                                }
                                 else if (st->type != NULL && st->type->consumable)
                                 {
                                     // Tüketilebilir: hotbar'a ata (içmek hotbar tuşuyla)
@@ -1607,25 +1757,50 @@ int main(int argc, char *argv[])
                 }
                 else if (hs->kind == HOTBAR_ITEM)
                 {
-                    // İksir: tür CD'deyse / can fulse / envanterde yoksa geç
+                    // Tüketilebilir: tür CD'deyse / (iksirse can fulse) / yoksa geç
                     int typeIdx = (int)(hs->itemType - ITEM_TYPES);
+                    bool heals = hs->itemType->healAmount > 0.0f;
                     if (player.itemCd[typeIdx] <= 0.0f &&
-                        player.health < player.maxHealth &&
+                        (!heals || player.health < player.maxHealth) &&
                         inventory_consume(&inventory, hs->itemType))
                     {
                         // Akıcı: CD kısalır; İlk Yardım: iyileşme artar
                         player.itemCd[typeIdx] = hs->itemType->useCooldown * perkFx.potionCdMult;
                         audio_play(SFX_POTION);
-                        player.health += hs->itemType->healAmount * perkFx.potionEffMult;
-                        if (player.health > player.maxHealth)
-                            player.health = player.maxHealth;
-
                         char buf[FLOAT_TEXT_LEN];
-                        snprintf(buf, sizeof(buf), "+%d HP", (int)hs->itemType->healAmount);
                         SDL_Color green = { 120, 255, 120, 255 };
-                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
-                                             player.rect.x + player.rect.w / 2.0f,
-                                             player.rect.y - 10.0f, buf, green);
+
+                        if (heals)
+                        {
+                            player.health += hs->itemType->healAmount * perkFx.potionEffMult;
+                            if (player.health > player.maxHealth)
+                                player.health = player.maxHealth;
+                            snprintf(buf, sizeof(buf), "+%d HP",
+                                     (int)hs->itemType->healAmount);
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f, buf, green);
+                        }
+                        if (hs->itemType->buffDuration > 0.0f)
+                        {
+                            // Hız buff'ı (süre tazelenir, üst üste BİNMEZ)
+                            player.speedBuffMult = hs->itemType->buffSpeedMult;
+                            player.speedBuffTimer = hs->itemType->buffDuration;
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f, "Hızlandın!", green);
+                        }
+                        if (hs->itemType->coatDuration > 0.0f)
+                        {
+                            // Silah kaplaması: süreli weaponFx (rün sisteminin öncüsü)
+                            player.coatFx = hs->itemType->coatFx;
+                            player.coatTimer = hs->itemType->coatDuration;
+                            SDL_Color pgreen = { 120, 230, 90, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f,
+                                                 "Silah kaplandı!", pgreen);
+                        }
                     }
                 }
             }
@@ -1680,8 +1855,15 @@ int main(int argc, char *argv[])
                 else if (craftRecipe >= 0 &&
                          STATIONS[craftStation].type == STATION_ALCH)
                 {
-                    // Kaynatma: bar zamanla dolar (Alchemy hızlandırır)
+                    // Kaynatma: bar zamanla dolar (Alchemy hızlandırır) + kabarcıklar
                     craftProgress += gather_mult(player.skills[SKILL_ALCHEMY].level) * dt;
+                    if (randf() < dt * 8.0f)
+                        fx_spawn(&weaponFx,
+                                 STATIONS[craftStation].x + (randf() - 0.5f) * 30.0f,
+                                 STATIONS[craftStation].y - 40.0f,
+                                 (randf() - 0.5f) * 12.0f, -25.0f - randf() * 20.0f,
+                                 0.6f, 6.0f + randf() * 5.0f,
+                                 120, 230, 120, WEAPON_FX_NONE);
                     if (craftProgress >= RECIPES[craftRecipe].work)
                     {
                         craft_finish_recipe(craftRecipe, &player, &inventory,
@@ -1829,11 +2011,17 @@ int main(int argc, char *argv[])
                 player.pendingAbility = -1;
 
             // Partikul efekti kusanili silahtan: silah yoksa efekt yok.
-            // fxPreview aktifse silahin efektini gecici ezer (yine silah sarti var).
+            // Öncelik: fxPreview (test) > kaplama (Zehir Yağı) > silahın kendi efekti
             const ItemType *wpnType = equipment.slots[EQUIP_WEAPON].type;
             player.weaponFx = (wpnType == NULL) ? WEAPON_FX_NONE
                             : (fxPreview >= 0) ? (WeaponFxType)fxPreview
+                            : (player.coatTimer > 0.0f) ? player.coatFx
                             : wpnType->weaponFx;
+
+            // Kaynatma animasyonu: kazanda üretim sürerken spellcast oynar
+            player.casting = craftOpen && craftStation >= 0 &&
+                             STATIONS[craftStation].type == STATION_ALCH &&
+                             craftRecipe >= 0;
 
             player_update(&player, keys, attackPressed, dt, &weaponFx); // oyuncuyu güncelle
 
@@ -1842,6 +2030,20 @@ int main(int argc, char *argv[])
             if (player.mana > player.maxMana) player.mana = player.maxMana;
             player.stamina += 15.0f * dt;
             if (player.stamina > player.maxStamina) player.stamina = player.maxStamina;
+
+            // Süreli tüketilebilir etkileri sayaçları
+            if (player.speedBuffTimer > 0.0f) player.speedBuffTimer -= dt;
+            if (player.coatTimer > 0.0f)
+            {
+                player.coatTimer -= dt;
+                if (player.coatTimer <= 0.0f)
+                {
+                    SDL_Color dim = { 170, 170, 190, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 10.0f, "Kaplama geçti", dim);
+                }
+            }
             fx_update(&weaponFx, dt);
 
             gametime_update(dt);                      // dünya saati
@@ -2223,7 +2425,8 @@ int main(int argc, char *argv[])
             // player_update tile hızıyla çarpar (doğrudan speed yazmak eziliyordu — bug'dı)
             player.speedMult = perkFx.speedMult
                              * (gametime_is_night() ? perkFx.nightSpeedMult : 1.0f)
-                             * (player.sneaking ? sneak_speed_mult(player.skills[SKILL_SNEAK].level) : 1.0f);
+                             * (player.sneaking ? sneak_speed_mult(player.skills[SKILL_SNEAK].level) : 1.0f)
+                             * (player.speedBuffTimer > 0.0f ? player.speedBuffMult : 1.0f);
             spawn_zones_update(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId,
                                dt * nightSpawnMul);
 
@@ -2501,7 +2704,8 @@ int main(int argc, char *argv[])
         resource_render_all(renderer, resource_textures, &camera, gameFont,
                             (dialogNpc < 0 && nearestNpc < 0) ? nearestRes : -1);  // NPC önceliği
         station_render_all(renderer, station_textures, &camera, gameFont,
-                           (dialogNpc < 0 && nearestNpc < 0 && !craftOpen) ? nearestStation : -1);
+                           (dialogNpc < 0 && nearestNpc < 0 && !craftOpen) ? nearestStation : -1,
+                           (craftOpen && (craftRecipe >= 0 || plusForge)) ? craftStation : -1);
 
         PlayerLayer built[24];
         int builtCount = build_player_layers(layers, LAYER_COUNT, &equipment,

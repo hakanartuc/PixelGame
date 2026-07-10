@@ -7,10 +7,11 @@
 #include "gametime.h"
 #include "minimap.h"
 #include "npc.h"
+#include "craft.h"   // öğrenilen tarifler (v10)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 9u   // ...; v7: suç; v8: bölgesel bounty/itibar; v9: NPC listesi
-                          // değişti (Demirci eklendi — npcAlive indeksleri kaydı)
+#define SAVE_VERSION 10u  // ...; v8: bölgesel bounty/itibar; v9: NPC listesi değişti;
+                          // v10: öğrenilen blueprint tarifleri
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -116,6 +117,12 @@ bool save_game(const char *path, const Player *p,
     ok = ok && w32(f, NPC_COUNT);
     for (int i = 0; ok && i < NPC_COUNT; i++)
         ok = w32(f, npc_is_alive(i) ? 1 : 0);
+
+    // Öğrenilen blueprint tarifleri (v10) — craft modülünden okunur
+    ok = ok && w32(f, RECIPE_COUNT);
+    for (int i = 0; ok && i < RECIPE_COUNT; i++)
+        ok = w32(f, craft_recipe_learned(i) &&
+                    RECIPES[i].blueprintItem > 0 ? 1 : 0);
 
     fclose(f);
     if (!ok)
@@ -253,6 +260,15 @@ bool load_game(const char *path, Player *p,
     for (int i = 0; ok && i < nNpc; i++)
         ok = r32(f, &npcAliveFlag[i]);
 
+    // Öğrenilen tarifler (v10)
+    Sint32 nRecipe = 0;
+    Sint32 recipeFlag[MAX_RECIPES];
+    ok = ok && r32(f, &nRecipe);
+    if (ok && (nRecipe < 0 || nRecipe > MAX_RECIPES))
+        ok = false;
+    for (int i = 0; ok && i < nRecipe; i++)
+        ok = r32(f, &recipeFlag[i]);
+
     fclose(f);
     if (!ok) {
         SDL_Log("Save okunamadi (bozuk dosya): %s", path);
@@ -271,5 +287,9 @@ bool load_game(const char *path, Player *p,
     npc_reset();   // önce herkes canlı, sonra save'deki ölümler uygulanır
     for (int i = 0; i < nNpc && i < NPC_COUNT; i++)
         npc_set_alive(i, npcAliveFlag[i] != 0);
+    craft_reset_learned();
+    for (int i = 0; i < nRecipe && i < RECIPE_COUNT; i++)
+        if (recipeFlag[i])
+            craft_learn_recipe(i);
     return true;
 }

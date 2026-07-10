@@ -23,6 +23,7 @@ static const LpcAnim PLAYER_ANIMS[] = {
     [PLAYER_IDLE] = {.startRow = 22, .frameCount = 2, .frameDur = 0.4f, .loop = true},
     [PLAYER_WALK] = {.startRow = 8, .frameCount = 9, .frameDur = 0.08f, .loop = true}, // satır 8-11
     [PLAYER_SLASH] = {.startRow = 12, .frameCount = 6, .frameDur = 0.08f, .loop = false},
+    [PLAYER_CAST] = {.startRow = 0, .frameCount = 7, .frameDur = 0.12f, .loop = true}, // spellcast 0-3
 };
 
 // Silahin bir karedeki eldeki konumu
@@ -260,6 +261,10 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
     else if (moving)
     {
         p->state = PLAYER_WALK;
+    }
+    else if (p->casting)
+    {
+        p->state = PLAYER_CAST;   // kaynatma/karistirma (main yazar)
     }
     else
     {

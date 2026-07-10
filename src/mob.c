@@ -28,6 +28,10 @@ static void mob_move(Mob *m, float dx, float dy)
 static const LootEntry GOBLIN_LOOT[] = {
     { &ITEM_TYPES[ITEM_POTION_HP],  0.40f, 0 },
     { &ITEM_TYPES[ITEM_LONG_SWORD], 0.08f, 3 },
+    // Faz 3 — kesmenin anlamı: blueprint + öğretici parşömenler
+    { &ITEM_TYPES[ITEM_BP_HELMET_IRON],   0.03f, 0 },
+    { &ITEM_TYPES[ITEM_SCROLL_MINING],    0.03f, 0 },
+    { &ITEM_TYPES[ITEM_SCROLL_HERBALISM], 0.03f, 0 },
 };
 static const LootEntry ORC_LOOT[] = {
     { &ITEM_TYPES[ITEM_POTION_HP],   0.50f, 0 },
@@ -35,6 +39,11 @@ static const LootEntry ORC_LOOT[] = {
     { &ITEM_TYPES[ITEM_CHEST_IRON],  0.12f, 3 },
     { &ITEM_TYPES[ITEM_LEGS_IRON],   0.15f, 3 },
     { &ITEM_TYPES[ITEM_LONG_SWORD],  0.12f, 5 },
+    // Faz 3 — ork: gelişmiş silah/simya bilgisi
+    { &ITEM_TYPES[ITEM_BP_SWORD_IRON],   0.05f, 0 },
+    { &ITEM_TYPES[ITEM_BP_POISON_OIL],   0.04f, 0 },
+    { &ITEM_TYPES[ITEM_SCROLL_SMITHING], 0.03f, 0 },
+    { &ITEM_TYPES[ITEM_SCROLL_ONEHAND],  0.03f, 0 },
 };
 #define LOOT_COUNT(t) ((int)(sizeof(t) / sizeof((t)[0])))
 

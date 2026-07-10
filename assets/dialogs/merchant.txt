@@ -29,6 +29,8 @@ opt: Sağol Baran. -> complete:simya_masa
 [rewarded]
 text: Kazan arkada, istediğin gibi kaynat. İyi mal, adil fiyat — dükkan da her zaman açık.
 opt: Dükkanı göster. -> shop
+opt: Pazarlık öğret bana. (seviye×15g, günde 1) -> train:speech
+opt: Simya dersi ver. (seviye×15g, günde 1) -> train:alchemy
 opt: Hoşçakal. -> end
 
 [kim]

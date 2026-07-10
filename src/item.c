@@ -1,4 +1,5 @@
 #include "item.h"
+#include "skill.h"   // parşömen skill sabitleri (SKILL_MINING vb.)
 
 // idle-down karesi: LPC satir 24 (idle 22 + DIR_DOWN 2), kare yuksekligi 64 → y=1536.
 // LPC ekipman sheet'leri izole parca icerdiginden bu kare temiz ikon verir.
@@ -107,6 +108,60 @@ const ItemType ITEM_TYPES[] = {
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .consumable = true, .healAmount = 100.0f, .useCooldown = 10.0f,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
+
+    // --- Meslek paketi Faz 3: blueprint ekonomisi + buff tuketilebilirleri ---
+    { .name = "Demir Kılıç", .iconIndex = 4, .maxStack = 1, .value = 320,
+      .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_ONE_HAND,
+      .damage = 60.0f, .attackInterval = 1.2f,
+      .equipSpritePath     = "assets/equipment/weapon/long_sword_140.png",
+      .equipSpritePathBack = "assets/equipment/weapon/long_sword_009.png",
+      .equipZ = 140, .equipZBack = 9, .equipIdleRow = 8, .slashOversize = true,
+      .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
+    { .name = "Hız İksiri", .iconIndex = 5, .maxStack = 10, .value = 45,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .consumable = true, .useCooldown = 30.0f,
+      .buffSpeedMult = 1.2f, .buffDuration = 30.0f,
+      .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
+    { .name = "Zehir Yağı", .iconIndex = 5, .maxStack = 10, .value = 55,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .consumable = true, .useCooldown = 20.0f,
+      .coatFx = WEAPON_FX_POISON, .coatDuration = 60.0f,
+      .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
+
+    // Blueprint'ler (sağ tık: tarifi KALICI öğren, parşömen tükenir)
+    { .name = "Blueprint: Demir Kılıç", .iconIndex = 0, .maxStack = 5, .value = 90,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+    { .name = "Blueprint: Demir Zırh", .iconIndex = 0, .maxStack = 5, .value = 150,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+    { .name = "Blueprint: Demir Miğfer", .iconIndex = 0, .maxStack = 5, .value = 80,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+    { .name = "Blueprint: Hız İksiri", .iconIndex = 0, .maxStack = 5, .value = 100,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+    { .name = "Blueprint: Zehir Yağı", .iconIndex = 0, .maxStack = 5, .value = 110,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+
+    // Öğretici parşömenler (sağ tık: +250 XP, tükenir) — tür moba göre düşer
+    { .name = "Parşömen: Mining", .iconIndex = 0, .maxStack = 10, .value = 40,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .scrollSkill = SKILL_MINING, .scrollXp = 250.0f,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 16, 0, 16, 16 } },
+    { .name = "Parşömen: Herbalism", .iconIndex = 0, .maxStack = 10, .value = 40,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .scrollSkill = SKILL_HERBALISM, .scrollXp = 250.0f,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 32, 0, 16, 16 } },
+    { .name = "Parşömen: Smithing", .iconIndex = 0, .maxStack = 10, .value = 50,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .scrollSkill = SKILL_SMITHING, .scrollXp = 250.0f,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 48, 0, 16, 16 } },
+    { .name = "Parşömen: One-Handed", .iconIndex = 0, .maxStack = 10, .value = 50,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .scrollSkill = SKILL_ONE_HANDED, .scrollXp = 250.0f,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 64, 0, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

@@ -51,7 +51,8 @@ typedef enum {
     PLAYER_IDLE,    // dururken (satır 22-25, 2 kare)
     PLAYER_WALK,    // yürüme (satır 8-11, 9 kare)
     PLAYER_SLASH,   // kılıç saldırısı (satır 12-15, 6 kare)
-    // ileride: THRUST, SHOOT, SPELLCAST, HURT, RUN, DEATH...
+    PLAYER_CAST,    // spellcast (satır 0-3, 7 kare) — simya kaynatma/büyü
+    // ileride: THRUST, SHOOT, HURT, RUN, DEATH...
 } PlayerState;
 
 // player.h — AnimClip gibi
@@ -88,6 +89,11 @@ typedef struct Player {
     float mana, maxMana;
     float stamina, maxStamina;
 
+    // Süreli tüketilebilir etkileri (Faz 3)
+    float speedBuffMult, speedBuffTimer;   // Hız İksiri
+    WeaponFxType coatFx;                   // silah kaplaması (Zehir Yağı)
+    float coatTimer;
+
     // Statlar: dağıtım yok — sabit taban (10), ileride ekipman/perk bonusu ekler.
     // Skill'ler stat değil doğrudan hasar çarpanı verir (use-based felsefe).
     int strength;    // hasar ölçeği
@@ -111,6 +117,7 @@ typedef struct Player {
     float knockbackX, knockbackY;
 
     bool sneaking;   // C toggle — eğilme (algı/tanık azalır, hız düşer; kesin gizlilik değil)
+    bool casting;    // simya kaynatma vb. — durgunken spellcast animasyonu (main yazar)
 
     // Saldırı durumu
     bool attacking;

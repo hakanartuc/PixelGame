@@ -23,4 +23,7 @@ opt: Sağol usta. -> complete:demirci_ocak
 
 [rewarded]
 text: Ocak orada, çekicin elinde. Demir külçe için Smithing'in gelişmeli — acele etme, bakırla başla.
+opt: Bana demircilik öğret. (seviye×15g, günde 1) -> train:smithing
+opt: Demir Zırh çizimin var mı? (150g) -> buy_bp_chest
+req: gold >= 150
 opt: Anlaşıldı. -> end

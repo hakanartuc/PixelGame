@@ -72,6 +72,14 @@ typedef struct {
     bool consumable;             // sağ tık hotbar'a atar, hotbar tuşuyla kullanılır
     float healAmount;            // kullanınca iyileşen can
     float useCooldown;           // kullanım sonrası bu TÜRÜN kilit süresi (sn)
+    float buffSpeedMult;         // >1: süreli hız buff'ı çarpanı (Hız İksiri 1.2)
+    float buffDuration;          // hız buff süresi (sn)
+    WeaponFxType coatFx;         // silah kaplaması efekti (Zehir Yağı → POISON)
+    float coatDuration;          // kaplama süresi (sn)
+
+    // --- Kullanılabilir parşömenler (envanterde sağ tık) ---
+    int scrollSkill;             // öğretici parşömen: hangi skill (scrollXp > 0 ise geçerli)
+    float scrollXp;              // kullanınca verilen XP (0 = parşömen değil)
 
     const char *iconSpritePath;   // ikon dosyasi (NULL → tool_icons fallback)
     SDL_FRect   iconSrc;          // o dosyadaki kare {x, y, w, h}
@@ -124,6 +132,19 @@ typedef enum {
     ITEM_INGOT_IRON,    // Demir Külçe
     ITEM_SWORD_COPPER,  // Bakır Kılıç (ilk craft silahı)
     ITEM_POTION_BIG,    // Büyük Can İksiri
+    // Meslek paketi (Faz 3): blueprint ekonomisi + tüketilebilir buff'lar
+    ITEM_SWORD_IRON,    // Demir Kılıç (craft > vendor — döngü ödülü)
+    ITEM_POTION_SPEED,  // Hız İksiri (30 sn +%20 hız)
+    ITEM_POISON_OIL,    // Zehir Yağı (60 sn silaha zehir efekti — rün öncüsü)
+    ITEM_BP_SWORD_IRON,   // Blueprint: Demir Kılıç (ork dropu)
+    ITEM_BP_CHEST_IRON,   // Blueprint: Demir Zırh (Demirci'den satın alınır)
+    ITEM_BP_HELMET_IRON,  // Blueprint: Demir Miğfer (goblin dropu)
+    ITEM_BP_POTION_SPEED, // Blueprint: Hız İksiri (Baran'da satılık)
+    ITEM_BP_POISON_OIL,   // Blueprint: Zehir Yağı (ork dropu)
+    ITEM_SCROLL_MINING,   // Öğretici parşömen: +250 Mining XP (goblin)
+    ITEM_SCROLL_HERBALISM,// +250 Herbalism XP (goblin)
+    ITEM_SCROLL_SMITHING, // +250 Smithing XP (ork)
+    ITEM_SCROLL_ONEHAND,  // +250 One-Handed XP (ork)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];
