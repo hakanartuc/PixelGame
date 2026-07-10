@@ -64,6 +64,24 @@ static const LootEntry SLIME_B_LOOT[] = {
     { &ITEM_TYPES[ITEM_ESSENCE_TOXIC], 0.10f, 0 },   // sunağa ikinci kaynak
 };
 
+// Faz 8 — iskelet: kemik + kadim parşömenler (Bowman = Archery'nin TEK kaynağı)
+static const LootEntry SKEL_W_LOOT[] = {
+    { &ITEM_TYPES[ITEM_BONE], 0.70f, 0 },
+    { &ITEM_TYPES[ITEM_BONE], 0.35f, 0 },
+    { &ITEM_TYPES[ITEM_SCROLL_ONEHAND], 0.03f, 0 },
+    { &ITEM_TYPES[ITEM_POTION_HP],      0.25f, 0 },
+};
+static const LootEntry SKEL_B_LOOT[] = {
+    { &ITEM_TYPES[ITEM_BONE], 0.60f, 0 },
+    { &ITEM_TYPES[ITEM_ARROW],          0.50f, 0 },   // sadağından kalanlar
+    { &ITEM_TYPES[ITEM_SCROLL_ARCHERY], 0.04f, 0 },
+};
+static const LootEntry SKEL_M_LOOT[] = {
+    { &ITEM_TYPES[ITEM_BONE], 0.50f, 0 },
+    { &ITEM_TYPES[ITEM_ESSENCE_PALE],   0.15f, 0 },   // büyücü — sunak kaynağı
+    { &ITEM_TYPES[ITEM_SCROLL_ENCHANT], 0.04f, 0 },
+};
+
 // Faz 6 — av: deri/et (girdiler bağımsız zar → 1-2 adet hissi)
 static const LootEntry SHEEP_LOOT[] = {
     { &ITEM_TYPES[ITEM_LEATHER], 0.70f, 0 },
@@ -424,6 +442,109 @@ const MobType MOB_TYPES[] = {
         .anims = SLIME_ANIMS(16, 14),
     },
 
+    // --- Faz 8: İskelet ailesi (Kayalık Geçit — gece kuralıyla undead kimliği) ---
+    // Sheet düzeni (goblin deseni): idle y0(aşağı)/y32(yan)/y64(yukarı) 6 kare,
+    // yürüme y96/128/160 6 kare; ölüm = kemik yığınına çöküş. Diriliş satırları kullanılmıyor.
+
+    // [12] İskelet Savaşçı — melee: hızlı, orta dayanıklı; saldırı 64×64 kılıç savurması
+    {
+        .name = "İskelet Savaşçı",
+        .texturePath = "assets/characters/mobs/Skeleton_Swordman.png",
+        .level = 4, .maxHealth = 140.0f, .speed = 180.0f,
+        .attackRange = 65.0f, .detectRange = 300.0f, .damage = 12.0f, .defense = 8.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 2, .attackRecover = 0.8f,
+        .lootTable = SKEL_W_LOOT, .lootTableCount = LOOT_COUNT(SKEL_W_LOOT),
+        .goldMin = 15, .goldMax = 30,
+        .anims = {
+            { // idle (6 kare)
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+            },
+            { // yürüme (6 kare)
+                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+            },
+            { // saldırı — 64×64 kılıç savurması (ork deseni, feetY 46)
+                { .x=0, .y=224, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.10f, .feetY=46 },
+                { .x=0, .y=352, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.10f, .feetY=46 },
+                { .x=0, .y=288, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.10f, .feetY=46 },
+            },
+            { // ölüm: kemik yığınına çöküş (4 kare)
+                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+            },
+        },
+    },
+    // [13] İskelet Okçu — İLK menzilli düşman: ok düz hatta uçar, KAÇILABİLİR.
+    // Menzili (280) oyuncu yayından (340) kısa — açılışta oyuncu hep önde
+    {
+        .name = "İskelet Okçu",
+        .texturePath = "assets/characters/mobs/Skeleton_Bowman.png",
+        .level = 4, .maxHealth = 90.0f, .speed = 150.0f,
+        .attackRange = 280.0f, .detectRange = 320.0f, .damage = 14.0f, .defense = 3.0f,
+        .attackType = ATTACK_RANGED, .attackHitFrame = 4, .attackRecover = 1.5f,
+        .projSpeed = 300.0f,
+        .lootTable = SKEL_B_LOOT, .lootTableCount = LOOT_COUNT(SKEL_B_LOOT),
+        .goldMin = 15, .goldMax = 30,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+            },
+            { // yay çekme — ok kare 4'te çıkar (main mermi doğurur)
+                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+            },
+        },
+    },
+    // [14] İskelet Büyücü — cam top: az can, sert ve yavaş büyü mermisi
+    {
+        .name = "İskelet Büyücü",
+        .texturePath = "assets/characters/mobs/Skeleton_Mage.png",
+        .level = 5, .maxHealth = 70.0f, .speed = 140.0f,
+        .attackRange = 240.0f, .detectRange = 300.0f, .damage = 22.0f, .defense = 0.0f,
+        .attackType = ATTACK_MAGIC, .attackHitFrame = 5, .attackRecover = 2.0f,
+        .projSpeed = 240.0f,
+        .lootTable = SKEL_M_LOOT, .lootTableCount = LOOT_COUNT(SKEL_M_LOOT),
+        .goldMin = 20, .goldMax = 40,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+            },
+            { // büyü kanalize — top kare 5'te fırlar (8 kare)
+                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.12f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+            },
+        },
+    },
 };
 
 const int MOB_TYPE_COUNT = (int)(sizeof(MOB_TYPES) / sizeof(MOB_TYPES[0]));
@@ -686,12 +807,13 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
                     m->attackTriggered = true;
             }
 
-            // Son kareye ulaşınca saldırı bitti
+            // Son kareye ulaşınca saldırı bitti (menzilli türler kendi temposunda)
             if (m->currentFrame >= clip->frameCount) {
                 m->attacking = false;
                 m->currentFrame = 0;
                 m->animTimer = 0.0f;
-                m->attackCooldown = 0.6f;
+                m->attackCooldown = (m->type->attackRecover > 0.0f)
+                                  ? m->type->attackRecover : 0.6f;
                 m->state = MOB_IDLE;   // idle'a dön
             }
         }

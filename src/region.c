@@ -33,6 +33,13 @@ static const RegionCamp BATAKLIK_CAMPS[] = {
 static const RegionCamp GECIT_CAMPS[] = {
     { .x = T(130), .y = T(110), .radius = T(4), .type = &MOB_TYPES[1], .maxCount = 4 },
     { .x = T(175), .y = T(130), .radius = T(4), .type = &MOB_TYPES[1], .maxCount = 4 },
+    // Faz 8 — iskeletler (açıklık haritadan doğrulandı): giriş T120,80 karışık,
+    // derin T150,95 (+Büyücü). Gece kuralıyla (algı ×1.5, spawn ×2) undead saati
+    { .x = T(118), .y = T(80), .radius = T(4), .type = &MOB_TYPES[12], .maxCount = 2 },  // savaşçı
+    { .x = T(122), .y = T(82), .radius = T(4), .type = &MOB_TYPES[13], .maxCount = 1 },  // okçu
+    { .x = T(148), .y = T(95), .radius = T(4), .type = &MOB_TYPES[12], .maxCount = 1 },
+    { .x = T(150), .y = T(97), .radius = T(4), .type = &MOB_TYPES[13], .maxCount = 1 },
+    { .x = T(152), .y = T(93), .radius = T(4), .type = &MOB_TYPES[14], .maxCount = 1 },  // büyücü
 };
 
 #define CAMPS(c) .camps = (c), .campCount = (int)(sizeof(c) / sizeof((c)[0]))

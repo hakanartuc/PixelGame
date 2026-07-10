@@ -185,6 +185,43 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
     }
 }
 
+// Ok kademeleri (Faz 8): tüketim sırası ucuzdan pahalıya (otomatik düşüş bunu izler)
+static const int AMMO_ORDER[3] = { ITEM_ARROW, ITEM_ARROW_BONE, ITEM_ARROW_IRON };
+
+// Envanterde HERHANGİ bir ok var mı? (yay geçerlilik kontrolü)
+static bool ammo_any(const Inventory *inv)
+{
+    for (int k = 0; k < 3; k++)
+        if (inventory_count(inv, &ITEM_TYPES[AMMO_ORDER[k]]) > 0)
+            return true;
+    return false;
+}
+
+// Aktif oktan 1 tüket; bittiyse eldeki başka türe OTOMATİK geç (bildirimli).
+// Dönen: tüketilen türün hasar çarpanı (0 = hiç ok yok — atış yapılmaz)
+static float ammo_consume(Inventory *inv, int *activeAmmo,
+                          FloatText *floatTexts, float px, float py)
+{
+    if (inventory_count(inv, &ITEM_TYPES[*activeAmmo]) < 1)
+    {
+        int found = -1;
+        for (int k = 0; k < 3; k++)
+            if (inventory_count(inv, &ITEM_TYPES[AMMO_ORDER[k]]) > 0)
+            {
+                found = AMMO_ORDER[k];
+                break;
+            }
+        if (found < 0) return 0.0f;
+        *activeAmmo = found;
+        char buf[FLOAT_TEXT_LEN];
+        snprintf(buf, sizeof(buf), "%s'na geçildi", ITEM_TYPES[found].name);
+        SDL_Color dim = { 200, 200, 160, 255 };
+        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, px, py - 10.0f, buf, dim);
+    }
+    inventory_consume(inv, &ITEM_TYPES[*activeAmmo]);
+    return ITEM_TYPES[*activeAmmo].ammoDmgMult;
+}
+
 // Radyal partikül patlaması — perk seçimi, ölüm kurtarışı, crit gibi anlara
 // "his" katar. Renk + adet + hız çağırandan; glow'lu fx sistemine basar.
 static void fx_burst(ParticleSystem *fx, float cx, float cy, int count,
@@ -599,12 +636,14 @@ int main(int argc, char *argv[])
     // Uçan oklar (Faz 5): hedefe güdümlü (KO auto-attack modeli — ıska yok),
     // hasar VARIŞTA hesaplanır (o anki stat/rün ile). Hedef ölürse ok söner.
     // kind: 0 normal, 1 Buz Oku (yavaşlatır), 2 Alan Oku (varışta patlar)
+    // ammoMult: atıldığı ok kademesinin çarpanı (Faz 8)
     #define MAX_ARROWS 16
     #define ARROW_SPEED 420.0f
     #define AOE_ARROW_RADIUS 90.0f
     typedef struct { bool active; float x, y; int targetId;
-                     float dmgScale; Sint8 kind; } ArrowShot;
+                     float dmgScale; float ammoMult; Sint8 kind; } ArrowShot;
     ArrowShot arrows[MAX_ARROWS] = {0};
+    int activeAmmo = ITEM_ARROW;   // sağ tıkla seçilir; bitince otomatik düşer
 
     // Yaylım Ateşi kuyruğu: release'te 1 ok + 0.15sn arayla 2 ok daha
     int volleyLeft = 0;
@@ -618,6 +657,15 @@ int main(int argc, char *argv[])
     typedef struct { bool active; float x, y; } GooTrap;
     GooTrap traps[MAX_TRAPS] = {0};
     int nextTrap = 0;
+
+    // Mob mermileri (Faz 8): atış ANINDAKİ oyuncu konumuna DÜZ hat — güdüm yok,
+    // yana yürüyerek KAÇILABİLİR (oyuncu oklarına bilinçli asimetri).
+    // kind: 0 = iskelet oku (çizgi), 1 = büyü topu (mor iz)
+    #define MAX_MOB_PROJS 24
+    #define MOB_PROJ_MAX_DIST 520.0f
+    typedef struct { bool active; float x, y, vx, vy;
+                     float traveled; float dmg; Sint8 kind; } MobProj;
+    MobProj mobProjs[MAX_MOB_PROJS] = {0};
 
     // Spawn bölgeleri BÖLGE tanımlarından kurulur (region.c) — kamplar veride,
     // main sadece düzleştirir. Yeni kamp eklemek = region.c'ye bir satır.
@@ -1359,6 +1407,10 @@ int main(int argc, char *argv[])
                     // Faz 7 slime test seti: jel + hazır tuzak
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_SLIME_GEL], 8, 0);
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_STICKY_TRAP], 3, 0);
+                    // Faz 8 iskelet test seti: kemik + premium ok örnekleri
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_BONE], 6, 0);
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_ARROW_BONE], 20, 0);
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_ARROW_IRON], 20, 0);
                     player.gold += 500;
                     SDL_Log("DEBUG F10: +1M XP (savas+meslek) + craft malzeme seti + 500g");
                 }
@@ -1966,6 +2018,19 @@ int main(int argc, char *argv[])
                                                              "Zaten biliyorsun", dim);
                                     }
                                 }
+                                else if (st->type != NULL && st->type->ammoDmgMult > 0.0f)
+                                {
+                                    // Ok yığınına sağ tık: aktif mühimmat seçimi (Faz 8)
+                                    activeAmmo = (int)(st->type - ITEM_TYPES);
+                                    audio_play(SFX_UI);
+                                    char buf[FLOAT_TEXT_LEN];
+                                    snprintf(buf, sizeof(buf), "Aktif ok: %s",
+                                             st->type->name);
+                                    SDL_Color cyan = { 90, 220, 255, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f, buf, cyan);
+                                }
                                 else if (st->type == &ITEM_TYPES[ITEM_WOOD])
                                 {
                                     // Odun'a sağ tık: kamp ateşi kurulumu (3 Odun, 3 sn)
@@ -2565,7 +2630,7 @@ int main(int argc, char *argv[])
                                              "Yayla NPC hedeflenemez", red2);
                         attackPressed = false;
                     }
-                    else if (inventory_count(&inventory, &ITEM_TYPES[ITEM_ARROW]) < 1)
+                    else if (!ammo_any(&inventory))
                     {
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
@@ -2683,8 +2748,12 @@ int main(int argc, char *argv[])
             {
                 player.shotReleased = true;
                 Mob *sTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
-                if (sTarget != NULL &&
-                    inventory_consume(&inventory, &ITEM_TYPES[ITEM_ARROW]))
+                float ammoMult = 0.0f;
+                if (sTarget != NULL)
+                    ammoMult = ammo_consume(&inventory, &activeAmmo, floatTexts,
+                                            player.rect.x + player.rect.w / 2.0f,
+                                            player.rect.y);
+                if (sTarget != NULL && ammoMult > 0.0f)
                 {
                     int pa = player.pendingAbility;
                     for (int a = 0; a < MAX_ARROWS; a++)
@@ -2696,6 +2765,7 @@ int main(int argc, char *argv[])
                             .y = player.rect.y + player.rect.h / 2.0f - 14.0f, // göğüs hizası
                             .targetId = player.targetMobId,
                             .dmgScale = (pa >= 0) ? ABILITIES[pa].damageScale : 1.0f,
+                            .ammoMult = ammoMult,
                             .kind = (pa == ABILITY_ICE_ARROW) ? 1
                                   : (pa == ABILITY_AOE_ARROW) ? 2 : 0,
                         };
@@ -2724,8 +2794,12 @@ int main(int argc, char *argv[])
                                                               player.rect.y + player.rect.h / 2.0f);
                         vTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
                     }
-                    if (vTarget != NULL &&
-                        inventory_consume(&inventory, &ITEM_TYPES[ITEM_ARROW]))
+                    float vAmmoMult = 0.0f;
+                    if (vTarget != NULL)
+                        vAmmoMult = ammo_consume(&inventory, &activeAmmo, floatTexts,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y);
+                    if (vTarget != NULL && vAmmoMult > 0.0f)
                     {
                         for (int a = 0; a < MAX_ARROWS; a++)
                         {
@@ -2736,6 +2810,7 @@ int main(int argc, char *argv[])
                                 .y = player.rect.y + player.rect.h / 2.0f - 14.0f,
                                 .targetId = player.targetMobId,
                                 .dmgScale = ABILITIES[ABILITY_VOLLEY].damageScale,
+                                .ammoMult = vAmmoMult,
                                 .kind = 0,
                             };
                             break;
@@ -3193,12 +3268,15 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
-                // VARIŞ: melee vuruşla aynı kurallar (sinsi ×2, crit, rün, XP)
+                // VARIŞ: melee vuruşla aynı kurallar (sinsi ×2, crit, rün, XP);
+                // ok kademesi çarpanı beceri çarpanıyla ÇARPILIR (Faz 8)
                 arrows[a].active = false;
                 const ItemStack *bowStack = &equipment.slots[EQUIP_WEAPON];
+                float aScale = arrows[a].dmgScale *
+                               (arrows[a].ammoMult > 0.0f ? arrows[a].ammoMult : 1.0f);
                 HitResult hit = combat_player_hit(&player, bowStack,
                                                   at->type->defense,
-                                                  arrows[a].dmgScale,
+                                                  aScale,
                                                   at->e.health / at->e.maxHealth,
                                                   &perkFx);
 
@@ -3257,7 +3335,9 @@ int main(int argc, char *argv[])
                         if (ndx * ndx + ndy * ndy > AOE_ARROW_RADIUS * AOE_ARROW_RADIUS)
                             continue;
                         HitResult splash = combat_player_hit(&player, bowStack,
-                                                             nb->type->defense, 0.6f,
+                                                             nb->type->defense,
+                                                             0.6f * (arrows[a].ammoMult > 0.0f
+                                                                     ? arrows[a].ammoMult : 1.0f),
                                                              nb->e.health / nb->e.maxHealth,
                                                              &perkFx);
                         nb->e.health -= splash.damage;
@@ -3325,6 +3405,89 @@ int main(int argc, char *argv[])
                 }
             }
 
+            // --- MOB MERMİLERİ: düz uçuş; duvara/menzile takılır, oyuncuya çarparsa
+            // melee mob vuruşuyla AYNI savunma hattından geçer (dodge/defans/zırh XP)
+            for (int pj = 0; pj < MAX_MOB_PROJS; pj++)
+            {
+                if (!mobProjs[pj].active) continue;
+                float step = SDL_sqrtf(mobProjs[pj].vx * mobProjs[pj].vx +
+                                       mobProjs[pj].vy * mobProjs[pj].vy) * dt;
+                mobProjs[pj].x += mobProjs[pj].vx * dt;
+                mobProjs[pj].y += mobProjs[pj].vy * dt;
+                mobProjs[pj].traveled += step;
+
+                // Büyü topu iz bırakır (mor kıvılcım)
+                if (mobProjs[pj].kind == 1 && randf() < dt * 30.0f)
+                    fx_spawn(&weaponFx, mobProjs[pj].x, mobProjs[pj].y,
+                             (randf() - 0.5f) * 20.0f, (randf() - 0.5f) * 20.0f,
+                             0.3f, 5.0f + randf() * 4.0f, 190, 110, 235, WEAPON_FX_NONE);
+
+                // Menzil doldu ya da katıya çarptı → söner
+                SDL_FRect pbox = { mobProjs[pj].x - 3.0f, mobProjs[pj].y - 3.0f, 6.0f, 6.0f };
+                if (mobProjs[pj].traveled > MOB_PROJ_MAX_DIST || box_hits_solid(pbox))
+                {
+                    mobProjs[pj].active = false;
+                    continue;
+                }
+
+                // Oyuncuya isabet (gövde kutusu, hafif tolerans)
+                SDL_FRect hb = { player.rect.x - 4.0f, player.rect.y - 4.0f,
+                                 player.rect.w + 8.0f, player.rect.h + 8.0f };
+                if (mobProjs[pj].x < hb.x || mobProjs[pj].x > hb.x + hb.w ||
+                    mobProjs[pj].y < hb.y || mobProjs[pj].y > hb.y + hb.h)
+                    continue;
+
+                mobProjs[pj].active = false;
+                bool dodged = false;
+                bool yaraliAyi = (player.perkChoice[SKILL_MEDIUM_ARMOR][2] == 1);
+                float dmg = combat_mob_damage(mobProjs[pj].dmg, &equipment, &perkFx,
+                                              player.state == PLAYER_IDLE,
+                                              player.health / player.maxHealth,
+                                              yaraliAyi, &dodged);
+                float pcx = player.rect.x + player.rect.w / 2.0f;
+                if (dodged)
+                {
+                    SDL_Color cyan = { 90, 220, 255, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         pcx, player.rect.y - 10.0f, "Kaçındın!", cyan);
+                    audio_play(SFX_DODGE);
+                }
+                else if (dmg > 0.0f)
+                {
+                    // (melee mob vuruşu bloğunun kompakt eşi — desenkron etme!)
+                    player.health -= dmg;
+                    player.gaziTimer = 5.0f;
+                    gatherRes = -1;
+                    craftOpen = false;
+                    craftRecipe = -1;
+                    plusForge = false;
+                    enchAction = 0;
+                    craftProgress = 0.0f;
+                    shakeTime = shakeDur = 0.25f;
+                    shakeAmp = 6.0f;
+                    flashTime = FLASH_DUR;
+                    floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                    pcx + 10.0f, player.rect.y - 10.0f, (int)dmg, false);
+                    audio_play(SFX_HIT);
+                    if (mobProjs[pj].kind == 1)   // büyü çarpması: mor patlama
+                        fx_burst(&weaponFx, pcx,
+                                 player.rect.y + player.rect.h / 2.0f,
+                                 12, 100.0f, 190, 110, 235);
+
+                    // Zırh XP'si (melee blokla aynı kural: dmg × 0.15)
+                    for (int sl = 0; sl < EQUIP_SLOT_COUNT; sl++)
+                    {
+                        const ItemType *it = equipment.slots[sl].type;
+                        if (it == NULL || it->armorClass == ARMOR_NONE) continue;
+                        SkillType asRaw = (it->armorClass == ARMOR_LIGHT)  ? SKILL_LIGHT_ARMOR
+                                        : (it->armorClass == ARMOR_MEDIUM) ? SKILL_MEDIUM_ARMOR
+                                                                           : SKILL_HEAVY_ARMOR;
+                        if (skill_add_xp(player.skills, asRaw, dmg * 0.15f))
+                            on_skill_levelup(&player, asRaw, &hotbar, floatTexts);
+                    }
+                }
+            }
+
             // Gece tehlikesi: spawn 2x hızlı (dt şişirilir), algı menzili 1.5x
             float nightSpawnMul = gametime_is_night() ? 2.0f : 1.0f;
             float detectMul = (gametime_is_night() ? 1.5f : 1.0f)
@@ -3387,7 +3550,34 @@ int main(int argc, char *argv[])
                 }
 
                 // Düşman bu kare saldırdıysa ve oyuncu menzildeyse, hasarı BURADA uygula
-                if (mobs[i].attackTriggered)
+                if (mobs[i].attackTriggered &&
+                    mobs[i].type->attackType != ATTACK_MELEE)
+                {
+                    // Menzilli saldırı: hasar DEĞİL mermi doğar — isabet mermi varışında
+                    if (player.targetMobId == 0 && targetNpc < 0)
+                        player.targetMobId = mobs[i].id;
+
+                    float sx = mobs[i].e.rect.x + mobs[i].e.rect.w / 2.0f;
+                    float sy = mobs[i].e.rect.y + mobs[i].e.rect.h / 2.0f - 8.0f;
+                    float pdx = px - sx, pdy = py - sy;
+                    float plen = SDL_sqrtf(pdx * pdx + pdy * pdy);
+                    if (plen > 1.0f)
+                    {
+                        for (int pj = 0; pj < MAX_MOB_PROJS; pj++)
+                        {
+                            if (mobProjs[pj].active) continue;
+                            mobProjs[pj] = (MobProj){
+                                .active = true, .x = sx, .y = sy,
+                                .vx = pdx / plen * mobs[i].type->projSpeed,
+                                .vy = pdy / plen * mobs[i].type->projSpeed,
+                                .dmg = mobs[i].type->damage,
+                                .kind = (mobs[i].type->attackType == ATTACK_MAGIC) ? 1 : 0,
+                            };
+                            break;
+                        }
+                    }
+                }
+                else if (mobs[i].attackTriggered)
                 {
                     // Saldıran mob otomatik hedeflenir (yalnız hedef boşken —
                     // seçili mob/NPC hedefini savaş ortasında EZMEZ)
@@ -3721,6 +3911,34 @@ int main(int argc, char *argv[])
             r2d_line(renderer, tip.x - adx * 3.0f, tip.y - ady * 3.0f, tip.x, tip.y);
         }
 
+        // Mob mermileri: iskelet oku = kemik rengi çizgi; büyü topu = mor çekirdek
+        for (int pj = 0; pj < MAX_MOB_PROJS; pj++)
+        {
+            if (!mobProjs[pj].active) continue;
+            float vlen = SDL_sqrtf(mobProjs[pj].vx * mobProjs[pj].vx +
+                                   mobProjs[pj].vy * mobProjs[pj].vy);
+            if (vlen < 1.0f) continue;
+            float ndx = mobProjs[pj].vx / vlen, ndy = mobProjs[pj].vy / vlen;
+            SDL_FRect tip  = world_to_screen(mobProjs[pj].x, mobProjs[pj].y, 0, 0, &camera);
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            if (mobProjs[pj].kind == 0)
+            {
+                SDL_FRect tail = world_to_screen(mobProjs[pj].x - ndx * 12.0f,
+                                                 mobProjs[pj].y - ndy * 12.0f, 0, 0, &camera);
+                r2d_set_color(renderer, 210, 200, 180, 255);   // kemik rengi gövde
+                r2d_line(renderer, tail.x, tail.y, tip.x, tip.y);
+                r2d_set_color(renderer, 120, 120, 130, 255);   // demir uç
+                r2d_line(renderer, tip.x - ndx * 3.0f, tip.y - ndy * 3.0f, tip.x, tip.y);
+            }
+            else
+            {
+                SDL_FRect core = world_to_screen(mobProjs[pj].x - 4.0f,
+                                                 mobProjs[pj].y - 4.0f, 8.0f, 8.0f, &camera);
+                r2d_set_color(renderer, 200, 130, 245, 255);   // mor çekirdek
+                r2d_fill_rect(renderer, &core);
+            }
+        }
+
         // Partiküller dünya varlıklarının ÜSTÜNDE (kan damlası mobun önünde görünsün)
         fx_render(&weaponFx, renderer, glowTex, &camera);
 
@@ -3838,16 +4056,18 @@ int main(int argc, char *argv[])
         hotbar_render(&hotbar, renderer, itemIconTex, &itemTex, gameFont,
                       player.abilityCd, player.itemCd, &inventory, winW, winH);
 
-        // Yay kuşanılıyken ok sayacı (hotbar'ın üstünde, okçunun gözü önünde)
+        // Yay kuşanılıyken aktif ok sayacı (hotbar'ın üstünde) — tür adıyla
         if (player.bowEquipped && gameFont != NULL)
         {
-            int nArrow = inventory_count(&inventory, &ITEM_TYPES[ITEM_ARROW]);
-            char ammoBuf[24];
-            snprintf(ammoBuf, sizeof(ammoBuf), "Ok: %d", nArrow);
-            SDL_Color ammoCol = nArrow > 0 ? (SDL_Color){ 230, 220, 180, 255 }
-                                           : (SDL_Color){ 255, 120, 100, 255 };
+            int nArrow = inventory_count(&inventory, &ITEM_TYPES[activeAmmo]);
+            char ammoBuf[40];
+            snprintf(ammoBuf, sizeof(ammoBuf), "%s: %d",
+                     ITEM_TYPES[activeAmmo].name, nArrow);
+            SDL_Color ammoCol = ammo_any(&inventory)
+                              ? (SDL_Color){ 230, 220, 180, 255 }
+                              : (SDL_Color){ 255, 120, 100, 255 };
             draw_text(renderer, gameFont, ammoBuf,
-                      winW / 2.0f - 20.0f, winH - 96.0f, ammoCol);
+                      winW / 2.0f - 40.0f, winH - 96.0f, ammoCol);
         }
 
         if (minimapOpen)

@@ -48,10 +48,11 @@ WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/is
 - Perk eşiği 25'ten başlar; test F10 ile.
 
 ## Sıradaki iş
-**Skeleton ailesi + mob mermi sistemi** (PROGRESS #2): Swordman (melee) / Bowman (ok) /
-Mage (büyü) — ilk menzilli düşmanlar; mermi kaçılabilir mi kararı sorulacak.
-Sonrası: Bombschroom → çöl/volkan biyomları (+boss scroll/taş dropları).
-TAMAM: Meslek 5/5 (Faz 13-17) + Av & Pano & Kamp Ateşi (Faz 18) + Slime ailesi (Faz 19).
+**Mob fazları devamı** (PROGRESS #2): Bombschroom (patlayan mantar + Toxic_Gas_Cloud VFX)
+→ iç mekan/zindanlar ya da çöl/volkan biyomları (+boss scroll/taş dropları).
+TAMAM: Meslek 5/5 (Faz 13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) +
+İskelet ailesi & mob mermileri & ok kademeleri (20). Mermiler KAÇILABİLİR (düz hat) —
+oyuncu okları güdümlü kalır; bu asimetri bilinçli tasarım kararı.
 
 Tamamlananlar (2026-07-10): GPU-3 (shader gece aydınlatması + shake + vinyet),
 **Suç & İtibar paketi** (NPC ölümü, muhafız, Sneak + mob şüphesi, bölgesel bounty+itibar; save v8),

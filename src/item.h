@@ -89,6 +89,8 @@ typedef struct {
 
     bool trapItem;               // Yapışkan Tuzağı: hotbar kullanımı yere tuzak kurar (Faz 7)
 
+    float ammoDmgMult;           // ok kademesi hasar çarpanı (>0 = mühimmat; Faz 8)
+
     const char *iconSpritePath;   // ikon dosyasi (NULL → tool_icons fallback)
     SDL_FRect   iconSrc;          // o dosyadaki kare {x, y, w, h}
 } ItemType;
@@ -199,6 +201,13 @@ typedef enum {
     // Slime paketi (Faz 7): jel ekonomisi + alan yavaşlatma tuzağı
     ITEM_SLIME_GEL,       // Slime Jeli (Küçük slime dropu → simya hammaddesi)
     ITEM_STICKY_TRAP,     // Yapışkan Tuzağı (yere kurulur, tetiklenince alan yavaşı)
+    // İskelet paketi (Faz 8): kemik ekonomisi + kadim parşömenler
+    ITEM_BONE,            // Kemik (→ Kemik Oku tarifi)
+    ITEM_SCROLL_ARCHERY,  // +250 Archery XP (Bowman — türün tek kaynağı)
+    ITEM_SCROLL_ENCHANT,  // +250 Enchanting XP (Mage)
+    // Ok kademeleri (Faz 8): standart en ucuz, kemik/demir pahalı ve sert
+    ITEM_ARROW_BONE,      // Kemik Oku (×1.15 hasar)
+    ITEM_ARROW_IRON,      // Demir Ok (×1.3 hasar, Smithing 10)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

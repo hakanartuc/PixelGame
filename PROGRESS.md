@@ -183,9 +183,27 @@ Güncelleme: 2026-07-10
   Yeşil T44,20 (domuz otlağı doğusu), Mavi T40,85 (bataklık girişi)
 - Not: hammaddeler (jel/cevher/deri) hotbar'a KONMAZ — hotbar yalnız consumable alır (tasarım)
 
+### Faz 20 — Mob fazı 2: İskelet ailesi & mob mermi sistemi & ok kademeleri
+- 3 tür (Kayalık Geçit): Savaşçı (HP140/hasar12, 64×64 kılıç savurması) / Okçu (HP90/ok14,
+  menzil 280 < oyuncu 340, ~2.2sn tempo) / Büyücü (HP70/büyü22, menzil 240, ~3sn — cam top)
+- MOB MERMİ SİSTEMİ: atış anındaki oyuncu konumuna DÜZ hat — yana yürüyerek KAÇILABİLİR
+  (oyuncu oklarına bilinçli asimetri: duran hedef yer, hareket eden kaçar); mermi duvara
+  takılır → kaya siperi bedavaya LoS mekaniği; isabet melee mob hattından geçer
+  (dodge/defans/zırh XP ×0.15); büyü topu mor izli; MobType.attackRecover + projSpeed
+- Kamplar (harita doğrulamalı): giriş T118-122,80 (2 Savaşçı + Okçu),
+  derin T148-152,95 (Savaşçı + Okçu + Büyücü); gece kuralıyla undead saati
+- Kemik ekonomisi: Kemik dropu; parşömenler — Okçu: Archery %4 (TÜRÜN TEK KAYNAĞI),
+  Büyücü: Enchanting %4 + Soluk Öz %15; Savaşçı: OneHand %3; scrolls.png +2 hücre (yeşil/mor)
+- OK KADEMELERİ (kullanıcı isteği): standart en ucuz, premium'lar sert —
+  Ok (1 Odun→10, ×1.0) / Kemik Oku (1 Kemik+1 Odun→10, ×1.15) / Demir Ok (1 Külçe+1 Odun→10,
+  ×1.3, Smithing 10); sağ tık = aktif mühimmat, bitince ucuza otomatik düşüş (bildirimli);
+  HUD sayacı tür adıyla; kademe çarpanı beceri/sıçrama çarpanlarıyla birleşir;
+  leşten geri dönen ok HEP standart (premium uç kırılır — ekonomi koruması)
+- Diriliş animasyon satırları sheet'lerde kullanılmadı (ileride "mezardan kalkma" spawn'ı olabilir)
+
 ## 🔜 Kalanlar (öncelik sırası)
 1. **Boss scroll/taş dropları** (yüksek kademe) mob fazlarıyla gelecek; yay walk/idle görseli (asset gelince)
-2. **Mob fazları** (devamı): Skeleton ailesi (+ok/mermi sistemi — Swordman/Bowman/Mage) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda
+2. **Mob fazları** (devamı): Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda; iskelet "mezardan kalkma" spawn animasyonu
 3. **İç mekanlar/zindanlar**: kapı→ayrı harita, Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate
 4. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
 5. **Ertelenen küçükler**: HUD perk ikon şeridi, item tooltip'leri, drag&drop, harita editörü akışı (Tiled tileset tanımı),

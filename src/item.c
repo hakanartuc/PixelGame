@@ -205,6 +205,7 @@ const ItemType ITEM_TYPES[] = {
     // --- Faz 5: okçuluk ---
     { .name = "Ok", .iconIndex = 0, .maxStack = 99, .value = 2,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .ammoDmgMult = 1.0f,   // standart kademe (en ucuz)
       .iconSpritePath = "assets/icons/items/arrow_icon.png",
       .iconSrc = { 0, 0, 32, 32 } },
 
@@ -252,7 +253,35 @@ const ItemType ITEM_TYPES[] = {
       .consumable = true, .useCooldown = 2.0f,
       .trapItem = true,   // kullanım: ayak önüne tuzak kur (main işler)
       .iconSpritePath = "assets/icons/items/resources.png",
-      .iconSrc = { 80, 48, 16, 16 } },
+      .iconSrc = { 80, 64, 16, 16 } },
+
+    // --- Faz 8: iskelet ekonomisi — kemik + kadim parşömenler ---
+    { .name = "Kemik", .iconIndex = 0, .maxStack = 99, .value = 10,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/resources.png",
+      .iconSrc = { 16, 64, 16, 16 } },
+    { .name = "Parşömen: Archery", .iconIndex = 0, .maxStack = 10, .value = 50,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .scrollSkill = SKILL_ARCHERY, .scrollXp = 250.0f,
+      .iconSpritePath = "assets/icons/items/scrolls.png",
+      .iconSrc = { 176, 0, 16, 16 } },
+    { .name = "Parşömen: Enchanting", .iconIndex = 0, .maxStack = 10, .value = 50,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .scrollSkill = SKILL_ENCHANTING, .scrollXp = 250.0f,
+      .iconSpritePath = "assets/icons/items/scrolls.png",
+      .iconSrc = { 192, 0, 16, 16 } },
+
+    // --- Ok kademeleri (Faz 8): sağ tık = aktif mühimmat seçimi ---
+    { .name = "Kemik Oku", .iconIndex = 0, .maxStack = 99, .value = 4,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .ammoDmgMult = 1.15f,   // keskin kemik uç
+      .iconSpritePath = "assets/icons/items/arrow_bone_icon.png",
+      .iconSrc = { 0, 0, 32, 32 } },
+    { .name = "Demir Ok", .iconIndex = 0, .maxStack = 99, .value = 8,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .ammoDmgMult = 1.30f,   // en sert kademe
+      .iconSpritePath = "assets/icons/items/arrow_iron_icon.png",
+      .iconSrc = { 0, 0, 32, 32 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

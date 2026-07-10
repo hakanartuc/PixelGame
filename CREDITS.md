@@ -18,6 +18,7 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
 - Dosyalar: `assets/characters/npcs/`, `assets/buildings/`,
   `assets/characters/mobs/Sheep|Pig|Boar|Chicken.png` (Animals),
   `assets/characters/mobs/Slime_*.png` (Enemies/Slime — 2 renk × 3 boy),
+  `assets/characters/mobs/Skeleton_*.png` (Enemies/Skeleton — Swordman/Bowman/Mage),
   `assets/icons/items/food.png` (Food Icons), `assets/decor/notice_board.png` (Signs),
   `assets/decor/campfire.png` (Outdoor Decor Animations)
 - TODO: kullanılan sürümün (ücretsiz/paid) lisans metnini teyit et;

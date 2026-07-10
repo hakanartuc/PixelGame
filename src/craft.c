@@ -96,9 +96,10 @@ const RecipeDef RECIPES[] = {
     // Ocak — oduculuk ürünleri (Faz 5): ok ve yay (odunun craft anlamı).
     // SONA eklendi: save v10 öğrenilen-tarif bayrakları İNDEKSLE saklanır,
     // ortaya ekleme eski kayıtları kaydırırdı.
+    // Ok kademeleri (Faz 8): standart en ucuz (külçesiz), kemik/demir pahalı-sert
     { .station = STATION_SMITH, .name = "Ok x10",
-      .in1Item = ITEM_WOOD, .in1Count = 1, .in2Item = ITEM_INGOT_COPPER, .in2Count = 1,
-      .outItem = ITEM_ARROW, .outCount = 10, .work = 4.0f, .xp = 6.0f },
+      .in1Item = ITEM_WOOD, .in1Count = 1, .in2Item = -1,
+      .outItem = ITEM_ARROW, .outCount = 10, .work = 3.0f, .xp = 4.0f },
     { .station = STATION_SMITH, .name = "Yay",
       .in1Item = ITEM_WOOD, .in1Count = 2, .in2Item = ITEM_INGOT_IRON, .in2Count = 1,
       .outItem = ITEM_BOW, .outCount = 1, .work = 8.0f, .xp = 14.0f,
@@ -129,6 +130,15 @@ const RecipeDef RECIPES[] = {
     { .station = STATION_ALCH, .name = "Yapışkan Tuzağı",
       .in1Item = ITEM_SLIME_GEL, .in1Count = 2, .in2Item = ITEM_HERB_BLUE, .in2Count = 1,
       .outItem = ITEM_STICKY_TRAP, .outCount = 1, .work = 4.0f, .xp = 8.0f },
+
+    // Ocak — premium oklar (Faz 8): keskin kemik uç / demir uç
+    { .station = STATION_SMITH, .name = "Kemik Oku x10",
+      .in1Item = ITEM_BONE, .in1Count = 1, .in2Item = ITEM_WOOD, .in2Count = 1,
+      .outItem = ITEM_ARROW_BONE, .outCount = 10, .work = 4.0f, .xp = 6.0f },
+    { .station = STATION_SMITH, .name = "Demir Ok x10",
+      .in1Item = ITEM_INGOT_IRON, .in1Count = 1, .in2Item = ITEM_WOOD, .in2Count = 1,
+      .outItem = ITEM_ARROW_IRON, .outCount = 10, .work = 5.0f, .xp = 8.0f,
+      .minSkill = 10 },
 };
 const int RECIPE_COUNT = (int)(sizeof(RECIPES) / sizeof(RECIPES[0]));
 

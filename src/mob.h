@@ -85,6 +85,11 @@ typedef struct {
     float hitPoisonDps;      // vuruşu oyuncuyu zehirler: sn başına hasar (0 = yok)
     float hitPoisonTime;     // zehir süresi (sn)
 
+    // İskelet paketi (Faz 8): menzilli düşmanlar
+    float attackRecover;     // saldırı sonrası bekleme (0 = varsayılan 0.6 sn);
+                             // menzilli türlerde atış temposunu belirler
+    float projSpeed;         // mermi hızı px/sn (ATTACK_RANGED/MAGIC; düz hat, KAÇILABİLİR)
+
     AnimClip anims[4][3];
 } MobType;
 
