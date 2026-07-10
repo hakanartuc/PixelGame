@@ -114,10 +114,14 @@ void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, in
         .w = p->drawW * zoom,
         .h = p->drawH * zoom};
 
+    // Egilirken karakter yari saydam (gizlilik geri bildirimi)
+    Uint8 sneakAlpha = p->sneaking ? 160 : 255;
+
     for (int i = 0; i < layerCount; i++)
     {
         SDL_FRect layerSrc = src;    // varsayilan: ortak src (state satiri + currentFrame)
         SDL_FRect layerDst = screen; // varsayilan: ortak dst
+        r2d_texture_set_alpha_mod(layers[i].tex, sneakAlpha);
 
         // Idle'da bu katmanin override'i varsa: farkli satir + sabit frame 0
         if (p->state == PLAYER_IDLE && layers[i].idleRowOverride >= 0)
@@ -143,6 +147,7 @@ void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, in
         }
 
         r2d_draw_texture(renderer, layers[i].tex, &layerSrc, &layerDst);
+        r2d_texture_set_alpha_mod(layers[i].tex, 255);   // paylasilan texture — geri al
     }
 
 #if DEBUG_DRAW
@@ -164,13 +169,13 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
     int groundTile = tile_at_point(fb.x + fb.w / 2.0f, fb.y + fb.h / 2.0f);
     if (groundTile >= 0 && groundTile < TILE_TYPE_COUNT)
     {
-        p->speed = PLAYER_SPEED * TILE_TYPES[groundTile].speedMultiplier;
+        p->speed = PLAYER_SPEED * TILE_TYPES[groundTile].speedMultiplier * p->speedMult;
         if (TILE_TYPES[groundTile].damage > 0.0f)
             p->health -= TILE_TYPES[groundTile].damage * dt;
     }
     else
     {
-        p->speed = PLAYER_SPEED;
+        p->speed = PLAYER_SPEED * p->speedMult;
     }
 
     if (p->health <= 0.0f)

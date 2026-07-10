@@ -73,6 +73,8 @@ typedef struct Player {
     Direction lastFacing;  // geçiş tespiti: önceki yön
 
     float speed;
+    float speedMult; // dış hız çarpanı (perk × gece × eğilme) — main her kare yazar,
+                     // player_update tile hızıyla ÇARPAR (önceden ezilip kayboluyordu)
     float health;
     float maxHealth;
 
@@ -93,6 +95,8 @@ typedef struct Player {
 
     // Mob vuruşları oyuncuyu iter (perk'lerle azalır/sıfırlanır)
     float knockbackX, knockbackY;
+
+    bool sneaking;   // C toggle — eğilme (algı/tanık azalır, hız düşer; kesin gizlilik değil)
 
     // Saldırı durumu
     bool attacking;

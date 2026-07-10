@@ -209,6 +209,26 @@ void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Ca
 
     r2d_draw_texture_flip(renderer, texture, &src, &screen, flip == SDL_FLIP_HORIZONTAL);
 
+    // Şüphe göstergesi: fark etme süreci dolarken baş üstünde sarı çubuk;
+    // alarm anında kısa süre kırmızı "!" (dikdörtgenlerle — font gerekmez)
+    if (m->e.alive) {
+        float headX = ((m->e.rect.x + m->e.rect.w / 2.0f) - camera->x) * zoom;
+        float headY = screen.y - 8.0f * zoom;
+        if (m->alertFlash > 0.0f) {
+            r2d_set_color(renderer, 255, 60, 50, 255);
+            r2d_fill_rect(renderer, &(SDL_FRect){ headX - 2*zoom, headY - 14*zoom, 4*zoom, 9*zoom });
+            r2d_fill_rect(renderer, &(SDL_FRect){ headX - 2*zoom, headY - 3*zoom,  4*zoom, 4*zoom });
+        } else if (!m->aggro && m->suspicion > 0.05f) {
+            SDL_FRect bg = { headX - 12*zoom, headY - 6*zoom, 24*zoom, 4*zoom };
+            SDL_FRect fill = bg;
+            fill.w *= m->suspicion;
+            r2d_set_color(renderer, 25, 25, 30, 200);
+            r2d_fill_rect(renderer, &bg);
+            r2d_set_color(renderer, 255, 210, 60, 255);
+            r2d_fill_rect(renderer, &fill);
+        }
+    }
+
     #if DEBUG_DRAW
     SDL_FRect rectScreen = {
         m->e.rect.x - camera->x,
@@ -270,7 +290,8 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
     if (m->state != MOB_RETURN && homeDist > MOB_LEASH_RANGE) {
         m->state = MOB_RETURN;
         m->attacking = false;
-        m->aggro = false;   // alarm biter — dönünce normal algıya döner
+        m->aggro = false;      // alarm biter — dönünce normal algıya döner
+        m->suspicion = 0.0f;   // şüphe de sıfırlanır (temiz sayfa)
     }
 
     if (m->state == MOB_RETURN) {
@@ -329,10 +350,28 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
         }
     }
     else {
-        // --- SALDIRI YOK: idle / chase ---
+        // --- SALDIRI YOK: şüphe / idle / chase ---
 
-        // Yön: oyuncuya doğru (menzildeyse ya da alarmdaysa)
-        if (dist > 0.0f && (dist < detectRange || m->aggro)) {
+        // ŞÜPHE: algı ikili değil — menzilde birikir (yakınsa hızlı), dışında söner.
+        // 1'e dolunca tam alarm (aggro): artık eğilmek/uzaklaşmak kurtarmaz (leash'e kadar).
+        if (!m->aggro) {
+            if (dist < detectRange) {
+                float rate = 0.5f + 3.0f * (1.0f - dist / detectRange);   // dipte ~0.3sn, sınırda ~2sn
+                m->suspicion += rate * dt;
+                if (m->suspicion >= 1.0f) {
+                    m->suspicion = 1.0f;
+                    m->aggro = true;
+                    m->alertFlash = 0.8f;   // baş üstü "!"
+                }
+            } else {
+                m->suspicion -= 0.6f * dt;   // gözden kaybol → yavaşça unutur
+                if (m->suspicion < 0.0f) m->suspicion = 0.0f;
+            }
+        }
+        if (m->alertFlash > 0.0f) m->alertFlash -= dt;
+
+        // Yön: şüphelenen ya da alarmdaki mob oyuncuya döner (kolaçan hissi)
+        if (dist > 0.0f && (m->suspicion > 0.25f || m->aggro)) {
             if (SDL_fabsf(dx) > SDL_fabsf(dy)) {
                 m->e.facing = 2;
                 m->e.facingLeft = (dx < 0);
@@ -341,8 +380,8 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
             }
         }
 
-        // Durum: chase mi idle mi (aggro'lu mob menzile bakmaz — alarm verildi)
-        if ((dist < detectRange || m->aggro) && dist >= attackRange) {
+        // Durum: yalnız TAM alarm kovalar (şüpheli mob yerinde bakınır)
+        if (m->aggro && dist >= attackRange) {
             m->state = MOB_CHASE;
             if (dist > 0.0f) {
                 float nx = dx / dist, ny = dy / dist;
@@ -371,8 +410,10 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
             m->state = MOB_IDLE;   // idle clip'i (durum 0)
         }
 
-        // Saldırı menzilinde + cooldown bittiyse → saldırı başlat
-        if (dist < attackRange && m->attackCooldown <= 0.0f) {
+        // Saldırı menzilinde + ALARMDA + cooldown bittiyse → saldırı başlat
+        // (fark etmemiş mobun dibinde durmak saldırı yemez — ama şüphe dipte
+        //  ~0.3 sn'de dolar, uzun süre dibinde duramazsın)
+        if (m->aggro && dist < attackRange && m->attackCooldown <= 0.0f) {
             m->attacking = true;
             m->currentFrame = 0;
             m->animTimer = 0.0f;
@@ -520,8 +561,11 @@ void mob_alert_camp(Mob *mobs, int mobCount, const Mob *victim)
 
         float dx = (o->e.rect.x + o->e.rect.w / 2.0f) - vx;
         float dy = (o->e.rect.y + o->e.rect.h / 2.0f) - vy;
-        if (SDL_sqrtf(dx * dx + dy * dy) <= MOB_AGGRO_SHARE_RANGE)
+        if (SDL_sqrtf(dx * dx + dy * dy) <= MOB_AGGRO_SHARE_RANGE) {
             o->aggro = true;   // algı menzili yok sayılır → saldırıya geçer
+            o->suspicion = 1.0f;
+            o->alertFlash = 0.8f;   // kamp alarmı görünür olsun
+        }
     }
 }
 

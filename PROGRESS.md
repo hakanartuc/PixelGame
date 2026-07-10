@@ -58,9 +58,25 @@ Güncelleme: 2026-07-10
 - Screen shake (hasar 0.25s/6px, crit 0.15s/3px) + kırmızı hasar vinyeti (0.35s)
 - Gün döngüsü test için 5 dk'ya indirildi (tasarım değeri 10 dk — gametime.h)
 
+### Faz 11 — Suç & Sneak (paket 1-3/4)
+- NPC ölümü (kalıcı, save v7), tıklamayla bilinçli saldırı, tanık tespiti, bounty (+HUD)
+- Muhafız döngüsü: yakala → öde/karşı koy, leash kaçışı, ertesi gün diriliş; bounty'liyken NPC konuşmaz
+- Sneak: C toggle, algı = eğilme × görüş açısı × siper (dekor LoS) × örtü (conceals tile),
+  sinsi vuruş ×2, çift kanal XP (süzülme tick + tanıksız suç); TileType.conceals (çimen)
+- Hız çarpanı bug'ı düzeldi: player_update tile hızı dış çarpanı (perk/gece/sneak) eziyordu →
+  Player.speedMult (perk hızları da fiilen İLK KEZ çalışıyor)
+- Mekanik tamamlama (2026-07-10, "eksik adım bırakma" kararı):
+  - Dekor genişledi: ağaçlar (siper/LoS, katı taban) + çalılar/saman (conceals, içine eğilerek girilir) —
+    Cute_Fantasy'den kırpıldı (assets/decor/); DecorDef'e solidBase/conceals alanları
+  - Mob ŞÜPHE sistemi: algı ikili değil — menzilde birikir (yakında ~0.3sn, sınırda ~2sn), dışında söner;
+    dolunca aggro + "!" işareti; şüpheli mob oyuncuya döner (bakınır), baş üstü sarı şüphe çubuğu;
+    saldırı yalnız alarmda başlar; leash şüpheyi de sıfırlar
+- Bilinen bilinçli tercihler: muhafız sneak'ten etkilenmez (bounty sahibini ismen tanır);
+  çim (zemin tile) örtüsü yalnız eğilirken işler
+
 ## 🔜 Kalanlar (öncelik sırası)
 
-1. **Suç & İtibar paketi** (kararlar verildi): Sneak, tanıklı suç, bölge/hizip itibarı, bounty, **muhafız** (yakala → ceza öde / karşı koy)
+1. **Suç & İtibar paketi — kalan: Faz 4 bölge itibarı** (fiyat çarpanı, diyalog kapıları, save)
    - **NPC öldürme** bu paketin parçası olarak eklenecek (değerlendirme 2026-07-10, özgür-dünya vizyonuna uygun):
      - Tanık mekaniğiyle birleşir: tanıklı cinayet = bounty + muhafız; tanıksız iz bırakmaz (Sneak sinerjisi)
      - Gothic/Kenshi yolu: herkes ölebilir, görevler "başarısız" olur, dünya devam eder (Skyrim'in ölümsüz NPC'si YOK;

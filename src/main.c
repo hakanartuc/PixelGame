@@ -34,6 +34,7 @@
 #include "light.h"
 #include "crime.h"
 #include "guard.h"
+#include "sneak.h"
 
 #define BASE_MAX_HP 100.0f   // oyuncu taban canı (perk bonusları üstüne biner)
 
@@ -220,6 +221,7 @@ int main(int argc, char *argv[])
         .lastState = -1, // ilk karede geçiş tetiklensin
         .lastFacing = -1,
         .speed = PLAYER_SPEED,
+        .speedMult = 1.0f,
         .health = 100.0f,
         .maxHealth = 100.0f,
         .strength = 10,    // sabit taban — dağıtım yok, ileride ekipman/perk ekler
@@ -242,9 +244,9 @@ int main(int argc, char *argv[])
     Hotbar hotbar = {0};
     hotbar_place_unlocks(&hotbar, player.skills);
 
-    // Dekorlar (evler): texture + boyutları (render/collision tek kaynaktan)
-    R2DTexture *decor_textures[16] = {0};
-    for (int i = 0; i < DECOR_COUNT && i < 16; i++)
+    // Dekorlar (ev/ağaç/çalı/saman): texture + boyutları (render/collision tek kaynaktan)
+    R2DTexture *decor_textures[32] = {0};
+    for (int i = 0; i < DECOR_COUNT && i < 32; i++)
         decor_textures[i] = load_texture(renderer, DECORS[i].texPath);
     decor_set_texture_sizes(decor_textures);
 
@@ -444,6 +446,12 @@ int main(int argc, char *argv[])
                         gameState = GAME_PAUSED; // 7) hicbiri yoksa MENU AC
                         menuScreen = MENU_MAIN;
                     }
+                }
+                else if (event.key.key == SDLK_C && gameState == GAME_PLAYING)
+                {
+                    // Eğilme (Sneak): algı/tanık azalır, hız düşer — kesin gizlilik değil
+                    player.sneaking = !player.sneaking;
+                    audio_play(SFX_UI);
                 }
                 else if (event.key.key == SDLK_SPACE && gameState == GAME_PLAYING)
                 {
@@ -1272,6 +1280,18 @@ int main(int argc, char *argv[])
                                                           target->e.health / target->e.maxHealth,
                                                           &perkFx);
 
+                        // Sinsi vuruş: eğilmiş + hedef fark etmemiş → ×2 hasar + Sneak XP
+                        if (player.sneaking && !target->aggro)
+                        {
+                            hit.damage *= 2.0f;
+                            SDL_Color purple = { 200, 140, 255, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 target->e.rect.x + target->e.rect.w / 2.0f,
+                                                 target->e.rect.y - 26.0f, "Sinsi vurus!", purple);
+                            if (skill_add_xp(player.skills, SKILL_SNEAK, SNEAK_XP_BACKSTAB))
+                                on_skill_levelup(&player, SKILL_SNEAK, &hotbar, floatTexts);
+                        }
+
                         target->e.health -= hit.damage;
                         target->e.hitFlash = 0.15f;
                         audio_play(hit.crit ? SFX_CRIT : SFX_HIT);
@@ -1364,8 +1384,11 @@ int main(int argc, char *argv[])
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 24.0f, buf, red);
                             }
-                            // Suç: tanık varsa bounty (hayatta kalan kurban kendisi tanıktır)
-                            else if (crime_witnessed(nx, ny, victim, !died))
+                            // Suç: tanık varsa bounty (hayatta kalan kurban kendisi tanıktır);
+                            // eğilirken tanık yarıçapı düşer (sneak'in suç ayağı)
+                            else if (crime_witnessed(nx, ny, victim, !died,
+                                                     player.sneaking ? SNEAK_WITNESS_RANGE
+                                                                     : CRIME_WITNESS_RANGE))
                             {
                                 int b = died ? CRIME_BOUNTY_MURDER : CRIME_BOUNTY_HIT;
                                 player.bounty += b;
@@ -1376,6 +1399,16 @@ int main(int argc, char *argv[])
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 24.0f, buf, red);
+                            }
+                            else if (died && player.sneaking)
+                            {
+                                // Fark edilmeden tanıksız cinayet — Sneak'in ustalık anı
+                                SDL_Color gray = { 170, 170, 190, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 24.0f, "Kimse gormedi...", gray);
+                                if (skill_add_xp(player.skills, SKILL_SNEAK, SNEAK_XP_CRIME))
+                                    on_skill_levelup(&player, SKILL_SNEAK, &hotbar, floatTexts);
                             }
 
                             if (died)
@@ -1401,17 +1434,41 @@ int main(int argc, char *argv[])
             float detectMul = (gametime_is_night() ? 1.5f : 1.0f)
                             * perkFx.detectOnPlayerMult;   // Hayalet perki
 
-            // Hız perk'leri: Çevik/Rüzgar/Uyumlu + gece Gölge Adımı
-            player.speed = PLAYER_SPEED * perkFx.speedMult
-                         * (gametime_is_night() ? perkFx.nightSpeedMult : 1.0f);
+            // Hız çarpanı: perk (Çevik/Rüzgar/Uyumlu) × gece (Gölge Adımı) × eğilme.
+            // player_update tile hızıyla çarpar (doğrudan speed yazmak eziliyordu — bug'dı)
+            player.speedMult = perkFx.speedMult
+                             * (gametime_is_night() ? perkFx.nightSpeedMult : 1.0f)
+                             * (player.sneaking ? sneak_speed_mult(player.skills[SKILL_SNEAK].level) : 1.0f);
             spawn_zones_update(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId,
                                dt * nightSpawnMul);
 
             float px = player.rect.x + player.rect.w / 2.0f;
             float py = player.rect.y + player.rect.h / 2.0f;
+            bool sneakNearDanger = false;   // use-based Sneak XP: tehlike yanında süzülme
+
+            // Örtü: ayak bastığın tile ya da içine girdiğin dekor (çalı/saman) gizleyici mi
+            float footY = player.rect.y + player.rect.h - 4.0f;
+            int groundT = tile_at_point(px, footY);
+            bool inConceal = (groundT >= 0 && groundT < TILE_TYPE_COUNT &&
+                              TILE_TYPES[groundT].conceals)
+                          || decor_conceals(px, footY);
+
             for (int i = 0; i < mobCount; i++)
             {
-                mob_update(&mobs[i], mobs, mobCount, px, py, dt, detectMul);
+                // Algı: gece/perk çarpanı × gizlilik (eğilme + açı + siper + örtü)
+                float stealthMul = sneak_detect_mul(player.sneaking,
+                                                    player.skills[SKILL_SNEAK].level,
+                                                    inConceal, px, py, &mobs[i]);
+                mob_update(&mobs[i], mobs, mobCount, px, py, dt, detectMul * stealthMul);
+
+                // Eğilmiş + fark edilmemiş + algı sınırına yakın → risk var, XP akar
+                if (player.sneaking && mobs[i].e.alive && !mobs[i].aggro)
+                {
+                    float sdx = mobs[i].e.rect.x + mobs[i].e.rect.w / 2.0f - px;
+                    float sdy = mobs[i].e.rect.y + mobs[i].e.rect.h / 2.0f - py;
+                    if (SDL_sqrtf(sdx * sdx + sdy * sdy) <= mobs[i].type->detectRange * 1.2f)
+                        sneakNearDanger = true;
+                }
 
                 // Kanama DoT'u (Kanatma perki) — ölüm loot/görev için main'de işlenir
                 if (mobs[i].bleedTime > 0.0f && mobs[i].e.alive)
@@ -1514,6 +1571,13 @@ int main(int argc, char *argv[])
                             player.health = 0.0f;
                     }
                 }
+            }
+
+            // Use-based Sneak XP: eğilmiş + fark edilmemiş + tehlike algı sınırında
+            if (sneakNearDanger)
+            {
+                if (skill_add_xp(player.skills, SKILL_SNEAK, SNEAK_XP_TICK * dt))
+                    on_skill_levelup(&player, SKILL_SNEAK, &hotbar, floatTexts);
             }
 
             // Gazi buff'ı aktifken oyuncudan kızıl közler yükselir (görsel geri bildirim)
@@ -1744,6 +1808,14 @@ int main(int argc, char *argv[])
                 draw_text(renderer, gameFont, bountyBuf, 20.0f, 72.0f, bountyCol);
             }
 
+            // Eğilme göstergesi
+            if (player.sneaking)
+            {
+                SDL_Color sneakCol = { 170, 170, 190, 255 };
+                draw_text(renderer, gameFont, "[Gizli]", 20.0f,
+                          player.bounty > 0 ? 96.0f : 72.0f, sneakCol);
+            }
+
             char clockBuf[24];
             gametime_format(clockBuf, sizeof(clockBuf));
             SDL_Color clockCol = { 220, 220, 235, 255 };
@@ -1879,7 +1951,7 @@ int main(int argc, char *argv[])
         if (npc_textures[i])
             r2d_texture_destroy(NULL, npc_textures[i]);
 
-    for (int i = 0; i < DECOR_COUNT && i < 16; i++)
+    for (int i = 0; i < DECOR_COUNT && i < 32; i++)
         if (decor_textures[i])
             r2d_texture_destroy(NULL, decor_textures[i]);
 

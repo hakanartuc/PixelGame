@@ -13,6 +13,8 @@ typedef struct {
     const char *texPath;   // tek parça sprite (Cute_Fantasy building vb.)
     float x, y;            // TABAN ORTA noktası (dünya pikseli) — ayak hizası
     float scale;           // kaynak piksel → dünya çarpanı
+    bool solidBase;        // tabanı katı mı (ev/ağaç girer, çalı girmez)
+    bool conceals;         // içine girilebilir gizlenme (çalı/saman — sneak örtüsü)
 } DecorDef;
 
 extern const DecorDef DECORS[];
@@ -25,6 +27,9 @@ void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
 // Kutu herhangi bir dekorun katı tabanına çarpıyor mu?
 // (taban = sprite'ın alt %35'i — çatının arkasından yürünebilir)
 bool decor_blocks(SDL_FRect box);
+
+// Nokta gizleyici bir dekorun (çalı/saman) içinde mi? (sneak örtüsü)
+bool decor_conceals(float x, float y);
 
 // Texture boyutları render/collision için gerekli — yükleme sonrası bir kez çağır
 void decor_set_texture_sizes(R2DTexture **decorTextures);

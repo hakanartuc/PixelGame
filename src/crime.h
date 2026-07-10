@@ -14,7 +14,8 @@
 #define CRIME_WITNESS_RANGE 350.0f    // tanığın suçu görebildiği yarıçap (dünya px)
 
 // (x,y)'deki suçun tanığı var mı? Kurban dışındaki görünür canlı NPC'ler
-// yarıçap içinde aranır; kurban hayattaysa kendisi de tanıktır.
-bool crime_witnessed(float x, float y, int victimIdx, bool victimAlive);
+// range içinde aranır; kurban hayattaysa kendisi de tanıktır.
+// range: normalde CRIME_WITNESS_RANGE, eğilirken SNEAK_WITNESS_RANGE (sneak.h).
+bool crime_witnessed(float x, float y, int victimIdx, bool victimAlive, float range);
 
 #endif

@@ -15,6 +15,7 @@ typedef struct
     const char *texturePath; // bu tile'ın 16x16 doku dosyası (NULL = sadece renk)
     float speedMultiplier;   // 1.0 = normal hız; <1 yavaşlatır (bataklık), >1 hızlandırır
     float damage;            // saniyede verdiği hasar (0 = zararsız)
+    bool conceals;           // içine girilebilir gizlenme (çim, saman...) — EĞİLİRKEN algıyı düşürür
 } TileType;
 
 #define MAX_TILE_TYPES 64   // tile türü tavanı (dizi boyutları için derleme-zamanı sabiti)

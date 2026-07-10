@@ -82,6 +82,9 @@ typedef struct {
     int zoneId;           // hangi spawn bölgesinden doğdu (-1 = hiçbiri/manuel)
     float homeX, homeY;   // doğduğu nokta (leash bunu referans alır)
     bool aggro;           // vuruldu/kamp alarmı: algı menzili yok sayılır (leash sıfırlar)
+    float suspicion;      // 0..1 şüphe: menzilde birikir (yakınsa hızlı), dışında söner;
+                          // 1'e ulaşınca aggro — algı ikili değil, "fark edilme süreci"
+    float alertFlash;     // aggro anında baş üstü "!" süresi (sn)
     float bleedDps, bleedTime;   // Kanatma perki DoT'u (main işler — ölüm/loot orada)
     MobState state;         // AI durumu
     float attackCooldown;     // bir sonraki saldırıya kalan süre
