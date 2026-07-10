@@ -30,7 +30,7 @@ const ItemType ITEM_TYPES[] = {
   .equipZ = 140, .equipZBack = 9,   // dosya oneklerinden (LPC z)
   .equipIdleRow = 8,                // silahin idle'i yok → walk row 8 ayakta durus
   .slashOversize = true,            // 64px slash satiri bos → oversize savurma blogu
-  .weaponFx = WEAPON_FX_PINK,       // taban efekt (run sistemi gelince instance'a tasinacak)
+  // weaponFx yok: efektler artik yalniz runlerden/kaplamadan gelir (instance)
 
   .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
 
@@ -162,8 +162,52 @@ const ItemType ITEM_TYPES[] = {
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .scrollSkill = SKILL_ONE_HANDED, .scrollXp = 250.0f,
       .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 64, 0, 16, 16 } },
+
+    // --- Meslek paketi Faz 4: sunak — ozler, runler, stat taslari ---
+    { .name = "Soluk Öz", .iconIndex = 0, .maxStack = 99, .value = 10,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/decor/ores.png", .iconSrc = { 80, 112, 16, 16 } },
+    { .name = "Zehirli Öz", .iconIndex = 0, .maxStack = 99, .value = 12,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/decor/ores.png", .iconSrc = { 80, 48, 16, 16 } },
+    { .name = "Pembe Rün", .iconIndex = 0, .maxStack = 10, .value = 70,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/resources.png", .iconSrc = { 64, 48, 16, 16 } },
+    { .name = "Zehir Rünü", .iconIndex = 0, .maxStack = 10, .value = 75,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/resources.png", .iconSrc = { 16, 48, 16, 16 } },
+    { .name = "Güç Taşı", .iconIndex = 0, .maxStack = 10, .value = 120,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 80, 0, 16, 16 } },
+    { .name = "Çeviklik Taşı", .iconIndex = 0, .maxStack = 10, .value = 120,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 96, 0, 16, 16 } },
+    { .name = "Yaşam Taşı", .iconIndex = 0, .maxStack = 10, .value = 120,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 112, 0, 16, 16 } },
+    { .name = "Koruma Taşı", .iconIndex = 0, .maxStack = 10, .value = 120,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 128, 0, 16, 16 } },
+    { .name = "Akıl Taşı", .iconIndex = 0, .maxStack = 10, .value = 120,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 144, 0, 16, 16 } },
+    { .name = "Dayanıklılık Taşı", .iconIndex = 0, .maxStack = 10, .value = 120,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 160, 0, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
+
+const int STAT_TIER_VALUE[STAT_COUNT] = { 2, 2, 10, 3, 8, 10 };
+const char *const STAT_NAMES[STAT_COUNT] = { "STR", "DEX", "HP", "DEF", "MP", "STA" };
+
+ItemStack item_make(const ItemType *type, int count, int plusLevel)
+{
+    ItemStack s = { .type = type, .count = count, .plusLevel = plusLevel };
+    s.fx = (type != NULL) ? (Sint8)type->weaponFx : 0;
+    s.statType[0] = s.statType[1] = -1;
+    s.statTier[0] = s.statTier[1] = 0;
+    return s;
+}
 
 // Plus ölçeği: her plus taban değerin %10'unu ekler (+8 = ×1.8)
 static float plus_scale(int plusLevel)

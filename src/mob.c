@@ -32,6 +32,11 @@ static const LootEntry GOBLIN_LOOT[] = {
     { &ITEM_TYPES[ITEM_BP_HELMET_IRON],   0.03f, 0 },
     { &ITEM_TYPES[ITEM_SCROLL_MINING],    0.03f, 0 },
     { &ITEM_TYPES[ITEM_SCROLL_HERBALISM], 0.03f, 0 },
+    // Faz 4 — sunak ekonomisi: öz (rün hammaddesi) + çevik/dayanıklı taşlar
+    { &ITEM_TYPES[ITEM_ESSENCE_PALE], 0.20f, 0 },
+    { &ITEM_TYPES[ITEM_STONE_DEX],    0.03f, 0 },
+    { &ITEM_TYPES[ITEM_STONE_HP],     0.03f, 0 },
+    { &ITEM_TYPES[ITEM_STONE_STA],    0.02f, 0 },
 };
 static const LootEntry ORC_LOOT[] = {
     { &ITEM_TYPES[ITEM_POTION_HP],   0.50f, 0 },
@@ -44,6 +49,11 @@ static const LootEntry ORC_LOOT[] = {
     { &ITEM_TYPES[ITEM_BP_POISON_OIL],   0.04f, 0 },
     { &ITEM_TYPES[ITEM_SCROLL_SMITHING], 0.03f, 0 },
     { &ITEM_TYPES[ITEM_SCROLL_ONEHAND],  0.03f, 0 },
+    // Faz 4 — ork: zehirli öz + savaşçı taşları
+    { &ITEM_TYPES[ITEM_ESSENCE_TOXIC], 0.20f, 0 },
+    { &ITEM_TYPES[ITEM_STONE_STR],     0.03f, 0 },
+    { &ITEM_TYPES[ITEM_STONE_DEF],     0.03f, 0 },
+    { &ITEM_TYPES[ITEM_STONE_MP],      0.02f, 0 },
 };
 #define LOOT_COUNT(t) ((int)(sizeof(t) / sizeof((t)[0])))
 

@@ -20,7 +20,13 @@
 typedef enum {
     STATION_SMITH,   // demirci ocağı (Çekiç kuşanılı şart)
     STATION_ALCH,    // simya kazanı (süre bazlı)
+    STATION_ENCHANT, // harabe sunağı (süre bazlı; rün craft ŞANSLI — Enchanting telafi eder)
 } StationType;
+
+// Sunak işlemleri: rün basma garantili, stat basma garantili-pahalı;
+// rün ÜRETİMİ şanslı (60 + Enchanting×0.4, tavan 95 — tutmayan özler yanar)
+#define ENCH_RUNE_CAST_TIME 3.0f    // rün/stat basma süresi (sn)
+#define ENCH_CRAFT_BASE_CHANCE 60.0f
 
 typedef struct {
     StationType type;
@@ -82,8 +88,12 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
                         R2D *renderer, TTF_Font *font, float panelX, float panelY);
 
 // Panelde tıklanan satır: 0..N-1 = RECIPES indeksi (bu istasyonunkiler),
-// CRAFT_ROW_PLUS = '+basma' satırı, -1 = boş
-#define CRAFT_ROW_PLUS -2
+// negatifler özel satırlar, -1 = boş
+#define CRAFT_ROW_PLUS   (-2)    // '+basma' (ocak)
+#define CRAFT_ROW_TARGET (-3)    // hedef ekipmanı değiştir (sunak)
+#define CRAFT_ROW_RUNE0  (-4)    // Pembe Rün bas (sunak)
+#define CRAFT_ROW_RUNE1  (-5)    // Zehir Rünü bas (sunak)
+#define CRAFT_ROW_STAT_BASE (-10)  // -10-STAT_x → stat basma satırı (-10..-15)
 int craft_panel_recipe_at(int stationIdx, float x, float y, float panelX, float panelY);
 
 #endif

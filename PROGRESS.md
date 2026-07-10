@@ -109,17 +109,26 @@ Güncelleme: 2026-07-10
 - Animasyonlar: kazanda oyuncu spellcast (PLAYER_CAST) + kazan fokurdama + kabarcık; ocak alazlanması
 - Save v10 (öğrenilen tarifler)
 
+### Faz 16 — Meslek paketi 4/5: Kadim Sunak (Enchanting)
+- Sunak: Karanlık Orman sınırında (T102,14) sahipsiz harabe — KAPI YOK (keşif ödülü);
+  Yaşlı Kemal [sir] düğümü (Speech ≥ 20) yerini söyler; obelisk dekoru
+- weaponFx ItemStack instance'ına taşındı (save v11); item_make() zorunlu (compound literal fx siler)
+- Rün ÜRETİMİ şanslı: %60 + Enchanting×0.4 (tavan %95), tutmazsa özler yanar;
+  BASMA garantili (3 sn tören, mor partikül + spellcast): Pembe (+%8 hasar) / Zehir (4sn %25 DoT, Kanatma ile binmez)
+- Özler: goblin Soluk Öz %20 / ork Zehirli Öz %20
+- STAT BASMA: 2 slot + kademe I-III; STR/DEX +2, HP +10, DEF +3, MP +8, STA +10 per kademe;
+  maliyet: kademe × (1 stat taşı + 2 Demir Külçe); taşlar: mob dropu %2-3 (türe göre) + Baran (Yaşam Taşı 120g)
+- Türetilmiş statlar her kare: taban + perk + gear (max can artışı kadar iyileşme); DEF düz defans
+- Ekipman paneli: stat rozetleri (mor nokta) + toplam satırı; sunak hedef satırında [Rün: X] + [STAT n]
+- Düzeltilen bug'lar: ekipman TAKASI instance siliyordu (rün/stat kaybı); sahipsiz sunak bounty/itibar
+  kapısına takılıyordu; perk max-HP hesabı gear HP ile yanlış delta veriyordu; süreç iptali sessizdi
+  ("İşlem iptal edildi" eklendi); F efekt önizleme tuşu KALDIRILDI (rün efektini eziyordu);
+  Long Sword'un kalıcı PINK tür efekti kaldırıldı (efekt yalnız rün/kaplamadan)
+
 ## 🔜 Kalanlar (öncelik sırası)
-1. **Meslek paketi 4-5/5** (kararlar verildi, plan 2026-07-10):
-   - F4: Enchanting sunağı — İKİ iş (kararlar 2026-07-10):
-     a) öz→rün (moba/biyoma bağlı), üzerine basılır, seviyeye bağlı başarısızlık;
-        weaponFx ItemStack'e taşınır (save)
-     b) STAT BASMA: silah/zırha 2 slot + kademe I-III (aynı stat tekrar basılınca yükselir);
-        statlar: STR/DEX/HP/DEF/MP/STA (havuzlar HUD'da hazır) — kombata bağlanır
-        (STR→hasar, DEX→crit, HP→max can, DEF→defans, MP/STA→havuz büyümesi);
-        malzeme: stat scroll'u + külçe; scroll kaynağı: mob dropu (%6-8, tür moba göre) +
-        vendor (düşük kademe, ÇOK nadir + pahalı) + boss (yüksek kademe, mob fazlarıyla)
+1. **Meslek paketi 5/5** (kararlar verildi, plan 2026-07-10):
    - F5: Oduculuk ürünleri + minimal yay savaşı (ok craft, Yay kuşanılır, oyuncu projectile, Archery)
+   - Boss scroll/taş dropları (yüksek kademe) mob fazlarıyla gelecek
 2. **Av & kontrat panosu**: hayvanlar (Cute_Fantasy Animals), deri/et, Witcher tarzı ilan panosu
 3. **Mob fazları** (araya serpiştirilir): Slime ailesi → Skeleton ailesi (+ok/mermi sistemi) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla)
 4. **İç mekanlar/zindanlar**: kapı→ayrı harita, Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate

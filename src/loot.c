@@ -72,9 +72,8 @@ bool loot_spawn(Loot *loots, int maxLoot, float x, float y,
     int n = 0;
     for (int k = 0; k < tableCount && n < MAX_LOOT_ITEMS; k++) {
         if (randf() >= table[k].chance) continue;   // düşmedi
-        loots[slot].items[n].type = table[k].type;
-        loots[slot].items[n].count = 1;
-        loots[slot].items[n].plusLevel = roll_plus(table[k].maxPlus);
+        loots[slot].items[n] = item_make(table[k].type, 1,
+                                         roll_plus(table[k].maxPlus));
         n++;
     }
     loots[slot].itemCount = n;

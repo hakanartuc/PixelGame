@@ -75,15 +75,27 @@ void inventory_render(const Inventory *inv, R2D *renderer,
 bool inventory_add(Inventory *inv, const ItemType *type, int count, int plusLevel)
 {
     if (type == NULL) return false;
+    ItemStack s = item_make(type, count, plusLevel);
+    return inventory_add_stack(inv, &s);
+}
 
-    // 1) Stack'lenebilen item zaten varsa, ona ekle (plus da aynı olmalı —
-    //    +0 ve +3 aynı yığına girmez, farklı item'dir)
-    if (type->maxStack > 1) {
+bool inventory_add_stack(Inventory *inv, const ItemStack *s)
+{
+    if (s == NULL || s->type == NULL) return false;
+
+    // 1) Stack'lenebilen item zaten varsa, ona ekle. Yığın şartı: aynı plus +
+    //    aynı fx + her iki taraf da stat'sız (+3, rünlü ya da stat'lı olan
+    //    AYRI item'dir, yığına girmez)
+    bool sPlain = (s->statType[0] < 0 && s->statType[1] < 0);
+    if (s->type->maxStack > 1 && sPlain) {
         for (int i = 0; i < INVENTORY_SIZE; i++) {
-            if (inv->slots[i].type == type &&
-                inv->slots[i].plusLevel == plusLevel &&
-                inv->slots[i].count < type->maxStack) {
-                inv->slots[i].count += count;
+            ItemStack *t = &inv->slots[i];
+            if (t->type == s->type &&
+                t->plusLevel == s->plusLevel &&
+                t->fx == s->fx &&
+                t->statType[0] < 0 && t->statType[1] < 0 &&
+                t->count < s->type->maxStack) {
+                t->count += s->count;
                 // (Basit: maxStack taşmasını şimdilik kontrol etmiyoruz —
                 //  ileride taşan kısmı yeni slota koyarız)
                 return true;
@@ -91,12 +103,10 @@ bool inventory_add(Inventory *inv, const ItemType *type, int count, int plusLeve
         }
     }
 
-    // 2) Boş slot bul
+    // 2) Boş slot bul — instance OLDUĞU GİBİ taşınır (fx/stat kaybolmaz)
     for (int i = 0; i < INVENTORY_SIZE; i++) {
         if (inv->slots[i].type == NULL) {
-            inv->slots[i].type = type;
-            inv->slots[i].count = count;
-            inv->slots[i].plusLevel = plusLevel;
+            inv->slots[i] = *s;
             return true;
         }
     }

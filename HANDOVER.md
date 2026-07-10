@@ -29,13 +29,15 @@ Vizyon: OFFLINE Skyrim-vari açık dünya, KO'dan ilham combat/loot. Sınıf yok
   · dialog (txt format: `[dugum] / text: / opt: -> hedef|end|shop|accept:ID|complete:ID`) · quest (KILL) · shop (al/sat)
   · item/inventory/equipment (instance +plus, zırh sınıfı) · skill (use-based, XP=hasar) · ability+hotbar (1-8, KO auto-attack)
   · perk (48 perk, eşik 25/50/75/100, 3-seç-1, PerkEffects tek nokta) · combat (Combat A) · gametime (10dk=24s, mood müziği)
-  · audio (SFX) + music (4 prosedürel parça, mood crossfade) · minimap (fog, target pass) · save (v6, alan-alan binary)
+  · audio (SFX) + music (4 prosedürel parça, mood crossfade) · minimap (fog, target pass) · save (v11, alan-alan binary)
+  · craft (istasyonlar/tarifler/sunak) · resource (toplama düğümleri) · region (bölgesel bounty/itibar)
   · ui_theme (9-grid paneller) · font (ttf→GPU upload).
 - **main.c** — tüm bağlantı/orkestrasyon burada (~1500 satır; ileride bölünebilir).
 
 ## Tuşlar
-WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş · I envanter · K skill/perk · J görevler
-· M minimap · F efekt önizleme · **F10 DEBUG +1M XP (yayında kaldır!)** · F5/F9 kaydet/yükle · ESC katmanlı kapatma/menü
+WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/istasyon/topla · I envanter · K skill/perk · J görevler
+· M minimap · C eğilme · **F10 DEBUG +1M XP + malzeme seti (yayında kaldır!)** · F5/F9 kaydet/yükle · ESC katmanlı kapatma/menü
+(F efekt önizleme KALDIRILDI 2026-07-10 — rünün instance efektini eziyordu)
 
 ## Kritik bilinenler
 - **Kanama/perk VFX'leri olay bazlı**; F10 sonrası moblar tek vuruşta ölürse kanama görülmez (Orc'ta dene).
@@ -46,10 +48,12 @@ WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş ·
 - Perk eşiği 25'ten başlar; test F10 ile.
 
 ## Sıradaki iş
-**Craft** (PROGRESS #1): Smithing (+basma, risk), Alchemy (bitki→iksir), Enchanting
-(weaponFx instance'a taşınır). Sonrası: av → mob fazları (Slime → Skeleton+mermi → çöl/volkan).
+**Meslek 5/5** (PROGRESS #1): Oduculuk ürünleri + minimal yay savaşı (ok craft, Yay kuşanılır,
+oyuncu projectile, Archery). Sonrası: av → mob fazları (Slime → Skeleton+mermi → çöl/volkan).
 
 Tamamlananlar (2026-07-10): GPU-3 (shader gece aydınlatması + shake + vinyet),
 **Suç & İtibar paketi** (NPC ölümü, muhafız, Sneak + mob şüphesi, bölgesel bounty+itibar; save v8),
-**Diyalog koşulları** (req:/fx:, Speech zarı + günlük kilit, muhafız rüşveti [3], Türkçe UI taraması).
+**Diyalog koşulları** (req:/fx:, Speech zarı + günlük kilit, muhafız rüşveti [3], Türkçe UI taraması),
+**Meslek paketi 1-4/5** (toplama süreci + istasyonlar/craft + blueprint ekonomisi + Kadim Sunak;
+save v11 — ItemStack instance fx/stat; ayrıntı PROGRESS Faz 13-16).
 Gün döngüsü test için 5 dk (tasarım 10 dk). Tuşlara ek: **C eğilme**, NPC'ye saldırı = tıkla + Space.

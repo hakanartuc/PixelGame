@@ -1,7 +1,10 @@
+#include <stdio.h>
+#include <string.h>
 #include "equipment.h"
 #include "inventory.h"
 #include "player.h"
 #include "ui_theme.h"
+#include "font.h"
 
 // Slotlarin panel-ici konumlari (sol-ust kose orijin). KO yerlesimi.
 // Orta sutun ~ paper-doll; sag sutun zirh; sol sutun aksesuar; alt silah/kalkan.
@@ -30,14 +33,11 @@ static bool unequip_to_inventory(Equipment *eq, Inventory *inv, EquipSlot slot)
 {
     if (eq->slots[slot].type == NULL) return true;   // zaten boş, sorun yok
 
-    // Envantere eklemeyi dene (plus instance'la birlikte taşınır)
-    if (!inventory_add(inv, eq->slots[slot].type, eq->slots[slot].count,
-                       eq->slots[slot].plusLevel))
+    // Envantere eklemeyi dene (plus/rün/stat instance'la birlikte taşınır)
+    if (!inventory_add_stack(inv, &eq->slots[slot]))
         return false;   // çanta dolu → çıkarılamadı
 
-    eq->slots[slot].type = NULL;   // slotu boşalt
-    eq->slots[slot].count = 0;
-    eq->slots[slot].plusLevel = 0;
+    eq->slots[slot] = item_make(NULL, 0, 0);   // slotu boşalt (tüm instance alanları)
     return true;
 }
 
@@ -90,11 +90,11 @@ bool equip_from_inventory(Equipment *eq, Inventory *inv, int invSlotIndex)
     invStack->count = 0;
     invStack->plusLevel = 0;
 
-    // Hedef slottaki eskiyi envantere geri koy
+    // Hedef slottaki eskiyi envantere geri koy — instance OLDUĞU GİBİ
+    // (inventory_add türden yeniden üretir: rün/stat silinirdi — bug'dı)
     if (eq->slots[targetSlot].type != NULL) {
         // Eskisini envantere ekle (yer var, çünkü az önce bir slot boşalttık)
-        inventory_add(inv, eq->slots[targetSlot].type, eq->slots[targetSlot].count,
-                      eq->slots[targetSlot].plusLevel);
+        inventory_add_stack(inv, &eq->slots[targetSlot]);
     }
 
     // Yeniyi kuşan (instance olduğu gibi taşınır — plus kaybolmaz)
@@ -129,7 +129,7 @@ int slot_zorder(EquipSlot slot)
 void equipment_render(const Equipment *eq, R2D *renderer,
                       R2DTexture *itemIcons, const ItemTextures *itemTex,
                       const PlayerLayer *built, int builtCount,
-                      int panelX, int panelY)
+                      int panelX, int panelY, TTF_Font *font)
 {
     const int PANEL_W = 400;
     const int PANEL_H = 340;
@@ -176,6 +176,44 @@ void equipment_render(const Equipment *eq, R2D *renderer,
                 SDL_FRect srcIcon = { (float)(ic * 16), 0, 16, 16 };
                 r2d_draw_texture(renderer, itemIcons, &srcIcon, &cell);
             }
+
+            // Sunak stat basımı: slot köşesinde küçük mor rozet (kaç slot dolu)
+            int nStat = (st->statType[0] >= 0) + (st->statType[1] >= 0);
+            if (nStat > 0) {
+                SDL_FRect dot = { cell.x + cell.w - 8.0f, cell.y + 2.0f, 6.0f, 6.0f };
+                r2d_set_color(renderer, 190, 120, 255, 255);
+                r2d_fill_rect(renderer, &dot);
+                if (nStat > 1) {
+                    dot.x -= 8.0f;
+                    r2d_fill_rect(renderer, &dot);
+                }
+            }
+        }
+    }
+
+    // 4) Sunak stat toplamları — doll'un altında tek satır (0 olanlar gizli)
+    if (font != NULL) {
+        int gear[STAT_COUNT] = {0};
+        for (int s = 0; s < EQUIP_SLOT_COUNT; s++) {
+            const ItemStack *st = &eq->slots[s];
+            if (st->type == NULL) continue;
+            for (int k = 0; k < 2; k++)
+                if (st->statType[k] >= 0)
+                    gear[st->statType[k]] +=
+                        STAT_TIER_VALUE[st->statType[k]] * st->statTier[k];
+        }
+        char line[96] = "";
+        for (int t = 0; t < STAT_COUNT; t++) {
+            if (gear[t] <= 0) continue;
+            char part[24];
+            snprintf(part, sizeof(part), "%s%s +%d",
+                     line[0] ? "  " : "", STAT_NAMES[t], gear[t]);
+            strncat(line, part, sizeof(line) - strlen(line) - 1);
+        }
+        if (line[0]) {
+            SDL_Color purple = { 200, 150, 255, 255 };
+            draw_text(renderer, font, line,
+                      (float)(panelX + 100), (float)(panelY + PANEL_H - 26), purple);
         }
     }
 }

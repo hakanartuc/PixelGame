@@ -10,8 +10,8 @@
 #include "craft.h"   // öğrenilen tarifler (v10)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 10u  // ...; v8: bölgesel bounty/itibar; v9: NPC listesi değişti;
-                          // v10: öğrenilen blueprint tarifleri
+#define SAVE_VERSION 11u  // ...; v9: NPC listesi; v10: öğrenilen tarifler;
+                          // v11: ItemStack instance (fx/rün + stat slotları)
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -24,23 +24,33 @@ static bool wf(FILE *f, float v)    { return fwrite(&v, sizeof(v), 1, f) == 1; }
 static bool r32(FILE *f, Sint32 *v) { return fread(v, sizeof(*v), 1, f) == 1; }
 static bool rf(FILE *f, float *v)   { return fread(v, sizeof(*v), 1, f) == 1; }
 
-// ItemStack diske: tür İNDEKS olarak (pointer diske yazılmaz), -1 = boş slot
+// ItemStack diske: tür İNDEKS olarak (pointer diske yazılmaz), -1 = boş slot.
+// v11: instance alanları da (fx/rün + stat slotları)
 static bool write_stack(FILE *f, const ItemStack *s)
 {
     Sint32 idx = (s->type != NULL) ? (Sint32)(s->type - ITEM_TYPES) : -1;
-    return w32(f, idx) && w32(f, s->count) && w32(f, s->plusLevel);
+    bool ok = w32(f, idx) && w32(f, s->count) && w32(f, s->plusLevel);
+    ok = ok && w32(f, s->fx)
+            && w32(f, s->statType[0]) && w32(f, s->statTier[0])
+            && w32(f, s->statType[1]) && w32(f, s->statTier[1]);
+    return ok;
 }
 
 static bool read_stack(FILE *f, ItemStack *s)
 {
-    Sint32 idx, count, plus;
-    if (!r32(f, &idx) || !r32(f, &count) || !r32(f, &plus))
+    Sint32 idx, count, plus, fx, st0, tr0, st1, tr1;
+    if (!r32(f, &idx) || !r32(f, &count) || !r32(f, &plus) ||
+        !r32(f, &fx) || !r32(f, &st0) || !r32(f, &tr0) ||
+        !r32(f, &st1) || !r32(f, &tr1))
         return false;
     if (idx < -1 || idx >= ITEM_TYPE_COUNT)
         return false;   // bozuk/eski dosya — indeks tablo dışı
     s->type = (idx >= 0) ? &ITEM_TYPES[idx] : NULL;
     s->count = count;
     s->plusLevel = plus;
+    s->fx = (Sint8)fx;
+    s->statType[0] = (Sint8)st0; s->statTier[0] = (Sint8)tr0;
+    s->statType[1] = (Sint8)st1; s->statTier[1] = (Sint8)tr1;
     return true;
 }
 

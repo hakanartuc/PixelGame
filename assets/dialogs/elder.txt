@@ -30,5 +30,5 @@ req: speech >= 20
 opt: Önemli değil. -> end
 
 [sir]
-text: Madem dilin tatlı... Kuzeydeki taş yığınları eski bir kalenin temeliymiş. Büyükbabam orada gömülü hazine olduğunu söylerdi.
+text: Madem dilin tatlı... Kuzeydoğuda, karanlık ormanın sınırındaki harabelerde kadim bir sunak varmış. Büyükbabam, bilenlerin orada silahlara güç işlediğini söylerdi. Kimse sahiplenmemiş, cesaretin varsa git bak.
 opt: Çok ilginç! -> end

@@ -85,13 +85,36 @@ typedef struct {
     SDL_FRect   iconSrc;          // o dosyadaki kare {x, y, w, h}
 } ItemType;
 
+// Stat basma (Faz 4 — sunak): silah/zırh instance'ına en çok 2 stat, kademe I-III
+typedef enum {
+    STAT_STR = 0,   // hasar ölçeği
+    STAT_DEX,       // kritik şansı
+    STAT_HP,        // max can
+    STAT_DEF,       // defans
+    STAT_MP,        // max mana
+    STAT_STA,       // max stamina
+    STAT_COUNT,
+} StatType;
+
+// Kademe başına kazanç (StatType ile paralel): STR/DEX +2, HP +10, DEF +3, MP +8, STA +10
+extern const int STAT_TIER_VALUE[STAT_COUNT];
+extern const char *const STAT_NAMES[STAT_COUNT];
+#define STAT_MAX_TIER 3
+
 // Bir somut item (kasada/envanterde) = tür + miktar + instance roll'ları.
-// plusLevel TÜRDE değil BURADA: aynı türden +0 ve +3 kılıç ayrı item'dir.
+// plusLevel/fx/stat'lar TÜRDE değil BURADA: aynı türden iki kılıç farklı olabilir.
 typedef struct {
     const ItemType *type;   // NULL = boş slot
     int count;
     int plusLevel;          // +0..+8 (drop anında roll'lanır; stack'lenenler hep +0)
+    Sint8 fx;               // rün efekti (WeaponFxType; türün varsayılanıyla doğar)
+    Sint8 statType[2];      // stat slotları (-1 = boş; StatType)
+    Sint8 statTier[2];      // kademe 1-3
 } ItemStack;
+
+// Doğru başlatılmış instance üret (fx = türün efekti, stat slotları boş).
+// (ItemStack){t,c,p} YAZMA — fx sıfırlanır, rün/efekt kaybolur.
+ItemStack item_make(const ItemType *type, int count, int plusLevel);
 
 #define ITEM_MAX_PLUS 8
 #define ITEM_PLUS_SCALE 0.10f   // her plus: +%10 hasar/defans
@@ -145,6 +168,17 @@ typedef enum {
     ITEM_SCROLL_HERBALISM,// +250 Herbalism XP (goblin)
     ITEM_SCROLL_SMITHING, // +250 Smithing XP (ork)
     ITEM_SCROLL_ONEHAND,  // +250 One-Handed XP (ork)
+    // Meslek paketi (Faz 4): sunak — özler, rünler, stat taşları
+    ITEM_ESSENCE_PALE,    // Soluk Öz (goblin) → Pembe Rün hammaddesi
+    ITEM_ESSENCE_TOXIC,   // Zehirli Öz (ork) → Zehir Rünü hammaddesi
+    ITEM_RUNE_PINK,       // Pembe Rün: silaha basılır, +%8 hasar + enerji efekti
+    ITEM_RUNE_POISON,     // Zehir Rünü: vuruşta 4sn DoT + zehir efekti
+    ITEM_STONE_STR,       // Stat taşları (sunakta basılır; scroll+külçe maliyeti)
+    ITEM_STONE_DEX,
+    ITEM_STONE_HP,
+    ITEM_STONE_DEF,
+    ITEM_STONE_MP,
+    ITEM_STONE_STA,
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

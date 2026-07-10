@@ -22,7 +22,11 @@ void inventory_render(const Inventory *inv, R2D *renderer,
 // Envantere item ekle (stack'lenebilirse mevcut yığına, yoksa boş slota).
 // plusLevel instance'a aittir: yalnız AYNI plus'lı yığınlar birleşir.
 // Başarılıysa true (yer varsa), çanta doluysa false.
+// (item_make ile doğru başlatılmış taze instance üretir — fx türden kopyalanır)
 bool inventory_add(Inventory *inv, const ItemType *type, int count, int plusLevel);
+
+// Mevcut instance'ı OLDUĞU GİBİ ekle (fx/stat korunur — unequip/loot taşıma yolu)
+bool inventory_add_stack(Inventory *inv, const ItemStack *s);
 
 int inventory_slot_at(float x, float y, float panelX, float panelY);
 

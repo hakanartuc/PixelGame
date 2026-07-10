@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>   // strncat (hedef satırı stat etiketi)
 #include "craft.h"
 #include "item.h"
 #include "font.h"
@@ -17,6 +18,10 @@ const StationDef STATIONS[] = {
       .texPath = "assets/decor/cauldron.png", .src = { 0, 0, 32, 32 }, .frames = 6,
       .x = T(11), .y = T(5), .scale = 2.5f,
       .permQuest = "simya_masa", .ownerName = "Tüccar Baran" },
+    { .type = STATION_ENCHANT, .name = "Kadim Sunak",
+      .texPath = "assets/decor/obelisk.png", .src = { 0, 0, 32, 80 }, .frames = 1,
+      .x = T(102), .y = T(14), .scale = 2.0f,   // Karanlık Orman sınırı — keşifle bulunur
+      .permQuest = NULL, .ownerName = NULL },   // sahipsiz harabe: kapı yok
 };
 const int STATION_COUNT = (int)(sizeof(STATIONS) / sizeof(STATIONS[0]));
 
@@ -67,12 +72,23 @@ const RecipeDef RECIPES[] = {
       .in1Item = ITEM_HERB_BLUE, .in1Count = 3, .in2Item = -1,
       .outItem = ITEM_POISON_OIL, .outCount = 1, .work = 6.0f, .xp = 15.0f,
       .minSkill = 15, .blueprintItem = ITEM_BP_POISON_OIL },
+
+    // Sunak — rün üretimi (ŞANSLI: tutmayan özler yanar, Enchanting telafi eder)
+    { .station = STATION_ENCHANT, .name = "Pembe Rün",
+      .in1Item = ITEM_ESSENCE_PALE, .in1Count = 3, .in2Item = -1,
+      .outItem = ITEM_RUNE_PINK, .outCount = 1, .work = 5.0f, .xp = 15.0f },
+    { .station = STATION_ENCHANT, .name = "Zehir Rünü",
+      .in1Item = ITEM_ESSENCE_TOXIC, .in1Count = 3, .in2Item = -1,
+      .outItem = ITEM_RUNE_POISON, .outCount = 1, .work = 5.0f, .xp = 18.0f,
+      .minSkill = 10 },
 };
 const int RECIPE_COUNT = (int)(sizeof(RECIPES) / sizeof(RECIPES[0]));
 
 SkillType station_skill(StationType t)
 {
-    return (t == STATION_SMITH) ? SKILL_SMITHING : SKILL_ALCHEMY;
+    if (t == STATION_SMITH) return SKILL_SMITHING;
+    if (t == STATION_ENCHANT) return SKILL_ENCHANTING;
+    return SKILL_ALCHEMY;
 }
 
 // --- Öğrenilen tarifler (blueprint'li olanlar; save v10 köprüsü) ---
@@ -176,7 +192,9 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
     const StationDef *st = &STATIONS[stationIdx];
     int rows = station_recipe_count(stationIdx);
     bool smith = (st->type == STATION_SMITH);
-    float panelH = (rows + (smith ? 1 : 0)) * CRAFT_ROW_H + CRAFT_PAD * 2 + 56.0f;
+    bool ench  = (st->type == STATION_ENCHANT);
+    int extraRows = smith ? 1 : (ench ? (1 + 2 + STAT_COUNT) : 0);
+    float panelH = (rows + extraRows) * CRAFT_ROW_H + CRAFT_PAD * 2 + 56.0f;
 
     ui_panel(renderer, panelX, panelY, CRAFT_W, panelH);
     if (font == NULL) return;
@@ -255,9 +273,91 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
         rowY += CRAFT_ROW_H;
     }
 
+    // --- Sunak özel satırları: hedef + rün basma + stat basma ---
+    if (ench) {
+        // Hedef satırı (tıkla: kuşanılı ekipmanlar arasında döner)
+        SDL_FRect row = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
+        ui_cell_hi(renderer, row.x, row.y, row.w, row.h);
+        char line[112];
+        if (weapon->type == NULL)
+            snprintf(line, sizeof(line), "Hedef: (boş slot — tıkla: değiştir)");
+        else {
+            char stats[64] = "";
+            // Basılı rün görünür olsun (uygulama başarısı panelden doğrulanır)
+            static const char *fxName[] = { NULL, "Pembe", "Alev", "Buz", "Zehir" };
+            if (weapon->fx > 0 && weapon->fx < (Sint8)(sizeof(fxName)/sizeof(fxName[0]))) {
+                char one[24];
+                snprintf(one, sizeof(one), " [Rün: %s]", fxName[weapon->fx]);
+                strncat(stats, one, sizeof(stats) - strlen(stats) - 1);
+            }
+            for (int k = 0; k < 2; k++)
+                if (weapon->statType[k] >= 0) {
+                    char one[20];
+                    snprintf(one, sizeof(one), " [%s %d]",
+                             STAT_NAMES[weapon->statType[k]], weapon->statTier[k]);
+                    strncat(stats, one, sizeof(stats) - strlen(stats) - 1);
+                }
+            snprintf(line, sizeof(line), "Hedef: %s +%d%s (tıkla: değiştir)",
+                     weapon->type->name, weapon->plusLevel, stats);
+        }
+        draw_text(renderer, font, line, row.x + 10.0f, rowY + 12.0f, UI_TEXT_DARK);
+        rowY += CRAFT_ROW_H;
+
+        // Rün basma satırları (yalnız SİLAHA; eski efekt yanar)
+        const int runeItem[2] = { ITEM_RUNE_PINK, ITEM_RUNE_POISON };
+        const char *runeTxt[2] = { "Rün Bas: Pembe (+%8 hasar)",
+                                   "Rün Bas: Zehir (vuruşta DoT)" };
+        for (int rn = 0; rn < 2; rn++) {
+            SDL_FRect rrow = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
+            ui_cell_gray(renderer, rrow.x, rrow.y, rrow.w, rrow.h);
+            bool haveRune = inventory_count(inv, &ITEM_TYPES[runeItem[rn]]) >= 1;
+            draw_text(renderer, font, runeTxt[rn], rrow.x + 10.0f, rowY + 4.0f,
+                      haveRune ? white : dim);
+            draw_text(renderer, font, "1 rün — kuşanılı silaha (eski efekt yanar)",
+                      rrow.x + 10.0f, rowY + 20.0f, haveRune ? green : dim);
+            rowY += CRAFT_ROW_H;
+        }
+
+        // Stat basma satırları: hedefteki kademe + maliyet (garantili ama pahalı)
+        const int stoneItem[STAT_COUNT] = { ITEM_STONE_STR, ITEM_STONE_DEX, ITEM_STONE_HP,
+                                            ITEM_STONE_DEF, ITEM_STONE_MP, ITEM_STONE_STA };
+        for (int s = 0; s < STAT_COUNT; s++) {
+            SDL_FRect srow = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
+            ui_cell_gray(renderer, srow.x, srow.y, srow.w, srow.h);
+
+            // Hedefteki mevcut kademe + boş slot durumu
+            int cur = 0; bool slotFree = false;
+            if (weapon->type != NULL) {
+                int used = 0;
+                for (int k = 0; k < 2; k++) {
+                    if (weapon->statType[k] == s) cur = weapon->statTier[k];
+                    if (weapon->statType[k] >= 0) used++;
+                }
+                slotFree = (cur > 0) || (used < 2);
+            }
+            int next = cur + 1;
+            char line2[112];
+            if (cur >= STAT_MAX_TIER)
+                snprintf(line2, sizeof(line2), "%s III — tavanda", STAT_NAMES[s]);
+            else if (!slotFree)
+                snprintf(line2, sizeof(line2), "%s — slotlar dolu (2/2)", STAT_NAMES[s]);
+            else
+                snprintf(line2, sizeof(line2), "%s %d>%d (+%d) — %dx %s + %dx Külçe",
+                         STAT_NAMES[s], cur, next, STAT_TIER_VALUE[s] * next,
+                         next, ITEM_TYPES[stoneItem[s]].name, next * 2);
+            bool can = weapon->type != NULL && cur < STAT_MAX_TIER && slotFree &&
+                       inventory_count(inv, &ITEM_TYPES[stoneItem[s]]) >= next &&
+                       inventory_count(inv, &ITEM_TYPES[ITEM_INGOT_IRON]) >= next * 2;
+            draw_text(renderer, font, line2, srow.x + 10.0f, rowY + 12.0f,
+                      can ? white : dim);
+            rowY += CRAFT_ROW_H;
+        }
+    }
+
     SDL_Color hint = { 170, 200, 255, 255 };
     draw_text(renderer, font, smith ? "Tıkla: üret (Çekiç savurması)   ESC: kapat"
-                                    : "Tıkla: kaynat   ESC: kapat",
+              : ench ? "Tıkla: bas/üret (şanslı rün üretimi)   ESC: kapat"
+                     : "Tıkla: kaynat   ESC: kapat",
               panelX + CRAFT_PAD, rowY + 6.0f, hint);
 }
 
@@ -265,11 +365,21 @@ int craft_panel_recipe_at(int stationIdx, float x, float y, float panelX, float 
 {
     int rows = station_recipe_count(stationIdx);
     bool smith = (STATIONS[stationIdx].type == STATION_SMITH);
+    bool ench  = (STATIONS[stationIdx].type == STATION_ENCHANT);
+    int extraRows = smith ? 1 : (ench ? (1 + 2 + STAT_COUNT) : 0);
+
     float rowY = panelY + CRAFT_PAD + 30.0f;
-    for (int n = 0; n < rows + (smith ? 1 : 0); n++) {
+    for (int n = 0; n < rows + extraRows; n++) {
         SDL_FRect row = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
-        if (x >= row.x && x < row.x + row.w && y >= row.y && y < row.y + row.h)
-            return (n < rows) ? station_recipe(stationIdx, n) : CRAFT_ROW_PLUS;
+        if (x >= row.x && x < row.x + row.w && y >= row.y && y < row.y + row.h) {
+            if (n < rows) return station_recipe(stationIdx, n);
+            int e = n - rows;   // özel satır sırası
+            if (smith) return CRAFT_ROW_PLUS;
+            if (e == 0) return CRAFT_ROW_TARGET;
+            if (e == 1) return CRAFT_ROW_RUNE0;
+            if (e == 2) return CRAFT_ROW_RUNE1;
+            return CRAFT_ROW_STAT_BASE - (e - 3);   // -10..-15
+        }
         rowY += CRAFT_ROW_H;
     }
     return -1;

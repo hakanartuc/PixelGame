@@ -84,6 +84,10 @@ HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
     float raw = base * strScale * skillScale * perkScale
               * abilityScale * damage_variance();
 
+    // Sunak rünü: Pembe Rün basılı silah +%8 hasar
+    if (armed && weapon->fx == WEAPON_FX_PINK)
+        raw *= 1.08f;
+
     // Kritik: DEX şansı + Keskin Göz; çarpan Derin Kesik'le yükselir
     float critChance = CRIT_BASE_CHANCE
                      + (float)(p->dexterity - STAT_BASE) * CRIT_PER_DEX
@@ -106,6 +110,11 @@ float equipment_total_defense(const Equipment *eq, const PerkEffects *fx)
         if (st->type != NULL)
             def *= fx->defMult[st->type->armorClass];   // sınıf perk çarpanı
         total += def;
+
+        // Sunak stat basımı: DEF kademesi düz defans (perk çarpanı dışı)
+        for (int k = 0; k < 2; k++)
+            if (st->statType[k] == STAT_DEF)
+                total += (float)(STAT_TIER_VALUE[STAT_DEF] * st->statTier[k]);
     }
     return total;
 }

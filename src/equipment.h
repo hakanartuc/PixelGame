@@ -1,6 +1,7 @@
 #ifndef EQUIPMENT_H
 #define EQUIPMENT_H
 #include "r2d.h"
+#include <SDL3_ttf/SDL_ttf.h>
 #include "item.h"
 #include "inventory.h"
 
@@ -33,7 +34,7 @@ int slot_zorder(EquipSlot slot);
 void equipment_render(const Equipment *eq, R2D *renderer,
                       R2DTexture *itemIcons, const ItemTextures *itemTex,
                       const PlayerLayer *built, int builtCount,
-                      int panelX, int panelY);
+                      int panelX, int panelY, TTF_Font *font);
 
 EquipSlot equipment_slot_at(float x, float y, int panelX, int panelY);
 
