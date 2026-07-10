@@ -30,6 +30,12 @@ typedef struct {
     const char *questId;      // verdiği görev (NULL = yok) — giriş düğümünü seçer
     NpcStop schedule[NPC_MAX_STOPS];
     int stopCount;            // en az 1 (ilk durak = başlangıç konumu)
+
+    // Sheet/görünüm farkları (0 = varsayılan: 64px hücre, 1.5x, NPC_MAX_HEALTH)
+    int frameSize;            // hücre boyutu (Knights sheet'leri 48)
+    float drawScale;
+    float maxHealth;
+    bool isGuard;             // muhafız: rutin yerine guard.c beyni yönetir
 } NpcDef;
 
 extern const NpcDef NPCS[];
@@ -61,7 +67,12 @@ int npc_at_point(float wx, float wy);
 bool npc_damage(int i, float dmg);
 
 bool  npc_is_alive(int i);
-float npc_health(int i);           // 0..NPC_MAX_HEALTH
+float npc_health(int i);
+float npc_max_health(int i);       // def'ten (0 ise NPC_MAX_HEALTH)
 void  npc_set_alive(int i, bool alive);   // save/load köprüsü
+
+// Muhafız beyni (guard.c) için konum erişimi — rutin bu NPC'yi yönetmez
+bool npc_pos(int i, float *x, float *y);         // ölü de olsa son konum
+void npc_set_pos(int i, float x, float y);
 
 #endif

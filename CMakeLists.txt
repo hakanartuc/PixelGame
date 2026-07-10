@@ -48,6 +48,7 @@ add_executable(game
     src/perk.c
     src/light.c
     src/crime.c
+    src/guard.c
     src/r2d.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle

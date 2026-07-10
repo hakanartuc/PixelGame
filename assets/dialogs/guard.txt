@@ -1,0 +1,9 @@
+# Muhafiz — kanun adami (yakalama paneli ayri sistemdir, bu sadece sohbet)
+[start]
+text: Koyde asayisten ben sorumluyum. Kanunlara uy, sorun cikmasin.
+opt: Anlasildi. -> end
+opt: Tehlike var mi buralarda? -> uyari
+
+[uyari]
+text: Guneyde orklar, dogu ormaninda tuhaf sesler... Koy disinda gozunu acik tut.
+opt: Saol. -> end

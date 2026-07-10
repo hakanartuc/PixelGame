@@ -41,8 +41,25 @@ const NpcDef NPCS[] = {
           { .hour = 15.0f, .x = T(7),    .y = T(11),   .indoors = false }, // tarlaya dönüş
           { .hour = 19.0f, .x = T(6),    .y = T(10.2f), .indoors = true },
       }, .stopCount = 4 },
+    { .name = "Muhafiz",
+      .sheetPath = "assets/characters/npcs/Guard_Swordman.png",
+      .dialogFile = "assets/dialogs/guard.txt",
+      .isVendor = false, .questId = NULL,
+      .schedule = {
+          { .hour = 0.0f, .x = T(11), .y = T(9), .indoors = false },   // nöbet noktası (meydan)
+      }, .stopCount = 1,
+      .frameSize = 48, .drawScale = 2.0f, .maxHealth = 120.0f, .isGuard = true },
 };
 const int NPC_COUNT = (int)(sizeof(NPCS) / sizeof(NPCS[0]));
+
+// Def'teki 0 alanlar → varsayılanlar (eski NPC girdileri dokunulmadan kaldı)
+static int def_frame(int i)     { return NPCS[i].frameSize > 0 ? NPCS[i].frameSize : NPC_FRAME; }
+static float def_scale(int i)   { return NPCS[i].drawScale > 0.0f ? NPCS[i].drawScale : NPC_DRAW_SCALE; }
+float npc_max_health(int i)
+{
+    if (i < 0 || i >= NPC_COUNT) return NPC_MAX_HEALTH;
+    return NPCS[i].maxHealth > 0.0f ? NPCS[i].maxHealth : NPC_MAX_HEALTH;
+}
 
 // Çalışma durumu: konum + görünürlük (tanımlar sabit, hareket burada yaşar)
 typedef struct {
@@ -60,7 +77,7 @@ void npc_reset(void)
 {
     for (int i = 0; i < 8; i++) {
         npcState[i].alive = true;
-        npcState[i].health = NPC_MAX_HEALTH;
+        npcState[i].health = (i < NPC_COUNT) ? npc_max_health(i) : NPC_MAX_HEALTH;
         npcState[i].hitFlash = 0.0f;
         npcState[i].initialized = false;   // konumlar rutinden yeniden kurulur
     }
@@ -90,6 +107,8 @@ void npc_update(float dt, float hours)
             st->hidden = s0->indoors;
             st->initialized = true;
         }
+
+        if (NPCS[i].isGuard) continue;   // muhafızı guard.c beyni yürütür
 
         const NpcStop *target = current_stop(&NPCS[i], hours);
         float dx = target->x - st->x;
@@ -123,11 +142,11 @@ bool npc_visible_pos(int i, float *x, float *y)
 
 int npc_at_point(float wx, float wy)
 {
-    float drawSize = NPC_FRAME * NPC_DRAW_SCALE;
     for (int i = 0; i < NPC_COUNT && i < 8; i++) {
         float nx, ny;
         if (!npc_visible_pos(i, &nx, &ny)) continue;
         // Çizim kutusu (render ile aynı hiza: x,y = ayak noktası)
+        float drawSize = def_frame(i) * def_scale(i);
         if (wx >= nx - drawSize / 2.0f && wx <= nx + drawSize / 2.0f &&
             wy >= ny - drawSize + 8.0f && wy <= ny + 8.0f)
             return i;
@@ -164,7 +183,23 @@ void npc_set_alive(int i, bool alive)
 {
     if (i < 0 || i >= NPC_COUNT || i >= 8) return;
     npcState[i].alive = alive;
-    npcState[i].health = alive ? NPC_MAX_HEALTH : 0.0f;
+    npcState[i].health = alive ? npc_max_health(i) : 0.0f;
+}
+
+bool npc_pos(int i, float *x, float *y)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= 8 || !npcState[i].initialized)
+        return false;
+    *x = npcState[i].x;
+    *y = npcState[i].y;
+    return true;
+}
+
+void npc_set_pos(int i, float x, float y)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= 8) return;
+    npcState[i].x = x;
+    npcState[i].y = y;
 }
 
 int npc_nearest_in_range(float px, float py)
@@ -195,13 +230,14 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
         if (npcTextures[i] == NULL || npcState[i].hidden || !npcState[i].alive)
             continue;
 
+        int fs = def_frame(i);
         SDL_FRect src = {
-            .x = (float)(frame * NPC_FRAME),
-            .y = (float)(NPC_IDLE_ROW * NPC_FRAME),
-            .w = NPC_FRAME, .h = NPC_FRAME,
+            .x = (float)(frame * fs),
+            .y = (float)(NPC_IDLE_ROW * fs),
+            .w = (float)fs, .h = (float)fs,
         };
         // x,y = ayak noktası → çizim kutusu ayağa hizalanır
-        float drawSize = NPC_FRAME * NPC_DRAW_SCALE;
+        float drawSize = fs * def_scale(i);
         SDL_FRect dst = {
             .x = (npcState[i].x - drawSize / 2.0f - camera->x) * zoom,
             .y = (npcState[i].y - drawSize + 8.0f - camera->y) * zoom,

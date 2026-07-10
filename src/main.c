@@ -33,6 +33,7 @@
 #include "perk.h"
 #include "light.h"
 #include "crime.h"
+#include "guard.h"
 
 #define BASE_MAX_HP 100.0f   // oyuncu taban canı (perk bonusları üstüne biner)
 
@@ -249,6 +250,13 @@ int main(int argc, char *argv[])
 
     gametime_init();   // gün 1, 08:00
     npc_reset();       // NPC'ler canlı + tam canla başlar (statik durum sıfırdan gelir)
+
+    // Muhafız beyni: NPCS içindeki isGuard girdisine bağlanır
+    int guardIdx = -1;
+    for (int i = 0; i < NPC_COUNT; i++)
+        if (NPCS[i].isGuard) { guardIdx = i; break; }
+    if (guardIdx >= 0)
+        guard_init(guardIdx);
     ui_theme_init(renderer);   // panel/hücre/buton sprite'ları
     audio_init();      // başarısızsa oyun sessiz devam eder
     music_init();      // arka plan müziği (mood'a göre, crossfade)
@@ -271,6 +279,7 @@ int main(int argc, char *argv[])
     }
     int dialogNpc = -1;    // konuşulan NPC (-1 = diyalog kapalı)
     int targetNpc = -1;    // saldırı hedefi NPC (yalnız TIKLAMAYLA seçilir — Z asla NPC seçmez)
+    bool catchOpen = false; // muhafız yakalama paneli (öde / karşı koy)
     int dialogNode = -1;   // aktif diyalog düğümü
     bool shopOpen = false;
     int nearestNpc = -1;   // E prompt'u için (her kare güncellenir)
@@ -396,6 +405,10 @@ int main(int argc, char *argv[])
                         else
                             gameState = GAME_PLAYING;
                     }
+                    else if (catchOpen)
+                    {
+                        catchOpen = false; // 0) yakalama paneli — muhafız peşini bırakmaz, yine açar
+                    }
                     else if (openLootIndex >= 0)
                     {
                         loots[openLootIndex].state = LOOT_CLOSING; // 1) once loot popup
@@ -453,6 +466,44 @@ int main(int argc, char *argv[])
                             player.autoAttack = true;
                             player.attackTimer = 0.0f;   // ilk vuruş beklemesin
                         }
+                    }
+                }
+                else if (catchOpen && gameState == GAME_PLAYING &&
+                         (event.key.key == SDLK_1 || event.key.key == SDLK_2))
+                {
+                    // Yakalama paneli: [1] cezayı öde  [2] karşı koy
+                    if (event.key.key == SDLK_1)
+                    {
+                        if (player.gold >= player.bounty)
+                        {
+                            char buf[FLOAT_TEXT_LEN];
+                            snprintf(buf, sizeof(buf), "-%d g (ceza)", player.bounty);
+                            player.gold -= player.bounty;
+                            player.bounty = 0;
+                            catchOpen = false;
+                            audio_play(SFX_UI);
+                            SDL_Color white = { 255, 255, 255, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f, buf, white);
+                        }
+                        else
+                        {
+                            SDL_Color red = { 255, 90, 90, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f, "Altin yetmiyor!", red);
+                        }
+                    }
+                    else   // karşı koy
+                    {
+                        player.bounty += CRIME_BOUNTY_RESIST;
+                        guard_set_hostile(true);
+                        catchOpen = false;
+                        SDL_Color red = { 255, 80, 80, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 24.0f, "Karsi koydun! +50 bounty", red);
                     }
                 }
                 else if (event.key.key >= SDLK_1 && event.key.key <= SDLK_8 &&
@@ -528,8 +579,21 @@ int main(int argc, char *argv[])
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
                          dialogNpc < 0)
                 {
+                    // Bounty'liyken kimse konuşmaz — suçluya kapılar kapalı
+                    // (şimdilik global; Faz 4'te bölge itibarıyla bölgeselleşir)
+                    if (nearestNpc >= 0 && player.bounty > 0)
+                    {
+                        float nx, ny;
+                        if (npc_visible_pos(nearestNpc, &nx, &ny))
+                        {
+                            SDL_Color red = { 255, 120, 100, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 nx, ny - 100.0f,
+                                                 "Once cezani ode!", red);
+                        }
+                    }
                     // Menzildeki NPC ile konuş — giriş düğümü görev durumuna göre
-                    if (nearestNpc >= 0 && npcDialogOk[nearestNpc])
+                    else if (nearestNpc >= 0 && npcDialogOk[nearestNpc])
                     {
                         const char *entry = "start";
                         if (NPCS[nearestNpc].questId != NULL)
@@ -613,6 +677,8 @@ int main(int argc, char *argv[])
                     if (load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus))
                     {
                         perk_compute_effects(player.perkChoice, &perkFx);   // seçimler değişti
+                        if (guardIdx >= 0) guard_init(guardIdx);            // beyin sıfırdan (nöbete)
+                        catchOpen = false;
                         SDL_Color white = { 255, 255, 255, 255 };
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
@@ -644,7 +710,11 @@ int main(int argc, char *argv[])
                                     ? save_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus)
                                     : load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus);
                             if (ok && act == MENU_ACTION_LOAD)
+                            {
                                 perk_compute_effects(player.perkChoice, &perkFx);
+                                if (guardIdx >= 0) guard_init(guardIdx);   // beyin sıfırdan (nöbete)
+                                catchOpen = false;
+                            }
                             const char *msg = !ok ? ((act == MENU_ACTION_SAVE) ? "Kayit HATASI" : "Kayit bulunamadi")
                                             : (act == MENU_ACTION_SAVE) ? "Kaydedildi" : "Yuklendi";
                             SDL_Color white = { 255, 255, 255, 255 };
@@ -972,6 +1042,17 @@ int main(int argc, char *argv[])
             {
                 // Vuruş noktası: mob hedefi ya da (tıklamayla seçilmiş) NPC hedefi
                 Mob *aaTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
+
+                // Mob hedefi öldüyse en yakın yeni mobu otomatik seç — savaş akışı kesilmesin
+                // (targetMobId != 0 şartı: NPC hedefli akışa karışma, NPC'ye otomatik geçiş YOK)
+                if (aaTarget == NULL && player.targetMobId != 0)
+                {
+                    player.targetMobId = mob_find_nearest(mobs, mobCount,
+                                                          player.rect.x + player.rect.w / 2.0f,
+                                                          player.rect.y + player.rect.h / 2.0f);
+                    aaTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                }
+
                 float aimX = 0.0f, aimY = 0.0f;
                 bool haveAim = false;
                 if (aaTarget != NULL)
@@ -1084,6 +1165,44 @@ int main(int argc, char *argv[])
 
             gametime_update(dt);                      // dünya saati
             npc_update(dt, gametime_hours());         // NPC rutinleri (yürü/eve gir)
+
+            // --- MUHAFIZ: bounty takibi / yakalama / düşmanlık (guard.c beyni) ---
+            if (guardIdx >= 0)
+            {
+                bool uiFrozen = catchOpen || dialogNpc >= 0;
+                GuardTick gt = guard_update(dt,
+                                            player.rect.x + player.rect.w / 2.0f,
+                                            player.rect.y + player.rect.h / 2.0f,
+                                            player.bounty, uiFrozen);
+                if (gt.wantCatch && !catchOpen && !uiFrozen)
+                {
+                    catchOpen = true;
+                    player.autoAttack = false;   // yakalama anında savaş durur
+                    audio_play(SFX_UI);
+                }
+                if (gt.attackDamage > 0.0f)
+                {
+                    // Muhafız vuruşu mob vuruşuyla aynı savunma hattından geçer
+                    bool dodged = false;
+                    bool yaraliAyi = (player.perkChoice[SKILL_MEDIUM_ARMOR][2] == 1);
+                    float dmg = combat_mob_damage(gt.attackDamage, &equipment, &perkFx,
+                                                  player.state == PLAYER_IDLE,
+                                                  player.health / player.maxHealth,
+                                                  yaraliAyi, &dodged);
+                    if (!dodged && dmg > 0.0f)
+                    {
+                        player.health -= dmg;
+                        player.gaziTimer = 5.0f;
+                        shakeTime = shakeDur = 0.25f;
+                        shakeAmp = 6.0f;
+                        flashTime = FLASH_DUR;
+                        floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                        player.rect.x + player.rect.w / 2.0f + 10.0f,
+                                        player.rect.y - 10.0f, (int)dmg, false);
+                        audio_play(SFX_HIT);
+                    }
+                }
+            }
 
             if (targetPressed)
             {
@@ -1220,16 +1339,33 @@ int main(int argc, char *argv[])
                             // Skill XP de YOK — köylü döverek skill kasılmasın.
                             const ItemStack *weapon = &equipment.slots[EQUIP_WEAPON];
                             HitResult hit = combat_player_hit(&player, weapon, 0.0f, 1.0f,
-                                                              npc_health(targetNpc) / NPC_MAX_HEALTH,
+                                                              npc_health(targetNpc) / npc_max_health(targetNpc),
                                                               &perkFx);
                             int victim = targetNpc;
+                            bool isGuardVictim = NPCS[victim].isGuard;
                             bool died = npc_damage(victim, hit.damage);
                             audio_play(hit.crit ? SFX_CRIT : SFX_HIT);
                             floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
                                             nx + 10.0f, ny - 60.0f, (int)hit.damage, hit.crit);
 
+                            if (isGuardVictim)
+                            {
+                                // Kanuna saldırı: tanık gerekmez (kanunun kendisi tanıktır).
+                                // Her vuruş suçtur; öldürmenin bedeli ayrıca sabit.
+                                int b = died ? CRIME_BOUNTY_GUARD_KILL : CRIME_BOUNTY_HIT;
+                                player.bounty += b;
+                                if (!died)
+                                    guard_set_hostile(true);
+                                char buf[FLOAT_TEXT_LEN];
+                                snprintf(buf, sizeof(buf), died ? "Muhafiz oldu! +%d bounty"
+                                                                : "Kanuna saldiri! +%d bounty", b);
+                                SDL_Color red = { 255, 80, 80, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 24.0f, buf, red);
+                            }
                             // Suç: tanık varsa bounty (hayatta kalan kurban kendisi tanıktır)
-                            if (crime_witnessed(nx, ny, victim, !died))
+                            else if (crime_witnessed(nx, ny, victim, !died))
                             {
                                 int b = died ? CRIME_BOUNTY_MURDER : CRIME_BOUNTY_HIT;
                                 player.bounty += b;
@@ -1519,7 +1655,7 @@ int main(int argc, char *argv[])
             float nx, ny;
             if (npc_visible_pos(targetNpc, &nx, &ny))
             {
-                float ratio = npc_health(targetNpc) / NPC_MAX_HEALTH;
+                float ratio = npc_health(targetNpc) / npc_max_health(targetNpc);
                 SDL_FRect bg = world_to_screen(nx - 24.0f, ny - 116.0f, 48.0f, 6.0f, &camera);
                 SDL_FRect fill = bg;
                 fill.w *= ratio;
@@ -1694,6 +1830,25 @@ int main(int argc, char *argv[])
         if (dialogNpc >= 0)
             dialog_render(&npcDialogs[dialogNpc], dialogNode, NPCS[dialogNpc].name,
                           renderer, gameFont, winW, winH);
+
+        // Muhafız yakalama paneli: öde / karşı koy
+        if (catchOpen && gameFont != NULL)
+        {
+            float pw = 460.0f, ph = 140.0f;
+            float pX = (winW - pw) / 2.0f, pY = winH / 3.0f;
+            ui_panel(renderer, pX, pY, pw, ph);
+
+            SDL_Color white = { 240, 240, 245, 255 };
+            SDL_Color gold  = { 255, 210, 60, 255 };
+            char line[64];
+            draw_text(renderer, gameFont, "Muhafiz: Dur! Kanunu cignedin.",
+                      pX + 24.0f, pY + 22.0f, white);
+            snprintf(line, sizeof(line), "Ceza: %d altin (sende: %d)",
+                     player.bounty, player.gold);
+            draw_text(renderer, gameFont, line, pX + 24.0f, pY + 54.0f, gold);
+            draw_text(renderer, gameFont, "[1] Cezayi ode    [2] Karsi koy",
+                      pX + 24.0f, pY + 94.0f, white);
+        }
 
         if (gameState == GAME_PAUSED)                          // ← EKLE
             menu_render(renderer, gameFont, menuScreen, winW, winH);
