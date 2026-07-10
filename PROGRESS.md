@@ -85,8 +85,22 @@ Güncelleme: 2026-07-10
 - Türkçe karakterler: tüm UI + diyaloglar düzgün Türkçe (PublicPixel glifleri doğrulandı)
 - Not: zar kilidi save'e yazılmıyor (F9 save-scum kapısı — bilinçli erteleme)
 
+### Faz 13 — Meslek paketi 1/5: Kaynak toplama
+- 3 toplama skill'i (Mining/Herbalism/Woodcutting), 13 düğüm (günlük yenilenme, riskli yerleşim)
+- Toplama süreci: araçla savurma döngüsü (vuruş=iş, düğümde bar) / bitkiler el ile (süre bazlı)
+- Kademeli hız: 1 + 0.25×(seviye/20); iş: bakır5/demir10/ağaç7 vuruş, otlar 2.5-4sn; demir Mining 15 kapılı
+- Araçlar silah slotuna kuşanılır (WEAPON_TOOL, saldıramaz); LPC Hand Tools smash128 katmanı (elde görünür)
+- Kesinti: hareket/hasar/diyalog; yarım ilerleme gün sonuna dek düğümde
+- Not: araç idle'da görünmez (sheet'te idle yok); bitki toplama animasyonu bulunursa bağlanacak
+
 ## 🔜 Kalanlar (öncelik sırası)
-1. **Craft**: Smithing (+basma, risk), Alchemy (bitki→iksir), Enchanting (weaponFx instance'a taşınır)
+1. **Meslek paketi 2-5/5** (kararlar verildi, plan 2026-07-10):
+   - F2: istasyonlar (ocak/masa/sunak) + craft UI + tarif sistemi (hibrit) + Smithing üretim/+basma
+     (başarısızlık: plus-1+malzeme) + Alchemy iksirleri
+   - F3: blueprint/scroll loot ekonomisi (mob/boss dropları) + öğretmen NPC'ler (Demirci, train: aksiyonu)
+   - F4: Enchanting — öz→rün (moba/biyoma bağlı), üzerine basılır, seviyeye bağlı başarısızlık;
+     weaponFx ItemStack'e taşınır (save)
+   - F5: Oduculuk ürünleri + minimal yay savaşı (ok craft, Yay kuşanılır, oyuncu projectile, Archery)
 2. **Av & kontrat panosu**: hayvanlar (Cute_Fantasy Animals), deri/et, Witcher tarzı ilan panosu
 3. **Mob fazları** (araya serpiştirilir): Slime ailesi → Skeleton ailesi (+ok/mermi sistemi) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla)
 4. **İç mekanlar/zindanlar**: kapı→ayrı harita, Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate
