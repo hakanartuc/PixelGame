@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>   // atof (req/fx sayıları)
 #include <string.h>
 #include "dialog.h"
 #include "font.h"
@@ -19,6 +20,41 @@ static const char *skip_ws(const char *s)
     return s;
 }
 
+// "speech" / "gold" / "rep" / "bounty" → DialogVar. Tanınmazsa false.
+static bool parse_var(const char *s, size_t len, DialogVar *out)
+{
+    if (len == 6 && strncmp(s, "speech", 6) == 0) { *out = DVAR_SPEECH; return true; }
+    if (len == 4 && strncmp(s, "gold", 4) == 0)   { *out = DVAR_GOLD;   return true; }
+    if (len == 3 && strncmp(s, "rep", 3) == 0)    { *out = DVAR_REP;    return true; }
+    if (len == 6 && strncmp(s, "bounty", 6) == 0) { *out = DVAR_BOUNTY; return true; }
+    return false;
+}
+
+// "degisken OP sayi" ayrıştır (req: >=|<= — fx: +=|-=|=). Hatalıysa false.
+static bool parse_cond_line(const char *body, DialogVar *var,
+                            char opBuf[3], float *value)
+{
+    const char *p = skip_ws(body);
+    const char *ve = p;
+    while (*ve && *ve != ' ' && *ve != '\t' && *ve != '<' && *ve != '>' &&
+           *ve != '+' && *ve != '-' && *ve != '=') ve++;
+    if (!parse_var(p, (size_t)(ve - p), var))
+        return false;
+
+    p = skip_ws(ve);
+    if ((p[0] == '>' || p[0] == '<' || p[0] == '+' || p[0] == '-') && p[1] == '=') {
+        opBuf[0] = p[0]; opBuf[1] = '='; opBuf[2] = '\0';
+        p += 2;
+    } else if (p[0] == '=') {
+        opBuf[0] = '='; opBuf[1] = '\0';
+        p += 1;
+    } else {
+        return false;
+    }
+    *value = (float)atof(skip_ws(p));
+    return true;
+}
+
 bool dialog_load(Dialog *d, const char *path)
 {
     d->nodeCount = 0;
@@ -31,6 +67,7 @@ bool dialog_load(Dialog *d, const char *path)
 
     char line[512];
     DialogNode *cur = NULL;
+    DialogOpt *lastOpt = NULL;   // req:/fx: satırları bir üstteki opt'a bağlanır
     int lineNo = 0;
 
     while (fgets(line, sizeof(line), f) != NULL) {
@@ -51,6 +88,7 @@ bool dialog_load(Dialog *d, const char *path)
             }
             cur = &d->nodes[d->nodeCount++];
             memset(cur, 0, sizeof(*cur));
+            lastOpt = NULL;
             size_t len = (size_t)(close - p - 1);
             if (len >= DIALOG_ID_LEN) len = DIALOG_ID_LEN - 1;
             memcpy(cur->id, p + 1, len);
@@ -84,6 +122,36 @@ bool dialog_load(Dialog *d, const char *path)
             memcpy(o->text, body, tlen);
             o->text[tlen] = '\0';
             snprintf(o->target, DIALOG_ID_LEN, "%s", skip_ws(arrow + 2));
+            lastOpt = o;
+        }
+        else if (strncmp(p, "req:", 4) == 0) {
+            DialogVar var; char op[3]; float val;
+            if (lastOpt == NULL || lastOpt->reqCount >= DIALOG_MAX_REQS ||
+                !parse_cond_line(p + 4, &var, op, &val) ||
+                (op[0] != '>' && op[0] != '<')) {
+                SDL_Log("Diyalog hatasi (%s:%d): bozuk/yersiz req", path, lineNo);
+                fclose(f);
+                return false;
+            }
+            DialogReq *r = &lastOpt->reqs[lastOpt->reqCount++];
+            r->var = var;
+            r->lessEq = (op[0] == '<');
+            r->value = val;
+        }
+        else if (strncmp(p, "fx:", 3) == 0) {
+            DialogVar var; char op[3]; float val;
+            if (lastOpt == NULL || lastOpt->fxCount >= DIALOG_MAX_FX ||
+                !parse_cond_line(p + 3, &var, op, &val) ||
+                (op[0] != '+' && op[0] != '-' && op[0] != '=') ||
+                var == DVAR_SPEECH) {   // skill'e diyalog efekti yazılamaz
+                SDL_Log("Diyalog hatasi (%s:%d): bozuk/yersiz fx", path, lineNo);
+                fclose(f);
+                return false;
+            }
+            DialogFx *x = &lastOpt->fx[lastOpt->fxCount++];
+            x->var = var;
+            x->op = op[0];
+            x->value = val;
         }
         else {
             SDL_Log("Diyalog hatasi (%s:%d): taninmayan satir: %s", path, lineNo, p);
@@ -108,7 +176,18 @@ int dialog_find(const Dialog *d, const char *id)
     return -1;
 }
 
+bool dialog_opt_speech_req(const DialogOpt *o, float *outThreshold)
+{
+    for (int i = 0; i < o->reqCount; i++)
+        if (o->reqs[i].var == DVAR_SPEECH && !o->reqs[i].lessEq) {
+            *outThreshold = o->reqs[i].value;
+            return true;
+        }
+    return false;
+}
+
 void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
+                   const DialogOptState *states,
                    R2D *renderer, TTF_Font *font, int winW, int winH)
 {
     if (nodeIdx < 0 || nodeIdx >= d->nodeCount) return;
@@ -136,10 +215,27 @@ void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
     y += draw_text_wrapped(renderer, font, n->text,
                            px + pad, y, panelW - pad * 2, white) + 10.0f;
 
+    SDL_Color dim = { 120, 120, 130, 255 };
     for (int i = 0; i < n->optCount; i++) {
-        char buf[DIALOG_OPT_LEN + 8];
-        snprintf(buf, sizeof(buf), "%d) %s", i + 1, n->opts[i].text);
-        draw_text(renderer, font, buf, px + pad, y, gray);
+        const DialogOpt *o = &n->opts[i];
+        const DialogOptState *st = states ? &states[i] : NULL;
+
+        // Etiket: speech eşiği (+ eşik altındaysa şans yüzdesi)
+        char label[32] = "";
+        float th;
+        if (dialog_opt_speech_req(o, &th)) {
+            if (st != NULL && st->chancePct >= 0 && st->chancePct < 100)
+                snprintf(label, sizeof(label), "[Speech %d - %%%d] ",
+                         (int)th, st->chancePct);
+            else
+                snprintf(label, sizeof(label), "[Speech %d] ", (int)th);
+        }
+
+        bool inactive = st != NULL && (st->locked || st->burned);
+        char buf[DIALOG_OPT_LEN + 48];
+        snprintf(buf, sizeof(buf), "%d) %s%s%s", i + 1, label, o->text,
+                 (st != NULL && st->burned) ? " (bugün olmaz)" : "");
+        draw_text(renderer, font, buf, px + pad, y, inactive ? dim : gray);
         y += 20.0f;
     }
 }

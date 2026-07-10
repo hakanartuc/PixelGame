@@ -1,9 +1,17 @@
-# Koylu Osman — sohbet/yonlendirme
+# Köylü Osman — sohbet/yönlendirme
 [start]
-text: Guneydeki bataklige gitme derim. Orklar yuvalanmis, ustune bir de dikenler...
-opt: Baska ne var ne yok? -> haber
-opt: Uyari icin saol. -> end
+text: Güneydeki bataklığa gitme derim. Orklar yuvalanmış, üstüne bir de dikenler...
+opt: Başka ne var ne yok? -> haber
+opt: Bir şeyler içelim, benden! (20g) -> icki
+req: gold >= 20
+fx: gold -= 20
+fx: rep += 2
+opt: Uyarı için sağol. -> end
 
 [haber]
-text: Dogudaki karanlik ormanin derinliginde eski bir gecit varmis derler. Kimse donup anlatamadi ama.
-opt: Ilginc... -> end
+text: Doğudaki karanlık ormanın derinliğinde eski bir geçit varmış derler. Kimse dönüp anlatamadı ama.
+opt: İlginç... -> end
+
+[icki]
+text: Vay, cömert adammışsın! Şerefine dostum. Bu köyde iyi anılacaksın.
+opt: Sağlık olsun. -> end

@@ -15,7 +15,7 @@
 // Ev kapıları decor.c'deki evlerin önü.
 #define T(n) ((n) * (float)TILE_SIZE)
 const NpcDef NPCS[] = {
-    { .name = "Tuccar Baran",
+    { .name = "Tüccar Baran",
       .sheetPath = "assets/characters/npcs/Bartender_Bruno.png",
       .dialogFile = "assets/dialogs/merchant.txt",
       .isVendor = true, .questId = NULL,
@@ -23,7 +23,7 @@ const NpcDef NPCS[] = {
           { .hour =  8.0f, .x = T(10),   .y = T(5),   .indoors = false },  // dükkan başı
           { .hour = 20.0f, .x = T(10),   .y = T(4.2f), .indoors = true },  // eve girer
       }, .stopCount = 2 },
-    { .name = "Yasli Kemal",
+    { .name = "Yaşlı Kemal",
       .sheetPath = "assets/characters/npcs/Farmer_Bob.png",
       .dialogFile = "assets/dialogs/elder.txt",
       .isVendor = false, .questId = "goblin_derdi",
@@ -31,7 +31,7 @@ const NpcDef NPCS[] = {
           { .hour =  7.0f, .x = T(13),   .y = T(7),    .indoors = false }, // meydan
           { .hour = 21.0f, .x = T(14),   .y = T(6.2f), .indoors = true },
       }, .stopCount = 2 },
-    { .name = "Koylu Osman",
+    { .name = "Köylü Osman",
       .sheetPath = "assets/characters/npcs/Farmer_Buba.png",
       .dialogFile = "assets/dialogs/villager.txt",
       .isVendor = false, .questId = NULL,
@@ -41,7 +41,7 @@ const NpcDef NPCS[] = {
           { .hour = 15.0f, .x = T(7),    .y = T(11),   .indoors = false }, // tarlaya dönüş
           { .hour = 19.0f, .x = T(6),    .y = T(10.2f), .indoors = true },
       }, .stopCount = 4 },
-    { .name = "Muhafiz",
+    { .name = "Muhafız",
       .sheetPath = "assets/characters/npcs/Guard_Swordman.png",
       .dialogFile = "assets/dialogs/guard.txt",
       .isVendor = false, .questId = NULL,
@@ -259,7 +259,7 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
 
             if (i == nearestIdx) {
                 SDL_Color hint = { 255, 230, 80, 255 };
-                draw_text(renderer, font, "[E] Konus",
+                draw_text(renderer, font, "[E] Konuş",
                           dst.x + dst.w / 2.0f - 40.0f, dst.y - 40.0f, hint);
             }
         }

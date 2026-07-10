@@ -1,11 +1,19 @@
-# Tuccar Baran — vendor
+# Tüccar Baran — vendor
 [start]
-text: Hos geldin yolcu! Ovada dukkan actim ama goblinler yuzunden kervan gelmiyor. Bakmak bedava.
-opt: Neler satiyorsun? -> shop
+text: Hoş geldin yolcu! Ovada dükkan açtım ama goblinler yüzünden kervan gelmiyor. Bakmak bedava.
+opt: Neler satıyorsun? -> shop
 opt: Sen kimsin? -> kim
-opt: Hoscakal. -> end
+opt: Zor günlerdesin, şu parayı al dostum. (30g) -> bagis
+req: gold >= 30
+fx: gold -= 30
+fx: rep += 3
+opt: Hoşçakal. -> end
 
 [kim]
-text: Baran derler bana. Bu ovanin tek tuccariyim. Iyi mal, adil fiyat.
-opt: Dukkani goster. -> shop
-opt: Hoscakal. -> end
+text: Baran derler bana. Bu ovanın tek tüccarıyım. İyi mal, adil fiyat.
+opt: Dükkanı göster. -> shop
+opt: Hoşçakal. -> end
+
+[bagis]
+text: Bu ne cömertlik! Kervan gelene kadar beni ayakta tutar bu. Köy senin iyiliğini konuşacak, emin ol.
+opt: Değmez. -> end

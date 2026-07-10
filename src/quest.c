@@ -38,7 +38,7 @@ void quest_log_render(const QuestStatus *status, R2D *renderer,
     SDL_Color green = { 120, 255, 120, 255 };
     SDL_Color gold  = { 255, 210, 60, 255 };
 
-    draw_text(renderer, font, "Gorevler", panelX + pad, panelY + 8.0f, white);
+    draw_text(renderer, font, "Görevler", panelX + pad, panelY + 8.0f, white);
 
     float rowY = panelY + pad + 30.0f;
     for (int i = 0; i < QUEST_COUNT; i++) {
@@ -52,7 +52,7 @@ void quest_log_render(const QuestStatus *status, R2D *renderer,
         const char *stateTxt =
             (st->state == QUEST_ACTIVE)   ? "Aktif" :
             (st->state == QUEST_DONE)     ? "Teslim et!" :
-            (st->state == QUEST_REWARDED) ? "Tamam" : "Alinmadi";
+            (st->state == QUEST_REWARDED) ? "Tamam" : "Alınmadı";
         SDL_Color stateCol =
             (st->state == QUEST_DONE)     ? green :
             (st->state == QUEST_ACTIVE)   ? cyan : gray;

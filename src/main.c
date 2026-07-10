@@ -45,6 +45,66 @@ static int region_of(float x, float y)
     return (r < 0 || r >= MAX_REGIONS) ? 0 : r;
 }
 
+// Diyalog koşul değerlendirmesi: sert kilitler (gold/rep/bounty) + speech zar yüzdesi.
+// Zar modeli: eşik üstü %100, altı (speech/eşik) × %70.
+static void dialog_eval_opt(const DialogOpt *o, const Player *p, int npcRegion,
+                            bool burned, DialogOptState *out)
+{
+    out->locked = false;
+    out->burned = burned;
+    out->chancePct = -1;
+
+    for (int i = 0; i < o->reqCount; i++) {
+        const DialogReq *r = &o->reqs[i];
+        float cur = 0.0f;
+        switch (r->var) {
+            case DVAR_SPEECH: cur = (float)p->skills[SKILL_SPEECH].level; break;
+            case DVAR_GOLD:   cur = (float)p->gold; break;
+            case DVAR_REP:    cur = p->reputation[npcRegion]; break;
+            case DVAR_BOUNTY: cur = (float)p->bounty[npcRegion]; break;
+        }
+        bool pass = r->lessEq ? (cur <= r->value) : (cur >= r->value);
+
+        if (r->var == DVAR_SPEECH && !r->lessEq && r->value > 0.0f) {
+            out->chancePct = pass ? 100 : (int)(cur / r->value * 70.0f);
+            if (out->chancePct < 0) out->chancePct = 0;
+        } else if (!pass) {
+            out->locked = true;   // sert koşul — seçilemez
+        }
+    }
+}
+
+// Seçenek efektlerini uygula (gold/rep/bounty — NPC'nin bölgesi bağlamında)
+static void dialog_apply_fx(const DialogOpt *o, Player *p, int npcRegion)
+{
+    for (int i = 0; i < o->fxCount; i++) {
+        const DialogFx *x = &o->fx[i];
+        float v = x->value;
+        switch (x->var) {
+            case DVAR_GOLD:
+                if (x->op == '+') p->gold += (int)v;
+                else if (x->op == '-') p->gold -= (int)v;
+                else p->gold = (int)v;
+                if (p->gold < 0) p->gold = 0;
+                break;
+            case DVAR_REP: {
+                float d = (x->op == '+') ? v
+                        : (x->op == '-') ? -v
+                        : v - p->reputation[npcRegion];
+                rep_add(&p->reputation[npcRegion], d);
+                break;
+            }
+            case DVAR_BOUNTY:
+                if (x->op == '+') p->bounty[npcRegion] += (int)v;
+                else if (x->op == '-') p->bounty[npcRegion] -= (int)v;
+                else p->bounty[npcRegion] = (int)v;
+                if (p->bounty[npcRegion] < 0) p->bounty[npcRegion] = 0;
+                break;
+            default: break;   // DVAR_SPEECH parser'da reddedilir
+        }
+    }
+}
+
 // Mob ölümü — saldırıdan da kanamadan da aynı yol: animasyon + loot + görev.
 // (İki yerden çağrılır; kopya kod desenkron olmasın diye tek fonksiyon)
 static void mob_die(Mob *target, Loot *loots, QuestStatus *questStatus,
@@ -79,7 +139,7 @@ static void mob_die(Mob *target, Loot *loots, QuestStatus *questStatus,
         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                              player->rect.x + player->rect.w / 2.0f,
                              player->rect.y - 30.0f,
-                             "Gorev tamam! Odul icin don.", green);
+                             "Görev tamam! Ödül için dön.", green);
     }
 }
 
@@ -294,7 +354,11 @@ int main(int argc, char *argv[])
     }
     int dialogNpc = -1;    // konuşulan NPC (-1 = diyalog kapalı)
     int targetNpc = -1;    // saldırı hedefi NPC (yalnız TIKLAMAYLA seçilir — Z asla NPC seçmez)
-    bool catchOpen = false; // muhafız yakalama paneli (öde / karşı koy)
+    bool catchOpen = false; // muhafız yakalama paneli (öde / karşı koy / rüşvet)
+
+    // Başarısız speech zarı: NPC+düğüm+seçenek O GÜN kilitli — kapat-aç spam'ı işlemez,
+    // ertesi gün yeniden denenir (günlük itibar toparlanmasıyla aynı ritim). 0 = hiç yanmadı.
+    int dlgBurnDay[8][DIALOG_MAX_NODES][DIALOG_MAX_OPTS] = {0};
     int dialogNode = -1;   // aktif diyalog düğümü
     bool shopOpen = false;
     int nearestNpc = -1;   // E prompt'u için (her kare güncellenir)
@@ -490,6 +554,56 @@ int main(int argc, char *argv[])
                     }
                 }
                 else if (catchOpen && gameState == GAME_PLAYING &&
+                         event.key.key == SDLK_3)
+                {
+                    // [3] Rüşvet: bounty'nin yarısı; Speech eşiği altı zar.
+                    // Başarı: borç silinir ama itibar düşer (kanunu satın aldın).
+                    // Başarısızlık: karşı koyma sayılır — muhafız düşmanlaşır.
+                    int cost = player.bounty[guardRegion] / 2;
+                    int sp = player.skills[SKILL_SPEECH].level;
+                    int pct = (sp >= CRIME_BRIBE_SPEECH) ? 100
+                            : (int)((float)sp / CRIME_BRIBE_SPEECH * 70.0f);
+                    if (player.gold < cost)
+                    {
+                        SDL_Color red = { 255, 90, 90, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f, "Altın yetmiyor!", red);
+                    }
+                    else if (randf() * 100.0f < (float)pct)
+                    {
+                        player.gold -= cost;
+                        player.bounty[guardRegion] = 0;
+                        rep_add(&player.reputation[guardRegion], REP_BRIBE);
+                        if (skill_add_xp(player.skills, SKILL_SPEECH, 15.0f))
+                            on_skill_levelup(&player, SKILL_SPEECH, &hotbar, floatTexts);
+                        catchOpen = false;
+                        audio_play(SFX_UI);
+                        char buf[FLOAT_TEXT_LEN];
+                        snprintf(buf, sizeof(buf), "-%d g (rüşvet)", cost);
+                        SDL_Color white = { 255, 255, 255, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f, buf, white);
+                    }
+                    else
+                    {
+                        // "Beni satin alamazsin!" — karşı koyma yolu
+                        player.bounty[guardRegion] += CRIME_BOUNTY_RESIST;
+                        player.lastCrimeDay = gametime_day();
+                        rep_add(&player.reputation[guardRegion], REP_FAILED_CHECK);
+                        if (skill_add_xp(player.skills, SKILL_SPEECH, 3.0f))
+                            on_skill_levelup(&player, SKILL_SPEECH, &hotbar, floatTexts);
+                        guard_set_hostile(true);
+                        catchOpen = false;
+                        SDL_Color red = { 255, 80, 80, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 24.0f,
+                                             "Beni satın alamazsın! +50 bounty", red);
+                    }
+                }
+                else if (catchOpen && gameState == GAME_PLAYING &&
                          (event.key.key == SDLK_1 || event.key.key == SDLK_2))
                 {
                     // Yakalama paneli: [1] cezayı öde  [2] karşı koy
@@ -514,7 +628,7 @@ int main(int argc, char *argv[])
                             SDL_Color red = { 255, 90, 90, 255 };
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  player.rect.x + player.rect.w / 2.0f,
-                                                 player.rect.y - 10.0f, "Altin yetmiyor!", red);
+                                                 player.rect.y - 10.0f, "Altın yetmiyor!", red);
                         }
                     }
                     else   // karşı koy
@@ -526,7 +640,7 @@ int main(int argc, char *argv[])
                         SDL_Color red = { 255, 80, 80, 255 };
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
-                                             player.rect.y - 24.0f, "Karsi koydun! +50 bounty", red);
+                                             player.rect.y - 24.0f, "Karşı koydun! +50 bounty", red);
                     }
                 }
                 else if (event.key.key >= SDLK_1 && event.key.key <= SDLK_8 &&
@@ -540,8 +654,50 @@ int main(int argc, char *argv[])
                         int sel = (int)(event.key.key - SDLK_1);
                         if (sel < node->optCount)
                         {
-                            const char *target = node->opts[sel].target;
-                            if (strcmp(target, "end") == 0)
+                            DialogOpt *opt = &node->opts[sel];
+                            const char *target = opt->target;
+
+                            // Koşullar: sert kilit engeller; speech eşiği altı zar atar
+                            float dgx, dgy;
+                            int dlgRegion = npc_visible_pos(dialogNpc, &dgx, &dgy)
+                                          ? region_of(dgx, dgy) : 0;
+                            DialogOptState ost;
+                            bool burnedToday = dialogNpc < 8 &&
+                                dlgBurnDay[dialogNpc][dialogNode][sel] == gametime_day();
+                            dialog_eval_opt(opt, &player, dlgRegion, burnedToday, &ost);
+
+                            bool proceed = !ost.locked && !ost.burned;
+                            if (proceed && ost.chancePct >= 0 && ost.chancePct < 100 &&
+                                randf() * 100.0f >= (float)ost.chancePct)
+                            {
+                                // Zar tutmadı: BUGÜN kilit + itibar -1 + az XP
+                                proceed = false;
+                                if (dialogNpc < 8)
+                                    dlgBurnDay[dialogNpc][dialogNode][sel] = gametime_day();
+                                rep_add(&player.reputation[dlgRegion], REP_FAILED_CHECK);
+                                if (skill_add_xp(player.skills, SKILL_SPEECH, 3.0f))
+                                    on_skill_levelup(&player, SKILL_SPEECH, &hotbar, floatTexts);
+                                SDL_Color red = { 255, 120, 100, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f,
+                                                     "İkna edemedin...", red);
+                            }
+                            else if (proceed)
+                            {
+                                // Başarı: efektler + (zarlı seçenekse) Speech XP
+                                dialog_apply_fx(opt, &player, dlgRegion);
+                                float spTh;
+                                if (dialog_opt_speech_req(opt, &spTh))
+                                    if (skill_add_xp(player.skills, SKILL_SPEECH, 15.0f))
+                                        on_skill_levelup(&player, SKILL_SPEECH, &hotbar, floatTexts);
+                            }
+
+                            if (!proceed)
+                            {
+                                // kilitli/yanmış/zar tutmadı — düğümde kal
+                            }
+                            else if (strcmp(target, "end") == 0)
                             {
                                 dialogNpc = -1;
                             }
@@ -563,7 +719,7 @@ int main(int argc, char *argv[])
                                     floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                          player.rect.x + player.rect.w / 2.0f,
                                                          player.rect.y - 10.0f,
-                                                         "Sana guven olmaz...", red);
+                                                         "Sana güven olmaz...", red);
                                     dialogNpc = -1;
                                 }
                                 else
@@ -574,7 +730,7 @@ int main(int argc, char *argv[])
                                         questStatus[q].state = QUEST_ACTIVE;
                                         questStatus[q].progress = 0;
                                         char buf[FLOAT_TEXT_LEN];
-                                        snprintf(buf, sizeof(buf), "Gorev: %s", QUESTS[q].name);
+                                        snprintf(buf, sizeof(buf), "Görev: %s", QUESTS[q].name);
                                         SDL_Color cyan = { 90, 220, 255, 255 };
                                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                              player.rect.x + player.rect.w / 2.0f,
@@ -636,7 +792,7 @@ int main(int argc, char *argv[])
                         SDL_Color red = { 255, 120, 100, 255 };
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              npx, npy - 100.0f,
-                                             "Once cezani ode!", red);
+                                             "Önce cezanı öde!", red);
                     }
                     else if (nearestNpc >= 0 &&
                              player.reputation[npcRegion] <= REP_TALK_REFUSE)
@@ -645,7 +801,7 @@ int main(int argc, char *argv[])
                         SDL_Color red = { 255, 120, 100, 255 };
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              npx, npy - 100.0f,
-                                             "Seninle isim olmaz!", red);
+                                             "Seninle işim olmaz!", red);
                     }
                     // Menzildeki NPC ile konuş — giriş düğümü görev durumuna göre
                     else if (nearestNpc >= 0 && npcDialogOk[nearestNpc])
@@ -720,7 +876,7 @@ int main(int argc, char *argv[])
                 {
                     // Hızlı kayıt
                     const char *msg = save_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus)
-                                    ? "Kaydedildi" : "Kayit HATASI";
+                                    ? "Kaydedildi" : "Kayıt HATASI";
                     SDL_Color white = { 255, 255, 255, 255 };
                     floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                          player.rect.x + player.rect.w / 2.0f,
@@ -737,7 +893,7 @@ int main(int argc, char *argv[])
                         SDL_Color white = { 255, 255, 255, 255 };
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
-                                             player.rect.y - 10.0f, "Yuklendi", white);
+                                             player.rect.y - 10.0f, "Yüklendi", white);
                     }
                 }
             }
@@ -770,8 +926,8 @@ int main(int argc, char *argv[])
                                 if (guardIdx >= 0) guard_init(guardIdx);   // beyin sıfırdan (nöbete)
                                 catchOpen = false;
                             }
-                            const char *msg = !ok ? ((act == MENU_ACTION_SAVE) ? "Kayit HATASI" : "Kayit bulunamadi")
-                                            : (act == MENU_ACTION_SAVE) ? "Kaydedildi" : "Yuklendi";
+                            const char *msg = !ok ? ((act == MENU_ACTION_SAVE) ? "Kayıt HATASI" : "Kayıt bulunamadı")
+                                            : (act == MENU_ACTION_SAVE) ? "Kaydedildi" : "Yüklendi";
                             SDL_Color white = { 255, 255, 255, 255 };
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  player.rect.x + player.rect.w / 2.0f,
@@ -1357,7 +1513,7 @@ int main(int argc, char *argv[])
                             SDL_Color purple = { 200, 140, 255, 255 };
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  target->e.rect.x + target->e.rect.w / 2.0f,
-                                                 target->e.rect.y - 26.0f, "Sinsi vurus!", purple);
+                                                 target->e.rect.y - 26.0f, "Sinsi vuruş!", purple);
                             if (skill_add_xp(player.skills, SKILL_SNEAK, SNEAK_XP_BACKSTAB))
                                 on_skill_levelup(&player, SKILL_SNEAK, &hotbar, floatTexts);
                         }
@@ -1451,8 +1607,8 @@ int main(int argc, char *argv[])
                                 if (!died)
                                     guard_set_hostile(true);
                                 char buf[FLOAT_TEXT_LEN];
-                                snprintf(buf, sizeof(buf), died ? "Muhafiz oldu! +%d bounty"
-                                                                : "Kanuna saldiri! +%d bounty", b);
+                                snprintf(buf, sizeof(buf), died ? "Muhafız öldü! +%d bounty"
+                                                                : "Kanuna saldırı! +%d bounty", b);
                                 SDL_Color red = { 255, 80, 80, 255 };
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
@@ -1471,7 +1627,7 @@ int main(int argc, char *argv[])
                                         died ? REP_MURDER : REP_HIT);
                                 char buf[FLOAT_TEXT_LEN];
                                 snprintf(buf, sizeof(buf), died ? "Cinayet! +%d bounty"
-                                                                : "Suc! +%d bounty", b);
+                                                                : "Suç! +%d bounty", b);
                                 SDL_Color red = { 255, 80, 80, 255 };
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
@@ -1483,7 +1639,7 @@ int main(int argc, char *argv[])
                                 SDL_Color gray = { 170, 170, 190, 255 };
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
-                                                     player.rect.y - 24.0f, "Kimse gormedi...", gray);
+                                                     player.rect.y - 24.0f, "Kimse görmedi...", gray);
                                 if (skill_add_xp(player.skills, SKILL_SNEAK, SNEAK_XP_CRIME))
                                     on_skill_levelup(&player, SKILL_SNEAK, &hotbar, floatTexts);
                             }
@@ -1569,6 +1725,11 @@ int main(int argc, char *argv[])
                 // Düşman bu kare saldırdıysa ve oyuncu menzildeyse, hasarı BURADA uygula
                 if (mobs[i].attackTriggered)
                 {
+                    // Saldıran mob otomatik hedeflenir (yalnız hedef boşken —
+                    // seçili mob/NPC hedefini savaş ortasında EZMEZ)
+                    if (player.targetMobId == 0 && targetNpc < 0)
+                        player.targetMobId = mobs[i].id;
+
                     bool dodged = false;
                     bool yaraliAyi = (player.perkChoice[SKILL_MEDIUM_ARMOR][2] == 1);
                     float dmg = combat_mob_damage(mobs[i].type->damage, &equipment,
@@ -1580,7 +1741,7 @@ int main(int argc, char *argv[])
                     {
                         SDL_Color cyan = { 90, 220, 255, 255 };
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
-                                             px, player.rect.y - 10.0f, "Kacindin!", cyan);
+                                             px, player.rect.y - 10.0f, "Kaçındın!", cyan);
                         audio_play(SFX_DODGE);
                         fx_burst(&weaponFx, px, py, 10, 120.0f, 235, 245, 255);   // beyaz iz
                     }
@@ -1640,7 +1801,7 @@ int main(int argc, char *argv[])
                             SDL_Color gold = { 255, 210, 60, 255 };
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  px, player.rect.y - 30.0f,
-                                                 "Olumden dondun!", gold);
+                                                 "Ölümden döndün!", gold);
                             audio_play(SFX_DEATHSAVE);
                             fx_burst(&weaponFx, px, py, 40, 150.0f, 255, 215, 90);   // altın patlama
                         }
@@ -1891,7 +2052,7 @@ int main(int argc, char *argv[])
             if (player.reputation[hudRegion] <= -1.0f || player.reputation[hudRegion] >= 1.0f)
             {
                 char repBuf[32];
-                snprintf(repBuf, sizeof(repBuf), "Itibar %d", (int)player.reputation[hudRegion]);
+                snprintf(repBuf, sizeof(repBuf), "İtibar %d", (int)player.reputation[hudRegion]);
                 SDL_Color repCol = player.reputation[hudRegion] < 0.0f
                                  ? (SDL_Color){ 255, 140, 100, 255 }
                                  : (SDL_Color){ 140, 230, 140, 255 };
@@ -1936,9 +2097,9 @@ int main(int argc, char *argv[])
             r2d_fill_rect(renderer, &dead);
 
             int tw = 0, th = 0;
-            TTF_GetStringSize(splashFont, "Oldun", 0, &tw, &th);
+            TTF_GetStringSize(splashFont, "Öldün", 0, &tw, &th);
             SDL_Color red = { 255, 80, 80, 255 };
-            draw_text(renderer, splashFont, "Oldun",
+            draw_text(renderer, splashFont, "Öldün",
                       (winW - tw) / 2.0f, winH * 0.4f, red);
 
             if (gameFont != NULL && deathGoldLost > 0)
@@ -1992,26 +2153,51 @@ int main(int argc, char *argv[])
                         40.0f, 40.0f);
 
         if (dialogNpc >= 0)
+        {
+            // Seçenek durumları (kilit/zar yüzdesi) — render soluk + etiketli çizer
+            DialogNode *dnode = &npcDialogs[dialogNpc].nodes[dialogNode];
+            DialogOptState dstates[DIALOG_MAX_OPTS];
+            float dnx, dny;
+            int dRegion = npc_visible_pos(dialogNpc, &dnx, &dny)
+                        ? region_of(dnx, dny) : 0;
+            for (int oi = 0; oi < dnode->optCount; oi++)
+                dialog_eval_opt(&dnode->opts[oi], &player, dRegion,
+                                dialogNpc < 8 &&
+                                dlgBurnDay[dialogNpc][dialogNode][oi] == gametime_day(),
+                                &dstates[oi]);
             dialog_render(&npcDialogs[dialogNpc], dialogNode, NPCS[dialogNpc].name,
-                          renderer, gameFont, winW, winH);
+                          dstates, renderer, gameFont, winW, winH);
+        }
 
-        // Muhafız yakalama paneli: öde / karşı koy
+        // Muhafız yakalama paneli: öde / karşı koy / rüşvet
         if (catchOpen && gameFont != NULL)
         {
-            float pw = 460.0f, ph = 140.0f;
+            float pw = 480.0f, ph = 168.0f;
             float pX = (winW - pw) / 2.0f, pY = winH / 3.0f;
             ui_panel(renderer, pX, pY, pw, ph);
 
             SDL_Color white = { 240, 240, 245, 255 };
             SDL_Color gold  = { 255, 210, 60, 255 };
-            char line[64];
-            draw_text(renderer, gameFont, "Muhafiz: Dur! Kanunu cignedin.",
+            char line[80];
+            draw_text(renderer, gameFont, "Muhafız: Dur! Kanunu çiğnedin.",
                       pX + 24.0f, pY + 22.0f, white);
-            snprintf(line, sizeof(line), "Ceza: %d altin (sende: %d)",
+            snprintf(line, sizeof(line), "Ceza: %d altın (sende: %d)",
                      player.bounty[guardRegion], player.gold);
             draw_text(renderer, gameFont, line, pX + 24.0f, pY + 54.0f, gold);
-            draw_text(renderer, gameFont, "[1] Cezayi ode    [2] Karsi koy",
+            draw_text(renderer, gameFont, "[1] Cezayı öde    [2] Karşı koy",
                       pX + 24.0f, pY + 94.0f, white);
+
+            int bribeSp = player.skills[SKILL_SPEECH].level;
+            int bribePct = (bribeSp >= CRIME_BRIBE_SPEECH) ? 100
+                         : (int)((float)bribeSp / CRIME_BRIBE_SPEECH * 70.0f);
+            if (bribePct >= 100)
+                snprintf(line, sizeof(line), "[3] Rüşvet teklif et (%dg) [Speech %d]",
+                         player.bounty[guardRegion] / 2, CRIME_BRIBE_SPEECH);
+            else
+                snprintf(line, sizeof(line), "[3] Rüşvet teklif et (%dg) [Speech %d - %%%d]",
+                         player.bounty[guardRegion] / 2, CRIME_BRIBE_SPEECH, bribePct);
+            SDL_Color bribeCol = { 200, 170, 255, 255 };
+            draw_text(renderer, gameFont, line, pX + 24.0f, pY + 122.0f, bribeCol);
         }
 
         if (gameState == GAME_PAUSED)                          // ← EKLE

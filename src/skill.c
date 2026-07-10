@@ -113,7 +113,7 @@ void skill_panel_render(const Skill *skills, R2D *renderer,
     // Alt ipucu: perk seçimi nasıl yapılır
     if (font != NULL) {
         SDL_Color hint = { 255, 210, 60, 255 };
-        draw_text(renderer, font, "Sari nokta = perk hazir, satira tikla",
+        draw_text(renderer, font, "Sarı nokta = perk hazır, satıra tıkla",
                   panelX + pad, rowY + 4.0f, hint);
     }
 }

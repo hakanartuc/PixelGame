@@ -29,12 +29,12 @@ static const RegionCamp GECIT_CAMPS[] = {
 // Sıra önemli: region_at İLK eşleşeni döndürür → Köy, Ova'nın içinde ama önce.
 // Mood: köy huzurlu, ova keşif, diğerleri tekinsiz (gece kuralı + savaş main'de).
 const Region REGIONS[] = {
-    { .name = "Koy",             .rect = { T(0),   T(0),  T(20),  T(15) }, .mood = MOOD_TOWN,
+    { .name = "Köy",             .rect = { T(0),   T(0),  T(20),  T(15) }, .mood = MOOD_TOWN,
       .camps = NULL, .campCount = 0 },
-    { .name = "Yesil Ova",       .rect = { T(0),   T(0),  T(100), T(75) }, .mood = MOOD_WILD,   CAMPS(OVA_CAMPS) },
-    { .name = "Karanlik Orman",  .rect = { T(100), T(0),  T(100), T(75) }, .mood = MOOD_DANGER, CAMPS(ORMAN_CAMPS) },
-    { .name = "Bataklik",        .rect = { T(0),   T(75), T(100), T(75) }, .mood = MOOD_DANGER, CAMPS(BATAKLIK_CAMPS) },
-    { .name = "Kayalik Gecit",   .rect = { T(100), T(75), T(100), T(75) }, .mood = MOOD_DANGER, CAMPS(GECIT_CAMPS) },
+    { .name = "Yeşil Ova",       .rect = { T(0),   T(0),  T(100), T(75) }, .mood = MOOD_WILD,   CAMPS(OVA_CAMPS) },
+    { .name = "Karanlık Orman",  .rect = { T(100), T(0),  T(100), T(75) }, .mood = MOOD_DANGER, CAMPS(ORMAN_CAMPS) },
+    { .name = "Bataklık",        .rect = { T(0),   T(75), T(100), T(75) }, .mood = MOOD_DANGER, CAMPS(BATAKLIK_CAMPS) },
+    { .name = "Kayalık Geçit",   .rect = { T(100), T(75), T(100), T(75) }, .mood = MOOD_DANGER, CAMPS(GECIT_CAMPS) },
 };
 const int REGION_COUNT = (int)(sizeof(REGIONS) / sizeof(REGIONS[0]));
 

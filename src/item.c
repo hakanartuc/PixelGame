@@ -12,7 +12,7 @@ const ItemType ITEM_TYPES[] = {
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .equipSpritePath = NULL,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
-    { .name = "Mesale", .iconIndex = 9, .maxStack = 99, .value = 5,
+    { .name = "Meşale", .iconIndex = 9, .maxStack = 99, .value = 5,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .equipSpritePath = NULL,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
@@ -32,13 +32,13 @@ const ItemType ITEM_TYPES[] = {
   .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
 
     // --- Zirh: kendi LPC sheet'inin idle-down karesi (izole parca = temiz ikon) ---
-    { .name = "Demir Miger", .iconIndex = 1, .maxStack = 1, .value = 120,
+    { .name = "Demir Miğfer", .iconIndex = 1, .maxStack = 1, .value = 120,
       .equipable = true, .equipSlot = EQUIP_HELMET, .weaponType = WEAPON_NONE,
       .defense = 8.0f, .armorClass = ARMOR_HEAVY,
       .equipSpritePath = "assets/equipment/head/armet_ceramic.png",
       .iconSpritePath = "assets/equipment/head/armet_ceramic.png",
       .iconSrc = { 0, 1536, 64, 64 } },
-    { .name = "Demir Zirh", .iconIndex = 8, .maxStack = 1, .value = 200,
+    { .name = "Demir Zırh", .iconIndex = 8, .maxStack = 1, .value = 200,
       .equipable = true, .equipSlot = EQUIP_CHEST, .weaponType = WEAPON_NONE,
       .defense = 15.0f, .armorClass = ARMOR_HEAVY,
       .equipSpritePath = "assets/equipment/torso/plate_ceramic.png",
@@ -52,7 +52,7 @@ const ItemType ITEM_TYPES[] = {
       .iconSrc = { 0, 1536, 64, 64 } },
 
     // --- Tuketilebilir ---
-    { .name = "Can Iksiri", .iconIndex = 5, .maxStack = 10, .value = 25,
+    { .name = "Can İksiri", .iconIndex = 5, .maxStack = 10, .value = 25,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .consumable = true, .healAmount = 50.0f, .useCooldown = 10.0f,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },

@@ -32,7 +32,7 @@ void shop_render(R2D *renderer, TTF_Font *font,
     SDL_Color gold   = { 255, 210, 60, 255 };
     SDL_Color dim    = { 150, 150, 160, 255 };
 
-    draw_text(renderer, font, "Dukkan", panelX + SHOP_PAD, panelY + 8.0f, white);
+    draw_text(renderer, font, "Dükkan", panelX + SHOP_PAD, panelY + 8.0f, white);
 
     float rowY = panelY + SHOP_PAD + 30.0f;
     for (int i = 0; i < SHOP_STOCK_COUNT; i++) {
@@ -65,7 +65,7 @@ void shop_render(R2D *renderer, TTF_Font *font,
 
     // Alt bilgi: satış ipucu
     SDL_Color hint = { 170, 200, 255, 255 };
-    draw_text(renderer, font, "Sat: envanterde sag tik", panelX + SHOP_PAD, rowY + 4.0f, hint);
+    draw_text(renderer, font, "Sat: envanterde sağ tık", panelX + SHOP_PAD, rowY + 4.0f, hint);
 }
 
 int shop_entry_at(float x, float y, float panelX, float panelY)

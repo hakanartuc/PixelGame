@@ -34,6 +34,11 @@ bool crime_witnessed(float x, float y, int victimIdx, bool victimAlive, float ra
 #define REP_TALK_REFUSE (-50.0f)  // bu eşiğin altında NPC konuşmaz (bounty ödense bile)
 #define REP_NO_QUESTS   (-25.0f)  // bu eşiğin altında yeni görev verilmez
 
+// Speech / rüşvet (diyalog koşulları paketi)
+#define REP_FAILED_CHECK (-1.0f)  // başarısız ikna/rüşvet zarı — yakalanmış yalancı algısı
+#define REP_BRIBE        (-5.0f)  // muhafıza başarılı rüşvet — kanunu satın almak duyulur
+#define CRIME_BRIBE_SPEECH 25     // muhafız rüşveti Speech eşiği (altı zar)
+
 // Clamp'li itibar ekleme
 void rep_add(float *rep, float delta);
 

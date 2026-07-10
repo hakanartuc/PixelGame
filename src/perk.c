@@ -9,60 +9,60 @@ const int PERK_THRESHOLDS[PERK_TIERS] = { 25, 50, 75, 100 };
 // İçerik tablosu — SADECE isim/açıklama (etkiler perk_compute_effects'te).
 // Sıra: [tier][option]. Onaylı taslak (2026-07-09).
 static const PerkOption ONE_HANDED_PERKS[PERK_TIERS][PERK_OPTIONS] = {
-    { {"Kanatma",      "Vuruslar 3 sn'de hasarin %30'u kadar kanatir"},
-      {"Hizli Bilek",  "Saldiri araligi -%10"},
-      {"Guclu Tutus",  "Tek el hasari +%10"} },
-    { {"Derin Kesik",  "Kritik carpani 1.5 -> 1.8"},
-      {"Seri Vurus",   "Quick Slash bekleme -%25"},
+    { {"Kanatma",      "Vuruşlar 3 sn'de hasarın %30'u kadar kanatır"},
+      {"Hızlı Bilek",  "Saldırı aralığı -%10"},
+      {"Güçlü Tutuş",  "Tek el hasarı +%10"} },
+    { {"Derin Kesik",  "Kritik çarpanı 1.5 -> 1.8"},
+      {"Seri Vuruş",   "Quick Slash bekleme -%25"},
       {"Ezici Darbe",  "Power Strike x2.0 -> x2.4"} },
-    { {"Kasap",        "Kanama suresi ve hasari 2x"},
-      {"Usta Bilek",   "Saldiri araligi -%15 daha"},
-      {"Keskin Goz",   "Kritik sansi +%8"} },
-    { {"Kilic Ustasi", "Tek el hasari +%25"},
-      {"Firtina",      "Power Strike bekleme 6 -> 3 sn"},
-      {"Infaz",        "Cani %20 altindaki hedefe +%50 hasar"} },
+    { {"Kasap",        "Kanama süresi ve hasarı 2x"},
+      {"Usta Bilek",   "Saldırı aralığı -%15 daha"},
+      {"Keskin Göz",   "Kritik şansı +%8"} },
+    { {"Kılıç Ustası", "Tek el hasarı +%25"},
+      {"Fırtına",      "Power Strike bekleme 6 -> 3 sn"},
+      {"İnfaz",        "Canı %20 altındaki hedefe +%50 hasar"} },
 };
 static const PerkOption LIGHT_PERKS[PERK_TIERS][PERK_OPTIONS] = {
-    { {"Cevik",        "+%5 hareket hizi"},
-      {"Esnek",        "Hafif zirh defansi +%10"},
-      {"Akici",        "Iksir beklemesi -%15"} },
-    { {"Golge Adimi",  "Gece +%5 ek hiz"},
-      {"Kacinma",      "%5 sansla hasari tamamen savustur"},
-      {"Dayaniklilik", "+15 max HP"} },
-    { {"Ruzgar",       "+%5 hiz daha"},
-      {"Ikinci Deri",  "Hafif zirh defansi +%20"},
-      {"Refleks",      "Kacinma sansi %8'e cikar"} },
-    { {"Hayalet",      "Moblar seni %15 gec farkeder"},
-      {"Sarsilmaz",    "Itilme yemezsin"},
-      {"Zinde",        "Can %50 ustundeyken +%10 hasar"} },
+    { {"Çevik",        "+%5 hareket hızı"},
+      {"Esnek",        "Hafif zırh defansı +%10"},
+      {"Akıcı",        "İksir beklemesi -%15"} },
+    { {"Gölge Adımı",  "Gece +%5 ek hız"},
+      {"Kaçınma",      "%5 şansla hasarı tamamen savuştur"},
+      {"Dayanıklılık", "+15 max HP"} },
+    { {"Rüzgar",       "+%5 hız daha"},
+      {"İkinci Deri",  "Hafif zırh defansı +%20"},
+      {"Refleks",      "Kaçınma şansı %8'e çıkar"} },
+    { {"Hayalet",      "Moblar seni %15 geç fark eder"},
+      {"Sarsılmaz",    "İtilme yemezsin"},
+      {"Zinde",        "Can %50 üstündeyken +%10 hasar"} },
 };
 static const PerkOption MEDIUM_PERKS[PERK_TIERS][PERK_OPTIONS] = {
-    { {"Dengeli",      "Orta zirh defansi +%7"},
-      {"Uyumlu",       "+%3 hiz ve +5 HP"},
-      {"Saglam",       "+10 max HP"} },
-    { {"Koruyucu Katman", "Alinan hasar -%5"},
-      {"Karsilik",     "Vurana hasarin %10'u yansir"},
-      {"Ilk Yardim",   "Iksirler +%25 etkili"} },
-    { {"Zirh Ustasi",  "Orta zirh defansi +%25"},
-      {"Yarali Ayi",   "Can %30 altinda alinan hasar -%15"},
+    { {"Dengeli",      "Orta zırh defansı +%7"},
+      {"Uyumlu",       "+%3 hız ve +5 HP"},
+      {"Sağlam",       "+10 max HP"} },
+    { {"Koruyucu Katman", "Alınan hasar -%5"},
+      {"Karşılık",     "Vurana hasarın %10'u yansır"},
+      {"İlk Yardım",   "İksirler +%25 etkili"} },
+    { {"Zırh Ustası",  "Orta zırh defansı +%25"},
+      {"Yaralı Ayı",   "Can %30 altında alınan hasar -%15"},
       {"Metanet",      "+20 max HP"} },
-    { {"Kale",         "Alinan hasar -%10 daha"},
+    { {"Kale",         "Alınan hasar -%10 daha"},
       {"Gazi",         "Hasar yiyince 5 sn +%10 hasar"},
-      {"Yikilmaz",     "Olumcul darbe %20 sansla 1 HP birakir (60sn)"} },
+      {"Yıkılmaz",     "Ölümcül darbe %20 şansla 1 HP bırakır (60sn)"} },
 };
 static const PerkOption HEAVY_PERKS[PERK_TIERS][PERK_OPTIONS] = {
-    { {"Demir Ten",    "Agir zirh defansi +%10"},
-      {"Yuk Aliskanligi", "+10 max HP"},
-      {"Saglam Durus", "Itilme -%50"} },
-    { {"Kalkan Duvari","Tum defans daha verimli (K: 100->120)"},
-      {"Diken Zirh",   "Yakin saldirgana 3 hasar yansir"},
-      {"Dayanikli",    "+20 max HP"} },
-    { {"Agir Ustalik", "Agir zirh defansi +%25"},
-      {"Ezici Agirlik","Itme +%10, hasar +%5"},
-      {"Granit",       "Alinan hasar -%8"} },
-    { {"Juggernaut",   "Alinan hasar -%12 daha"},
-      {"Kule",         "Hareketsizken alinan hasar -%20"},
-      {"Olumsuz",      "Olumcul darbe 1 HP birakir (90sn)"} },
+    { {"Demir Ten",    "Ağır zırh defansı +%10"},
+      {"Yük Alışkanlığı", "+10 max HP"},
+      {"Sağlam Duruş", "İtilme -%50"} },
+    { {"Kalkan Duvari","Tüm defans daha verimli (K: 100->120)"},
+      {"Diken Zirh",   "Yakın saldırgana 3 hasar yansır"},
+      {"Dayanıklı",    "+20 max HP"} },
+    { {"Ağır Ustalık", "Ağır zırh defansı +%25"},
+      {"Ezici Ağırlık","İtme +%10, hasar +%5"},
+      {"Granit",       "Alınan hasar -%8"} },
+    { {"Juggernaut",   "Alınan hasar -%12 daha"},
+      {"Kule",         "Hareketsizken alınan hasar -%20"},
+      {"Ölümsüz",      "Ölümcül darbe 1 HP bırakır (90sn)"} },
 };
 
 static const PerkOption (*perk_table(SkillType s))[PERK_OPTIONS]
@@ -173,7 +173,7 @@ void perk_compute_effects(const Sint8 choice[SKILL_COUNT][PERK_TIERS],
     if (HAS(SKILL_HEAVY_ARMOR, 3, 2)) fx->deathSaveCooldown = 90.0f;
 }
 
-// "Yarali Ayi" özel durumu perk.c'de saklanmasın diye main'e sorgu:
+// "Yaralı Ayı" özel durumu perk.c'de saklanmasın diye main'e sorgu:
 // (choice erişimi main'de var; basit yardımcı)
 #undef HAS
 
@@ -221,7 +221,7 @@ void perk_choice_render(SkillType s, int tier, R2D *renderer,
     SDL_Color gray  = { 210, 210, 220, 255 };
 
     char title[64];
-    snprintf(title, sizeof(title), "%s %d — perk sec:",
+    snprintf(title, sizeof(title), "%s %d — perk seç:",
              skill_name(s), PERK_THRESHOLDS[tier]);
     draw_text(renderer, font, title, x + 16.0f, y + 12.0f, white);
 

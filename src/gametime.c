@@ -72,7 +72,7 @@ void gametime_format(char *buf, int bufSize)
 {
     int h = (int)curHours;
     int m = (int)((curHours - h) * 60.0f);
-    snprintf(buf, bufSize, "Gun %d  %02d:%02d", curDay, h, m);
+    snprintf(buf, bufSize, "Gün %d  %02d:%02d", curDay, h, m);
 }
 
 void gametime_get(int *day, float *hours)

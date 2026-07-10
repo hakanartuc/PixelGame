@@ -10,6 +10,8 @@
 //   [dugum_adi]
 //   text: NPC'nin soyledigi metin (tek satir, UI'da sarilir)
 //   opt: Secenek metni -> hedef
+//   req: speech >= 25        (bir ustteki opt'a kosul — speech/gold/rep/bounty, >= veya <=)
+//   fx: gold -= 50           (secilince efekt — gold/rep/bounty; +=, -=, =)
 //
 // Hedef ya başka bir düğüm adıdır ya da ÖZEL EYLEM (main işler):
 //   end            → diyalogu kapat
@@ -17,17 +19,53 @@
 //   accept:ID      → görevi başlat (quest.h id'si)
 //   complete:ID    → görevi teslim et (ödül main'de)
 // Düğüm adı eylemlerle çakışmamalı. Seçim 1-9 tuşlarıyla.
+//
+// Koşul kuralları (değerlendirme main'de — modül yalnız veri taşır):
+//   speech: ZAR — eşik üstü %100, altı (speech/eşik)×%70; başarısızlık oturumda kilitler
+//   gold/rep/bounty: SERT kilit — sağlanmazsa seçenek soluk, seçilemez
 
 #define DIALOG_MAX_NODES 32
 #define DIALOG_MAX_OPTS 4
 #define DIALOG_ID_LEN 32
 #define DIALOG_TEXT_LEN 220
 #define DIALOG_OPT_LEN 80
+#define DIALOG_MAX_REQS 3   // seçenek başına koşul/efekt tavanı
+#define DIALOG_MAX_FX 3
+
+typedef enum {
+    DVAR_SPEECH,   // Speech skill seviyesi (zar)
+    DVAR_GOLD,     // oyuncu altını
+    DVAR_REP,      // NPC bölgesindeki itibar
+    DVAR_BOUNTY,   // NPC bölgesindeki bounty
+} DialogVar;
+
+typedef struct {
+    DialogVar var;
+    bool lessEq;    // true: <=, false: >=
+    float value;
+} DialogReq;
+
+typedef struct {
+    DialogVar var;  // DVAR_SPEECH efekt olamaz (parser reddeder)
+    char op;        // '+', '-', '='
+    float value;
+} DialogFx;
 
 typedef struct {
     char text[DIALOG_OPT_LEN];
     char target[DIALOG_ID_LEN];   // düğüm adı ya da eylem
+    DialogReq reqs[DIALOG_MAX_REQS];
+    int reqCount;
+    DialogFx fx[DIALOG_MAX_FX];
+    int fxCount;
 } DialogOpt;
+
+// Seçeneğin ANLIK durumu — main hesaplar, render gösterir
+typedef struct {
+    bool locked;      // sert koşul sağlanmadı → soluk, seçilemez
+    bool burned;      // bu konuşmada zar başarısız oldu → kilit
+    int chancePct;    // speech zarı yüzdesi (100 = garanti, -1 = speech koşulu yok)
+} DialogOptState;
 
 typedef struct {
     char id[DIALOG_ID_LEN];
@@ -47,8 +85,14 @@ bool dialog_load(Dialog *d, const char *path);
 // Düğüm adı → indeks (-1 = yok)
 int dialog_find(const Dialog *d, const char *id);
 
-// Alt panel: NPC adı + metin (sarılı) + numaralı seçenekler
+// Alt panel: NPC adı + metin (sarılı) + numaralı seçenekler.
+// states: seçenek başına durum (NULL = hepsi açık); kilitliler soluk +
+// speech eşiği/şansı etiketli çizilir.
 void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
+                   const DialogOptState *states,
                    R2D *renderer, TTF_Font *font, int winW, int winH);
+
+// Seçeneğin speech eşiği (varsa). Dönen: var mı; outThreshold'a eşik yazılır.
+bool dialog_opt_speech_req(const DialogOpt *o, float *outThreshold);
 
 #endif

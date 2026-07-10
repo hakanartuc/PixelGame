@@ -1,28 +1,34 @@
-# Yasli Kemal — gorev veren (goblin_derdi)
-# Giris dugumu gorev durumuna gore koddan secilir:
+# Yaşlı Kemal — görev veren (goblin_derdi)
+# Giriş düğümü görev durumuna göre koddan seçilir:
 # NOT_STARTED->start, ACTIVE->active, DONE->done, REWARDED->rewarded
 [start]
-text: Ah, bir maceraci! Tam zamaninda geldin. Goblinler ovayi sardi, surulerimize saldiriyorlar.
-opt: Yardim edebilirim. -> gorev
-opt: Benim isim var. -> end
+text: Ah, bir maceracı! Tam zamanında geldin. Goblinler ovayı sardı, sürülerimize saldırıyorlar.
+opt: Yardım edebilirim. -> gorev
+opt: Benim işim var. -> end
 
 [gorev]
-text: 5 goblin oldur, sana 100 altin veririm. Kamplari kuzeydogudaki yol boyunda.
+text: 5 goblin öldür, sana 100 altın veririm. Kampları kuzeydoğudaki yol boyunda.
 opt: Kabul ediyorum. -> accept:goblin_derdi
 opt: Belki sonra. -> end
 
 [accepted]
-text: Cesur yureklisin evlat. Dikkatli ol, sopalariyla fena vururlar.
+text: Cesur yüreklisin evlat. Dikkatli ol, sopalarıyla fena vururlar.
 opt: Merak etme. -> end
 
 [active]
-text: Goblinler hala ortalikta dolasiyor. Isini bitir, odulun burada hazir.
-opt: Ugrasiyorum. -> end
+text: Goblinler hâlâ ortalıkta dolaşıyor. İşini bitir, ödülün burada hazır.
+opt: Uğraşıyorum. -> end
 
 [done]
-text: Hepsini oldurdun demek! Ova sana borclu. Al bakalim, soz verdigim altin.
-opt: Tesekkurler. -> complete:goblin_derdi
+text: Hepsini öldürdün demek! Ova sana borçlu. Al bakalım, söz verdiğim altın.
+opt: Teşekkürler. -> complete:goblin_derdi
 
 [rewarded]
-text: Tekrar hos geldin evlat. Sayende suruler guvende.
-opt: Onemli degil. -> end
+text: Tekrar hoş geldin evlat. Sayende sürüler güvende.
+opt: Köyün eski sırlarını anlatsana. -> sir
+req: speech >= 20
+opt: Önemli değil. -> end
+
+[sir]
+text: Madem dilin tatlı... Kuzeydeki taş yığınları eski bir kalenin temeliymiş. Büyükbabam orada gömülü hazine olduğunu söylerdi.
+opt: Çok ilginç! -> end
