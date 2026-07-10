@@ -167,9 +167,25 @@ Güncelleme: 2026-07-10
   yoksa günlük blok yüklenen panoyu ezerdi); STATIONS artık const değil (oyuncu ateşi konumu)
 - Bilinen küçükler: hayvanlar minimap'te düşman noktası; otlarken gezinmiyorlar
 
+### Faz 19 — Mob fazı 1: Slime ailesi
+- 6 tür (Yeşil/Mavi × Büyük/Orta/Küçük; Cute_Fantasy 2 renk kullanıldı, K/S/P yeni biyomlara saklı)
+- BÖLÜNME zinciri: Büyük(120/160) → 2 Orta(50/70) → 2'şer Küçük(20/25); yavrular leşin iki
+  yanından KIZGIN doğar (aggro+alertFlash); MobType.splitCount/splitChild; mob_die imzası
+  mobs/nextMobId aldı; MAX_MOBS dolarsa yavru sessizce doğmaz (backstop)
+- Loot YALNIZ Küçük'te (kasa spam'i yok — mob_die loot'u tablo/altın yoksa atlar):
+  Jel %80 + altın; Mavi Küçük +%10 Zehirli Öz (sunağa bataklık kaynağı)
+- Mavi vuruşu ZEHİRLER: 2 dps × 3sn (Player.poisonDps/poisonTimer; "Zehirlendin!"; süre tazelenir)
+- Türe özel gövde boyu (MobType.bodyW/H — Büyük 72×60, Küçük 22×18); sheet: yönsüz blob,
+  idle 4 / zıplama 8 / parçalanma-ölüm 8 kare (SLIME_ANIMS makrosu); saldırı = hızlı zıplama
+- Slime Jeli (6g) + Yapışkan Tuzağı (kazan: 2 Jel + 1 Ayotu): hotbar'dan ayak önüne kurulur,
+  mob basınca 100px alandakiler 5sn %60 yavaşlar; max 4 tuzak (round-robin); zemin jel görseli
+- Kamplar HARİTADAN DOĞRULANDI (CSV açıklık taraması — ilk konum gölün içi çıktı!):
+  Yeşil T44,20 (domuz otlağı doğusu), Mavi T40,85 (bataklık girişi)
+- Not: hammaddeler (jel/cevher/deri) hotbar'a KONMAZ — hotbar yalnız consumable alır (tasarım)
+
 ## 🔜 Kalanlar (öncelik sırası)
 1. **Boss scroll/taş dropları** (yüksek kademe) mob fazlarıyla gelecek; yay walk/idle görseli (asset gelince)
-2. **Mob fazları** (araya serpiştirilir): Slime ailesi → Skeleton ailesi (+ok/mermi sistemi) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla)
+2. **Mob fazları** (devamı): Skeleton ailesi (+ok/mermi sistemi — Swordman/Bowman/Mage) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda
 3. **İç mekanlar/zindanlar**: kapı→ayrı harita, Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate
 4. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
 5. **Ertelenen küçükler**: HUD perk ikon şeridi, item tooltip'leri, drag&drop, harita editörü akışı (Tiled tileset tanımı),

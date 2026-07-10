@@ -241,6 +241,18 @@ const ItemType ITEM_TYPES[] = {
       .equipSpritePath = "assets/equipment/feet/leather_boots.png",
       .iconSpritePath = "assets/equipment/feet/leather_boots.png",
       .iconSrc = { 0, 1536, 64, 64 } },
+
+    // --- Faz 7: slime ekonomisi ---
+    { .name = "Slime Jeli", .iconIndex = 0, .maxStack = 99, .value = 6,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/resources.png",
+      .iconSrc = { 32, 48, 16, 16 } },
+    { .name = "Yapışkan Tuzağı", .iconIndex = 0, .maxStack = 10, .value = 25,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .consumable = true, .useCooldown = 2.0f,
+      .trapItem = true,   // kullanım: ayak önüne tuzak kur (main işler)
+      .iconSpritePath = "assets/icons/items/resources.png",
+      .iconSrc = { 80, 48, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

@@ -55,6 +55,15 @@ static const LootEntry ORC_LOOT[] = {
     { &ITEM_TYPES[ITEM_STONE_DEF],     0.03f, 0 },
     { &ITEM_TYPES[ITEM_STONE_MP],      0.02f, 0 },
 };
+// Faz 7 — slime: loot YALNIZ Küçük'ten (zincir sonu ödülü; kasa spam'i olmaz)
+static const LootEntry SLIME_G_LOOT[] = {
+    { &ITEM_TYPES[ITEM_SLIME_GEL], 0.80f, 0 },
+};
+static const LootEntry SLIME_B_LOOT[] = {
+    { &ITEM_TYPES[ITEM_SLIME_GEL],     0.80f, 0 },
+    { &ITEM_TYPES[ITEM_ESSENCE_TOXIC], 0.10f, 0 },   // sunağa ikinci kaynak
+};
+
 // Faz 6 — av: deri/et (girdiler bağımsız zar → 1-2 adet hissi)
 static const LootEntry SHEEP_LOOT[] = {
     { &ITEM_TYPES[ITEM_LEATHER], 0.70f, 0 },
@@ -327,6 +336,94 @@ const MobType MOB_TYPES[] = {
             },
         },
     },
+    // --- Faz 7: Slime ailesi (Cute_Fantasy Enemies/Slime) ---
+    // Sheet düzeni (yönsüz blob, tüm yönler aynı satır): idle y=0 (4 kare),
+    // zıplama y=1·px (8), parçalanma-ölüm y=2·px (8). Saldırı = hızlı zıplama.
+    // Boylar: Büyük 64px / Orta 32px / Küçük 16px grid.
+    #define SLIME_CLIP(y0, px, n, dur, fy) \
+        { .x = 0, .y = (y0), .frameW = (px), .frameH = (px), \
+          .frameCount = (n), .frameDuration = (dur), .feetY = (fy) }
+    #define SLIME_ANIMS(px, fy) { \
+        { SLIME_CLIP(0, px, 4, 0.25f, fy), SLIME_CLIP(0, px, 4, 0.25f, fy), \
+          SLIME_CLIP(0, px, 4, 0.25f, fy) },                                  \
+        { SLIME_CLIP(px, px, 8, 0.12f, fy), SLIME_CLIP(px, px, 8, 0.12f, fy), \
+          SLIME_CLIP(px, px, 8, 0.12f, fy) },                                 \
+        { SLIME_CLIP(px, px, 8, 0.07f, fy), SLIME_CLIP(px, px, 8, 0.07f, fy), \
+          SLIME_CLIP(px, px, 8, 0.07f, fy) },                                 \
+        { SLIME_CLIP(2*(px), px, 8, 0.09f, fy), SLIME_CLIP(2*(px), px, 8, 0.09f, fy), \
+          SLIME_CLIP(2*(px), px, 8, 0.09f, fy) },                             \
+    }
+
+    // [6] Yeşil Slime (Büyük) — ova kenarı: yavaş, bölünen bela
+    {
+        .name = "Yeşil Slime", .texturePath = "assets/characters/mobs/Slime_Big_Green.png",
+        .level = 2, .maxHealth = 120.0f, .speed = 130.0f,
+        .attackRange = 70.0f, .detectRange = 260.0f, .damage = 8.0f, .defense = 0.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 4,
+        .goldMin = 0, .goldMax = 0,   // loot/altın YOK — zincir sonu Küçük'te
+        .splitCount = 2, .splitChild = 7,
+        .bodyW = 72.0f, .bodyH = 60.0f,
+        .anims = SLIME_ANIMS(64, 56),
+    },
+    // [7] Yeşil Slime (Orta)
+    {
+        .name = "Yeşil Slime", .texturePath = "assets/characters/mobs/Slime_Medium_Green.png",
+        .level = 1, .maxHealth = 50.0f, .speed = 150.0f,
+        .attackRange = 45.0f, .detectRange = 240.0f, .damage = 5.0f, .defense = 0.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 4,
+        .goldMin = 0, .goldMax = 0,
+        .splitCount = 2, .splitChild = 8,
+        .bodyW = 40.0f, .bodyH = 34.0f,
+        .anims = SLIME_ANIMS(32, 28),
+    },
+    // [8] Yeşil Slime (Küçük) — zincir sonu: jel + altın burada
+    {
+        .name = "Yeşil Slime", .texturePath = "assets/characters/mobs/Slime_Small_Green.png",
+        .level = 1, .maxHealth = 20.0f, .speed = 170.0f,
+        .attackRange = 30.0f, .detectRange = 220.0f, .damage = 3.0f, .defense = 0.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 4,
+        .lootTable = SLIME_G_LOOT, .lootTableCount = LOOT_COUNT(SLIME_G_LOOT),
+        .goldMin = 2, .goldMax = 6,
+        .bodyW = 22.0f, .bodyH = 18.0f,
+        .anims = SLIME_ANIMS(16, 14),
+    },
+    // [9] Mavi Slime (Büyük) — bataklık: dayanıklı + vuruşu zehirler
+    {
+        .name = "Mavi Slime", .texturePath = "assets/characters/mobs/Slime_Big_Blue.png",
+        .level = 4, .maxHealth = 160.0f, .speed = 130.0f,
+        .attackRange = 70.0f, .detectRange = 280.0f, .damage = 12.0f, .defense = 5.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 4,
+        .goldMin = 0, .goldMax = 0,
+        .splitCount = 2, .splitChild = 10,
+        .bodyW = 72.0f, .bodyH = 60.0f,
+        .hitPoisonDps = 2.0f, .hitPoisonTime = 3.0f,
+        .anims = SLIME_ANIMS(64, 56),
+    },
+    // [10] Mavi Slime (Orta)
+    {
+        .name = "Mavi Slime", .texturePath = "assets/characters/mobs/Slime_Medium_Blue.png",
+        .level = 2, .maxHealth = 70.0f, .speed = 150.0f,
+        .attackRange = 45.0f, .detectRange = 240.0f, .damage = 8.0f, .defense = 3.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 4,
+        .goldMin = 0, .goldMax = 0,
+        .splitCount = 2, .splitChild = 11,
+        .bodyW = 40.0f, .bodyH = 34.0f,
+        .hitPoisonDps = 2.0f, .hitPoisonTime = 3.0f,
+        .anims = SLIME_ANIMS(32, 28),
+    },
+    // [11] Mavi Slime (Küçük) — jel + Zehirli Öz şansı
+    {
+        .name = "Mavi Slime", .texturePath = "assets/characters/mobs/Slime_Small_Blue.png",
+        .level = 1, .maxHealth = 25.0f, .speed = 170.0f,
+        .attackRange = 30.0f, .detectRange = 220.0f, .damage = 4.0f, .defense = 0.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 4,
+        .lootTable = SLIME_B_LOOT, .lootTableCount = LOOT_COUNT(SLIME_B_LOOT),
+        .goldMin = 3, .goldMax = 8,
+        .bodyW = 22.0f, .bodyH = 18.0f,
+        .hitPoisonDps = 2.0f, .hitPoisonTime = 3.0f,
+        .anims = SLIME_ANIMS(16, 14),
+    },
+
 };
 
 const int MOB_TYPE_COUNT = (int)(sizeof(MOB_TYPES) / sizeof(MOB_TYPES[0]));
@@ -782,16 +879,18 @@ int mob_spawn(Mob *mobs, int maxMobs, int *nextMobId, const MobType *type, float
     }
 
     int id = (*nextMobId)++;
+    float bw = (type->bodyW > 0.0f) ? type->bodyW : 48.0f;   // tür boyu (slime'lar farklı)
+    float bh = (type->bodyH > 0.0f) ? type->bodyH : 64.0f;
     mobs[slot] = (Mob){
         .id = id,
         .type = type,
-        .e = { .rect = { .x=x, .y=y, .w=48.0f, .h=64.0f },
+        .e = { .rect = { .x=x, .y=y, .w=bw, .h=bh },
                .health = type->maxHealth, .maxHealth = type->maxHealth,
                .speed = type->speed, .alive = true },
         .state = MOB_IDLE, .attackCooldown = 0.0f,
         .lastState = -1, .lastFacing = -1,
         .zoneId = zoneId,
-        .homeX = x + 24.0f, .homeY = y + 32.0f,   // leash referansı (rect merkezi)
+        .homeX = x + bw / 2.0f, .homeY = y + bh / 2.0f,   // leash referansı (rect merkezi)
     };
     return id;   // doğan mob'un ID'si
 }

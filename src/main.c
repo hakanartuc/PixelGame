@@ -110,7 +110,9 @@ static void dialog_apply_fx(const DialogOpt *o, Player *p, int npcRegion)
 
 // Mob ölümü — saldırıdan da kanamadan da aynı yol: animasyon + loot + görev.
 // (İki yerden çağrılır; kopya kod desenkron olmasın diye tek fonksiyon)
-static void mob_die(Mob *target, Loot *loots, QuestStatus *questStatus,
+// Bölünen türlerde (slime) yavrular BURADA doğar — kızgın doğarlar (aggro).
+static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
+                    Loot *loots, QuestStatus *questStatus,
                     FloatText *floatTexts, const Player *player)
 {
     target->e.alive = false;
@@ -119,7 +121,30 @@ static void mob_die(Mob *target, Loot *loots, QuestStatus *questStatus,
     target->currentFrame = 0;
     target->animTimer = 0.0f;
 
-    int li = loot_spawn(loots, MAX_LOOT, target->e.rect.x, target->e.rect.y,
+    // Bölünme (Faz 7): leşin iki yanına yavrular fırlar
+    if (target->type->splitCount > 0)
+    {
+        for (int k = 0; k < target->type->splitCount; k++)
+        {
+            float ox = (k % 2 == 0) ? -26.0f : 26.0f;
+            float oy = (float)(k / 2) * 22.0f - 8.0f;
+            int cid = mob_spawn(mobs, mobCount, nextMobId,
+                                &MOB_TYPES[target->type->splitChild],
+                                target->e.rect.x + ox, target->e.rect.y + oy, -1);
+            Mob *child = mob_find_by_id(mobs, mobCount, cid);
+            if (child != NULL)
+            {
+                child->aggro = true;         // parçalar kızgın doğar
+                child->suspicion = 1.0f;
+                child->alertFlash = 0.5f;
+            }
+        }
+    }
+
+    // Loot yalnız taşıyan türlerde (slime zinciri sonu Küçük'te — kasa spam'i olmaz)
+    int li = -1;
+    if (target->type->lootTableCount > 0 || target->type->goldMax > 0)
+        li = loot_spawn(loots, MAX_LOOT, target->e.rect.x, target->e.rect.y,
                         target->type->lootTable, target->type->lootTableCount,
                         target->type->goldMin, target->type->goldMax);
 
@@ -584,6 +609,15 @@ int main(int argc, char *argv[])
     // Yaylım Ateşi kuyruğu: release'te 1 ok + 0.15sn arayla 2 ok daha
     int volleyLeft = 0;
     float volleyTimer = 0.0f;
+
+    // Yapışkan Tuzakları (Faz 7): yere kurulur, mob basınca alan yavaşı patlar.
+    // Dolu dizide en eski ezilir (round-robin) — tuzak spam'i sınırlı kalır.
+    #define MAX_TRAPS 4
+    #define TRAP_TRIGGER_R 50.0f    // tetikleme yarıçapı (mob merkezi)
+    #define TRAP_AOE_R 100.0f       // yavaşlatma alanı
+    typedef struct { bool active; float x, y; } GooTrap;
+    GooTrap traps[MAX_TRAPS] = {0};
+    int nextTrap = 0;
 
     // Spawn bölgeleri BÖLGE tanımlarından kurulur (region.c) — kamplar veride,
     // main sadece düzleştirir. Yeni kamp eklemek = region.c'ye bir satır.
@@ -1322,6 +1356,9 @@ int main(int argc, char *argv[])
                     // Faz 6 av test seti: deri seti + yemek malzemesi
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_LEATHER], 12, 0);
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_MEAT], 8, 0);
+                    // Faz 7 slime test seti: jel + hazır tuzak
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_SLIME_GEL], 8, 0);
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_STICKY_TRAP], 3, 0);
                     player.gold += 500;
                     SDL_Log("DEBUG F10: +1M XP (savas+meslek) + craft malzeme seti + 500g");
                 }
@@ -2150,6 +2187,20 @@ int main(int argc, char *argv[])
                                                  player.rect.x + player.rect.w / 2.0f,
                                                  player.rect.y - 10.0f, "Karnın doydu", green);
                         }
+                        if (hs->itemType->trapItem)
+                        {
+                            // Yapışkan Tuzağı: ayak önüne kur (dolu ise en eskisi ezilir)
+                            traps[nextTrap] = (GooTrap){
+                                .active = true,
+                                .x = player.rect.x + player.rect.w / 2.0f,
+                                .y = player.rect.y + player.rect.h + 6.0f,
+                            };
+                            nextTrap = (nextTrap + 1) % MAX_TRAPS;
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f,
+                                                 "Tuzak kuruldu", green);
+                        }
                     }
                 }
             }
@@ -2712,6 +2763,12 @@ int main(int argc, char *argv[])
                 player.health += player.foodRegenRate * dt;
                 if (player.health > player.maxHealth) player.health = player.maxHealth;
             }
+            if (player.poisonTimer > 0.0f)
+            {
+                // Slime zehri: yavaş erime (ölüm kontrolü aşağıdaki genel yolda)
+                player.poisonTimer -= dt;
+                player.health -= player.poisonDps * dt;
+            }
             if (player.coatTimer > 0.0f)
             {
                 player.coatTimer -= dt;
@@ -2936,7 +2993,7 @@ int main(int argc, char *argv[])
                             target->e.knockbackY = (tdy / tdist) * kb;
                         }
                         if (target->e.health <= 0.0f)
-                            mob_die(target, loots, questStatus, floatTexts, &player);
+                            mob_die(target, mobs, MAX_MOBS, &nextMobId, loots, questStatus, floatTexts, &player);
                     }
                 }
                 else if (targetNpc >= 0)   // NPC'ye saldırı (suç sistemi)
@@ -3210,7 +3267,7 @@ int main(int argc, char *argv[])
                                         nb->e.rect.x + nb->e.rect.w / 2.0f + 10.0f,
                                         nb->e.rect.y, (int)splash.damage, splash.crit);
                         if (nb->e.health <= 0.0f)
-                            mob_die(nb, loots, questStatus, floatTexts, &player);
+                            mob_die(nb, mobs, MAX_MOBS, &nextMobId, loots, questStatus, floatTexts, &player);
                     }
                 }
 
@@ -3230,7 +3287,42 @@ int main(int argc, char *argv[])
                     at->e.knockbackY = ady / adist * 90.0f;
                 }
                 if (at->e.health <= 0.0f)
-                    mob_die(at, loots, questStatus, floatTexts, &player);
+                    mob_die(at, mobs, MAX_MOBS, &nextMobId, loots, questStatus, floatTexts, &player);
+            }
+
+            // --- YAPIŞKAN TUZAKLARI: mob basınca patlar, alandakileri yavaşlatır ---
+            for (int tI = 0; tI < MAX_TRAPS; tI++)
+            {
+                if (!traps[tI].active) continue;
+                bool fired = false;
+                for (int mI = 0; mI < mobCount && !fired; mI++)
+                {
+                    if (!mobs[mI].e.alive) continue;
+                    float tdx = (mobs[mI].e.rect.x + mobs[mI].e.rect.w / 2.0f) - traps[tI].x;
+                    float tdy = (mobs[mI].e.rect.y + mobs[mI].e.rect.h / 2.0f) - traps[tI].y;
+                    if (tdx * tdx + tdy * tdy <= TRAP_TRIGGER_R * TRAP_TRIGGER_R)
+                        fired = true;
+                }
+                if (!fired) continue;
+
+                traps[tI].active = false;
+                audio_play(SFX_POTION);   // vıcık patlama (yakın ses)
+                fx_burst(&weaponFx, traps[tI].x, traps[tI].y - 8.0f,
+                         16, 90.0f, 120, 230, 90);   // yeşil jel sıçraması
+                SDL_Color pgreen = { 120, 230, 90, 255 };
+                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                     traps[tI].x, traps[tI].y - 20.0f,
+                                     "Yapıştı!", pgreen);
+
+                for (int mI = 0; mI < mobCount; mI++)
+                {
+                    if (!mobs[mI].e.alive) continue;
+                    float tdx = (mobs[mI].e.rect.x + mobs[mI].e.rect.w / 2.0f) - traps[tI].x;
+                    float tdy = (mobs[mI].e.rect.y + mobs[mI].e.rect.h / 2.0f) - traps[tI].y;
+                    if (tdx * tdx + tdy * tdy > TRAP_AOE_R * TRAP_AOE_R) continue;
+                    mobs[mI].slowMult = 0.4f;    // Buz Oku'ndan sert (%60 yavaş)
+                    mobs[mI].slowTimer = 5.0f;
+                }
             }
 
             // Gece tehlikesi: spawn 2x hızlı (dt şişirilir), algı menzili 1.5x
@@ -3291,7 +3383,7 @@ int main(int argc, char *argv[])
                                  WEAPON_FX_NONE);
 
                     if (mobs[i].e.health <= 0.0f)
-                        mob_die(&mobs[i], loots, questStatus, floatTexts, &player);
+                        mob_die(&mobs[i], mobs, MAX_MOBS, &nextMobId, loots, questStatus, floatTexts, &player);
                 }
 
                 // Düşman bu kare saldırdıysa ve oyuncu menzildeyse, hasarı BURADA uygula
@@ -3328,6 +3420,21 @@ int main(int argc, char *argv[])
                         enchAction = 0;
                         craftProgress = 0.0f;
 
+                        // Zehirli vuruş (mavi slime): süre tazelenir, üst üste binmez
+                        if (mobs[i].type->hitPoisonDps > 0.0f)
+                        {
+                            bool fresh = player.poisonTimer <= 0.0f;
+                            player.poisonDps = mobs[i].type->hitPoisonDps;
+                            player.poisonTimer = mobs[i].type->hitPoisonTime;
+                            if (fresh)
+                            {
+                                SDL_Color pgreen = { 120, 230, 90, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     px, player.rect.y - 26.0f,
+                                                     "Zehirlendin!", pgreen);
+                            }
+                        }
+
                         // His katmanı: kısa sarsıntı + kırmızı kenar flash'ı
                         shakeTime = shakeDur = 0.25f;
                         shakeAmp = 6.0f;
@@ -3356,7 +3463,7 @@ int main(int argc, char *argv[])
                                      mobs[i].e.rect.y + mobs[i].e.rect.h / 2.0f,
                                      6, 70.0f, 255, 160, 60);   // turuncu kıvılcım
                             if (mobs[i].e.health <= 0.0f)
-                                mob_die(&mobs[i], loots, questStatus, floatTexts, &player);
+                                mob_die(&mobs[i], mobs, MAX_MOBS, &nextMobId, loots, questStatus, floatTexts, &player);
                         }
 
                         // Vuruş oyuncuyu iter (Sağlam Duruş yarılatır, Sarsılmaz sıfırlar)
@@ -3544,6 +3651,21 @@ int main(int argc, char *argv[])
                                                0, 0, &camera);
                 SDL_Color hintCol = { 255, 255, 210, 255 };
                 draw_text(renderer, gameFont, "[E] İlanlar", tp.x, tp.y, hintCol);
+            }
+        }
+
+        // Yapışkan tuzaklar: zemin objesi (mobların/oyuncunun ALTINDA) —
+        // yassılmış jel görseli (SLIME_GEL ikonu genişletilmiş)
+        {
+            R2DTexture *gooTex = item_icon_tex(&itemTex, &ITEM_TYPES[ITEM_SLIME_GEL]);
+            for (int tI = 0; gooTex != NULL && tI < MAX_TRAPS; tI++)
+            {
+                if (!traps[tI].active) continue;
+                SDL_FRect gsrc = ITEM_TYPES[ITEM_SLIME_GEL].iconSrc;
+                SDL_FRect gdst = world_to_screen(traps[tI].x - 18.0f,
+                                                 traps[tI].y - 10.0f,
+                                                 36.0f, 14.0f, &camera);
+                r2d_draw_texture(renderer, gooTex, &gsrc, &gdst);
             }
         }
 

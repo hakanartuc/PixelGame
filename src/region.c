@@ -14,6 +14,9 @@ static const RegionCamp OVA_CAMPS[] = {
     { .x = T(28), .y = T(10), .radius = T(4), .type = &MOB_TYPES[2], .maxCount = 3 },  // koyun
     { .x = T(35), .y = T(20), .radius = T(4), .type = &MOB_TYPES[3], .maxCount = 2 },  // domuz
     { .x = T(22), .y = T(17), .radius = T(3), .type = &MOB_TYPES[4], .maxCount = 3 },  // tavuk
+    // Faz 7 — yeşil slime: ova kenarı (haritadan doğrulandı: T44,20 çevresi tamamen açık;
+    // T55,30 GÖLÜN İÇİYDİ — spawn suya düşüyordu)
+    { .x = T(44), .y = T(20), .radius = T(4), .type = &MOB_TYPES[6], .maxCount = 2 },
 };
 static const RegionCamp ORMAN_CAMPS[] = {
     { .x = T(130), .y = T(25), .radius = T(4), .type = &MOB_TYPES[0], .maxCount = 4 },
@@ -24,6 +27,8 @@ static const RegionCamp ORMAN_CAMPS[] = {
 static const RegionCamp BATAKLIK_CAMPS[] = {
     { .x = T(30), .y = T(100), .radius = T(5), .type = &MOB_TYPES[1], .maxCount = 3 },
     { .x = T(70), .y = T(130), .radius = T(4), .type = &MOB_TYPES[1], .maxCount = 2 },
+    // Faz 7 — mavi slime: bataklık girişi (T40,85 — bölgeye girince karşılar; açıklık doğrulandı)
+    { .x = T(40), .y = T(85), .radius = T(4), .type = &MOB_TYPES[9], .maxCount = 2 },
 };
 static const RegionCamp GECIT_CAMPS[] = {
     { .x = T(130), .y = T(110), .radius = T(4), .type = &MOB_TYPES[1], .maxCount = 4 },

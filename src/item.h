@@ -87,6 +87,8 @@ typedef struct {
     float foodRegen;             // saniyede yenilenen can (>0 = yemek)
     float foodDuration;          // yenilenme süresi (sn)
 
+    bool trapItem;               // Yapışkan Tuzağı: hotbar kullanımı yere tuzak kurar (Faz 7)
+
     const char *iconSpritePath;   // ikon dosyasi (NULL → tool_icons fallback)
     SDL_FRect   iconSrc;          // o dosyadaki kare {x, y, w, h}
 } ItemType;
@@ -194,6 +196,9 @@ typedef enum {
     ITEM_HELMET_LEATHER,  // Deri Başlık (ARMOR_LIGHT — perk ağacı nihayet işler)
     ITEM_CHEST_LEATHER,   // Deri Zırh
     ITEM_BOOTS_LEATHER,   // Deri Bot
+    // Slime paketi (Faz 7): jel ekonomisi + alan yavaşlatma tuzağı
+    ITEM_SLIME_GEL,       // Slime Jeli (Küçük slime dropu → simya hammaddesi)
+    ITEM_STICKY_TRAP,     // Yapışkan Tuzağı (yere kurulur, tetiklenince alan yavaşı)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

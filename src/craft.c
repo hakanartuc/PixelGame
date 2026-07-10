@@ -124,6 +124,11 @@ const RecipeDef RECIPES[] = {
     { .station = STATION_CAMPFIRE, .name = "Pişmiş Et",
       .in1Item = ITEM_MEAT, .in1Count = 1, .in2Item = -1,
       .outItem = ITEM_MEAT_COOKED, .outCount = 1, .work = 3.0f, .xp = 4.0f },
+
+    // Kazan — slime jeli (Faz 7): alan yavaşlatma tuzağı (Buz Oku'nun alan kardeşi)
+    { .station = STATION_ALCH, .name = "Yapışkan Tuzağı",
+      .in1Item = ITEM_SLIME_GEL, .in1Count = 2, .in2Item = ITEM_HERB_BLUE, .in2Count = 1,
+      .outItem = ITEM_STICKY_TRAP, .outCount = 1, .work = 4.0f, .xp = 8.0f },
 };
 const int RECIPE_COUNT = (int)(sizeof(RECIPES) / sizeof(RECIPES[0]));
 

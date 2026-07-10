@@ -99,6 +99,7 @@ typedef struct Player {
     WeaponFxType coatFx;                   // silah kaplaması (Zehir Yağı)
     float coatTimer;
     float foodRegenRate, foodTimer;        // yemek: sn başına can, kalan süre (Faz 6)
+    float poisonDps, poisonTimer;          // mavi slime zehri: sn hasarı + süre (Faz 7)
 
     // Statlar: dağıtım yok — sabit taban (10), ileride ekipman/perk bonusu ekler.
     // Skill'ler stat değil doğrudan hasar çarpanı verir (use-based felsefe).

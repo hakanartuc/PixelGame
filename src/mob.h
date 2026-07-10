@@ -78,6 +78,13 @@ typedef struct {
     bool passive;            // pasif av: asla saldırmaz, vurulunca kaçar
     bool dailyRespawn;       // spawn zone anında değil GÜN dönünce doldurur (av kaynağı)
 
+    // Slime paketi (Faz 7)
+    int splitCount;          // >0: ölünce bu kadar yavruya bölünür (main işler)
+    int splitChild;          // yavrunun MOB_TYPES indeksi (splitCount > 0 ise geçerli)
+    float bodyW, bodyH;      // hitbox boyutu (0 = varsayılan 48×64 — slime boyları farklı)
+    float hitPoisonDps;      // vuruşu oyuncuyu zehirler: sn başına hasar (0 = yok)
+    float hitPoisonTime;     // zehir süresi (sn)
+
     AnimClip anims[4][3];
 } MobType;
 
