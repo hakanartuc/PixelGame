@@ -56,6 +56,13 @@ Güncelleme: 2026-07-09
 
 1. **GPU-3**: gece ışık sistemi (meşale/pencere ışık kaynakları), screen shake, hasar flash'ı; Vulkan/SPIR-V shader yolu (Windows/Linux/Android için)
 2. **Suç & İtibar paketi** (kararlar verildi): Sneak, tanıklı suç, bölge/hizip itibarı, bounty, **muhafız** (yakala → ceza öde / karşı koy)
+   - **NPC öldürme** bu paketin parçası olarak eklenecek (değerlendirme 2026-07-10, özgür-dünya vizyonuna uygun):
+     - Tanık mekaniğiyle birleşir: tanıklı cinayet = bounty + muhafız; tanıksız iz bırakmaz (Sneak sinerjisi)
+     - Gothic/Kenshi yolu: herkes ölebilir, görevler "başarısız" olur, dünya devam eder (Skyrim'in ölümsüz NPC'si YOK;
+       ileride ana-akış kritik NPC'leri için "bayılma" ara çözümü düşünülebilir)
+     - Kaza koruması şart: KO auto-attack yanlışlıkla NPC'ye kilitlenmemeli — NPC'ye saldırı bilinçli/ayrı eylem
+     - İtibar bölgesel düşer (global karma yok) → fiyat, diyalog kapıları, muhafız tepkisi
+     - Save'e npcAlive durumu gerekir (kalıcı ölüm); ölen vendor/quest-veren = o içerik kapanır (bilinçli bedel)
 3. **Diyalog koşulları**: `req:`/`fx:` (Speech skill-check, rüşvet seçenekleri)
 4. **Craft**: Smithing (+basma, risk), Alchemy (bitki→iksir), Enchanting (weaponFx instance'a taşınır)
 5. **Av & kontrat panosu**: hayvanlar (Cute_Fantasy Animals), deri/et, Witcher tarzı ilan panosu

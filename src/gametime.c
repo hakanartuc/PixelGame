@@ -63,6 +63,11 @@ Uint8 gametime_darkness(void)
     }
 }
 
+float gametime_darkness01(void)
+{
+    return (float)gametime_darkness() / (float)DARKNESS_MAX;
+}
+
 void gametime_format(char *buf, int bufSize)
 {
     int h = (int)curHours;

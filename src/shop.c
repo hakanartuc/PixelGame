@@ -10,6 +10,7 @@
 
 const ShopEntry SHOP_STOCK[] = {
     { &ITEM_TYPES[ITEM_POTION_HP] },
+    { &ITEM_TYPES[ITEM_TORCH] },       // gece hazirligi: envanterdeyken isik verir
     { &ITEM_TYPES[ITEM_LONG_SWORD] },
     { &ITEM_TYPES[ITEM_HELMET_IRON] },
     { &ITEM_TYPES[ITEM_CHEST_IRON] },

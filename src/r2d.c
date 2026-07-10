@@ -66,6 +66,29 @@ static const char *MSL_SOURCE =
     "                        texture2d<float> tex [[texture(0)]],\n"
     "                        sampler smp [[sampler(0)]]) {\n"
     "    return tex.sample(smp, in.uv) * in.col;\n"
+    "}\n"
+    // Işık pass'i: piksel başına ambient + Σ ışık katkısı; multiply blend ile
+    // sahne rengiyle çarpılır. Dizi boyutu R2D_MAX_LIGHTS (r2d.h) ile AYNI.
+    "struct LightU {\n"
+    "    float4 ambient;\n"          // rgb = ortam çarpanı
+    "    float4 count;\n"            // x = aktif ışık sayısı
+    "    float4 pos[32];\n"          // xy = ekran px, z = yarıçap px
+    "    float4 col[32];\n"          // rgb = renk, w = yoğunluk
+    "};\n"
+    "fragment float4 fs_light(VSOut in [[stage_in]],\n"
+    "                         constant LightU &lu [[buffer(0)]]) {\n"
+    "    float3 c = lu.ambient.rgb;\n"
+    "    int n = int(lu.count.x);\n"
+    "    for (int i = 0; i < n; i++) {\n"
+    "        float d = distance(in.pos.xy, lu.pos[i].xy);\n"
+    "        float att = clamp(1.0 - d / lu.pos[i].z, 0.0, 1.0);\n"
+    "        att *= att;\n"                                          // yumuşak düşüş
+    "        c += lu.col[i].rgb * (att * lu.col[i].w);\n"
+    "    }\n"
+    // Dither: 8-bit hedefte yavaş gradyan banding yapar; ±0.75/255 gürültü kırar
+    "    float dn = fract(sin(dot(in.pos.xy, float2(12.9898, 78.233))) * 43758.5453);\n"
+    "    c += (dn - 0.5) * (1.5 / 255.0);\n"
+    "    return float4(clamp(c, float3(0.0), float3(1.0)), 1.0);\n"
     "}\n";
 
 // ---------------------------------------------------------------------------
@@ -75,6 +98,17 @@ static SDL_GPUDevice *gpu = NULL;
 static SDL_Window *win = NULL;
 static SDL_GPUGraphicsPipeline *pipeline[R2D_BLEND_COUNT];        // swapchain formatı
 static SDL_GPUGraphicsPipeline *targetPipeline[R2D_BLEND_COUNT];  // RGBA8 target formatı
+static SDL_GPUGraphicsPipeline *lightPipeline = NULL;             // ışık pass'i (yalnız swapchain)
+
+// Işık uniform'ları — MSL'deki LightU ile birebir aynı düzen (float4 hizalı).
+// Tek statik kopya: kare başına bir ışık pass'i (r2d_light_pass yorumu).
+typedef struct {
+    float ambient[4];
+    float count[4];
+    float pos[R2D_MAX_LIGHTS][4];
+    float col[R2D_MAX_LIGHTS][4];
+} R2DLightU;
+static R2DLightU lightU;
 static SDL_GPUSampler *sampler = NULL;        // NEAREST (pixel-art)
 static SDL_GPUSampler *samplerLinear = NULL;  // LINEAR (glow vb.)
 static SDL_GPUBuffer *vertexBuf = NULL;
@@ -127,6 +161,8 @@ static SDL_GPUShader *load_shader(SDL_GPUShaderStage stage, const char *entry,
     return SDL_CreateGPUShader(gpu, &ci);
 }
 
+// blend == R2D_BLEND_COUNT dahili anlam taşır: MULTIPLY (ışık pass'i,
+// out = src*dst — sahne ışık haritasıyla çarpılır)
 static SDL_GPUGraphicsPipeline *make_pipeline(SDL_GPUShader *vs, SDL_GPUShader *fs,
                                               R2DBlend blend,
                                               SDL_GPUTextureFormat format)
@@ -144,6 +180,12 @@ static SDL_GPUGraphicsPipeline *make_pipeline(SDL_GPUShader *vs, SDL_GPUShader *
                                ? SDL_GPU_BLENDFACTOR_ONE
                                : SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
     };
+    if (blend == R2D_BLEND_COUNT) {   // multiply: sahne * ışık, alpha dokunulmaz
+        bs.src_color_blendfactor = SDL_GPU_BLENDFACTOR_DST_COLOR;
+        bs.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ZERO;
+        bs.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ZERO;
+        bs.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE;
+    }
     SDL_GPUColorTargetDescription target = { .format = format, .blend_state = bs };
     SDL_GPUVertexBufferDescription vbd = {
         .slot = 0,
@@ -205,6 +247,19 @@ R2D *r2d_init(SDL_Window *window)
             return NULL;
         }
     }
+    // Işık pass'i: kendi fragment shader'ı (1 uniform buffer, texture yok)
+    SDL_GPUShader *fsLight = load_shader(SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_light", 1, 0);
+    if (fsLight == NULL) {
+        SDL_Log("r2d: isik shader'i derlenemedi: %s", SDL_GetError());
+        return NULL;
+    }
+    lightPipeline = make_pipeline(vs, fsLight, R2D_BLEND_COUNT, swapFmt);
+    if (lightPipeline == NULL) {
+        SDL_Log("r2d: isik pipeline kurulamadi: %s", SDL_GetError());
+        return NULL;
+    }
+    SDL_ReleaseGPUShader(gpu, fsLight);
+
     SDL_ReleaseGPUShader(gpu, vs);   // pipeline'lara bağlandı — referansımız gereksiz
     SDL_ReleaseGPUShader(gpu, fs);
 
@@ -258,6 +313,7 @@ void r2d_quit(R2D *ctx)
         if (pipeline[b]) SDL_ReleaseGPUGraphicsPipeline(gpu, pipeline[b]);
         if (targetPipeline[b]) SDL_ReleaseGPUGraphicsPipeline(gpu, targetPipeline[b]);
     }
+    if (lightPipeline) SDL_ReleaseGPUGraphicsPipeline(gpu, lightPipeline);
     SDL_ReleaseWindowFromGPUDevice(gpu, win);
     SDL_DestroyGPUDevice(gpu);
     gpu = NULL;
@@ -489,6 +545,42 @@ void r2d_draw_9grid(R2D *ctx, R2DTexture *tex, const SDL_FRect *src,
     }
 }
 
+void r2d_light_pass(R2D *ctx, float ambientR, float ambientG, float ambientB,
+                    const R2DLight *lights, int count)
+{
+    if (lightPipeline == NULL || !inFrame || curTarget != NULL)
+        return;   // yalnız ekran karesi içinde
+    if (count > R2D_MAX_LIGHTS) count = R2D_MAX_LIGHTS;
+
+    lightU.ambient[0] = ambientR;
+    lightU.ambient[1] = ambientG;
+    lightU.ambient[2] = ambientB;
+    lightU.ambient[3] = 1.0f;
+    lightU.count[0] = (float)count;
+    for (int i = 0; i < count; i++) {
+        lightU.pos[i][0] = lights[i].x;
+        lightU.pos[i][1] = lights[i].y;
+        lightU.pos[i][2] = (lights[i].radius > 1.0f) ? lights[i].radius : 1.0f;
+        lightU.pos[i][3] = 0.0f;
+        lightU.col[i][0] = lights[i].r;
+        lightU.col[i][1] = lights[i].g;
+        lightU.col[i][2] = lights[i].b;
+        lightU.col[i][3] = lights[i].intensity;
+    }
+
+    // Tam-ekran quad'ı R2D_BLEND_COUNT işaretli draw olarak batch'e koy —
+    // flush bu işareti görünce light pipeline + fragment uniform'larını bağlar.
+    R2DBlend saved = curBlend;
+    curBlend = R2D_BLEND_COUNT;
+    forceNewDraw = true;
+    int w, h;
+    r2d_output_size(ctx, &w, &h);
+    push_quad(whiteTex, 0, 0, (float)w, (float)h, 0, 0, 1, 1,
+              (SDL_Color){ 255, 255, 255, 255 });
+    forceNewDraw = true;   // sonraki normal çizim de taze girdiyle başlasın
+    curBlend = saved;
+}
+
 void r2d_fill_rect(R2D *ctx, const SDL_FRect *r)
 {
     (void)ctx;
@@ -581,9 +673,21 @@ static void flush_to(SDL_GPUCommandBuffer *cb, SDL_GPUTexture *dst,
     SDL_GPUBufferBinding vb = { .buffer = vertexBuf, .offset = 0 };
     SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
 
-    R2DBlend boundBlend = R2D_BLEND_COUNT;
+    R2DBlend boundBlend = (R2DBlend)-1;
     for (int i = 0; i < drawCount; i++) {
         if (draws[i].first < firstVert) continue;   // önceki pass'in aralığı
+
+        // Işık pass'i işareti: light pipeline + fragment uniform, sampler yok
+        if (draws[i].blend == R2D_BLEND_COUNT) {
+            if (pipes != pipeline) continue;   // target içinde desteklenmez
+            SDL_BindGPUGraphicsPipeline(pass, lightPipeline);
+            SDL_PushGPUFragmentUniformData(cb, 0, &lightU, sizeof(lightU));
+            SDL_DrawGPUPrimitives(pass, (Uint32)draws[i].count, 1,
+                                  (Uint32)(draws[i].first - firstVert), 0);
+            boundBlend = (R2DBlend)-1;   // pipeline değişti — sonraki draw yeniden bağlasın
+            continue;
+        }
+
         if (draws[i].blend != boundBlend) {
             boundBlend = draws[i].blend;
             SDL_BindGPUGraphicsPipeline(pass, pipes[boundBlend]);

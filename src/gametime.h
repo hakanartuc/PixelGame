@@ -6,7 +6,7 @@
 // Fazlar karanlık overlay'ini, gece tehlikesini ve NPC rutinlerini sürer.
 // (adı time.h ile çakışmasın diye "gametime")
 
-#define GAMETIME_DAY_SECONDS 600.0f   // 10 dk = 24 saat
+#define GAMETIME_DAY_SECONDS 300.0f   // 5 dk = 24 saat
 #define GAMETIME_START_HOUR 8.0f      // oyun sabah 08:00'de başlar
 
 typedef enum {
@@ -26,6 +26,9 @@ bool  gametime_is_night(void);   // NIGHT fazı mı (mob algısı/spawn için)
 
 // Karanlık overlay alpha'sı (0 = gündüz, 170 = zifiri) — fazlar arası yumuşak
 Uint8 gametime_darkness(void);
+
+// Aynı eğri 0..1 normalize (ışık pass'i ambient'i için)
+float gametime_darkness01(void);
 
 // HUD saati: "Gun 3  08:30" (buf en az 24 byte)
 void gametime_format(char *buf, int bufSize);

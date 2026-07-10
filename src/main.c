@@ -31,6 +31,7 @@
 #include "minimap.h"
 #include "ui_theme.h"
 #include "perk.h"
+#include "light.h"
 
 #define BASE_MAX_HP 100.0f   // oyuncu taban canı (perk bonusları üstüne biner)
 
@@ -356,7 +357,7 @@ int main(int argc, char *argv[])
     const char *splashText = NULL;
     float splashTimer = 0.0f;
     TTF_Font *splashFont = font_load("assets/fonts/PublicPixel-rv0pA.ttf", 32.0f);
-    Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 2.0f};
+    Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 1.0f};
 
     Uint64 last = SDL_GetTicks();
 
@@ -1397,14 +1398,34 @@ int main(int argc, char *argv[])
         // Hasar yazıları (mob'ların üstünde, dünya uzayında)
         floattext_render_all(floatTexts, MAX_FLOAT_TEXTS, renderer, gameFont, &camera); // ← BURAYA (present'tan önce)
 
-        // GÜN/GECE karartması: dünyanın üstüne, HUD'un altına (HUD gece de okunur)
-        Uint8 darkness = gametime_darkness();
-        if (darkness > 0)
+        // GÜN/GECE aydınlatması: shader ışık pass'i — dünyanın üstüne, HUD'un
+        // altına (HUD gece de okunur). Ambient ay ışığı mavisine iner; ışık
+        // kaynakları (pencere/direk/meşale) piksel başına sıcak renk katar.
+        float dark01 = gametime_darkness01();
+        if (dark01 > 0.0f)
         {
-            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
-            r2d_set_color(renderer, 10, 10, 45, darkness);
-            SDL_FRect night = { 0, 0, (float)winW, (float)winH };
-            r2d_fill_rect(renderer, &night);
+            // Zifiri gecede sahne çarpanı (mavi ağırlıklı ay ışığı)
+            float ambR = 1.0f - dark01 * (1.0f - 0.30f);
+            float ambG = 1.0f - dark01 * (1.0f - 0.33f);
+            float ambB = 1.0f - dark01 * (1.0f - 0.55f);
+
+            // Altın saat: alacakaranlık/şafak ortasında sahne turuncuya ısınır
+            // (sin eğrisi: geçişin ortasında tepe, gündüz ve zifiri gecede sıfır)
+            float golden = SDL_sinf(dark01 * SDL_PI_F) * 0.18f;
+            ambR += golden;
+            ambG += golden * 0.45f;
+
+            // Meşale: envanterde varsa oyuncu ışık taşır
+            bool hasTorch = false;
+            for (int i = 0; i < INVENTORY_SIZE; i++)
+                if (inventory.slots[i].type == &ITEM_TYPES[ITEM_TORCH]) { hasTorch = true; break; }
+
+            R2DLight lights[R2D_MAX_LIGHTS];
+            int lightN = light_collect(lights, R2D_MAX_LIGHTS, &camera, winW, winH,
+                                       player.rect.x + player.rect.w / 2.0f,
+                                       player.rect.y + player.rect.h / 2.0f,
+                                       hasTorch, player.weaponFx);
+            r2d_light_pass(renderer, ambR, ambG, ambB, lights, lightN);
         }
 
         // Hedef HP bar (seçili mob varsa)

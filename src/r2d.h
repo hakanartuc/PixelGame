@@ -25,6 +25,18 @@ typedef enum {
     R2D_BLEND_COUNT,
 } R2DBlend;
 
+// --- Işık pass'i (gece aydınlatması) ---
+// Sahnenin üstüne multiply blend'li tam-ekran quad: shader piksel başına
+// ambient + Σ ışık katkısı hesaplar, sahne rengiyle çarpılır (gerçek renk karışımı).
+#define R2D_MAX_LIGHTS 32   // MSL'deki dizi boyutuyla AYNI kalmalı (r2d.c)
+
+typedef struct {
+    float x, y;        // ekran px (dünya→ekran dönüşümü çağıranda)
+    float radius;      // ekran px — bu uzaklıkta katkı sıfırlanır
+    float r, g, b;     // ışık rengi (0..1)
+    float intensity;   // katkı gücü (0..1 tipik)
+} R2DLight;
+
 // --- Kurulum / yaşam döngüsü ---
 R2D *r2d_init(SDL_Window *window);   // NULL = hata (loglar)
 void r2d_quit(R2D *ctx);
@@ -59,6 +71,12 @@ void r2d_target_end(R2D *ctx);
 // --- Çizim durumu ---
 void r2d_set_blend(R2D *ctx, R2DBlend blend);
 void r2d_set_color(R2D *ctx, Uint8 r, Uint8 g, Uint8 b, Uint8 a);   // primitif rengi
+
+// Işık pass'ini batch'e koy — o ana kadar çizilenlerin ÜSTÜNE uygulanır,
+// sonrası (HUD) etkilenmez. Kare başına EN FAZLA BİR kez; target içinde çalışmaz.
+// ambient: sahne çarpanı (gece ~0.3, gündüz 1 → çağırma, görünmez).
+void r2d_light_pass(R2D *ctx, float ambientR, float ambientG, float ambientB,
+                    const R2DLight *lights, int count);
 
 // --- Sprite ---
 void r2d_draw_texture(R2D *ctx, R2DTexture *tex,
