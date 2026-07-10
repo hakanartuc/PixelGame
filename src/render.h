@@ -20,4 +20,7 @@ static inline SDL_FRect world_to_screen(float worldX, float worldY, float worldW
 
 R2DTexture *create_glow_texture(R2D *renderer, int size);
 
+// Hasar flash'i vinyeti: merkez seffaf, kenarlar opak (tam ekrana gerilir)
+R2DTexture *create_vignette_texture(R2D *renderer, int size);
+
 #endif // RENDER_H

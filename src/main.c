@@ -194,6 +194,7 @@ int main(int argc, char *argv[])
     };
 
     R2DTexture *glowTex = create_glow_texture(renderer, 64);
+    R2DTexture *vignetteTex = create_vignette_texture(renderer, 256);   // hasar flash'ı
     if (glowTex == NULL) {
         SDL_Log("Glow texture olusturulamadi");
         // kritik degil, devam (glow olmadan)
@@ -358,6 +359,11 @@ int main(int argc, char *argv[])
     float splashTimer = 0.0f;
     TTF_Font *splashFont = font_load("assets/fonts/PublicPixel-rv0pA.ttf", 32.0f);
     Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 1.0f};
+
+    // His katmanı: ekran sarsıntısı + hasar flash'ı (oyuncu odaklı)
+    float shakeTime = 0.0f, shakeDur = 1.0f, shakeAmp = 0.0f; // amp: ekran px
+    float flashTime = 0.0f;                                    // kalan flash süresi
+#define FLASH_DUR 0.35f
 
     Uint64 last = SDL_GetTicks();
 
@@ -1104,12 +1110,19 @@ int main(int argc, char *argv[])
                         target->e.hitFlash = 0.15f;
                         audio_play(hit.crit ? SFX_CRIT : SFX_HIT);
 
-                        // Crit: hedefte sarı-beyaz kıvılcım patlaması
+                        // Crit: hedefte sarı-beyaz kıvılcım patlaması + mini sarsıntı
                         if (hit.crit)
+                        {
                             fx_burst(&weaponFx,
                                      target->e.rect.x + target->e.rect.w / 2.0f,
                                      target->e.rect.y + target->e.rect.h / 2.0f,
                                      12, 90.0f, 255, 240, 120);
+                            if (shakeTime <= 0.0f)   // aktif (daha sert) sarsıntıyı ezme
+                            {
+                                shakeTime = shakeDur = 0.15f;
+                                shakeAmp = 3.0f;
+                            }
+                        }
 
                         // Kanatma: vuruş hasarının bir kısmı DoT olarak yayılır
                         // (Kasap süreyi uzatır → toplam kanama artar)
@@ -1209,6 +1222,11 @@ int main(int argc, char *argv[])
                     {
                         player.health -= dmg;
                         player.gaziTimer = 5.0f;   // Gazi buff penceresi (perk yoksa etkisiz)
+
+                        // His katmanı: kısa sarsıntı + kırmızı kenar flash'ı
+                        shakeTime = shakeDur = 0.25f;
+                        shakeAmp = 6.0f;
+                        flashTime = FLASH_DUR;
 
                         // Zırh XP'si: giyili her zırh parçasının sınıf skill'i gelişir
                         for (int sl = 0; sl < EQUIP_SLOT_COUNT; sl++)
@@ -1350,6 +1368,18 @@ int main(int argc, char *argv[])
             camera_update(&camera, player.rect.x + player.rect.w / 2.0f,
                           player.rect.y + player.rect.h / 2.0f, winW, winH); // kamerayı güncelle - karakteri takip et
 
+            // Sarsıntı: kalan süreyle sönümlenen rastgele kamera itmesi
+            if (shakeTime > 0.0f)
+            {
+                shakeTime -= dt;
+                float k = (shakeTime > 0.0f) ? shakeTime / shakeDur : 0.0f;
+                float a = shakeAmp * k / camera.zoom;   // ekran px → dünya px
+                camera.x += (randf() * 2.0f - 1.0f) * a;
+                camera.y += (randf() * 2.0f - 1.0f) * a;
+            }
+            if (flashTime > 0.0f)
+                flashTime -= dt;
+
             // E prompt'u için menzildeki en yakın NPC
             nearestNpc = npc_nearest_in_range(px, py);
 
@@ -1426,6 +1456,19 @@ int main(int argc, char *argv[])
                                        player.rect.y + player.rect.h / 2.0f,
                                        hasTorch, player.weaponFx);
             r2d_light_pass(renderer, ambR, ambG, ambB, lights, lightN);
+        }
+
+        // Hasar flash'ı: kırmızı kenar vinyeti, hızla söner (HUD'un altında)
+        if (flashTime > 0.0f && vignetteTex != NULL)
+        {
+            float k = flashTime / FLASH_DUR;
+            r2d_texture_set_color_mod(vignetteTex, 200, 20, 20);
+            r2d_texture_set_alpha_mod(vignetteTex, (Uint8)(k * 170.0f));
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            SDL_FRect full = { 0, 0, (float)winW, (float)winH };
+            r2d_draw_texture(renderer, vignetteTex, NULL, &full);
+            r2d_texture_set_color_mod(vignetteTex, 255, 255, 255);
+            r2d_texture_set_alpha_mod(vignetteTex, 255);
         }
 
         // Hedef HP bar (seçili mob varsa)
@@ -1564,6 +1607,8 @@ int main(int argc, char *argv[])
 
     if (glowTex)
         r2d_texture_destroy(NULL, glowTex);
+    if (vignetteTex)
+        r2d_texture_destroy(NULL, vignetteTex);
 
     minimap_quit();
     ui_theme_quit();

@@ -71,3 +71,39 @@ R2DTexture *create_glow_texture(R2D *renderer, int size)
     if (tex) r2d_texture_set_linear(tex, true);   // glow yumusak olsun (NEAREST degil)
     return tex;
 }
+
+// Vinyet: merkez seffaf, kenarlara dogru opaklasir (hasar flash'i icin —
+// tam ekrana gerilir, color mod ile renklenir). Glow'un tersi.
+R2DTexture *create_vignette_texture(R2D *renderer, int size)
+{
+    Uint8 *pixels = (Uint8 *)SDL_malloc(size * size * 4);
+    if (!pixels) return NULL;
+
+    float center = size / 2.0f;
+    for (int y = 0; y < size; y++) {
+        for (int x = 0; x < size; x++) {
+            // Merkeze gore normalize mesafe: 0 merkez, ~1.41 kose
+            float nx = (x - center) / center;
+            float ny = (y - center) / center;
+            float d = SDL_sqrtf(nx * nx + ny * ny);
+
+            // Ic %55 tamamen seffaf, sonra yumusak yukselis
+            float v = (d - 0.55f) / 0.65f;
+            if (v < 0.0f) v = 0.0f;
+            if (v > 1.0f) v = 1.0f;
+            v = v * v;   // kenara dogru ivmelenen opaklik
+
+            int idx = (y * size + x) * 4;
+            pixels[idx + 0] = 255;   // beyaz taban — tint ile renklenir
+            pixels[idx + 1] = 255;
+            pixels[idx + 2] = 255;
+            pixels[idx + 3] = (Uint8)(v * 255);
+        }
+    }
+
+    R2DTexture *tex = r2d_texture_from_pixels(renderer, pixels, size, size);
+    SDL_free(pixels);
+
+    if (tex) r2d_texture_set_linear(tex, true);   // gerilince bantlanmasin
+    return tex;
+}
