@@ -83,6 +83,10 @@ typedef struct {
     int scrollSkill;             // öğretici parşömen: hangi skill (scrollXp > 0 ise geçerli)
     float scrollXp;              // kullanınca verilen XP (0 = parşömen değil)
 
+    // --- Yemek (Faz 6 — av): iksirden farklı, YAVAŞ ama toplamı yüksek yenilenme ---
+    float foodRegen;             // saniyede yenilenen can (>0 = yemek)
+    float foodDuration;          // yenilenme süresi (sn)
+
     const char *iconSpritePath;   // ikon dosyasi (NULL → tool_icons fallback)
     SDL_FRect   iconSrc;          // o dosyadaki kare {x, y, w, h}
 } ItemType;
@@ -183,6 +187,13 @@ typedef enum {
     ITEM_STONE_STA,
     // Meslek paketi (Faz 5): oduculuk ürünleri + okçuluk
     ITEM_ARROW,           // Ok (yay mühimmatı — atış başına 1, leşten ~%30 geri)
+    // Av paketi (Faz 6): hayvan lootu + deri seti + yemek
+    ITEM_LEATHER,         // Deri (hayvan dropu → hafif zırh hammaddesi)
+    ITEM_MEAT,            // Et (çiğ — kazanda pişirilir ya da satılır)
+    ITEM_MEAT_COOKED,     // Pişmiş Et (yemek: 12 sn +3 can/sn)
+    ITEM_HELMET_LEATHER,  // Deri Başlık (ARMOR_LIGHT — perk ağacı nihayet işler)
+    ITEM_CHEST_LEATHER,   // Deri Zırh
+    ITEM_BOOTS_LEATHER,   // Deri Bot
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

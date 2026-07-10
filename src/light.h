@@ -23,4 +23,9 @@ extern const int LIGHT_COUNT;
 int light_collect(R2DLight *out, int cap, const Camera *cam, int sw, int sh,
                   float torchX, float torchY, bool torchOn, WeaponFxType weaponFx);
 
+// Kamp ateşi ışığı (Faz 6): konumu dinamik (oyuncu kurar) — çağıran dünya
+// konumu verir, ekran dışıysa eklenmez. Dönen: yeni ışık adedi (n ya da n+1).
+int light_append_campfire(R2DLight *out, int n, int cap, const Camera *cam,
+                          int sw, int sh, float x, float y);
+
 #endif

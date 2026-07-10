@@ -55,6 +55,23 @@ static const LootEntry ORC_LOOT[] = {
     { &ITEM_TYPES[ITEM_STONE_DEF],     0.03f, 0 },
     { &ITEM_TYPES[ITEM_STONE_MP],      0.02f, 0 },
 };
+// Faz 6 — av: deri/et (girdiler bağımsız zar → 1-2 adet hissi)
+static const LootEntry SHEEP_LOOT[] = {
+    { &ITEM_TYPES[ITEM_LEATHER], 0.70f, 0 },
+    { &ITEM_TYPES[ITEM_LEATHER], 0.35f, 0 },
+    { &ITEM_TYPES[ITEM_MEAT],    0.90f, 0 },
+    { &ITEM_TYPES[ITEM_MEAT],    0.45f, 0 },
+};
+static const LootEntry CHICKEN_LOOT[] = {
+    { &ITEM_TYPES[ITEM_MEAT], 0.80f, 0 },
+};
+static const LootEntry BOAR_LOOT[] = {
+    { &ITEM_TYPES[ITEM_LEATHER], 1.00f, 0 },
+    { &ITEM_TYPES[ITEM_LEATHER], 0.60f, 0 },
+    { &ITEM_TYPES[ITEM_LEATHER], 0.30f, 0 },
+    { &ITEM_TYPES[ITEM_MEAT],    1.00f, 0 },
+    { &ITEM_TYPES[ITEM_MEAT],    0.50f, 0 },
+};
 #define LOOT_COUNT(t) ((int)(sizeof(t) / sizeof((t)[0])))
 
 // Mob türleri tablosu — her tür bir kez tanımlı. (TILE_TYPES gibi)
@@ -140,6 +157,173 @@ const MobType MOB_TYPES[] = {
                 { .x=0, .y=384, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },  // aşağı
                 { .x=0, .y=384, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },  // yukarı
                 { .x=0, .y=384, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },  // yan
+            },
+        },
+    },
+
+    // --- Faz 6: av hayvanları (Cute_Fantasy Animals) ---
+    // Sheet düzeni (koyun/domuz): idle satır 0-2 (2 kare, aşağı/yukarı/yan),
+    // yürüme satır 3-5 = YAN(96)/YUKARI(128)/AŞAĞI(160), yatma satır 8 (ölüm).
+    // Pasif: attack clip'i hiç oynamaz (idle kopyası); kaçış CHASE clip'iyle koşar.
+
+    // [2] Koyun — çayır avı: kırılgan, vurulunca hızla kaçar (oyuncudan hızlı!)
+    {
+        .name = "Koyun",
+        .texturePath = "assets/characters/mobs/Sheep.png",
+        .level = 1,
+        .maxHealth = 30.0f,
+        .speed = 550.0f,          // kaçış: oyuncu ×1.1 — melee köşeye sıkıştırmalı
+        .attackRange = 0.0f,
+        .detectRange = 0.0f,      // pasif: yakınlık şüphesi birikmez
+        .damage = 0.0f,
+        .defense = 0.0f,
+        .attackType = ATTACK_MELEE,
+        .lootTable = SHEEP_LOOT, .lootTableCount = LOOT_COUNT(SHEEP_LOOT),
+        .goldMin = 0, .goldMax = 2,
+        .attackHitFrame = 99,     // asla tetiklenmez
+        .passive = true, .dailyRespawn = true,
+        .anims = {
+            { // idle (2 kare, otlama duruşu)
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
+            },
+            { // run/kaçış (8 kare zıplama)
+                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.09f, .feetY=30 },
+                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.09f, .feetY=30 },
+                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.09f, .feetY=30 },
+            },
+            { // attack — pasif, oynamaz (idle kopyası)
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
+            },
+            { // dying — yere çöküş (yatma dizisi)
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+            },
+        },
+    },
+
+    // [3] Domuz — çayır avı (koyunla aynı davranış, sheet düzeni aynı)
+    {
+        .name = "Domuz",
+        .texturePath = "assets/characters/mobs/Pig.png",
+        .level = 1,
+        .maxHealth = 30.0f,
+        .speed = 550.0f,
+        .attackRange = 0.0f,
+        .detectRange = 0.0f,
+        .damage = 0.0f,
+        .defense = 0.0f,
+        .attackType = ATTACK_MELEE,
+        .lootTable = SHEEP_LOOT, .lootTableCount = LOOT_COUNT(SHEEP_LOOT),
+        .goldMin = 0, .goldMax = 2,
+        .attackHitFrame = 99,
+        .passive = true, .dailyRespawn = true,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.09f, .feetY=30 },
+                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.09f, .feetY=30 },
+                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.09f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+            },
+        },
+    },
+
+    // [4] Tavuk — küçük av: tek et, deri yok. Sheet düzeni farklı:
+    // satır 0 idle (2), satır 1 yürüme-aşağı (6), satır 2 yürüme-yan (8), satır 7 oturma (ölüm)
+    {
+        .name = "Tavuk",
+        .texturePath = "assets/characters/mobs/Chicken.png",
+        .level = 1,
+        .maxHealth = 12.0f,
+        .speed = 500.0f,
+        .attackRange = 0.0f,
+        .detectRange = 0.0f,
+        .damage = 0.0f,
+        .defense = 0.0f,
+        .attackType = ATTACK_MELEE,
+        .lootTable = CHICKEN_LOOT, .lootTableCount = LOOT_COUNT(CHICKEN_LOOT),
+        .goldMin = 0, .goldMax = 1,
+        .attackHitFrame = 99,
+        .passive = true, .dailyRespawn = true,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=28 },
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=28 },
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=28 },
+            },
+            {
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.09f, .feetY=28 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.09f, .feetY=28 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.08f, .feetY=28 },
+            },
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=28 },
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=28 },
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=28 },
+            },
+            {
+                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=28 },
+                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=28 },
+                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=28 },
+            },
+        },
+    },
+
+    // [5] Yaban Domuzu — riskli av: saldırgan (goblin AI), deri ana kaynağı.
+    // Saldırı animasyonu yok → hücum = hızlandırılmış koşu clip'i (attackHitFrame 4)
+    {
+        .name = "Yaban Domuzu",
+        .texturePath = "assets/characters/mobs/Boar.png",
+        .level = 3,
+        .maxHealth = 90.0f,
+        .speed = 170.0f,
+        .attackRange = 55.0f,
+        .detectRange = 260.0f,
+        .damage = 12.0f,
+        .defense = 5.0f,
+        .attackType = ATTACK_MELEE,
+        .lootTable = BOAR_LOOT, .lootTableCount = LOOT_COUNT(BOAR_LOOT),
+        .goldMin = 0, .goldMax = 5,
+        .attackHitFrame = 4,
+        .dailyRespawn = true,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.4f, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.4f, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.4f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=30 },
+                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=30 },
+                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=30 },
+            },
+            { // attack: koşu clip'i hızlı (kafa atma hücumu)
+                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.06f, .feetY=30 },
+                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.06f, .feetY=30 },
+                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.06f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
             },
         },
     },
@@ -304,6 +488,48 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
 
     float detectRange = m->type->detectRange * detectMul;   // gece daha uzağı görür
     float attackRange = m->type->attackRange;
+
+    // --- PASİF AV (Faz 6): asla saldırmaz; vuruş/kamp alarmı = ürküp KAÇAR ---
+    // Leash'ten ÖNCE: kaçan hayvan RETURN dokunulmazlığına (iyileşme) girmesin.
+    if (m->type->passive)
+    {
+        if (m->aggro) {              // main her vuruşta aggro basar → kaçışa çevrilir
+            m->fleeTimer = MOB_FLEE_TIME;
+            m->aggro = false;
+            m->alertFlash = 0.6f;    // baş üstü "!" — ürktü
+            m->suspicion = 0.0f;
+        }
+        if (m->fleeTimer > 0.0f && dist > 0.0f) {
+            m->fleeTimer -= dt;
+            m->state = MOB_CHASE;    // koşu clip'i (kaçış — düz hat, zigzag yok)
+            float nx = -dx / dist, ny = -dy / dist;
+            if (SDL_fabsf(nx) > SDL_fabsf(ny)) {
+                m->e.facing = 2;
+                m->e.facingLeft = (nx < 0);
+            } else {
+                m->e.facing = (ny < 0) ? 1 : 0;
+            }
+            mob_move(m, nx * m->e.speed * slowK * dt, ny * m->e.speed * slowK * dt);
+        } else {
+            m->state = MOB_IDLE;     // otlamaya döner
+        }
+        if (m->alertFlash > 0.0f) m->alertFlash -= dt;
+
+        // Animasyon ilerletme (alttaki ortak blokla aynı desen)
+        const AnimClip *pclip = &m->type->anims[m->state][m->e.facing];
+        if (m->state != m->lastState || m->e.facing != m->lastFacing) {
+            m->currentFrame = 0;
+            m->animTimer = 0.0f;
+            m->lastState = m->state;
+            m->lastFacing = m->e.facing;
+        }
+        m->animTimer += dt;
+        if (m->animTimer >= pclip->frameDuration) {
+            m->animTimer -= pclip->frameDuration;
+            m->currentFrame = (m->currentFrame + 1) % pclip->frameCount;
+        }
+        return;
+    }
 
     // --- LEASH: kamptan çok uzaklaştıysa peşi bırak, eve dön ---
     float hdx = m->homeX - (m->e.rect.x + m->e.rect.w/2.0f);
@@ -598,6 +824,11 @@ void spawn_zones_update(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs,
     for (int i = 0; i < zoneCount; i++) {
         SpawnZone *z = &zones[i];
 
+        // Günlük yenilenen türler (av hayvanları) burada DOLMAZ —
+        // gün dönünce main spawn_zones_fill çağırır (kaynak düğümü gibi)
+        if (z->type->dailyRespawn)
+            continue;
+
         // Bu bölgeye ait canlı (ya da ölüm animasyonu oynayan) mob say
         int aliveCount = 0;
         for (int j = 0; j < maxMobs; j++) {
@@ -628,7 +859,15 @@ void spawn_zones_fill(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, i
 {
     for (int i = 0; i < zoneCount; i++) {
         SpawnZone *z = &zones[i];
-        for (int n = 0; n < z->maxCount; n++) {
+
+        // Mevcutları say — EKSİĞİ doldur (günlük av yenilemesi taşırmasın)
+        int aliveCount = 0;
+        for (int j = 0; j < maxMobs; j++) {
+            if (mobs[j].zoneId == i && (mobs[j].e.alive || mobs[j].dying))
+                aliveCount++;
+        }
+
+        for (int n = aliveCount; n < z->maxCount; n++) {
             // Bölge içinde rastgele konum
             float sx, sy;
             zone_random_pos(z, &sx, &sy);

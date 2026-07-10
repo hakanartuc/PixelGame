@@ -33,7 +33,10 @@ typedef enum {
     MOB_DYING,   // ölüm animasyonu oynuyor
     MOB_RETURN,  // leash: kampına dönüyor (oyuncuyu yok sayar, hızla iyileşir)
                  // DİKKAT: anims[4][3]'te satırı YOK — animasyonu CHASE clip'idir
+                 // (pasif av kaçışı da ayrı durum DEĞİL: CHASE clip'iyle koşar)
 } MobState;
+
+#define MOB_FLEE_TIME 4.0f   // pasif hayvan vuruştan sonra bu kadar sn kaçar
 
 #define MOB_LEASH_RANGE 550.0f       // kamptan bu kadar uzaklaşınca peşi bırakır
 #define MOB_RETURN_HEAL_RATE 0.35f   // dönüşte saniyede max canın yüzdesi
@@ -71,6 +74,10 @@ typedef struct {
      // Animasyon düzeni (türe özel)
     int attackHitFrame;      // saldırının hangi karesinde hasar
 
+    // Av paketi (Faz 6)
+    bool passive;            // pasif av: asla saldırmaz, vurulunca kaçar
+    bool dailyRespawn;       // spawn zone anında değil GÜN dönünce doldurur (av kaynağı)
+
     AnimClip anims[4][3];
 } MobType;
 
@@ -88,6 +95,7 @@ typedef struct {
     float bleedDps, bleedTime;   // Kanatma perki DoT'u (main işler — ölüm/loot orada)
     int arrowsHit;        // saplanan ok sayısı — ölünce ~%30'u lootta geri (Faz 5)
     float slowMult, slowTimer;   // Buz Oku: süre boyunca hız çarpanı (0 = etkisiz)
+    float fleeTimer;      // pasif av: kalan kaçış süresi (vuruş tazeler)
     MobState state;         // AI durumu
     float attackCooldown;     // bir sonraki saldırıya kalan süre
     bool attackTriggered;

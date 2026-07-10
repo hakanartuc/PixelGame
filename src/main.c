@@ -37,6 +37,7 @@
 #include "sneak.h"
 #include "resource.h"
 #include "craft.h"
+#include "contract.h"
 
 #define BASE_MAX_HP 100.0f   // oyuncu taban canı (perk bonusları üstüne biner)
 
@@ -133,6 +134,8 @@ static void mob_die(Mob *target, Loot *loots, QuestStatus *questStatus,
                 item_make(&ITEM_TYPES[ITEM_ARROW], back, 0);
     }
     target->arrowsHit = 0;
+
+    contract_on_kill(target->type);   // pano kes-kontratları da sayar (Faz 6)
 
     int qDone = quest_on_kill(questStatus, target->type);
     for (int q = 0; q < QUEST_COUNT; q++)
@@ -450,6 +453,20 @@ int main(int argc, char *argv[])
     for (int i = 0; i < STATION_COUNT && i < 8; i++)
         station_textures[i] = load_texture(renderer, STATIONS[i].texPath);
 
+    // İlan panosu (Faz 6): köy meydanı, günlük kontratlar
+    #define BOARD_X (13.5f * TILE_SIZE)
+    #define BOARD_Y (7.0f * TILE_SIZE)
+    #define BOARD_RANGE 90.0f
+    R2DTexture *boardTex = load_texture(renderer, "assets/decor/notice_board.png");
+    bool boardOpen = false;
+
+    // Oyuncu kamp ateşi kurulumu (Faz 6): Odun'a sağ tık başlatır, 3 sn süreç.
+    // Konum STATIONS[STATION_PLAYER_FIRE_IDX]'te yaşar (sönük = CAMPFIRE_PARKED).
+    // Ömür: kurulumdan itibaren 24 OYUN SAATİ (gece yarısı sınırı değil —
+    // 23:50'de kurulan ateş ertesi gece 23:50'ye dek yanar)
+    float campBuild = -1.0f;      // <0 = kurulum yok
+    float campfireOutAt = -1.0f;  // sönme anı (toplam oyun saati: gün×24+saat)
+
     gametime_init();   // gün 1, 08:00
     npc_reset();       // NPC'ler canlı + tam canla başlar (statik durum sıfırdan gelir)
 
@@ -465,6 +482,7 @@ int main(int argc, char *argv[])
         guardRegion = region_of(NPCS[guardIdx].schedule[0].x, NPCS[guardIdx].schedule[0].y);
     }
     int lastSeenDay = gametime_day();   // günlük itibar toparlanması için gün takibi
+    contract_new_day(lastSeenDay);      // panonun ilk günü (load bunu ezebilir)
     ui_theme_init(renderer);   // panel/hücre/buton sprite'ları
     audio_init();      // başarısızsa oyun sessiz devam eder
     music_init();      // arka plan müziği (mood'a göre, crossfade)
@@ -652,6 +670,10 @@ int main(int argc, char *argv[])
                     else if (catchOpen)
                     {
                         catchOpen = false; // 0) yakalama paneli — muhafız peşini bırakmaz, yine açar
+                    }
+                    else if (boardOpen)
+                    {
+                        boardOpen = false; // 0a) ilan panosu
                     }
                     else if (craftOpen)
                     {
@@ -1118,6 +1140,32 @@ int main(int argc, char *argv[])
                             craftProgress = 0.0f;
                         }
                     }
+                    // İlan panosu (Faz 6): bounty/dip itibar panoya da kapı
+                    else if (!boardOpen &&
+                             SDL_sqrtf((BOARD_X - (player.rect.x + player.rect.w / 2.0f)) *
+                                       (BOARD_X - (player.rect.x + player.rect.w / 2.0f)) +
+                                       (BOARD_Y - (player.rect.y + player.rect.h / 2.0f)) *
+                                       (BOARD_Y - (player.rect.y + player.rect.h / 2.0f)))
+                                 <= BOARD_RANGE)
+                    {
+                        int bRegion = region_of(BOARD_X, BOARD_Y);
+                        SDL_Color red = { 255, 120, 100, 255 };
+                        if (player.bounty[bRegion] > 0 ||
+                            player.reputation[bRegion] <= REP_NO_QUESTS)
+                        {
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f,
+                                                 "Arananlara iş yok!", red);
+                        }
+                        else
+                        {
+                            boardOpen = true;
+                            player.autoAttack = false;
+                            gatherRes = -1;
+                            audio_play(SFX_UI);
+                        }
+                    }
                     // İstasyon kullanımı (NPC yoksa): ÜÇ kapı — izin görevi + bounty + itibar.
                     // permQuest NULL = sahipsiz harabe: kapı yok (keşif ödülü)
                     else if (nearestStation >= 0)
@@ -1271,6 +1319,9 @@ int main(int argc, char *argv[])
                     // Faz 5 okçuluk test seti
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_BOW], 1, 0);
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_ARROW], 50, 0);
+                    // Faz 6 av test seti: deri seti + yemek malzemesi
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_LEATHER], 12, 0);
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_MEAT], 8, 0);
                     player.gold += 500;
                     SDL_Log("DEBUG F10: +1M XP (savas+meslek) + craft malzeme seti + 500g");
                 }
@@ -1292,6 +1343,8 @@ int main(int argc, char *argv[])
                         perk_compute_effects(player.perkChoice, &perkFx);   // seçimler değişti
                         if (guardIdx >= 0) guard_init(guardIdx);            // beyin sıfırdan (nöbete)
                         catchOpen = false;
+                        lastSeenDay = gametime_day();   // günlük blok tetiklenmesin
+                                                        // (pano durumu save'den geldi)
                         SDL_Color white = { 255, 255, 255, 255 };
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
@@ -1327,6 +1380,7 @@ int main(int argc, char *argv[])
                                 perk_compute_effects(player.perkChoice, &perkFx);
                                 if (guardIdx >= 0) guard_init(guardIdx);   // beyin sıfırdan (nöbete)
                                 catchOpen = false;
+                                lastSeenDay = gametime_day();   // pano durumu save'den geldi
                             }
                             const char *msg = !ok ? ((act == MENU_ACTION_SAVE) ? "Kayıt HATASI" : "Kayıt bulunamadı")
                                             : (act == MENU_ACTION_SAVE) ? "Kaydedildi" : "Yüklendi";
@@ -1422,6 +1476,78 @@ int main(int argc, char *argv[])
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 10.0f, buf, red);
                             }
+                            handled = true;
+                        }
+                    }
+
+                    // 0a2) İlan panosu açıksa: satır = kabul/teslim, dışarısı = kapat
+                    if (!handled && boardOpen)
+                    {
+                        int slot = contract_panel_slot_at((float)event.button.x,
+                                                          (float)event.button.y, 40.0f, 40.0f);
+                        int bRegion = region_of(BOARD_X, BOARD_Y);
+                        SDL_Color red = { 255, 120, 100, 255 };
+                        SDL_Color goldc = { 255, 210, 60, 255 };
+
+                        if (slot >= 0)
+                        {
+                            int ci = contract_today(slot);
+                            if (ci >= 0 &&
+                                player.reputation[bRegion] < CONTRACT_TIER_REP[CONTRACTS[ci].tier])
+                            {
+                                char buf[FLOAT_TEXT_LEN];
+                                snprintf(buf, sizeof(buf), "İtibar %d gerekli",
+                                         (int)CONTRACT_TIER_REP[CONTRACTS[ci].tier]);
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f, buf, red);
+                            }
+                            else if (ci >= 0 && contract_state(slot) == CONTRACT_AVAILABLE)
+                            {
+                                contract_accept(slot);
+                                audio_play(SFX_UI);
+                                char buf[FLOAT_TEXT_LEN];
+                                snprintf(buf, sizeof(buf), "Kontrat alındı: %s",
+                                         CONTRACTS[ci].name);
+                                SDL_Color cyan = { 90, 220, 255, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f, buf, cyan);
+                            }
+                            else if (ci >= 0 && contract_state(slot) == CONTRACT_ACCEPTED)
+                            {
+                                const ContractDef *c = &CONTRACTS[ci];
+                                bool ready = (c->targetMob != NULL)
+                                    ? contract_progress(slot) >= c->count
+                                    : inventory_count(&inventory,
+                                                      &ITEM_TYPES[c->fetchItem]) >= c->count;
+                                if (ready)
+                                {
+                                    if (c->targetMob == NULL)
+                                        inventory_consume_n(&inventory,
+                                                            &ITEM_TYPES[c->fetchItem], c->count);
+                                    contract_turn_in(slot);
+                                    player.gold += c->gold;
+                                    rep_add(&player.reputation[bRegion], c->rep);
+                                    audio_play(SFX_LOOT);
+                                    char buf[FLOAT_TEXT_LEN];
+                                    snprintf(buf, sizeof(buf), "+%dg  itibar +%d",
+                                             c->gold, (int)c->rep);
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f, buf, goldc);
+                                }
+                                else
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f,
+                                                         "Henüz hazır değil", red);
+                            }
+                            handled = true;
+                        }
+                        else
+                        {
+                            boardOpen = false;   // panel dışı = kapat
                             handled = true;
                         }
                     }
@@ -1803,6 +1929,29 @@ int main(int argc, char *argv[])
                                                              "Zaten biliyorsun", dim);
                                     }
                                 }
+                                else if (st->type == &ITEM_TYPES[ITEM_WOOD])
+                                {
+                                    // Odun'a sağ tık: kamp ateşi kurulumu (3 Odun, 3 sn)
+                                    SDL_Color red = { 255, 120, 100, 255 };
+                                    if (inventory_count(&inventory, &ITEM_TYPES[ITEM_WOOD])
+                                            < CAMPFIRE_WOOD_COST)
+                                    {
+                                        char buf[FLOAT_TEXT_LEN];
+                                        snprintf(buf, sizeof(buf), "Odun gerekli (%d)",
+                                                 CAMPFIRE_WOOD_COST);
+                                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                             player.rect.x + player.rect.w / 2.0f,
+                                                             player.rect.y - 10.0f, buf, red);
+                                    }
+                                    else
+                                    {
+                                        campBuild = 0.0f;          // kurulum başlar
+                                        inventoryOpen = false;     // süreç görünür olsun
+                                        player.autoAttack = false;
+                                        gatherRes = -1;
+                                        audio_play(SFX_UI);
+                                    }
+                                }
                                 else if (st->type != NULL && st->type->consumable)
                                 {
                                     // Tüketilebilir: hotbar'a ata (içmek hotbar tuşuyla)
@@ -1992,6 +2141,15 @@ int main(int argc, char *argv[])
                                                  player.rect.y - 10.0f,
                                                  "Silah kaplandı!", pgreen);
                         }
+                        if (hs->itemType->foodDuration > 0.0f)
+                        {
+                            // Yemek: yavaş yenilenme (süre tazelenir, üst üste binmez)
+                            player.foodRegenRate = hs->itemType->foodRegen;
+                            player.foodTimer = hs->itemType->foodDuration;
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f, "Karnın doydu", green);
+                        }
                     }
                 }
             }
@@ -2028,6 +2186,80 @@ int main(int argc, char *argv[])
                 {
                     attackPressed = true;          // sıradaki savurma
                     player.pendingAbility = -1;
+                }
+            }
+
+            // İlan panosu: yürüyünce kapanır (craft paneliyle aynı davranış)
+            if (boardOpen && (keys[SDL_SCANCODE_W] || keys[SDL_SCANCODE_A] ||
+                              keys[SDL_SCANCODE_S] || keys[SDL_SCANCODE_D]))
+                boardOpen = false;
+
+            // Kamp ateşi ömrü: 24 oyun saati dolunca söner
+            if (STATIONS[STATION_PLAYER_FIRE_IDX].x > CAMPFIRE_PARKED + 1.0f &&
+                campfireOutAt >= 0.0f)
+            {
+                int cfDay; float cfHours;
+                gametime_get(&cfDay, &cfHours);
+                if ((float)cfDay * 24.0f + cfHours >= campfireOutAt)
+                {
+                    STATIONS[STATION_PLAYER_FIRE_IDX].x = CAMPFIRE_PARKED;
+                    STATIONS[STATION_PLAYER_FIRE_IDX].y = CAMPFIRE_PARKED;
+                    campfireOutAt = -1.0f;
+                    // Ateşin başındaysa panel açık kalmasın (istasyon kayboldu)
+                    if (craftOpen && craftStation == STATION_PLAYER_FIRE_IDX)
+                    {
+                        craftOpen = false;
+                        craftRecipe = -1;
+                        craftProgress = 0.0f;
+                    }
+                }
+            }
+
+            // --- KAMP ATEŞİ KURULUMU: 3 sn süreç, hareket iptal eder ---
+            if (campBuild >= 0.0f)
+            {
+                bool cbMoving = keys[SDL_SCANCODE_W] || keys[SDL_SCANCODE_A] ||
+                                keys[SDL_SCANCODE_S] || keys[SDL_SCANCODE_D];
+                if (cbMoving)
+                {
+                    campBuild = -1.0f;   // odun yanmadı — tekrar denenebilir
+                    SDL_Color dim = { 255, 170, 120, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 10.0f,
+                                         "İşlem iptal edildi", dim);
+                }
+                else
+                {
+                    campBuild += dt;
+                    if (campBuild >= CAMPFIRE_BUILD_TIME)
+                    {
+                        campBuild = -1.0f;
+                        if (inventory_consume_n(&inventory, &ITEM_TYPES[ITEM_WOOD],
+                                                CAMPFIRE_WOOD_COST))
+                        {
+                            // Yenisi eskisini söndürür (tek aktif oyuncu ateşi)
+                            STATIONS[STATION_PLAYER_FIRE_IDX].x =
+                                player.rect.x + player.rect.w / 2.0f;
+                            STATIONS[STATION_PLAYER_FIRE_IDX].y =
+                                player.rect.y + player.rect.h + 8.0f;   // ayak önü
+
+                            // Ömür: şu andan 24 oyun saati sonra söner
+                            int cfDay; float cfHours;
+                            gametime_get(&cfDay, &cfHours);
+                            campfireOutAt = (float)cfDay * 24.0f + cfHours + 24.0f;
+                            audio_play(SFX_PERK);
+                            SDL_Color warm = { 255, 190, 90, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f,
+                                                 "Kamp ateşi yandı", warm);
+                            fx_burst(&weaponFx,
+                                     STATIONS[STATION_PLAYER_FIRE_IDX].x,
+                                     STATIONS[STATION_PLAYER_FIRE_IDX].y - 20.0f,
+                                     14, 80.0f, 255, 170, 60);
+                        }
+                    }
                 }
             }
 
@@ -2355,10 +2587,12 @@ int main(int argc, char *argv[])
             player.bowEquipped = (wpnStack->type != NULL &&
                                   wpnStack->type->weaponType == WEAPON_BOW);
 
-            // Kaynatma/tören animasyonu: kazan ve sunakta süreç sürerken spellcast
-            player.casting = craftOpen && craftStation >= 0 &&
-                             STATIONS[craftStation].type != STATION_SMITH &&
-                             (craftRecipe >= 0 || enchAction > 0);
+            // Kaynatma/tören animasyonu: kazan ve sunakta süreç sürerken spellcast;
+            // kamp ateşi kurulumu da aynı duruşu kullanır (çömelip uğraşma hissi)
+            player.casting = (craftOpen && craftStation >= 0 &&
+                              STATIONS[craftStation].type != STATION_SMITH &&
+                              (craftRecipe >= 0 || enchAction > 0)) ||
+                             campBuild >= 0.0f;
 
             // Türetilmiş statlar: taban + perk + sunak stat basımları (her kare).
             // STR/DEX taban 10 (combat STAT_BASE ile aynı); max havuzlar taban + gear.
@@ -2471,6 +2705,13 @@ int main(int argc, char *argv[])
 
             // Süreli tüketilebilir etkileri sayaçları
             if (player.speedBuffTimer > 0.0f) player.speedBuffTimer -= dt;
+            if (player.foodTimer > 0.0f)
+            {
+                // Yemek yenilenmesi: yavaş tick (iksirin anlık patlamasına alternatif)
+                player.foodTimer -= dt;
+                player.health += player.foodRegenRate * dt;
+                if (player.health > player.maxHealth) player.health = player.maxHealth;
+            }
             if (player.coatTimer > 0.0f)
             {
                 player.coatTimer -= dt;
@@ -2494,6 +2735,10 @@ int main(int argc, char *argv[])
             {
                 lastSeenDay = today;
                 resource_daily_respawn();   // doğa tazelenir (cevher/bitki/ağaç)
+                contract_new_day(today);    // pano yenilenir (yarım kontratlar düşer)
+                spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS,
+                                 &nextMobId);   // av sürüleri tazelenir (eksik dolar)
+                // (kamp ateşi burada SÖNMEZ — kendi 24 saatlik ömrünü yaşar)
                 if (player.lastCrimeDay < today - 1 || player.lastCrimeDay == 0)
                     for (int r = 0; r < MAX_REGIONS; r++)
                         if (player.reputation[r] < 0.0f)
@@ -3281,6 +3526,27 @@ int main(int argc, char *argv[])
                            (craftOpen && (craftRecipe >= 0 || plusForge || enchAction > 0))
                                ? craftStation : -1);
 
+        // İlan panosu (dünya objesi): taban-orta hizalı, yaklaşınca [E] ipucu
+        if (boardTex != NULL)
+        {
+            const float bScale = 2.0f, bw = 27.0f * bScale, bh = 40.0f * bScale;
+            SDL_FRect bsrc = { 0, 0, 27, 40 };
+            SDL_FRect bdst = world_to_screen(BOARD_X - bw / 2.0f, BOARD_Y - bh,
+                                             bw, bh, &camera);
+            r2d_draw_texture(renderer, boardTex, &bsrc, &bdst);
+
+            float bpdx = BOARD_X - (player.rect.x + player.rect.w / 2.0f);
+            float bpdy = BOARD_Y - (player.rect.y + player.rect.h / 2.0f);
+            if (!boardOpen && gameFont != NULL &&
+                SDL_sqrtf(bpdx * bpdx + bpdy * bpdy) <= BOARD_RANGE)
+            {
+                SDL_FRect tp = world_to_screen(BOARD_X - 34.0f, BOARD_Y - bh - 22.0f,
+                                               0, 0, &camera);
+                SDL_Color hintCol = { 255, 255, 210, 255 };
+                draw_text(renderer, gameFont, "[E] İlanlar", tp.x, tp.y, hintCol);
+            }
+        }
+
         PlayerLayer built[24];
         int builtCount = build_player_layers(layers, LAYER_COUNT, &equipment,
                                              &itemTex, built, 24);
@@ -3371,6 +3637,13 @@ int main(int argc, char *argv[])
                                        player.rect.x + player.rect.w / 2.0f,
                                        player.rect.y + player.rect.h / 2.0f,
                                        hasTorch, player.weaponFx);
+            // Kamp ateşleri: yanan her ateş (köy sabiti + oyuncununki) ışık verir
+            for (int i = 0; i < STATION_COUNT; i++)
+                if (STATIONS[i].type == STATION_CAMPFIRE &&
+                    STATIONS[i].x > CAMPFIRE_PARKED + 1.0f)
+                    lightN = light_append_campfire(lights, lightN, R2D_MAX_LIGHTS,
+                                                   &camera, winW, winH,
+                                                   STATIONS[i].x, STATIONS[i].y - 24.0f);
             r2d_light_pass(renderer, ambR, ambG, ambB, lights, lightN);
         }
 
@@ -3558,6 +3831,25 @@ int main(int argc, char *argv[])
             }
         }
 
+        // İlan panosu paneli (Faz 6): günün kontratları + kabul/teslim
+        if (boardOpen)
+            contract_panel_render(renderer, gameFont, &inventory,
+                                  player.reputation[region_of(BOARD_X, BOARD_Y)],
+                                  40.0f, 40.0f);
+
+        // Kamp ateşi kurulum barı (panelsiz süreç — karakterin üstünde)
+        if (campBuild >= 0.0f)
+        {
+            SDL_FRect cbg = { winW / 2.0f - 100.0f, winH / 2.0f - 90.0f, 200.0f, 8.0f };
+            SDL_FRect cfill = cbg;
+            cfill.w *= campBuild / CAMPFIRE_BUILD_TIME;
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_set_color(renderer, 25, 25, 30, 220);
+            r2d_fill_rect(renderer, &cbg);
+            r2d_set_color(renderer, 255, 170, 60, 255);
+            r2d_fill_rect(renderer, &cfill);
+        }
+
         if (dialogNpc >= 0)
         {
             // Seçenek durumları (kilit/zar yüzdesi) — render soluk + etiketli çizer
@@ -3644,6 +3936,8 @@ int main(int argc, char *argv[])
     for (int i = 0; i < STATION_COUNT && i < 8; i++)
         if (station_textures[i])
             r2d_texture_destroy(NULL, station_textures[i]);
+    if (boardTex)
+        r2d_texture_destroy(NULL, boardTex);
 
     if (glowTex)
         r2d_texture_destroy(NULL, glowTex);

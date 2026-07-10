@@ -8,10 +8,12 @@
 #include "minimap.h"
 #include "npc.h"
 #include "craft.h"   // öğrenilen tarifler (v10)
+#include "contract.h"   // ilan panosu durumu (v12)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 11u  // ...; v9: NPC listesi; v10: öğrenilen tarifler;
-                          // v11: ItemStack instance (fx/rün + stat slotları)
+#define SAVE_VERSION 12u  // ...; v10: öğrenilen tarifler;
+                          // v11: ItemStack instance (fx/rün + stat slotları);
+                          // v12: ilan panosu (gün + slot durum/ilerleme)
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -133,6 +135,14 @@ bool save_game(const char *path, const Player *p,
     for (int i = 0; ok && i < RECIPE_COUNT; i++)
         ok = w32(f, craft_recipe_learned(i) &&
                     RECIPES[i].blueprintItem > 0 ? 1 : 0);
+
+    // İlan panosu (v12): pano günü + slot başına durum/ilerleme
+    ok = ok && w32(f, contract_save_day()) && w32(f, CONTRACT_ACTIVE);
+    for (int s = 0; ok && s < CONTRACT_ACTIVE; s++) {
+        int st, pr;
+        contract_save_get(s, &st, &pr);
+        ok = w32(f, st) && w32(f, pr);
+    }
 
     fclose(f);
     if (!ok)
@@ -279,6 +289,15 @@ bool load_game(const char *path, Player *p,
     for (int i = 0; ok && i < nRecipe; i++)
         ok = r32(f, &recipeFlag[i]);
 
+    // İlan panosu (v12)
+    Sint32 boardDay = -1, nSlot = 0;
+    Sint32 ctState[CONTRACT_ACTIVE] = {0}, ctProg[CONTRACT_ACTIVE] = {0};
+    ok = ok && r32(f, &boardDay) && r32(f, &nSlot);
+    if (ok && (nSlot < 0 || nSlot > CONTRACT_ACTIVE))
+        ok = false;
+    for (int s = 0; ok && s < nSlot; s++)
+        ok = r32(f, &ctState[s]) && r32(f, &ctProg[s]);
+
     fclose(f);
     if (!ok) {
         SDL_Log("Save okunamadi (bozuk dosya): %s", path);
@@ -301,5 +320,15 @@ bool load_game(const char *path, Player *p,
     for (int i = 0; i < nRecipe && i < RECIPE_COUNT; i++)
         if (recipeFlag[i])
             craft_learn_recipe(i);
+
+    // Pano durumu: gün + slotlar (int kopya — Sint32/int uyumu için)
+    {
+        int st[CONTRACT_ACTIVE], pr[CONTRACT_ACTIVE];
+        for (int s = 0; s < CONTRACT_ACTIVE; s++) {
+            st[s] = (int)ctState[s];
+            pr[s] = (int)ctProg[s];
+        }
+        contract_save_set((int)boardDay, st, pr);
+    }
     return true;
 }

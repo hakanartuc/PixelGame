@@ -143,13 +143,36 @@ Güncelleme: 2026-07-10
   (bu varyantta walk/idle katmanı yok — normal/recurve bow indirilirse idle/walk görseli bağlanır)
 - Yayla NPC hedeflenemez (uzaktan tanıksız suç dengesi ayrı iş — ertelendi)
 
+### Faz 18 — Av & Kontrat Panosu & Kamp Ateşi
+- 4 hayvan (Cute_Fantasy Animals): Koyun/Domuz/Tavuk pasif — vurulunca "!" + 4sn düz kaçış
+  (hız 550 ≈ oyuncu ×1.1; melee köşeye sıkıştırır, yay doğal av aracı); sürü birlikte ürker
+  (kamp alarmı kaçışa çevrilir); Yaban Domuzu (Pig_05) orman sınırında saldırgan (HP 90 / hasar 12)
+- MobType.passive + dailyRespawn; MOB_FLEE_TIME; hayvan bölgeleri GÜN dönünce dolar
+  (spawn_zones_fill artık eksiği sayarak doldurur); kaçış RETURN dokunulmazlığına girmez
+- Loot: Koyun/Domuz 1-2 Deri + 1-2 Et; Tavuk 1 Et; Yaban Domuzu 2-3 Deri + 1-2 Et garantili
+- Deri seti (ocak, ARMOR_LIGHT İLK item'ları): Başlık 2 Deri/def4, Zırh 4 Deri/def8, Bot 2 Deri/def3
+  (görseller mevcut LPC sheet'lerinin deri-kahvesi boyaması — ULPC deri seti gelirse değişir)
+- Yemek mekaniği: Pişmiş Et (kazan VE kamp ateşi, 1 Et) → 12sn +3 can/sn (iksire yavaş-ucuz alternatif);
+  ItemType.foodRegen/foodDuration + Player.foodRegenRate/foodTimer
+- İlan Panosu (köy meydanı, Signs.png): 9 kontratlık havuz, günlük 3 ilan (kademe başına 1);
+  kademeler: Temel (herkes) / Güvenilir (itibar ≥10) / Saygın (≥25) — kilitli ???+eşik görünür;
+  kes (kabul SONRASI kill sayacı) + getir (teslimde tüketilir); ödül altın + bölge itibarı;
+  bounty/dip itibar → "Arananlara iş yok!"; gün dönünce yenilenir; havuz veri tablosu (satır ekle = çeşit)
+- Kamp Ateşi: köyde sabit (pano yanı) + oyuncu KURABİLİR — envanterde Odun'a sağ tık,
+  3 Odun + 3sn süreç (WASD iptal); tek aktif oyuncu ateşi (yenisi eskisini söndürür);
+  ömür kurulumdan 24 OYUN SAATİ (gece yarısı sınırı DEĞİL); kapısız pişirme istasyonu
+  (STATION_CAMPFIRE, XP→Alchemy) + gece ışık kaynağı (light_append_campfire, sert titreşim);
+  ateş animasyonu HEP oynar; çıkışta söner (save'e yazılmaz — bilinçli)
+- contract.c modülü (save v12: pano günü + slot durum/ilerleme; load sonrası lastSeenDay senkronu —
+  yoksa günlük blok yüklenen panoyu ezerdi); STATIONS artık const değil (oyuncu ateşi konumu)
+- Bilinen küçükler: hayvanlar minimap'te düşman noktası; otlarken gezinmiyorlar
+
 ## 🔜 Kalanlar (öncelik sırası)
 1. **Boss scroll/taş dropları** (yüksek kademe) mob fazlarıyla gelecek; yay walk/idle görseli (asset gelince)
-2. **Av & kontrat panosu**: hayvanlar (Cute_Fantasy Animals), deri/et, Witcher tarzı ilan panosu
-3. **Mob fazları** (araya serpiştirilir): Slime ailesi → Skeleton ailesi (+ok/mermi sistemi) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla)
-4. **İç mekanlar/zindanlar**: kapı→ayrı harita, Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate
-5. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
-6. **Ertelenen küçükler**: HUD perk ikon şeridi, item tooltip'leri, drag&drop, harita editörü akışı (Tiled tileset tanımı),
+2. **Mob fazları** (araya serpiştirilir): Slime ailesi → Skeleton ailesi (+ok/mermi sistemi) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla)
+3. **İç mekanlar/zindanlar**: kapı→ayrı harita, Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate
+4. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
+5. **Ertelenen küçükler**: HUD perk ikon şeridi, item tooltip'leri, drag&drop, harita editörü akışı (Tiled tileset tanımı),
    CREDITS lisans teyitleri, F10 debug kaldırma, Vulkan/SPIR-V shader yolu, mobil build (SDL_GPU→Vulkan/Metal),
    ikinci yerleşim/muhafız (bölgesel bounty altyapısı hazır), mob "arama" davranışı (şüphe sonrası devriye),
    speech zar kilidinin save'e yazılması

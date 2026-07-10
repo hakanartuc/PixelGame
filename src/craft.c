@@ -8,8 +8,9 @@
 
 #define T(n) ((n) * (float)TILE_SIZE)
 
-// İstasyonlar: köy meydanı çevresi — ocak Demirci'nin tezgahı, kazan Baran'ın arkası
-const StationDef STATIONS[] = {
+// İstasyonlar: köy meydanı çevresi — ocak Demirci'nin tezgahı, kazan Baran'ın arkası.
+// const DEĞİL: oyuncu kamp ateşi (STATION_PLAYER_FIRE_IDX) konumunu main yazar.
+StationDef STATIONS[] = {
     { .type = STATION_SMITH, .name = "Demirci Ocağı",
       .texPath = "assets/decor/furnace.png", .src = { 0, 0, 16, 32 }, .frames = 5,
       .x = T(8), .y = T(7), .scale = 3.0f,
@@ -22,6 +23,16 @@ const StationDef STATIONS[] = {
       .texPath = "assets/decor/obelisk.png", .src = { 0, 0, 32, 80 }, .frames = 1,
       .x = T(102), .y = T(14), .scale = 2.0f,   // Karanlık Orman sınırı — keşifle bulunur
       .permQuest = NULL, .ownerName = NULL },   // sahipsiz harabe: kapı yok
+    // Faz 6: kamp ateşleri — KAPISIZ (ateş kimsenin değil), yemek pişirme
+    { .type = STATION_CAMPFIRE, .name = "Kamp Ateşi",
+      .texPath = "assets/decor/campfire.png", .src = { 0, 0, 16, 32 }, .frames = 8,
+      .x = T(15), .y = T(7) + 20.0f, .scale = 3.0f,   // köy: pano yanı (sabit)
+      .permQuest = NULL, .ownerName = NULL },
+    { .type = STATION_CAMPFIRE, .name = "Kamp Ateşi",   // STATION_PLAYER_FIRE_IDX (4)
+      .texPath = "assets/decor/campfire.png", .src = { 0, 0, 16, 32 }, .frames = 8,
+      .x = CAMPFIRE_PARKED, .y = CAMPFIRE_PARKED,      // sönük: park (main kurar/söndürür)
+      .scale = 3.0f,
+      .permQuest = NULL, .ownerName = NULL },
 };
 const int STATION_COUNT = (int)(sizeof(STATIONS) / sizeof(STATIONS[0]));
 
@@ -92,6 +103,27 @@ const RecipeDef RECIPES[] = {
       .in1Item = ITEM_WOOD, .in1Count = 2, .in2Item = ITEM_INGOT_IRON, .in2Count = 1,
       .outItem = ITEM_BOW, .outCount = 1, .work = 8.0f, .xp = 14.0f,
       .minSkill = 5 },
+
+    // Ocak — deri işleme (Faz 6): hafif zırh seti (ARMOR_LIGHT nihayet item'lı)
+    { .station = STATION_SMITH, .name = "Deri Başlık",
+      .in1Item = ITEM_LEATHER, .in1Count = 2, .in2Item = -1,
+      .outItem = ITEM_HELMET_LEATHER, .outCount = 1, .work = 4.0f, .xp = 8.0f },
+    { .station = STATION_SMITH, .name = "Deri Zırh",
+      .in1Item = ITEM_LEATHER, .in1Count = 4, .in2Item = -1,
+      .outItem = ITEM_CHEST_LEATHER, .outCount = 1, .work = 6.0f, .xp = 12.0f },
+    { .station = STATION_SMITH, .name = "Deri Bot",
+      .in1Item = ITEM_LEATHER, .in1Count = 2, .in2Item = -1,
+      .outItem = ITEM_BOOTS_LEATHER, .outCount = 1, .work = 4.0f, .xp = 8.0f },
+
+    // Kazan — yemek (Faz 6): yavaş ama toplamı yüksek yenilenme (iksir alternatifi)
+    { .station = STATION_ALCH, .name = "Pişmiş Et",
+      .in1Item = ITEM_MEAT, .in1Count = 1, .in2Item = -1,
+      .outItem = ITEM_MEAT_COOKED, .outCount = 1, .work = 3.0f, .xp = 4.0f },
+
+    // Kamp ateşi — aynı yemek (avcı döngüsü: avla → oracıkta pişir → ye)
+    { .station = STATION_CAMPFIRE, .name = "Pişmiş Et",
+      .in1Item = ITEM_MEAT, .in1Count = 1, .in2Item = -1,
+      .outItem = ITEM_MEAT_COOKED, .outCount = 1, .work = 3.0f, .xp = 4.0f },
 };
 const int RECIPE_COUNT = (int)(sizeof(RECIPES) / sizeof(RECIPES[0]));
 
@@ -156,9 +188,10 @@ void station_render_all(R2D *renderer, R2DTexture **textures,
             w * zoom, h * zoom,
         };
 
-        // Aktif üretimde animasyon oynar (kaynayan kazan / alazlanan ocak)
+        // Aktif üretimde animasyon oynar (kaynayan kazan / alazlanan ocak);
+        // kamp ateşi YANAN bir şeydir — hep oynar
         SDL_FRect src = s->src;
-        if (i == activeIdx && s->frames > 1)
+        if ((i == activeIdx || s->type == STATION_CAMPFIRE) && s->frames > 1)
             src.x += s->src.w * (float)((SDL_GetTicks() / 130) % (Uint64)s->frames);
         r2d_draw_texture(renderer, textures[i], &src, &dst);
 
@@ -368,6 +401,7 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
     SDL_Color hint = { 170, 200, 255, 255 };
     draw_text(renderer, font, smith ? "Tıkla: üret (Çekiç savurması)   ESC: kapat"
               : ench ? "Tıkla: bas/üret (şanslı rün üretimi)   ESC: kapat"
+              : (st->type == STATION_CAMPFIRE) ? "Tıkla: pişir   ESC: kapat"
                      : "Tıkla: kaynat   ESC: kapat",
               panelX + CRAFT_PAD, rowY + 6.0f, hint);
 }

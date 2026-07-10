@@ -13,9 +13,12 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
 - TODO: generator'ın ürettiği credits çıktısını parça parça buraya ekle
   (generator "download credits" verir — mobil hedef için şart).
 
-### Cute Fantasy RPG (NPC'ler, evler)
+### Cute Fantasy RPG (NPC'ler, evler, hayvanlar, ikonlar, pano)
 - Yapımcı: Kenmi — https://kenmi-art.itch.io/cute-fantasy-rpg
-- Dosyalar: `assets/characters/npcs/`, `assets/buildings/`
+- Dosyalar: `assets/characters/npcs/`, `assets/buildings/`,
+  `assets/characters/mobs/Sheep|Pig|Boar|Chicken.png` (Animals),
+  `assets/icons/items/food.png` (Food Icons), `assets/decor/notice_board.png` (Signs),
+  `assets/decor/campfire.png` (Outdoor Decor Animations)
 - TODO: kullanılan sürümün (ücretsiz/paid) lisans metnini teyit et;
   ücretsiz sürüm kredi ister, ticari kullanım için paid lisans gerekebilir.
 

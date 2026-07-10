@@ -10,10 +10,16 @@
 static const RegionCamp OVA_CAMPS[] = {
     { .x = T(25), .y = T(25), .radius = T(4), .type = &MOB_TYPES[0], .maxCount = 3 },  // goblin
     { .x = T(75), .y = T(45), .radius = T(4), .type = &MOB_TYPES[0], .maxCount = 3 },
+    // Faz 6 — av çayırları: köy çevresi otlaklar (pasif sürüler, günlük yenilenir)
+    { .x = T(28), .y = T(10), .radius = T(4), .type = &MOB_TYPES[2], .maxCount = 3 },  // koyun
+    { .x = T(35), .y = T(20), .radius = T(4), .type = &MOB_TYPES[3], .maxCount = 2 },  // domuz
+    { .x = T(22), .y = T(17), .radius = T(3), .type = &MOB_TYPES[4], .maxCount = 3 },  // tavuk
 };
 static const RegionCamp ORMAN_CAMPS[] = {
     { .x = T(130), .y = T(25), .radius = T(4), .type = &MOB_TYPES[0], .maxCount = 4 },
     { .x = T(170), .y = T(30), .radius = T(4), .type = &MOB_TYPES[1], .maxCount = 2 },  // ork
+    // Faz 6 — yaban domuzu: orman sınırı (sunağa giden yol — riskli av)
+    { .x = T(108), .y = T(22), .radius = T(4), .type = &MOB_TYPES[5], .maxCount = 2 },
 };
 static const RegionCamp BATAKLIK_CAMPS[] = {
     { .x = T(30), .y = T(100), .radius = T(5), .type = &MOB_TYPES[1], .maxCount = 3 },

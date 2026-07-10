@@ -98,6 +98,7 @@ typedef struct Player {
     float speedBuffMult, speedBuffTimer;   // Hız İksiri
     WeaponFxType coatFx;                   // silah kaplaması (Zehir Yağı)
     float coatTimer;
+    float foodRegenRate, foodTimer;        // yemek: sn başına can, kalan süre (Faz 6)
 
     // Statlar: dağıtım yok — sabit taban (10), ileride ekipman/perk bonusu ekler.
     // Skill'ler stat değil doğrudan hasar çarpanı verir (use-based felsefe).

@@ -18,10 +18,18 @@
 #define STATION_INTERACT_RANGE 80.0f
 
 typedef enum {
-    STATION_SMITH,   // demirci ocağı (Çekiç kuşanılı şart)
-    STATION_ALCH,    // simya kazanı (süre bazlı)
-    STATION_ENCHANT, // harabe sunağı (süre bazlı; rün craft ŞANSLI — Enchanting telafi eder)
+    STATION_SMITH,    // demirci ocağı (Çekiç kuşanılı şart)
+    STATION_ALCH,     // simya kazanı (süre bazlı)
+    STATION_ENCHANT,  // harabe sunağı (süre bazlı; rün craft ŞANSLI — Enchanting telafi eder)
+    STATION_CAMPFIRE, // kamp ateşi (süre bazlı, KAPISIZ; köyde sabit + oyuncu kurabilir)
 } StationType;
+
+// Oyuncunun kurduğu kamp ateşi: STATIONS içinde SABİT SLOT — sönükken harita
+// dışına park edilir (x = CAMPFIRE_PARKED). main 3 Odun'la kurar, gün sonunda söndürür.
+#define STATION_PLAYER_FIRE_IDX 4
+#define CAMPFIRE_PARKED (-99999.0f)
+#define CAMPFIRE_BUILD_TIME 3.0f    // kurulum süreci (sn)
+#define CAMPFIRE_WOOD_COST 3        // kurulum odunu
 
 // Sunak işlemleri: rün basma garantili, stat basma garantili-pahalı;
 // rün ÜRETİMİ şanslı (60 + Enchanting×0.4, tavan 95 — tutmayan özler yanar)
@@ -40,7 +48,9 @@ typedef struct {
     const char *ownerName;  // yönlendirme mesajı için ("Demirci Mahir")
 } StationDef;
 
-extern const StationDef STATIONS[];
+// DİKKAT: const değil — oyuncu kamp ateşinin (STATION_PLAYER_FIRE_IDX) x/y'sini
+// main yazar. Diğer girişler fiilen sabittir, yazma!
+extern StationDef STATIONS[];
 extern const int STATION_COUNT;
 
 // Tarifler: en çok 2 girdi → 1 çıktı. work: demircilikte vuruş, simyada saniye.
