@@ -101,9 +101,16 @@ Güncelleme: 2026-07-10
 - Mana + Stamina havuzları (HUD) — tüketiciler ve stat basma Faz 4'te
 - Save v9 (NPC listesi değişti); F10 debug craft test seti
 
+### Faz 15 — Meslek paketi 3/5: Blueprint ekonomisi & Öğretmenler
+- 6 blueprint'li tarif (Demir Kılıç/Zırh/Miğfer, Hız İksiri, Zehir Yağı); sağ tık = kalıcı öğrenme
+- Kaynaklar: ork/goblin dropları + Demirci satışı (150g) + Baran dükkânı (100g) — "kesmenin anlamı"
+- Öğretici parşömenler (%3, moba göre tür, +250 XP); öğretmen dersleri (seviye×15g, %40, günde 1)
+- Buff altyapısı: süreli hız + silah kaplaması (Zehir Yağı → geçici POISON weaponFx)
+- Animasyonlar: kazanda oyuncu spellcast (PLAYER_CAST) + kazan fokurdama + kabarcık; ocak alazlanması
+- Save v10 (öğrenilen tarifler)
+
 ## 🔜 Kalanlar (öncelik sırası)
-1. **Meslek paketi 3-5/5** (kararlar verildi, plan 2026-07-10):
-   - F3: blueprint/scroll loot ekonomisi (mob/boss dropları) + öğretmen NPC'ler (Demirci, train: aksiyonu)
+1. **Meslek paketi 4-5/5** (kararlar verildi, plan 2026-07-10):
    - F4: Enchanting sunağı — İKİ iş (kararlar 2026-07-10):
      a) öz→rün (moba/biyoma bağlı), üzerine basılır, seviyeye bağlı başarısızlık;
         weaponFx ItemStack'e taşınır (save)
