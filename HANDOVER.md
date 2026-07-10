@@ -46,11 +46,10 @@ WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş ·
 - Perk eşiği 25'ten başlar; test F10 ile.
 
 ## Sıradaki iş
-**Diyalog koşulları** (PROGRESS #1): `req:`/`fx:` — Speech skill-check, rüşvet; itibar/bounty
-koşulları da bu formata bağlanabilir. Sonrası: craft → av ve mob fazları
-(Slime → Skeleton+mermi → Shroomling → çöl/volkan).
+**Craft** (PROGRESS #1): Smithing (+basma, risk), Alchemy (bitki→iksir), Enchanting
+(weaponFx instance'a taşınır). Sonrası: av → mob fazları (Slime → Skeleton+mermi → çöl/volkan).
 
-Tamamlananlar (2026-07-10): GPU-3 (shader gece aydınlatması + shake + vinyet) ve
-**Suç & İtibar paketi Faz 1-4** (NPC ölümü, muhafız döngüsü, Sneak — görüş açısı/siper/örtü/
-mob şüphesi, bölgesel bounty+itibar; save v8). Gün döngüsü test için 5 dk (tasarım 10 dk).
-Tuşlara ek: **C eğilme**, NPC'ye saldırı = tıklayarak hedefle + Space.
+Tamamlananlar (2026-07-10): GPU-3 (shader gece aydınlatması + shake + vinyet),
+**Suç & İtibar paketi** (NPC ölümü, muhafız, Sneak + mob şüphesi, bölgesel bounty+itibar; save v8),
+**Diyalog koşulları** (req:/fx:, Speech zarı + günlük kilit, muhafız rüşveti [3], Türkçe UI taraması).
+Gün döngüsü test için 5 dk (tasarım 10 dk). Tuşlara ek: **C eğilme**, NPC'ye saldırı = tıkla + Space.
