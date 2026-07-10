@@ -81,6 +81,7 @@ typedef struct Player {
     int strength;    // hasar ölçeği
     int dexterity;   // kritik şansı
     int gold;        // para (loot'tan gelir, vendor'da harcanacak)
+    int bounty;      // suç bedeli (tanıklı suçla birikir; muhafız Faz 2'de tahsil eder)
 
     Skill skills[SKILL_COUNT];   // use-based skill'ler (kullandıkça gelişir)
 

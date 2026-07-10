@@ -6,9 +6,10 @@
 #include "skill.h"
 #include "gametime.h"
 #include "minimap.h"
+#include "npc.h"
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 6u   // ...; v5: keşif haritası; v6: perk seçimleri
+#define SAVE_VERSION 7u   // ...; v5: keşif haritası; v6: perk seçimleri; v7: suç (bounty + npcAlive)
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -105,6 +106,12 @@ bool save_game(const char *path, const Player *p,
     for (int s = 0; ok && s < SKILL_COUNT; s++)
         for (int t = 0; ok && t < PERK_TIERS; t++)
             ok = w32(f, p->perkChoice[s][t]);
+
+    // Suç (v7): bounty + NPC yaşam bayrakları (npc modülünden okunur)
+    ok = ok && w32(f, p->bounty);
+    ok = ok && w32(f, NPC_COUNT);
+    for (int i = 0; ok && i < NPC_COUNT; i++)
+        ok = w32(f, npc_is_alive(i) ? 1 : 0);
 
     fclose(f);
     if (!ok)
@@ -225,6 +232,15 @@ bool load_game(const char *path, Player *p,
                 tmpP.perkChoice[s][t] = (Sint8)c;
         }
 
+    // Suç (v7): bounty + NPC yaşam bayrakları
+    Sint32 nNpc = 0;
+    Sint32 npcAliveFlag[16];
+    ok = ok && r32(f, &tmpP.bounty) && r32(f, &nNpc);
+    if (ok && (nNpc < 0 || nNpc > 16))
+        ok = false;   // bozuk sayı
+    for (int i = 0; ok && i < nNpc; i++)
+        ok = r32(f, &npcAliveFlag[i]);
+
     fclose(f);
     if (!ok) {
         SDL_Log("Save okunamadi (bozuk dosya): %s", path);
@@ -240,5 +256,8 @@ bool load_game(const char *path, Player *p,
     gametime_set(tmpDay, tmpHours);
     if (exploredBytes > 0)
         minimap_unpack_explored(exploredBuf, exploredBytes);
+    npc_reset();   // önce herkes canlı, sonra save'deki ölümler uygulanır
+    for (int i = 0; i < nNpc && i < NPC_COUNT; i++)
+        npc_set_alive(i, npcAliveFlag[i] != 0);
     return true;
 }

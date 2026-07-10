@@ -12,6 +12,7 @@
 
 #define NPC_INTERACT_RANGE 90.0f   // E prompt'unun çıktığı mesafe
 #define NPC_MAX_STOPS 4            // rutindeki max durak
+#define NPC_MAX_HEALTH 60.0f       // şimdilik tüm NPC'ler aynı (ileride NpcDef alanı)
 
 // Rutin durağı: bu saatten itibaren NPC bu noktaya yürür.
 // indoors = varınca içeri girer (görünmez + konuşulamaz) — gece evi.
@@ -46,7 +47,21 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
 // İçerideki (indoors) NPC seçilmez — gece dükkan da böyle kapanır.
 int npc_nearest_in_range(float px, float py);
 
-// NPC'nin anlık konumu (minimap vb. için). İçerideyse false (görünmez).
+// NPC'nin anlık konumu (minimap vb. için). İçerideyse/ölüyse false (görünmez).
 bool npc_visible_pos(int i, float *x, float *y);
+
+// --- Savaş köprüsü (suç sistemi) ---
+// Tüm NPC'leri diriltir + canları doldurur. Oyun başında ve load öncesi çağrılır.
+void npc_reset(void);
+
+// Dünya noktasındaki görünür NPC (çizim kutusu hit-testi). -1 = yok.
+int npc_at_point(float wx, float wy);
+
+// Hasar uygula. Dönen: bu vuruşla öldü mü. Ölüm kalıcıdır (save'e yazılır).
+bool npc_damage(int i, float dmg);
+
+bool  npc_is_alive(int i);
+float npc_health(int i);           // 0..NPC_MAX_HEALTH
+void  npc_set_alive(int i, bool alive);   // save/load köprüsü
 
 #endif

@@ -50,8 +50,21 @@ typedef struct {
     bool hidden;      // içeride (çizilmez, konuşulamaz)
     bool walking;     // isim etiketi/anim için (şimdilik idle anim kayarak yürür)
     bool initialized;
+    float health;     // suç sistemi: NPC'ler ölebilir
+    bool alive;       // ölüm KALICI (save'e yazılır); ölü = hidden gibi davranır
+    float hitFlash;   // vuruş kızarması (sn, geri sayar)
 } NpcState;
 static NpcState npcState[8];   // NPC_COUNT tavanı (dizi statik kalsın diye bolca)
+
+void npc_reset(void)
+{
+    for (int i = 0; i < 8; i++) {
+        npcState[i].alive = true;
+        npcState[i].health = NPC_MAX_HEALTH;
+        npcState[i].hitFlash = 0.0f;
+        npcState[i].initialized = false;   // konumlar rutinden yeniden kurulur
+    }
+}
 
 // Saate göre geçerli durak: saati geçmiş SON durak; gün sarmalında sonuncusu
 static const NpcStop *current_stop(const NpcDef *def, float hours)
@@ -68,6 +81,8 @@ void npc_update(float dt, float hours)
 {
     for (int i = 0; i < NPC_COUNT && i < 8; i++) {
         NpcState *st = &npcState[i];
+        if (!st->alive) continue;   // ölü NPC rutin yürümez
+        if (st->hitFlash > 0.0f) st->hitFlash -= dt;
         if (!st->initialized) {
             const NpcStop *s0 = current_stop(&NPCS[i], hours);
             st->x = s0->x;
@@ -98,11 +113,58 @@ void npc_update(float dt, float hours)
 
 bool npc_visible_pos(int i, float *x, float *y)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 8 || npcState[i].hidden)
+    if (i < 0 || i >= NPC_COUNT || i >= 8 ||
+        npcState[i].hidden || !npcState[i].alive)
         return false;
     *x = npcState[i].x;
     *y = npcState[i].y;
     return true;
+}
+
+int npc_at_point(float wx, float wy)
+{
+    float drawSize = NPC_FRAME * NPC_DRAW_SCALE;
+    for (int i = 0; i < NPC_COUNT && i < 8; i++) {
+        float nx, ny;
+        if (!npc_visible_pos(i, &nx, &ny)) continue;
+        // Çizim kutusu (render ile aynı hiza: x,y = ayak noktası)
+        if (wx >= nx - drawSize / 2.0f && wx <= nx + drawSize / 2.0f &&
+            wy >= ny - drawSize + 8.0f && wy <= ny + 8.0f)
+            return i;
+    }
+    return -1;
+}
+
+bool npc_damage(int i, float dmg)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= 8 || !npcState[i].alive)
+        return false;
+    npcState[i].health -= dmg;
+    npcState[i].hitFlash = 0.15f;
+    if (npcState[i].health <= 0.0f) {
+        npcState[i].health = 0.0f;
+        npcState[i].alive = false;   // kalıcı — npc_reset/save dışında geri gelmez
+        return true;
+    }
+    return false;
+}
+
+bool npc_is_alive(int i)
+{
+    return i >= 0 && i < NPC_COUNT && i < 8 && npcState[i].alive;
+}
+
+float npc_health(int i)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= 8) return 0.0f;
+    return npcState[i].health;
+}
+
+void npc_set_alive(int i, bool alive)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= 8) return;
+    npcState[i].alive = alive;
+    npcState[i].health = alive ? NPC_MAX_HEALTH : 0.0f;
 }
 
 int npc_nearest_in_range(float px, float py)
@@ -110,7 +172,7 @@ int npc_nearest_in_range(float px, float py)
     int best = -1;
     float bestDist = NPC_INTERACT_RANGE;
     for (int i = 0; i < NPC_COUNT && i < 8; i++) {
-        if (npcState[i].hidden) continue;   // içerideki konuşulamaz
+        if (npcState[i].hidden || !npcState[i].alive) continue;   // içeride/ölü konuşulamaz
         float dx = npcState[i].x - px;
         float dy = npcState[i].y - py;
         float dist = SDL_sqrtf(dx * dx + dy * dy);
@@ -130,7 +192,8 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
     int frame = (int)(SDL_GetTicks() / NPC_IDLE_SPEED_MS) % NPC_IDLE_FRAMES;
 
     for (int i = 0; i < NPC_COUNT && i < 8; i++) {
-        if (npcTextures[i] == NULL || npcState[i].hidden) continue;
+        if (npcTextures[i] == NULL || npcState[i].hidden || !npcState[i].alive)
+            continue;
 
         SDL_FRect src = {
             .x = (float)(frame * NPC_FRAME),
@@ -144,7 +207,11 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
             .y = (npcState[i].y - drawSize + 8.0f - camera->y) * zoom,
             .w = drawSize * zoom, .h = drawSize * zoom,
         };
+        if (npcState[i].hitFlash > 0.0f)
+            r2d_texture_set_color_mod(npcTextures[i], 255, 90, 90);   // vuruş kızarması
         r2d_draw_texture(renderer, npcTextures[i], &src, &dst);
+        if (npcState[i].hitFlash > 0.0f)
+            r2d_texture_set_color_mod(npcTextures[i], 255, 255, 255);
 
         if (font != NULL) {
             // İsim baş üstünde; menzildeyse E ipucu

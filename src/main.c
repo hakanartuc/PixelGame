@@ -32,6 +32,7 @@
 #include "ui_theme.h"
 #include "perk.h"
 #include "light.h"
+#include "crime.h"
 
 #define BASE_MAX_HP 100.0f   // oyuncu taban canı (perk bonusları üstüne biner)
 
@@ -247,6 +248,7 @@ int main(int argc, char *argv[])
     decor_set_texture_sizes(decor_textures);
 
     gametime_init();   // gün 1, 08:00
+    npc_reset();       // NPC'ler canlı + tam canla başlar (statik durum sıfırdan gelir)
     ui_theme_init(renderer);   // panel/hücre/buton sprite'ları
     audio_init();      // başarısızsa oyun sessiz devam eder
     music_init();      // arka plan müziği (mood'a göre, crossfade)
@@ -268,6 +270,7 @@ int main(int argc, char *argv[])
         npcDialogOk[i] = dialog_load(&npcDialogs[i], NPCS[i].dialogFile);
     }
     int dialogNpc = -1;    // konuşulan NPC (-1 = diyalog kapalı)
+    int targetNpc = -1;    // saldırı hedefi NPC (yalnız TIKLAMAYLA seçilir — Z asla NPC seçmez)
     int dialogNode = -1;   // aktif diyalog düğümü
     bool shopOpen = false;
     int nearestNpc = -1;   // E prompt'u için (her kare güncellenir)
@@ -431,20 +434,21 @@ int main(int argc, char *argv[])
                 }
                 else if (event.key.key == SDLK_SPACE && gameState == GAME_PLAYING)
                 {
-                    // KO modeli: Space = auto-attack aç/kapa (hedef yoksa en yakını seç)
+                    // KO modeli: Space = auto-attack aç/kapa (hedef yoksa en yakın MOB'u seç;
+                    // NPC hedefi yalnız tıklamayla gelir, Space onu da döngüye sokar)
                     if (player.autoAttack)
                     {
                         player.autoAttack = false;
                     }
                     else
                     {
-                        if (player.targetMobId == 0)
+                        if (player.targetMobId == 0 && targetNpc < 0)
                         {
                             float px = player.rect.x + player.rect.w / 2.0f;
                             float py = player.rect.y + player.rect.h / 2.0f;
                             player.targetMobId = mob_find_nearest(mobs, mobCount, px, py);
                         }
-                        if (player.targetMobId != 0)
+                        if (player.targetMobId != 0 || targetNpc >= 0)
                         {
                             player.autoAttack = true;
                             player.attackTimer = 0.0f;   // ilk vuruş beklemesin
@@ -794,6 +798,19 @@ int main(int argc, char *argv[])
                         }
                     }
 
+                    // 2a) NPC'ye tıklama = saldırı hedefi (suç sistemi).
+                    //     Bilinçli eylem: Z asla NPC seçmez, yalnız tıklama seçer.
+                    if (!handled && gameState == GAME_PLAYING)
+                    {
+                        int ni = npc_at_point(worldX, worldY);
+                        if (ni >= 0 && ni != dialogNpc)   // konuşulan NPC'yi tıklamak saldırı değil
+                        {
+                            targetNpc = ni;
+                            player.targetMobId = 0;   // tek hedef ilkesi
+                            handled = true;
+                        }
+                    }
+
                     // 2) Popup kapalıysa: kasa açma
                     if (!handled)
                     {
@@ -953,8 +970,22 @@ int main(int argc, char *argv[])
             // --- AUTO-ATTACK: hedef seçiliyken silah hızında normal vuruş ---
             if (player.autoAttack)
             {
+                // Vuruş noktası: mob hedefi ya da (tıklamayla seçilmiş) NPC hedefi
                 Mob *aaTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
-                if (aaTarget == NULL)
+                float aimX = 0.0f, aimY = 0.0f;
+                bool haveAim = false;
+                if (aaTarget != NULL)
+                {
+                    aimX = aaTarget->e.rect.x + aaTarget->e.rect.w / 2.0f;
+                    aimY = aaTarget->e.rect.y + aaTarget->e.rect.h / 2.0f;
+                    haveAim = true;
+                }
+                else if (targetNpc >= 0 && npc_visible_pos(targetNpc, &aimX, &aimY))
+                {
+                    haveAim = true;   // NPC eve girerse (hidden) vuruş döngüsü durur
+                }
+
+                if (!haveAim)
                 {
                     player.autoAttack = false;   // hedef öldü/yok → dur
                 }
@@ -964,8 +995,8 @@ int main(int argc, char *argv[])
                     // Menzil dışıysa zamanlayıcı 0'da bekler, menzile girince hemen vurur
                     if (player.attackTimer <= 0.0f && !player.attacking && !attackPressed)
                     {
-                        float adx = (aaTarget->e.rect.x + aaTarget->e.rect.w / 2.0f) - (player.rect.x + player.rect.w / 2.0f);
-                        float ady = (aaTarget->e.rect.y + aaTarget->e.rect.h / 2.0f) - (player.rect.y + player.rect.h / 2.0f);
+                        float adx = aimX - (player.rect.x + player.rect.w / 2.0f);
+                        float ady = aimY - (player.rect.y + player.rect.h / 2.0f);
                         if (SDL_sqrtf(adx * adx + ady * ady) <= PLAYER_ATTACK_RANGE)
                         {
                             attackPressed = true;
@@ -979,8 +1010,22 @@ int main(int argc, char *argv[])
             // --- SALDIRI GEÇERLİLİĞİ (KO tarzı): hedef yoksa ya da menzil dışıysa saldırma ---
             if (attackPressed)
             {
+                // Vuruş noktası: mob ya da NPC hedefi (auto-attack ile aynı öncelik)
                 Mob *target = mob_find_by_id(mobs, mobCount, player.targetMobId);
-                if (target == NULL)
+                float vAimX = 0.0f, vAimY = 0.0f;
+                bool vHaveAim = false;
+                if (target != NULL)
+                {
+                    vAimX = target->e.rect.x + target->e.rect.w / 2.0f;
+                    vAimY = target->e.rect.y + target->e.rect.h / 2.0f;
+                    vHaveAim = true;
+                }
+                else if (targetNpc >= 0 && npc_visible_pos(targetNpc, &vAimX, &vAimY))
+                {
+                    vHaveAim = true;
+                }
+
+                if (!vHaveAim)
                 {
                     // Hedef yok → saldırma
                     attackPressed = false;
@@ -988,8 +1033,8 @@ int main(int argc, char *argv[])
                 else
                 {
                     // Hedef var → menzilde mi?
-                    float tdx = (target->e.rect.x + target->e.rect.w / 2.0f) - (player.rect.x + player.rect.w / 2.0f);
-                    float tdy = (target->e.rect.y + target->e.rect.h / 2.0f) - (player.rect.y + player.rect.h / 2.0f);
+                    float tdx = vAimX - (player.rect.x + player.rect.w / 2.0f);
+                    float tdy = vAimY - (player.rect.y + player.rect.h / 2.0f);
                     float tdist = SDL_sqrtf(tdx * tdx + tdy * tdy);
 
                     if (tdist > PLAYER_ATTACK_RANGE)
@@ -1045,6 +1090,8 @@ int main(int argc, char *argv[])
                 float px = player.rect.x + player.rect.w / 2.0f;
                 float py = player.rect.y + player.rect.h / 2.0f;
                 player.targetMobId = mob_find_nearest(mobs, mobCount, px, py);
+                if (player.targetMobId != 0)
+                    targetNpc = -1;   // Z mob seçti → NPC hedefi düşer
 
                 // Hedef seçildiyse oyuncuyu ona döndür (KO tarzı)
                 if (player.targetMobId != 0)
@@ -1158,6 +1205,55 @@ int main(int argc, char *argv[])
                         }
                         if (target->e.health <= 0.0f)
                             mob_die(target, loots, questStatus, floatTexts, &player);
+                    }
+                }
+                else if (targetNpc >= 0)   // NPC'ye saldırı (suç sistemi)
+                {
+                    float nx, ny;
+                    if (npc_visible_pos(targetNpc, &nx, &ny))
+                    {
+                        float tdx = nx - (player.rect.x + player.rect.w / 2.0f);
+                        float tdy = ny - (player.rect.y + player.rect.h / 2.0f);
+                        if (SDL_sqrtf(tdx * tdx + tdy * tdy) <= PLAYER_ATTACK_RANGE)
+                        {
+                            // NPC savunmasız sivil: defans 0, ability çarpanı yok.
+                            // Skill XP de YOK — köylü döverek skill kasılmasın.
+                            const ItemStack *weapon = &equipment.slots[EQUIP_WEAPON];
+                            HitResult hit = combat_player_hit(&player, weapon, 0.0f, 1.0f,
+                                                              npc_health(targetNpc) / NPC_MAX_HEALTH,
+                                                              &perkFx);
+                            int victim = targetNpc;
+                            bool died = npc_damage(victim, hit.damage);
+                            audio_play(hit.crit ? SFX_CRIT : SFX_HIT);
+                            floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                            nx + 10.0f, ny - 60.0f, (int)hit.damage, hit.crit);
+
+                            // Suç: tanık varsa bounty (hayatta kalan kurban kendisi tanıktır)
+                            if (crime_witnessed(nx, ny, victim, !died))
+                            {
+                                int b = died ? CRIME_BOUNTY_MURDER : CRIME_BOUNTY_HIT;
+                                player.bounty += b;
+                                char buf[FLOAT_TEXT_LEN];
+                                snprintf(buf, sizeof(buf), died ? "Cinayet! +%d bounty"
+                                                                : "Suc! +%d bounty", b);
+                                SDL_Color red = { 255, 80, 80, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 24.0f, buf, red);
+                            }
+
+                            if (died)
+                            {
+                                fx_burst(&weaponFx, nx, ny - 30.0f, 14, 90.0f, 200, 30, 30);
+                                targetNpc = -1;
+                                player.autoAttack = false;
+                                if (dialogNpc == victim)   // konuşulan öldüyse UI kapanır
+                                {
+                                    dialogNpc = -1;
+                                    shopOpen = false;
+                                }
+                            }
+                        }
                     }
                 }
                 player.attackHit = true;      // bu saldırıda denendi (tekrar etmesin)
@@ -1417,6 +1513,24 @@ int main(int argc, char *argv[])
 
         npc_render_all(renderer, npc_textures, &camera, gameFont, nearestNpc);
 
+        // Hedeflenen NPC'nin can barı (isim etiketinin üstünde, dünya uzayı)
+        if (targetNpc >= 0)
+        {
+            float nx, ny;
+            if (npc_visible_pos(targetNpc, &nx, &ny))
+            {
+                float ratio = npc_health(targetNpc) / NPC_MAX_HEALTH;
+                SDL_FRect bg = world_to_screen(nx - 24.0f, ny - 116.0f, 48.0f, 6.0f, &camera);
+                SDL_FRect fill = bg;
+                fill.w *= ratio;
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                r2d_set_color(renderer, 20, 20, 25, 220);
+                r2d_fill_rect(renderer, &bg);
+                r2d_set_color(renderer, 220, 60, 60, 255);
+                r2d_fill_rect(renderer, &fill);
+            }
+        }
+
         // Partiküller dünya varlıklarının ÜSTÜNDE (kan damlası mobun önünde görünsün)
         fx_render(&weaponFx, renderer, glowTex, &camera);
 
@@ -1484,6 +1598,15 @@ int main(int argc, char *argv[])
             snprintf(goldBuf, sizeof(goldBuf), "Gold %d", player.gold);
             SDL_Color goldCol = { 255, 210, 60, 255 };
             draw_text(renderer, gameFont, goldBuf, 20.0f, 48.0f, goldCol);
+
+            // Bounty göstergesi (suç bedeli — muhafız Faz 2'de tahsil edecek)
+            if (player.bounty > 0)
+            {
+                char bountyBuf[32];
+                snprintf(bountyBuf, sizeof(bountyBuf), "Bounty %d", player.bounty);
+                SDL_Color bountyCol = { 255, 90, 90, 255 };
+                draw_text(renderer, gameFont, bountyBuf, 20.0f, 72.0f, bountyCol);
+            }
 
             char clockBuf[24];
             gametime_format(clockBuf, sizeof(clockBuf));
