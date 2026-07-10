@@ -58,7 +58,7 @@ Güncelleme: 2026-07-10
 - Screen shake (hasar 0.25s/6px, crit 0.15s/3px) + kırmızı hasar vinyeti (0.35s)
 - Gün döngüsü test için 5 dk'ya indirildi (tasarım değeri 10 dk — gametime.h)
 
-### Faz 11 — Suç & Sneak (paket 1-3/4)
+### Faz 11 — Suç & İtibar paketi (TAMAMLANDI: Faz 1-4)
 - NPC ölümü (kalıcı, save v7), tıklamayla bilinçli saldırı, tanık tespiti, bounty (+HUD)
 - Muhafız döngüsü: yakala → öde/karşı koy, leash kaçışı, ertesi gün diriliş; bounty'liyken NPC konuşmaz
 - Sneak: C toggle, algı = eğilme × görüş açısı × siper (dekor LoS) × örtü (conceals tile),
@@ -73,25 +73,19 @@ Güncelleme: 2026-07-10
     saldırı yalnız alarmda başlar; leash şüpheyi de sıfırlar
 - Bilinen bilinçli tercihler: muhafız sneak'ten etkilenmez (bounty sahibini ismen tanır);
   çim (zemin tile) örtüsü yalnız eğilirken işler
+- Bölgesel bounty + itibar (save v8): suç işlendiği bölgeye; itibar -100..+100, ödeme düzeltmez,
+  suçsuz gün +1 (0'a doğru); vendor fiyat çarpanı, ≤-50 konuşma reddi, ≤-25 görev kapatma
 
 ## 🔜 Kalanlar (öncelik sırası)
-
-1. **Suç & İtibar paketi — kalan: Faz 4 bölge itibarı** (fiyat çarpanı, diyalog kapıları, save)
-   - **NPC öldürme** bu paketin parçası olarak eklenecek (değerlendirme 2026-07-10, özgür-dünya vizyonuna uygun):
-     - Tanık mekaniğiyle birleşir: tanıklı cinayet = bounty + muhafız; tanıksız iz bırakmaz (Sneak sinerjisi)
-     - Gothic/Kenshi yolu: herkes ölebilir, görevler "başarısız" olur, dünya devam eder (Skyrim'in ölümsüz NPC'si YOK;
-       ileride ana-akış kritik NPC'leri için "bayılma" ara çözümü düşünülebilir)
-     - Kaza koruması şart: KO auto-attack yanlışlıkla NPC'ye kilitlenmemeli — NPC'ye saldırı bilinçli/ayrı eylem
-     - İtibar bölgesel düşer (global karma yok) → fiyat, diyalog kapıları, muhafız tepkisi
-     - Save'e npcAlive durumu gerekir (kalıcı ölüm); ölen vendor/quest-veren = o içerik kapanır (bilinçli bedel)
-2. **Diyalog koşulları**: `req:`/`fx:` (Speech skill-check, rüşvet seçenekleri)
-3. **Craft**: Smithing (+basma, risk), Alchemy (bitki→iksir), Enchanting (weaponFx instance'a taşınır)
-4. **Av & kontrat panosu**: hayvanlar (Cute_Fantasy Animals), deri/et, Witcher tarzı ilan panosu
-5. **Mob fazları** (araya serpiştirilir): Slime ailesi → Skeleton ailesi (+ok/mermi sistemi) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla)
-6. **İç mekanlar/zindanlar**: kapı→ayrı harita, Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate
-7. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
-8. **Ertelenen küçükler**: HUD perk ikon şeridi, item tooltip'leri, drag&drop, harita editörü akışı (Tiled tileset tanımı),
-   CREDITS lisans teyitleri, F10 debug kaldırma, Vulkan/SPIR-V shader yolu, mobil build (SDL_GPU→Vulkan/Metal)
+1. **Diyalog koşulları**: `req:`/`fx:` (Speech skill-check, rüşvet seçenekleri; itibar/bounty koşulları da buraya bağlanabilir)
+2. **Craft**: Smithing (+basma, risk), Alchemy (bitki→iksir), Enchanting (weaponFx instance'a taşınır)
+3. **Av & kontrat panosu**: hayvanlar (Cute_Fantasy Animals), deri/et, Witcher tarzı ilan panosu
+4. **Mob fazları** (araya serpiştirilir): Slime ailesi → Skeleton ailesi (+ok/mermi sistemi) → Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla)
+5. **İç mekanlar/zindanlar**: kapı→ayrı harita, Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate
+6. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
+7. **Ertelenen küçükler**: HUD perk ikon şeridi, item tooltip'leri, drag&drop, harita editörü akışı (Tiled tileset tanımı),
+   CREDITS lisans teyitleri, F10 debug kaldırma, Vulkan/SPIR-V shader yolu, mobil build (SDL_GPU→Vulkan/Metal),
+   ikinci yerleşim/muhafız (bölgesel bounty altyapısı hazır), mob "arama" davranışı (şüphe sonrası devriye)
 
 ## Karar defteri (değişmez)
 - Sınıf yok; kimlik davranıştan: use-based skill + perk (3-seç-1) + bölge/hizip itibarı (global karma YOK)
