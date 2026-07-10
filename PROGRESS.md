@@ -93,10 +93,16 @@ Güncelleme: 2026-07-10
 - Kesinti: hareket/hasar/diyalog; yarım ilerleme gün sonuna dek düğümde
 - Not: araç idle'da görünmez (sheet'te idle yok); bitki toplama animasyonu bulunursa bağlanacak
 
+### Faz 14 — Meslek paketi 2/5: İstasyonlar & Craft
+- Demirci Ocağı + Simya Kazanı; erişim ÜÇ kapılı: tanışma görevi (FETCH) + bounty yok + itibar > -25
+- FETCH görev türü + görev item ödülü; Demirci Mahir (yeni NPC): 5 bakır → Çekiç + ocak izni; Baran: 3 Kızılot → kazan
+- Süreçli craft: ocakta çekiç savurması / kazanda kaynatma; malzeme tamamlanınca tüketilir (iade güvenli)
+- Tarifler: külçeler, Bakır Kılıç, Can/Büyük Can İksiri; '+basma' (şans tablosu + Smithing telafisi, plus-1 riski)
+- Mana + Stamina havuzları (HUD) — tüketiciler ve stat basma Faz 4'te
+- Save v9 (NPC listesi değişti); F10 debug craft test seti
+
 ## 🔜 Kalanlar (öncelik sırası)
-1. **Meslek paketi 2-5/5** (kararlar verildi, plan 2026-07-10):
-   - F2: istasyonlar (ocak/masa/sunak) + craft UI + tarif sistemi (hibrit) + Smithing üretim/+basma
-     (başarısızlık: plus-1+malzeme) + Alchemy iksirleri
+1. **Meslek paketi 3-5/5** (kararlar verildi, plan 2026-07-10):
    - F3: blueprint/scroll loot ekonomisi (mob/boss dropları) + öğretmen NPC'ler (Demirci, train: aksiyonu)
    - F4: Enchanting sunağı — İKİ iş (kararlar 2026-07-10):
      a) öz→rün (moba/biyoma bağlı), üzerine basılır, seviyeye bağlı başarısızlık;
