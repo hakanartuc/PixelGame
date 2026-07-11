@@ -282,10 +282,15 @@ Güncelleme: 2026-07-10
    · **Davranış ünvanları**: oyun stilinden ünvan + küçük pasif ("Slime Kasabı" %3 slime
      hasarı vb.) — "kimlik davranıştan doğar" felsefesinin görünür hali
 5. **Büyü dalgası 2**: magic_pack kalanları (tornado/firelion/icetacle/lightningclaw/snakebite)
-5. **Ertelenen küçükler**: HUD perk ikon şeridi, item tooltip'leri, drag&drop, harita editörü akışı (Tiled tileset tanımı),
+6. **Two-Handed hattı**: spear ilk iki elli silah + ağacı (asset hazır:
+   `~/Downloads/lpc_male_item_animations_2026-07-11T13-46-16`); Block/kalkan aynı aileden
+7. **Pickpocket**: mini ağaç + yankesicilik mekaniği (suç sistemine bağlanır)
+8. **Ertelenen küçükler**: hotbar/ağaç ikonları (magic_icons.png elimizde — şu an metin kısaltması),
+   item tooltip'leri, drag&drop, harita editörü akışı (Tiled tileset tanımı),
    CREDITS lisans teyitleri, F10 debug kaldırma, Vulkan/SPIR-V shader yolu, mobil build (SDL_GPU→Vulkan/Metal),
    ikinci yerleşim/muhafız (bölgesel bounty altyapısı hazır), mob "arama" davranışı (şüphe sonrası devriye),
-   speech zar kilidinin save'e yazılması
+   speech zar kilidinin save'e yazılması, yay walk/idle görseli (asset gelince),
+   iskelet "mezardan kalkma" spawn animasyonu (sheet satırları hazır)
 
 ## Karar defteri (değişmez)
 - Sınıf yok; kimlik davranıştan: use-based skill + perk (3-seç-1) + bölge/hizip itibarı (global karma YOK)

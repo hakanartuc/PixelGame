@@ -12,10 +12,12 @@ Güncelleme: 2026-07-11 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumla
 
 ## Proje
 C + SDL3 (3.4.8 vendored) + SDL_ttf + stb_image + CMake. Top-down 2D pixel-art RPG.
-Vizyon: OFFLINE Skyrim-vari açık dünya, KO'dan ilham combat/loot. Sınıf yok — **kimlik davranıştan doğar** (use-based skill + perk + itibar).
+Vizyon: OFFLINE Skyrim-vari açık dünya, KO'dan ilham combat/loot. Sınıf yok — **kimlik davranıştan doğar** (use-based skill + puanlı ağaç + itibar).
 
-**Görsel kaynaklar:** Oyuncu = LPC paper-doll (DOKUNMA). Diğer her şey = Cute_Fantasy paketleri
-(`/Users/hakan/Assets/2D Pixel-Art/` — NPC, ev, düşman, zindan, çöl/volkan/mantar biyomları, UI, ikonlar; kullanım onaylı).
+**Görsel kaynaklar (kullanım onaylı):** Oyuncu = LPC paper-doll (DOKUNMA). Diğer her şey =
+Cute_Fantasy paketleri (`/Users/hakanartuc/Cute Fantasy` — NPC, ev, düşman, zindan,
+çöl/volkan/mantar biyomları, UI, ikonlar) + `~/Downloads/lpc-hand-tools` + ULPC generator
+çıktıları (Hakan istek üzerine indirir) + efekt paketleri (assets/fx'e kopyalandı, CREDITS'te).
 
 ## Mimari (modüller)
 - **r2d** — SDL_GPU üstünde KENDİ 2D renderer'ımız (SDL_Renderer tamamen söküldü, 2026-07-09):
@@ -27,16 +29,20 @@ Vizyon: OFFLINE Skyrim-vari açık dünya, KO'dan ilham combat/loot. Sınıf yok
 - **Oyun sistemleri:** tilemap (Tiled CSV, 200×150, culling) · region (bölge+mood+kamplar) · decor (evler, taban collision)
   · player (LPC katmanlı, oversize slash) · mob (leash/grup-aggro/tile çarpışma/kanama alanları) · npc (rutinli, saat bazlı)
   · dialog (txt format: `[dugum] / text: / opt: -> hedef|end|shop|accept:ID|complete:ID`) · quest (KILL) · shop (al/sat)
-  · item/inventory/equipment (instance +plus, zırh sınıfı) · skill (use-based, XP=hasar) · ability+hotbar (1-8, KO auto-attack)
-  · perk (48 perk, eşik 25/50/75/100, 3-seç-1, PerkEffects tek nokta) · combat (Combat A) · gametime (10dk=24s, mood müziği)
-  · audio (SFX) + music (4 prosedürel parça, mood crossfade) · minimap (fog, target pass) · save (v11, alan-alan binary)
+  · item/inventory/equipment (instance +plus/rün/stat, zırh sınıfı, 40 slot) · skill (use-based, XP=hasar, 15 skill)
+  · ability+hotbar (1-8, KO auto-attack; aktifler ağaçtan açılır) · skilltree (16 puanlı düğüm ağacı,
+  PerkEffects tek nokta — eski perk.c Faz 21'de SÖKÜLDÜ) · combat (Combat A + combat_spell_hit)
+  · gametime (10dk=24s, mood müziği) · audio (SFX) + music (4 prosedürel parça, mood crossfade)
+  · minimap (fog, target pass) · save (v13, alan-alan binary; skills/masks blokları append-toleranslı)
   · craft (istasyonlar/tarifler/sunak) · resource (toplama düğümleri) · region (bölgesel bounty/itibar)
+  · contract (pano: 9 kontrat, 3 kademe, günlük rotasyon) · light (gece ışık kaynakları + kamp ateşi)
   · ui_theme (9-grid paneller) · font (ttf→GPU upload).
-- **main.c** — tüm bağlantı/orkestrasyon burada (~1500 satır; ileride bölünebilir).
+- **main.c** — tüm bağlantı/orkestrasyon burada (~5000 satır; ileride bölünebilir).
 
 ## Tuşlar
-WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/istasyon/topla · I envanter · K skill/perk · J görevler
+WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/istasyon/topla · I envanter · K skill/ağaç · J görevler
 · M minimap · C eğilme · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 kaydet/yükle · ESC katmanlı kapatma/menü
+(K = skill listesi + ağaç paneli; ok mühimmatı sağ tıkla seçilir)
 (F efekt önizleme KALDIRILDI 2026-07-10 — rünün instance efektini eziyordu)
 
 ## Kritik bilinenler
