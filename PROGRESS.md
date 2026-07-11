@@ -1,6 +1,6 @@
 # PROGRESS — Yapılanlar ve Kalanlar
 
-Güncelleme: 2026-07-10
+Güncelleme: 2026-07-11
 
 ## ✅ Tamamlanan fazlar
 
@@ -267,11 +267,31 @@ Güncelleme: 2026-07-10
 - Gelecek dalga notu: magic_pack kalanları (tornado/firelion/icetacle/lightningclaw) yeni
   büyüler; snake/turtleshell sprite'ları summon/mob adayı; magic_icons.png ikon sistemine
 
+### Faz 23 — ZİNDAN PAKETİ (çoklu harita + kilit/tuzak + boss; save v14-16)
+- **Çoklu harita** (worldmap.c): harita id + geçit tablosu (E ile geçiş, kapı/merdiven
+  görselleri); geçiş akışı CSV yükle + mob/loot/partikül temizle + kamp doldur + oyuncu varış
+  + splash + ambiyans. Dünya-özel sistemler zindanda kapalı (NPC/dekor/kaynak/istasyon/pano/
+  muhafız/bölge). Save v14: aktif harita. Minimap çift keşif tamponu (dünya kalıcı, zindan geçici)
+- **Eski Geçit** (Karanlık Orman T145,7 taş kemer; Osman [haber] işaret eder): 2 kat el yapımı
+  CSV (scripts/gen_dungeon.py — K1 44×34 Dungeon_1 iskelet aileleri, K2 40×30 Dungeon_2 boss).
+  TILE_TYPES 6-10 (zindan döşeme/duvar/void). Sabit loş ambiyans + titreşimli duvar meşaleleri
+  (light_collect staticLights bayrağı), DANGER müzik
+- **Lockpicking** (lockpick.c + mini ağaç 8 düğüm): zamanlama barı minigame (3 kademe;
+  bölge/imleç skill+ağaçla ölçeklenir, görsel=isabet hesabı); başarısızlık maymuncuk kırar +
+  260px GÜRÜLTÜ (mob şüphesi dolar — sistem sinerjisi); KİLİT FISILDAYAN keystone.
+  Maymuncuk: Baran 15g + ocak (1 Demir Külçe→3). Sandık E ya da sol tık + baş üstü ipucu
+- **Zindan sandıkları** (6, günlük yeniden kilitlenir, save v15): kilitsiz/Basit/Sağlam/Usta
+  kademe + renk rozeti; Loot.kind/lockTier/chestId; Chest_anim görseli; chest_fill loot taslağı
+- **Tuzaklar** (trap.c): periyodik dikenler (uyarı evresi, 15 zırh-delici hasar) + basınç
+  plakası/duvar arbaleti (kaçınılabilir bolt 20 hasar, mob mermi havuzu üzerinden)
+- **İskelet Lordu** (boss, save v16): 3.4× mor Savaşçı, HP 900/kılıç 28; Faz 2 (%50)
+  ok yağmuru + iskelet çağrısı; arena tile kapısı ("Kapı kapandı"); mor boss barı;
+  haftalık diriliş; ilk ölümde **Lord'un Kılıcı +2** (%5 can çalma — ItemType.lifesteal)
+- **ÖLÜM = WIPE**: zindanda ölünce dünyaya çıkış (eski "zindan içinde köy koordinatı" bug'ı
+  çözüldü); tüm moblar tam canla başa döner (boss dahil); dünyada ölünce kamplar tazelenir
+
 ## 🔜 Kalanlar (öncelik sırası — 2026-07-11 kullanıcı seçimi)
-1. **ZİNDAN PAKETİ (SIRADAKİ FAZ)**: kapı→ayrı harita, Dungeon_1-3 tileset'leri,
-   sandık/diken kapanı/gate + **Lockpicking mini ağacı mekaniğiyle** + **İLK BOSS**
-   (boss scroll/taş dropları burada)
-2. **Mob fazları** (devamı): Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda; iskelet "mezardan kalkma" spawn animasyonu
+1. **Mob fazları** (devamı): Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda; iskelet "mezardan kalkma" spawn animasyonu
 3. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
 4. **Onaylı yeni mekanikler** (2026-07-11 — uygun fazlarda gelir):
    · **Element sinerjileri**: yanan moba Buz Novası = termal şok patlaması, zehirli moba

@@ -61,11 +61,12 @@ WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/is
   Ateş Topu atar (mana yoksa melee dürtme). Zırh ağırlığı: aşım = hız + mana rejeni cezası.
 
 ## Sıradaki iş
-**ZİNDAN PAKETİ** (2026-07-11 kullanıcı seçimi, PROGRESS #1): kapı→ayrı harita geçişi,
-Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate, Lockpicking mini ağacı
-mekaniğiyle + İLK BOSS (boss scroll/taş dropları). Faz başında tasarım anketi yapılacak
-(harita geçiş modeli, kilit minigame, boss seçimi, drop tablosu).
-Backlog'a onaylı 4 yeni mekanik: element sinerjileri, summon hattı (mana rezerve bedeli),
+**ZİNDAN PAKETİ TAMAM** (Faz 23, save v14-16): çoklu harita (worldmap.c), Eski Geçit 2 kat,
+Lockpicking minigame + mini ağaç, günlük sandıklar, diken/arbalet tuzakları, İskelet Lordu
+boss (2 faz + arena kilidi + haftalık diriliş + Lord'un Kılıcı lifesteal). ÖLÜM=WIPE.
+Sıradaki (PROGRESS "Kalanlar" #1): **Mob fazları devamı** (Shroomling/Bombschroom →
+Mummy/Cowling/Flying Skull, yeni biyomlarla) ya da **yeni biyomlar** (çöl/volkan/mantar).
+Backlog onaylı 4 mekanik: element sinerjileri, summon hattı (mana rezerve bedeli),
 pişirme+yemek buffları, davranış ünvanları (ayrıntı PROGRESS "Kalanlar" #4).
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
 mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13) + BÜYÜ SİSTEMİ
