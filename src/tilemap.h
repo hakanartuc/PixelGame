@@ -36,6 +36,9 @@ bool tilemap_load_csv(const char *path);
 int map_width(void);
 int map_height(void);
 
+// Tek tile değiştir (boss arena kapısı: zemin↔duvar) — sınır dışı sessiz
+void tilemap_set_tile(int col, int row, int id);
+
 void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *camera);
 
 int  tile_at_point(float worldX, float worldY);

@@ -82,6 +82,9 @@ typedef struct {
     int splitCount;          // >0: ölünce bu kadar yavruya bölünür (main işler)
     int splitChild;          // yavrunun MOB_TYPES indeksi (splitCount > 0 ise geçerli)
     float bodyW, bodyH;      // hitbox boyutu (0 = varsayılan 48×64 — slime boyları farklı)
+    float drawScale;         // çizim ölçeği (0 = varsayılan 2.0 — boss büyük çizilir)
+    Uint8 tintR, tintG, tintB; // tür rengi (0,0,0 = boyama yok — boss koyu/mor)
+    bool isBoss;             // boss: leash yok, faz mantığı main'de, tepe HP barı
     float hitPoisonDps;      // vuruşu oyuncuyu zehirler: sn başına hasar (0 = yok)
     float hitPoisonTime;     // zehir süresi (sn)
 
@@ -109,6 +112,9 @@ typedef struct {
                                  // ÜST ÜSTE biner (tam DoT build'i meşru)
     float burnDps, burnTime;     // Yanma DoT'u (Ateş Topu) — 3. bağımsız kanal (Faz 22)
     int arrowsHit;        // saplanan ok sayısı — ölünce ~%30'u lootta geri (Faz 5)
+    Sint8 bossPhase;      // boss: 1 kılıç / 2 ok yağmuru+çağrı (faz mantığı main'de)
+    float bossTimer;      // boss: yağmur sayacı
+    bool bossSummoned;    // faz 2 çağrısı bir kez
     float slowMult, slowTimer;   // Buz Oku: süre boyunca hız çarpanı (0 = etkisiz)
     float fleeTimer;      // pasif av: kalan kaçış süresi (vuruş tazeler)
     MobState state;         // AI durumu

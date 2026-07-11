@@ -310,6 +310,16 @@ const ItemType ITEM_TYPES[] = {
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/tool_icons.png",
       .iconSrc = { 112, 0, 16, 16 } },   // tool_icons 7. hücre (çubuk görünümlü)
+
+    // İskelet Lordu benzersizi: +2 düşer, hasarın %5'i cana döner.
+    // Görsel: longsword paper-doll katmanları (kendi sheet'i bulunana dek)
+    { .name = "Lord'un Kılıcı", .iconIndex = 4, .maxStack = 1, .value = 800,
+      .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_ONE_HAND,
+      .damage = 62.0f, .attackInterval = 1.1f, .lifesteal = 0.05f,
+      .equipSpritePath     = "assets/equipment/weapon/long_sword_140.png",
+      .equipSpritePathBack = "assets/equipment/weapon/long_sword_009.png",
+      .equipZ = 140, .equipZBack = 9, .equipIdleRow = 8, .slashOversize = true,
+      .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

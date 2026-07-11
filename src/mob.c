@@ -102,6 +102,14 @@ static const LootEntry BOAR_LOOT[] = {
 };
 #define LOOT_COUNT(t) ((int)(sizeof(t) / sizeof((t)[0])))
 
+static const LootEntry SKEL_LORD_LOOT[] = {
+    { &ITEM_TYPES[ITEM_BONE],           1.00f, 0 },
+    { &ITEM_TYPES[ITEM_BONE],           1.00f, 0 },
+    { &ITEM_TYPES[ITEM_STONE_HP],       1.00f, 0 },   // her ölümde stat taşı
+    { &ITEM_TYPES[ITEM_SCROLL_ARCHERY], 0.50f, 0 },   // ikisinden biri düşer gibi
+    { &ITEM_TYPES[ITEM_SCROLL_ENCHANT], 0.50f, 0 },
+};
+
 // Mob türleri tablosu — her tür bir kez tanımlı. (TILE_TYPES gibi)
 const MobType MOB_TYPES[] = {
     // [0] Goblin Maceman — uniform 32×32, klasik düzen
@@ -546,6 +554,43 @@ const MobType MOB_TYPES[] = {
             },
         },
     },
+    // [15] İSKELET LORDU — ilk boss (Eski Geçit K2). Savaşçının büyütülmüş,
+    // koyu-mor tonlu hali; faz mantığı main'de (yağmur + çağrı), leash yok.
+    {
+        .name = "İskelet Lordu",
+        .texturePath = "assets/characters/mobs/Skeleton_Swordman.png",
+        .level = 12, .maxHealth = 900.0f, .speed = 150.0f,
+        .attackRange = 85.0f, .detectRange = 420.0f, .damage = 28.0f, .defense = 20.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 2, .attackRecover = 1.1f,
+        .lootTable = SKEL_LORD_LOOT, .lootTableCount = LOOT_COUNT(SKEL_LORD_LOOT),
+        .goldMin = 200, .goldMax = 300,
+        .bodyW = 80.0f, .bodyH = 64.0f,
+        .drawScale = 3.4f,
+        .tintR = 200, .tintG = 170, .tintB = 255,   // soluk mor — hükümdar havası
+        .isBoss = true,
+        .anims = {
+            { // idle (6 kare)
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+            },
+            { // yürüme (6 kare)
+                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+            },
+            { // saldırı — 64×64 kılıç savurması
+                { .x=0, .y=224, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.12f, .feetY=46 },
+                { .x=0, .y=352, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.12f, .feetY=46 },
+                { .x=0, .y=288, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.12f, .feetY=46 },
+            },
+            { // ölüm: çöküş (4 kare)
+                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.20f, .feetY=30 },
+                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.20f, .feetY=30 },
+                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.20f, .feetY=30 },
+            },
+        },
+    },
 };
 
 const int MOB_TYPE_COUNT = (int)(sizeof(MOB_TYPES) / sizeof(MOB_TYPES[0]));
@@ -595,7 +640,7 @@ void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Ca
     };
 
     float zoom = camera->zoom;
-    float scale = 2.0f;
+    float scale = (m->type->drawScale > 0.0f) ? m->type->drawScale : 2.0f;
     float drawW = clip->frameW * scale;
     float drawH = clip->frameH * scale;
     float feetOffset = clip->feetY * scale;   // ayak, ölçekli
@@ -626,6 +671,8 @@ void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Ca
 
     if (m->e.hitFlash > 0.0f)
         r2d_texture_set_color_mod(texture, 255, 150, 150);
+    else if (m->type->tintR != 0 || m->type->tintG != 0 || m->type->tintB != 0)
+        r2d_texture_set_color_mod(texture, m->type->tintR, m->type->tintG, m->type->tintB);
     else
         r2d_texture_set_color_mod(texture, 255, 255, 255);
 
@@ -755,7 +802,7 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
     float hdy = m->homeY - (m->e.rect.y + m->e.rect.h/2.0f);
     float homeDist = SDL_sqrtf(hdx*hdx + hdy*hdy);
 
-    if (m->state != MOB_RETURN && homeDist > MOB_LEASH_RANGE) {
+    if (m->state != MOB_RETURN && homeDist > MOB_LEASH_RANGE && !m->type->isBoss) {
         m->state = MOB_RETURN;
         m->attacking = false;
         m->aggro = false;      // alarm biter — dönünce normal algıya döner

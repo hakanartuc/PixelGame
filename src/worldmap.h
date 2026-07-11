@@ -78,6 +78,12 @@ extern const int CHEST_COUNT;
 int  chest_opened_day(int idx);              // -999 = hiç açılmadı
 void chest_set_opened_day(int idx, int day);
 
+// Boss durumu (save v16): haftalık diriliş + benzersiz ilk-ödül
+int  boss_last_kill_day(void);               // -999 = hiç ölmedi
+void boss_set_last_kill_day(int day);
+bool boss_first_kill_done(void);
+void boss_set_first_kill_done(bool done);
+
 // --- Tuzaklar ---
 typedef struct { MapId map; float x, y; float phaseOffset; } SpikeDef;   // periyodik diken
 typedef struct {

@@ -253,6 +253,24 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
                         target->type->lootTable, target->type->lootTableCount,
                         target->type->goldMin, target->type->goldMax);
 
+    // BOSS ölümü: haftalık diriliş kaydı + İLK ödül (Lord'un Kılıcı +2)
+    if (target->type->isBoss)
+    {
+        boss_set_last_kill_day(gametime_day());
+        if (!boss_first_kill_done() && li >= 0 &&
+            loots[li].itemCount < MAX_LOOT_ITEMS)
+        {
+            loots[li].items[loots[li].itemCount++] =
+                item_make(&ITEM_TYPES[ITEM_SWORD_LORD], 1, 2);   // +2 hazır düşer
+            boss_set_first_kill_done(true);
+        }
+        SDL_Color gold = { 255, 210, 60, 255 };
+        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                             player->rect.x + player->rect.w / 2.0f,
+                             player->rect.y - 50.0f,
+                             "İskelet Lordu devrildi!", gold);
+    }
+
     // Ok geri kazanımı: saplanan okların her biri %30 şansla leşten çıkar
     if (li >= 0 && target->arrowsHit > 0)
     {
@@ -901,6 +919,9 @@ int main(int argc, char *argv[])
     bool mapReloadNeeded = false;
     int nearPortal = -1;
     int nearestChest = -1;   // menzildeki kapalı sandık ([E] ile açılır)
+    bool arenaClosed = false;   // boss arena kapısı (tile duvarı) indi mi
+    #define T_BOSS_X (22.0f * TILE_SIZE)
+    #define T_BOSS_Y (23.0f * TILE_SIZE)
 
     // Bölge splash durumu: bölge değişince ad 3 sn görünür
     int currentRegion = -1;
@@ -2510,6 +2531,8 @@ int main(int argc, char *argv[])
             deathTimer -= dt;
             if (deathTimer <= 0.0f)
             {
+                // WIPE: ölüm dünyayı tazeler — TÜM yaratıklar tam canla başa döner
+                // (boss dahil: yarım bırakılan savaş kaldığı yerden sürmez)
                 player.rect.x = SPAWN_X;
                 player.rect.y = SPAWN_Y;
                 player.health = player.maxHealth;
@@ -2517,7 +2540,22 @@ int main(int argc, char *argv[])
                 player.attacking = false;
                 player.attackHit = false;
                 player.targetMobId = 0;
-                // (uzakta aggro'lu moblar leash'le kendiliğinden kampa döner)
+
+                if (map_current() != MAP_WORLD)
+                {
+                    // Zindanda öldün: köye dönüş = dünya haritasına geçiş.
+                    // Geçiş bloğu zindan moblarını zaten temizler; boss bir
+                    // sonraki girişte TAM canla yeniden doğar (ölmediyse gün şartı yok).
+                    map_set_current(MAP_WORLD);
+                    mapReloadNeeded = true;
+                }
+                else
+                {
+                    // Dünyada öldün: kamplar tamamen tazelenir (tam can, konum, sükunet)
+                    for (int i = 0; i < MAX_MOBS; i++) mobs[i] = (Mob){0};
+                    spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId);
+                }
+                for (int i = 0; i < MAX_MOB_PROJS; i++) mobProjs[i].active = false;
             }
         }
 
@@ -2552,6 +2590,18 @@ int main(int argc, char *argv[])
                 place_dungeon_chests(loots, to, gametime_day());
                 trap_reset();
                 lockpick_cancel();
+                arenaClosed = false;   // kapı tile'ları CSV'den zaten zemin geldi
+
+                // İskelet Lordu: haftada bir dirilir (öldüğü günden 7 oyun günü sonra)
+                if (to == MAP_DUNGEON_F2 &&
+                    (boss_last_kill_day() <= -999 ||
+                     gametime_day() - boss_last_kill_day() >= 7))
+                {
+                    int bid = mob_spawn(mobs, MAX_MOBS, &nextMobId,
+                                        &MOB_TYPES[15], T_BOSS_X, T_BOSS_Y, -1);
+                    Mob *b = mob_find_by_id(mobs, MAX_MOBS, bid);
+                    if (b != NULL) b->bossPhase = 1;
+                }
 
                 // 4) Oyuncu geçit hedefine düşer (yüklemede pos zaten save'den geldi)
                 if (pendingPortal >= 0)
@@ -2593,6 +2643,93 @@ int main(int argc, char *argv[])
                     float cdy = (loots[i].rect.y + loots[i].rect.h / 2.0f) - pcy;
                     float d = SDL_sqrtf(cdx * cdx + cdy * cdy);
                     if (d < best) { best = d; nearestChest = i; }
+                }
+            }
+
+            // --- BOSS: faz mantığı + arena kapısı (yalnız K2) ---
+            if (map_current() == MAP_DUNGEON_F2)
+            {
+                Mob *boss = NULL;
+                for (int i = 0; i < MAX_MOBS; i++)
+                    if (mobs[i].e.alive && mobs[i].type != NULL && mobs[i].type->isBoss)
+                        { boss = &mobs[i]; break; }
+
+                if (boss != NULL)
+                {
+                    // Faz 2 geçişi: can %50 — ok yağmuru + tek seferlik çağrı
+                    if (boss->bossPhase == 1 &&
+                        boss->e.health < boss->e.maxHealth * 0.5f)
+                    {
+                        boss->bossPhase = 2;
+                        boss->bossTimer = 1.2f;
+                        SDL_Color red = { 255, 120, 100, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             boss->e.rect.x + boss->e.rect.w / 2.0f,
+                                             boss->e.rect.y - 40.0f,
+                                             "\"Kemiklerim... KALKIN!\"", red);
+                    }
+                    if (boss->bossPhase == 2)
+                    {
+                        if (!boss->bossSummoned)
+                        {
+                            boss->bossSummoned = true;
+                            for (int k = 0; k < 2; k++)
+                            {
+                                int sid = mob_spawn(mobs, MAX_MOBS, &nextMobId,
+                                                    &MOB_TYPES[12],
+                                                    boss->e.rect.x + (k ? 80.0f : -80.0f),
+                                                    boss->e.rect.y, -1);
+                                Mob *sm = mob_find_by_id(mobs, MAX_MOBS, sid);
+                                if (sm != NULL) { sm->aggro = true; sm->suspicion = 1.0f; }
+                            }
+                        }
+                        // Ok yağmuru: 3.5 sn'de bir 8 yöne (kaçılabilir)
+                        boss->bossTimer -= dt;
+                        if (boss->bossTimer <= 0.0f)
+                        {
+                            boss->bossTimer = 3.5f;
+                            float bx = boss->e.rect.x + boss->e.rect.w / 2.0f;
+                            float by = boss->e.rect.y + boss->e.rect.h / 2.0f;
+                            for (int d8 = 0; d8 < 8; d8++)
+                            {
+                                float ang = (float)d8 * (6.2832f / 8.0f);
+                                for (int pj = 0; pj < MAX_MOB_PROJS; pj++)
+                                    if (!mobProjs[pj].active)
+                                    {
+                                        mobProjs[pj] = (MobProj){ .active = true,
+                                            .x = bx, .y = by,
+                                            .vx = SDL_cosf(ang) * 300.0f,
+                                            .vy = SDL_sinf(ang) * 300.0f,
+                                            .dmg = 16.0f, .kind = 0 };
+                                        break;
+                                    }
+                            }
+                            audio_play(SFX_REFLECT);
+                        }
+                    }
+                }
+
+                // Arena kapısı: içeri tam girince iner, boss ölünce/sen ölünce kalkar
+                float pcy = player.rect.y + player.rect.h / 2.0f;
+                float pcx = player.rect.x + player.rect.w / 2.0f;
+                bool inArena = pcy > 19.6f * TILE_SIZE &&
+                               pcx > 13.0f * TILE_SIZE && pcx < 32.0f * TILE_SIZE;
+                if (!arenaClosed && boss != NULL && inArena)
+                {
+                    tilemap_set_tile(20, 18, 9);   // koridor girişine duvar iner
+                    tilemap_set_tile(21, 18, 9);
+                    arenaClosed = true;
+                    audio_play(SFX_REFLECT);
+                    SDL_Color red = { 255, 120, 100, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, pcx,
+                                         player.rect.y - 30.0f, "Kapı kapandı!", red);
+                }
+                // Boss düşünce kapı kalkar (ölümde zaten dünyaya çıkılır → wipe orada)
+                if (arenaClosed && boss == NULL)
+                {
+                    tilemap_set_tile(20, 18, 8);   // duvar → zemin (koridor açılır)
+                    tilemap_set_tile(21, 18, 8);
+                    arenaClosed = false;
                 }
             }
 
@@ -3931,6 +4068,14 @@ int main(int argc, char *argv[])
                         target->e.hitFlash = 0.15f;
                         audio_play(hit.crit ? SFX_CRIT : SFX_HIT);
 
+                        // Can çalma (Lord'un Kılıcı): hasarın bir payı cana döner
+                        if (weapon->type != NULL && weapon->type->lifesteal > 0.0f)
+                        {
+                            player.health += hit.damage * weapon->type->lifesteal;
+                            if (player.health > player.maxHealth)
+                                player.health = player.maxHealth;
+                        }
+
                         // SAVAŞ RAHİBİ: melee vuruş mana yeniler (battlemage döngüsü)
                         if (perkFx.meleeManaRegen > 0.0f)
                         {
@@ -5139,6 +5284,35 @@ int main(int argc, char *argv[])
         // Hedef HP bar (seçili mob varsa)
         Mob *hpTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
         target_hp_bar_render(renderer, hpTarget, winW, gameFont);
+
+        // BOSS barı: K2'de Lord hayattayken tepe-orta geniş bar
+        if (map_current() == MAP_DUNGEON_F2)
+        {
+            for (int i = 0; i < MAX_MOBS; i++)
+            {
+                if (!mobs[i].e.alive || mobs[i].type == NULL || !mobs[i].type->isBoss)
+                    continue;
+                float bw = 420.0f, bh = 16.0f;
+                float bx = (winW - bw) / 2.0f, by = 54.0f;
+                r2d_set_color(renderer, 30, 15, 40, 255);
+                r2d_fill_rect(renderer, &(SDL_FRect){ bx, by, bw, bh });
+                float ratio = mobs[i].e.health / mobs[i].e.maxHealth;
+                if (ratio < 0.0f) ratio = 0.0f;
+                r2d_set_color(renderer, 170, 90, 230, 255);   // mor — lord rengi
+                r2d_fill_rect(renderer, &(SDL_FRect){ bx, by, bw * ratio, bh });
+                r2d_set_color(renderer, 230, 210, 255, 255);
+                r2d_rect(renderer, &(SDL_FRect){ bx, by, bw, bh });
+                if (gameFont != NULL)
+                {
+                    int tw = 0, th = 0;
+                    TTF_GetStringSize(gameFont, mobs[i].type->name, 0, &tw, &th);
+                    SDL_Color purple = { 220, 190, 255, 255 };
+                    draw_text(renderer, gameFont, mobs[i].type->name,
+                              (winW - tw) / 2.0f, by + bh + 4.0f, purple);
+                }
+                break;
+            }
+        }
 
         health_bar_render(&player, renderer);
 

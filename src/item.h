@@ -61,6 +61,7 @@ typedef struct {
     WeaponType weaponType;       // silahsa tipi (değilse WEAPON_NONE)
     float damage;                // silah taban hasarı (combat formülünün girdisi)
     float attackInterval;        // silahsa: iki otomatik vuruş arası süre (0 = varsayılan)
+    float lifesteal;             // vuruş hasarının bu oranı cana döner (boss benzersizi)
     float defense;               // zırh/kalkan defansı (azalan getirili: 100/(100+def))
     ArmorClass armorClass;       // zırhsa sınıfı (skill XP + perk çarpanları)
     const char *equipSpritePath; // paper-doll katmanı (kuşanınca görünen sprite, NULL: yok)
@@ -217,6 +218,7 @@ typedef enum {
     ITEM_STAFF,           // Asa (iki el; zayıf melee + büyü gücü +%20)
     ITEM_POTION_MANA,     // Mana İksiri (+40 mana)
     ITEM_LOCKPICK,        // Maymuncuk (kilit minigame'i — kırılınca gider)
+    ITEM_SWORD_LORD,      // Lord'un Kılıcı (boss benzersizi: can çalma)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

@@ -29,6 +29,13 @@ static int tilemap[MAP_H_MAX][MAP_W_MAX];
 static int mapW = 40, mapH = 30;   // generate_map varsayılanı
 
 int map_width(void)  { return mapW; }
+
+void tilemap_set_tile(int col, int row, int id)
+{
+    if (col < 0 || col >= mapW || row < 0 || row >= mapH) return;
+    if (id < 0 || id >= TILE_TYPE_COUNT) return;
+    tilemap[row][col] = id;
+}
 int map_height(void) { return mapH; }
 
 void generate_map(void)

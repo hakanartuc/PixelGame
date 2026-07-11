@@ -157,6 +157,15 @@ void chest_set_opened_day(int idx, int day)
     if (idx >= 0 && idx < 16) chestOpenedDay[idx] = day;
 }
 
+// Boss: haftalık diriliş takibi + benzersiz silah bir kez düşer
+static int bossKillDay = -999;
+static bool bossFirstKill = false;
+
+int  boss_last_kill_day(void)          { return bossKillDay; }
+void boss_set_last_kill_day(int day)   { bossKillDay = day; }
+bool boss_first_kill_done(void)        { return bossFirstKill; }
+void boss_set_first_kill_done(bool d)  { bossFirstKill = d; }
+
 // ---------------------------------------------------------------------------
 // Tuzaklar — koridor/oda girişleri (kaçınılabilir yerleşim: kenardan geçiş var)
 // ---------------------------------------------------------------------------

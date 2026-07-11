@@ -12,7 +12,7 @@
 #include "contract.h"   // ilan panosu durumu (v12)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 15u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+#define SAVE_VERSION 16u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
                           // v12: ilan panosu (gün + slot durum/ilerleme);
                           // v13: skill ağacı maskeleri (perkChoice'un yerini aldı)
 
@@ -152,6 +152,9 @@ bool save_game(const char *path, const Player *p,
     ok = ok && w32(f, CHEST_COUNT);
     for (int i = 0; ok && i < CHEST_COUNT; i++)
         ok = w32(f, chest_opened_day(i));
+
+    // Boss durumu (v16)
+    ok = ok && w32(f, boss_last_kill_day()) && w32(f, boss_first_kill_done() ? 1 : 0);
 
     fclose(f);
     if (!ok)
@@ -324,6 +327,10 @@ bool load_game(const char *path, Player *p,
     for (int i = 0; ok && i < nChest; i++)
         ok = r32(f, &chestDays[i]);
 
+    // Boss durumu (v16)
+    Sint32 bossDay = -999, bossFirst = 0;
+    ok = ok && r32(f, &bossDay) && r32(f, &bossFirst);
+
     fclose(f);
     if (!ok) {
         SDL_Log("Save okunamadi (bozuk dosya): %s", path);
@@ -340,6 +347,8 @@ bool load_game(const char *path, Player *p,
     map_set_current((MapId)savedMap);   // main, değişimi görüp haritayı yeniden yükler
     for (int i = 0; i < nChest && i < CHEST_COUNT; i++)
         chest_set_opened_day(i, chestDays[i]);
+    boss_set_last_kill_day(bossDay);
+    boss_set_first_kill_done(bossFirst != 0);
     if (exploredBytes > 0)
         minimap_unpack_explored(exploredBuf, exploredBytes);
     npc_reset();   // önce herkes canlı, sonra save'deki ölümler uygulanır
