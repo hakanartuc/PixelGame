@@ -55,9 +55,12 @@ WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/is
   Ateş Topu atar (mana yoksa melee dürtme). Zırh ağırlığı: aşım = hız + mana rejeni cezası.
 
 ## Sıradaki iş
-**Mob fazları devamı / Zindan** (PROGRESS #2-3): Bombschroom → iç mekan/zindanlar
-(kapı→ayrı harita; Lockpicking mini ağacı zindan sandıklarıyla gelir) ya da
-çöl/volkan biyomları (+boss scroll/taş dropları).
+**ZİNDAN PAKETİ** (2026-07-11 kullanıcı seçimi, PROGRESS #1): kapı→ayrı harita geçişi,
+Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate, Lockpicking mini ağacı
+mekaniğiyle + İLK BOSS (boss scroll/taş dropları). Faz başında tasarım anketi yapılacak
+(harita geçiş modeli, kilit minigame, boss seçimi, drop tablosu).
+Backlog'a onaylı 4 yeni mekanik: element sinerjileri, summon hattı (mana rezerve bedeli),
+pişirme+yemek buffları, davranış ünvanları (ayrıntı PROGRESS "Kalanlar" #4).
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
 mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13) + BÜYÜ SİSTEMİ
 (22: 6 büyü + Asa + INT + zırh ağırlığı + mana iksiri; ayrıntı PROGRESS Faz 22).

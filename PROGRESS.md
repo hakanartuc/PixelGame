@@ -267,11 +267,21 @@ Güncelleme: 2026-07-10
 - Gelecek dalga notu: magic_pack kalanları (tornado/firelion/icetacle/lightningclaw) yeni
   büyüler; snake/turtleshell sprite'ları summon/mob adayı; magic_icons.png ikon sistemine
 
-## 🔜 Kalanlar (öncelik sırası)
-1. **Boss scroll/taş dropları** (yüksek kademe) mob fazlarıyla gelecek; yay walk/idle görseli (asset gelince)
+## 🔜 Kalanlar (öncelik sırası — 2026-07-11 kullanıcı seçimi)
+1. **ZİNDAN PAKETİ (SIRADAKİ FAZ)**: kapı→ayrı harita, Dungeon_1-3 tileset'leri,
+   sandık/diken kapanı/gate + **Lockpicking mini ağacı mekaniğiyle** + **İLK BOSS**
+   (boss scroll/taş dropları burada)
 2. **Mob fazları** (devamı): Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda; iskelet "mezardan kalkma" spawn animasyonu
-3. **İç mekanlar/zindanlar**: kapı→ayrı harita, Dungeon_1-3 tileset'leri, sandık/diken kapanı/gate
-4. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
+3. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
+4. **Onaylı yeni mekanikler** (2026-07-11 — uygun fazlarda gelir):
+   · **Element sinerjileri**: yanan moba Buz Novası = termal şok patlaması, zehirli moba
+     Yıldırım = zehir patlar (DoT kanalları ayrı — altyapı hazır)
+   · **Summon hattı (Conjuration)**: yılan (DoT) + kaplumbağa (tank) — sprite'lar hazır
+     (`~/Downloads/snake_right.png, turtleshell_right.png`); bedel: max mananın %25'i rezerve
+   · **Pişirme + yemek buffları**: kamp ateşinde pişir → kısa süreli buff'lar (av döngüsü)
+   · **Davranış ünvanları**: oyun stilinden ünvan + küçük pasif ("Slime Kasabı" %3 slime
+     hasarı vb.) — "kimlik davranıştan doğar" felsefesinin görünür hali
+5. **Büyü dalgası 2**: magic_pack kalanları (tornado/firelion/icetacle/lightningclaw/snakebite)
 5. **Ertelenen küçükler**: HUD perk ikon şeridi, item tooltip'leri, drag&drop, harita editörü akışı (Tiled tileset tanımı),
    CREDITS lisans teyitleri, F10 debug kaldırma, Vulkan/SPIR-V shader yolu, mobil build (SDL_GPU→Vulkan/Metal),
    ikinci yerleşim/muhafız (bölgesel bounty altyapısı hazır), mob "arama" davranışı (şüphe sonrası devriye),
