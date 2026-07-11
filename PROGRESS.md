@@ -201,6 +201,35 @@ Güncelleme: 2026-07-10
   leşten geri dönen ok HEP standart (premium uç kırılır — ekonomi koruması)
 - Diriliş animasyon satırları sheet'lerde kullanılmadı (ileride "mezardan kalkma" spawn'ı olabilir)
 
+### Faz 21 — DERİN SKILL AĞACI (eşik anketi → puanlı düğüm ağacı; save v13)
+- ESKİ sistem söküldü (perk.c silindi, 48 perk düğümlere dönüştü): 25/50/75/100'de 3-seç-1
+  yerine GERÇEK ağaç — düğüm/kenar/önkoşul (BİRİ yeter), dallar, keystone'lar
+- PUAN: skill başına her 4 seviyede 1 (100'de 25); savaş ağacı ~28-38p → TAMAMI ALINAMAZ
+  (bilinçli kıtlık = build kimliği); KADER: TOPLAM seviyenin her 10'unda 1 puan
+- SINIF: Küçük 1p / Dikkat çekici 2p / AKTİF 2p (mavi — beceri açar) / KEYSTONE 3p (BEDELLİ)
+- 14 AĞAÇ (~200 düğüm, skilltree.c):
+  · Savaş/sosyal 7'lisi: OneHanded/Archery/3 zırh/Sneak/Speech (kök + 3 dal + 2 keystone)
+  · Meslek mini 6'lısı: Mining/Herbalism/Woodcutting (hız + çift ürün), Smithing (+basma
+    şansı), Alchemy (iksir gücü), Enchanting (rün şansı + tören hızı) — 8 düğüm, 12p, dolabilir
+  · KADER (karakter-geneli): Beden (HP/stamina/pasif can 0.5/sn) / Zihin (mana + TÜM XP
+    +%5/8) / Yaşam (kasa altını/satış/iksir CD); K panelinde mor "* Kader" satırı
+- 14 KEYSTONE (güç+feda): BERSERKER, İNFAZCI, KESKİN NİŞANCI↔AKINCI, HAYALET, RÜZGARIN OĞLU,
+  YAŞAYAN KALE, FEDAİ, TAŞ BEDEN, ÖLÜMSÜZ, GÖLGE, HORTLAK, GÜMÜŞ DİL, ALTIN AĞIZ,
+  AZİM↔ŞANSLI YILDIZ + meslek keystone'ları (DERİN DAMAR, USTA ÇEKİÇ, RÜN HAKİMİ...)
+- AKTİFLER AĞAÇTAN: PS/QS + 5 yay becerisi seviyeyle DEĞİL satın alımla açılır →
+  hotbar_place_unlocks abilityOpen[] okur; respec kapananları bardan temizler
+  (unlockLevel alanı artık kullanılmıyor); başlangıçta aktif yok — normal vuruş taban
+- YENİ ETKİ KANCALARI: yay (çekme hızı/menzil/Yaylım+1/Cephaneci/stamina), sneak (algı/
+  eğilme hızı/sinsi çarpanı/gece), speech (alış-satış/zar+ceza/kontrat/ders/rüşvet),
+  zanaat (toplama-dövme-kaynatma-tören hızları, çift ürün, +basma/rün şansı), kader
+  (havuz max+regen, XP çarpanı skill_set_xp_mult, pasif can, kasa altını goldFind)
+- UI: düğüm-kenar haritası (ilk tık incele, ikinci tık AL), sınıf renkleri, puan başlığı;
+  RESPEC yalnız sunak yakınında: harcanan×50g
+- DoT AYRIŞMASI (kullanıcı kararı): zehir + kanama ÜST ÜSTE BİNER (mob'da ayrı kanallar,
+  kırmızı damla + yeşil kabarcık) — tam DoT build'i meşru (Kan dalı %75 + zehir %25)
+- Sonraki dalga notu: Lockpicking/Pickpocket mini ağaçları MEKANİKLERİYLE gelir
+  (zindan + suç genişlemesi); Two-Handed/Block ağaçları item'larıyla
+
 ## 🔜 Kalanlar (öncelik sırası)
 1. **Boss scroll/taş dropları** (yüksek kademe) mob fazlarıyla gelecek; yay walk/idle görseli (asset gelince)
 2. **Mob fazları** (devamı): Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda; iskelet "mezardan kalkma" spawn animasyonu

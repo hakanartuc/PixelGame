@@ -114,9 +114,10 @@ typedef struct Player {
 
     Skill skills[SKILL_COUNT];   // use-based skill'ler (kullandıkça gelişir)
 
-    // Perk seçimleri: [skill][tier] → seçenek (0..2) ya da PERK_UNCHOSEN.
-    // Etkiler her seçimde perk_compute_effects ile toplanır (main tutar).
-    Sint8 perkChoice[SKILL_COUNT][PERK_TIERS];
+    // Skill ağacı seçimleri (Faz 21): skill başına 32-bit alınmış-düğüm maskesi.
+    // Etkiler her değişimde tree_compute_effects ile toplanır (main tutar). Save v13.
+    Uint32 treeTaken[SKILL_COUNT];
+    Uint32 fateTaken;   // Kader Ağacı maskesi (puan TOPLAM seviyeden)
     float gaziTimer;       // "Gazi": hasar yiyince 5 sn hasar buff'ı
     float deathSaveCd;     // "Yikilmaz/Olumsuz" ölüm kurtarışı beklemesi
 
@@ -136,6 +137,7 @@ typedef struct Player {
     bool bowEquipped;
     bool shooting;       // çekme animasyonu sürüyor
     bool shotReleased;   // bu çekmede ok çıktı mı (release karesinde main atar)
+    float drawSpeedMult; // çekme süresi çarpanı (ağaç düğümleri — main yazar, <1 hızlı)
 
     // KO modeli: hedef seçiliyken normal vuruş otomatik döngüde
     bool autoAttack;                  // Space ile açılır/kapanır

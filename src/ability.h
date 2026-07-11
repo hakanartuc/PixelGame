@@ -23,7 +23,8 @@ typedef struct {
     const char *name;     // panel/tooltip için
     const char *abbrev;   // hotbar hücresinde gösterilen kısaltma (ikon gelene dek)
     SkillType skill;      // hangi skill kategorisine bağlı
-    int unlockLevel;      // o kategori kaç seviye olunca açılır
+    int unlockLevel;      // (Faz 21: KULLANILMIYOR — aktifler ağaçtaki AKTİF
+                          //  düğümlerle açılır; alan tarihsel referans için durur)
     float damageScale;    // normal vuruş hasarının çarpanı
     float cooldown;       // saniye
     float stamina;        // atım maliyeti (0 = kaynaksız); yetmezse atılmaz, CD yanmaz

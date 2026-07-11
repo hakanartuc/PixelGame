@@ -5,28 +5,12 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdbool.h>
 #include "skill.h"
+#include "ability.h"   // ABILITY_COUNT (aktif düğümlerin açılış tablosu)
 
-// Perk sistemi: skill 25/50/75/100 eşiklerinde 3 seçenekten 1'i KALICI seçilir.
-// İçerik verisi (isim/açıklama) PERK_TABLE'da; sayısal ETKİLER tek yerde,
-// perk_compute_effects()'te toplanır — combat/main oradan okur, perk mantığı
-// oyun koduna dağılmaz. v1 içerik: One-Handed + 3 zırh skill'i (48 perk).
-
-#define PERK_TIERS 4          // eşik sayısı (25/50/75/100)
-#define PERK_OPTIONS 3        // eşik başına seçenek
-#define PERK_UNCHOSEN (-1)    // henüz seçilmedi
-
-extern const int PERK_THRESHOLDS[PERK_TIERS];   // {25,50,75,100}
-
-typedef struct {
-    const char *name;
-    const char *desc;   // panelde gösterilen kısa etki açıklaması
-} PerkOption;
-
-// Bir skill'in perk içeriği var mı? (v1: OneHanded + zırhlar)
-bool perk_skill_has_content(SkillType s);
-
-// (skill, tier, option) → tanım; içerik yoksa NULL
-const PerkOption *perk_option(SkillType s, int tier, int opt);
+// PerkEffects: oyuncunun ağaç seçimlerinden BİRLEŞİK etkiler — combat/main
+// buradan okur, düğüm mantığı oyun koduna dağılmaz.
+// Eski eşik-anket sistemi Faz 21'de skilltree.c'deki puanlı düğüm ağacına
+// dönüştü; bu dosyada yalnız etki yapısı kaldı (tree_compute_effects doldurur).
 
 // Oyuncunun seçimlerinden birleşik etkiler. Tüm çarpanlar nötr=1, bonuslar=0.
 typedef struct {
@@ -62,27 +46,50 @@ typedef struct {
     float dmgWhenHealthy;     // Zinde: HP>%50 iken ek hasar payı
     float gaziDmgBonus;       // Gazi: hasar yiyince 5 sn bu kadar ek hasar
     float deathSaveCooldown;  // Yıkılmaz 60 / Ölümsüz 90 (0 = yok)
+    bool  yaraliAyi;          // can %30 altında alınan hasar -%15 (Orta ağaç düğümü)
+
+    // Yay (Archery ağacı — Faz 21)
+    float bowDmgMult;         // yay hasar çarpanı
+    float drawSpeedMult;      // çekme süresi çarpanı (<1 hızlı, keystone bedeli >1)
+    float bowRangeBonus;      // menzile eklenen px
+    int   volleyExtra;        // Yaylım'a ek ok
+    float ammoSaveChance;     // atışta ok tükenmeme şansı (0..1)
+    float bowStaminaMult;     // yay becerisi stamina maliyeti çarpanı
+    float disengageBonus;     // Geri Sıçrama mesafesine eklenen px
+    float aoeRadiusBonus;     // Alan Oku yarıçapına eklenen px
+
+    // Gizlilik (Sneak ağacı)
+    float sneakDetectMult;    // eğilme algısına ek çarpan (<1 daha görünmez)
+    float sneakSpeedRelief;   // eğilme hız cezasını geri kazanma payı (0..1)
+    float backstabMult;       // sinsi vuruş çarpanı (taban 2.0 — düğümler EKLER)
+    float nightDetectMult;    // gece algı çarpanı (Hortlak: gece avcısı)
+
+    // Konuşma (Speech ağacı)
+    float shopBuyMult;        // alış fiyat çarpanı (<1 ucuz)
+    float shopSellMult;       // satış fiyat çarpanı (>1 kârlı)
+    float speechDiceBonus;    // zar başarı şansına eklenen yüzde puanı
+    float dicePenaltyMult;    // başarısız zar itibar cezası çarpanı (Gümüş Dil bedeli)
+    float contractGoldMult;   // pano kontrat altını çarpanı
+    float contractRepMult;    // pano kontrat itibarı çarpanı (Altın Ağız bedeli)
+    float trainCostMult;      // öğretmen ders ücreti çarpanı
+    float bribeCostMult;      // muhafız rüşveti çarpanı
+
+    // Aktif beceriler (AKTİF düğümler açar — hotbar bunlara göre dolar)
+    bool abilityOpen[ABILITY_COUNT];
+
+    // Meslek mini ağaçları (Faz 21b)
+    float mineSpeedMult, herbSpeedMult, woodSpeedMult;   // toplama iş hızı
+    float mineDouble, herbDouble, woodDouble;            // çift ürün şansı (0..1)
+    float smithSpeedMult, alchSpeedMult, enchSpeedMult;  // istasyon iş/tören hızı
+    float plusChanceBonus;    // '+basma' şansına eklenen yüzde puanı
+    float runeChanceBonus;    // rün üretim şansına eklenen yüzde puanı
+
+    // Kader Ağacı (karakter-geneli)
+    float maxStaminaBonus, maxManaBonus;
+    float stamRegenMult, manaRegenMult;
+    float xpGainMult;         // TÜM skill XP çarpanı
+    float hpRegenPerSec;      // pasif can yenilenmesi
+    float goldFindMult;       // kasa altını çarpanı
 } PerkEffects;
-
-// choice[skill][tier] → birleşik etkiler (her seçim değişiminde çağır)
-void perk_compute_effects(const Sint8 choice[SKILL_COUNT][PERK_TIERS],
-                          PerkEffects *out);
-
-// Skill'in seçilebilir (ulaşılmış ama seçilmemiş) en düşük tier'ı (-1 = yok)
-int perk_pending_tier(SkillType s, int level, const Sint8 choice[SKILL_COUNT][PERK_TIERS]);
-
-// Skill paneli satırlarına perk pip'leri: seçilmiş=dolu, SEÇİLEBİLİR=sarı "!",
-// ulaşılmamış=soluk. skill_panel_render'dan SONRA, aynı panelX/panelY ile çağır.
-void perk_pips_render(const Skill *skills,
-                      const Sint8 choice[SKILL_COUNT][PERK_TIERS],
-                      R2D *renderer, TTF_Font *font,
-                      float panelX, float panelY);
-
-// Seçim overlay'i: 3 seçenek kartı (K panelinin yanında)
-void perk_choice_render(SkillType s, int tier, R2D *renderer,
-                        TTF_Font *font, float x, float y);
-
-// Overlay'de tıklanan seçenek (0..2, -1 = dışarı). Render ile aynı yerleşim.
-int perk_choice_option_at(float mx, float my, float x, float y);
 
 #endif

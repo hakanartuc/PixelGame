@@ -23,11 +23,12 @@ static int first_empty(const Hotbar *hb)
     return -1;
 }
 
-void hotbar_place_unlocks(Hotbar *hb, const Skill *skills)
+void hotbar_place_unlocks(Hotbar *hb, const bool abilityOpen[ABILITY_COUNT])
 {
+    // Faz 21: açılış seviyeden değil AĞAÇTAN gelir (AKTİF düğüm satın alınır)
     for (int a = 0; a < ABILITY_COUNT; a++) {
-        if (skills[ABILITIES[a].skill].level < ABILITIES[a].unlockLevel)
-            continue;   // henüz açılmadı
+        if (!abilityOpen[a])
+            continue;   // düğümü henüz satın alınmadı
         if (ability_on_bar(hb, (AbilityId)a))
             continue;   // zaten barda
         int slot = first_empty(hb);
@@ -36,6 +37,15 @@ void hotbar_place_unlocks(Hotbar *hb, const Skill *skills)
         hb->slots[slot].kind = HOTBAR_SKILL;
         hb->slots[slot].abilityId = (AbilityId)a;
     }
+}
+
+// Ağaç sıfırlanınca (respec): artık açık olmayan aktifleri bardan kaldır
+void hotbar_purge_closed(Hotbar *hb, const bool abilityOpen[ABILITY_COUNT])
+{
+    for (int i = 0; i < HOTBAR_SLOTS; i++)
+        if (hb->slots[i].kind == HOTBAR_SKILL &&
+            !abilityOpen[hb->slots[i].abilityId])
+            hb->slots[i].kind = HOTBAR_EMPTY;
 }
 
 bool hotbar_assign_item(Hotbar *hb, const ItemType *type)

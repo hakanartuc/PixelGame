@@ -38,6 +38,7 @@
 #include "resource.h"
 #include "craft.h"
 #include "contract.h"
+#include "skilltree.h"
 
 #define BASE_MAX_HP 100.0f   // oyuncu taban canı (perk bonusları üstüne biner)
 
@@ -185,6 +186,10 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
     }
 }
 
+// Ağaç etkileri köprüsü: main() yereli perkFx'e statik yardımcılardan erişim
+// (gather_finish/craft yardımcıları imza şişirmeden düğüm etkilerini okur)
+static const PerkEffects *g_fx = NULL;
+
 // Ok kademeleri (Faz 8): tüketim sırası ucuzdan pahalıya (otomatik düşüş bunu izler)
 static const int AMMO_ORDER[3] = { ITEM_ARROW, ITEM_ARROW_BONE, ITEM_ARROW_IRON };
 
@@ -200,7 +205,8 @@ static bool ammo_any(const Inventory *inv)
 // Aktif oktan 1 tüket; bittiyse eldeki başka türe OTOMATİK geç (bildirimli).
 // Dönen: tüketilen türün hasar çarpanı (0 = hiç ok yok — atış yapılmaz)
 static float ammo_consume(Inventory *inv, int *activeAmmo,
-                          FloatText *floatTexts, float px, float py)
+                          FloatText *floatTexts, float px, float py,
+                          float saveChance)
 {
     if (inventory_count(inv, &ITEM_TYPES[*activeAmmo]) < 1)
     {
@@ -218,7 +224,9 @@ static float ammo_consume(Inventory *inv, int *activeAmmo,
         SDL_Color dim = { 200, 200, 160, 255 };
         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, px, py - 10.0f, buf, dim);
     }
-    inventory_consume(inv, &ITEM_TYPES[*activeAmmo]);
+    // Cephaneci düğümü: şansla ok tükenmez (atış yine yapılır)
+    if (randf() >= saveChance)
+        inventory_consume(inv, &ITEM_TYPES[*activeAmmo]);
     return ITEM_TYPES[*activeAmmo].ammoDmgMult;
 }
 
@@ -248,15 +256,28 @@ static void on_skill_levelup(Player *player, SkillType sk, Hotbar *hotbar,
     floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                          player->rect.x + player->rect.w / 2.0f,
                          player->rect.y - 10.0f, buf, green);
-    hotbar_place_unlocks(hotbar, player->skills);
+    if (g_fx != NULL) hotbar_place_unlocks(hotbar, g_fx->abilityOpen);
     audio_play(SFX_LEVELUP);
 
-    if (perk_pending_tier(sk, player->skills[sk].level, player->perkChoice) >= 0)
+    // Skill ağacı puanı: her 4 seviyede 1 (Faz 21)
+    if (tree_has_content(sk) &&
+        player->skills[sk].level % TREE_LEVELS_PER_POINT == 0)
     {
         SDL_Color gold = { 255, 210, 60, 255 };
         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                              player->rect.x + player->rect.w / 2.0f,
-                             player->rect.y - 30.0f, "Perk hakki! (K)", gold);
+                             player->rect.y - 30.0f, "+1 skill puanı! (K)", gold);
+    }
+
+    // Kader puanı: TOPLAM seviyenin her 10'u (savaşmayan build de kazanır)
+    int total = 0;
+    for (int i = 0; i < SKILL_COUNT; i++) total += player->skills[i].level;
+    if (total % FATE_LEVELS_PER_POINT == 0)
+    {
+        SDL_Color fate = { 200, 150, 255, 255 };
+        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                             player->rect.x + player->rect.w / 2.0f,
+                             player->rect.y - 50.0f, "+1 KADER puanı! (K)", fate);
     }
 }
 
@@ -275,6 +296,7 @@ static float plus_chance(int targetPlus, int smithLevel)
         { 0, 100, 100, 100, 100, 100, 80, 65, 50 };
     if (targetPlus < 1 || targetPlus > ITEM_MAX_PLUS) return 0.0f;
     float c = base[targetPlus] + (float)smithLevel * 0.2f;
+    if (g_fx != NULL) c += g_fx->plusChanceBonus;   // Smithing ağacı (Usta Çekiç...)
     return (c > 95.0f) ? 95.0f : c;
 }
 
@@ -288,6 +310,15 @@ static void gather_finish(int res, Player *player, Inventory *inv,
     int count = rd->minCount + (int)(randf() * (float)(rd->maxCount - rd->minCount + 1));
     if (count > rd->maxCount) count = rd->maxCount;
     if (randf() < (float)lvl * 0.004f) count++;   // seviye başına %0.4 bonus şansı
+
+    // Meslek ağacı: çift ürün şansı (Zengin Damar / Doğanın Payı / Orman Hasadı)
+    if (g_fx != NULL)
+    {
+        float dbl = (rd->skill == SKILL_MINING)      ? g_fx->mineDouble
+                  : (rd->skill == SKILL_HERBALISM)   ? g_fx->herbDouble
+                  : (rd->skill == SKILL_WOODCUTTING) ? g_fx->woodDouble : 0.0f;
+        if (randf() < dbl) count *= 2;
+    }
 
     if (inventory_add(inv, &ITEM_TYPES[rd->itemIdx], count, 0))
     {
@@ -486,17 +517,19 @@ int main(int argc, char *argv[])
     skills_init(player.skills);
     player.pendingAbility = -1;   // -1 = normal vuruş (0 geçerli ability olurdu)
 
-    // Perk'ler: hepsi seçilmemiş başlar; etkiler nötr hesaplanır
+    // Skill ağaçları (Faz 21): hiç düğüm alınmamış başlar; etkiler nötr hesaplanır
     for (int s = 0; s < SKILL_COUNT; s++)
-        for (int t = 0; t < PERK_TIERS; t++)
-            player.perkChoice[s][t] = PERK_UNCHOSEN;
+        player.treeTaken[s] = 0;
     PerkEffects perkFx;
-    perk_compute_effects(player.perkChoice, &perkFx);
-    int perkPickSkill = -1, perkPickTier = -1;   // açık perk seçim overlay'i
+    tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
+    g_fx = &perkFx;                        // statik yardımcı köprüsü
+    skill_set_xp_mult(perkFx.xpGainMult);  // Kader XP çarpanı
+    int treeOpenSkill = -1;   // açık ağaç paneli (K panelinden satır tıklanır)
+    int treeSelNode = -1;     // seçili düğüm (ikinci tık = AL onayı)
 
     // Hotbar: açık ability'ler otomatik yerleşir (Power Strike lv1'de açık)
     Hotbar hotbar = {0};
-    hotbar_place_unlocks(&hotbar, player.skills);
+    hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
 
     // Dekorlar (ev/ağaç/çalı/saman): texture + boyutları (render/collision tek kaynaktan)
     R2DTexture *decor_textures[32] = {0};
@@ -770,10 +803,10 @@ int main(int argc, char *argv[])
                         loots[openLootIndex].state = LOOT_CLOSING; // 1) once loot popup
                         openLootIndex = -1;
                     }
-                    else if (perkPickSkill >= 0)
+                    else if (treeOpenSkill >= 0)
                     {
-                        perkPickSkill = -1; // 2) perk seçim overlay'i
-                        perkPickTier = -1;
+                        treeOpenSkill = -1; // 2) skill ağacı paneli
+                        treeSelNode = -1;
                     }
                     else if (dialogNpc >= 0)
                     {
@@ -845,7 +878,8 @@ int main(int argc, char *argv[])
                     // [3] Rüşvet: bounty'nin yarısı; Speech eşiği altı zar.
                     // Başarı: borç silinir ama itibar düşer (kanunu satın aldın).
                     // Başarısızlık: karşı koyma sayılır — muhafız düşmanlaşır.
-                    int cost = player.bounty[guardRegion] / 2;
+                    int cost = (int)(player.bounty[guardRegion] / 2 *
+                                     perkFx.bribeCostMult);
                     int sp = player.skills[SKILL_SPEECH].level;
                     int pct = (sp >= CRIME_BRIBE_SPEECH) ? 100
                             : (int)((float)sp / CRIME_BRIBE_SPEECH * 70.0f);
@@ -953,14 +987,18 @@ int main(int argc, char *argv[])
                             dialog_eval_opt(opt, &player, dlgRegion, burnedToday, &ost);
 
                             bool proceed = !ost.locked && !ost.burned;
+                            // Ağaç: zar bonusu (İkna dalı) — 100'ü aşamaz (garanti değil, şans)
+                            float diceChance = (float)ost.chancePct + perkFx.speechDiceBonus;
+                            if (diceChance > 99.0f) diceChance = 99.0f;
                             if (proceed && ost.chancePct >= 0 && ost.chancePct < 100 &&
-                                randf() * 100.0f >= (float)ost.chancePct)
+                                randf() * 100.0f >= diceChance)
                             {
-                                // Zar tutmadı: BUGÜN kilit + itibar -1 + az XP
+                                // Zar tutmadı: BUGÜN kilit + itibar cezası (Gümüş Dil 2x!) + az XP
                                 proceed = false;
                                 if (dialogNpc < 8)
                                     dlgBurnDay[dialogNpc][dialogNode][sel] = gametime_day();
-                                rep_add(&player.reputation[dlgRegion], REP_FAILED_CHECK);
+                                rep_add(&player.reputation[dlgRegion],
+                                        REP_FAILED_CHECK * perkFx.dicePenaltyMult);
                                 if (skill_add_xp(player.skills, SKILL_SPEECH, 3.0f))
                                     on_skill_levelup(&player, SKILL_SPEECH, &hotbar, floatTexts);
                                 SDL_Color red = { 255, 120, 100, 255 };
@@ -1096,7 +1134,8 @@ int main(int argc, char *argv[])
                                 }
                                 else
                                 {
-                                    int price = player.skills[sk].level * 15;
+                                    int price = (int)(player.skills[sk].level * 15 *
+                                                      perkFx.trainCostMult);
                                     if (player.gold < price)
                                     {
                                         char buf[FLOAT_TEXT_LEN];
@@ -1349,7 +1388,7 @@ int main(int argc, char *argv[])
                 else if (event.key.key == SDLK_K && gameState == GAME_PLAYING)
                 {
                     skillsOpen = !skillsOpen;
-                    if (!skillsOpen) { perkPickSkill = -1; perkPickTier = -1; }
+                    if (!skillsOpen) { treeOpenSkill = -1; treeSelNode = -1; }
                     audio_play(SFX_UI);
                 }
                 else if (event.key.key == SDLK_J && gameState == GAME_PLAYING)
@@ -1369,12 +1408,13 @@ int main(int argc, char *argv[])
                     // Yayın öncesi kaldırılacak — commit'e girer ama işaretli.
                     // Eğri dik: seviye 25 ≈ 125k, 100 ≈ 4M XP → basış başına 1M
                     // (1 basış ~lv57, 2 ~lv75, 4 = tüm eşikler açık)
-                    SkillType dbg[11] = { SKILL_ONE_HANDED, SKILL_LIGHT_ARMOR,
+                    SkillType dbg[13] = { SKILL_ONE_HANDED, SKILL_LIGHT_ARMOR,
                                           SKILL_MEDIUM_ARMOR, SKILL_HEAVY_ARMOR,
                                           SKILL_SMITHING, SKILL_ALCHEMY, SKILL_MINING,
                                           SKILL_HERBALISM, SKILL_WOODCUTTING,
-                                          SKILL_ENCHANTING, SKILL_ARCHERY };
-                    for (int d = 0; d < 11; d++)
+                                          SKILL_ENCHANTING, SKILL_ARCHERY,
+                                          SKILL_SNEAK, SKILL_SPEECH };   // ağaç testi
+                    for (int d = 0; d < 13; d++)
                         if (skill_add_xp(player.skills, dbg[d], 1000000.0f))
                             on_skill_levelup(&player, dbg[d], &hotbar, floatTexts);
 
@@ -1429,7 +1469,10 @@ int main(int argc, char *argv[])
                     // Hızlı yükleme (dünya durumu değişmez, sadece oyuncu+eşyalar)
                     if (load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus))
                     {
-                        perk_compute_effects(player.perkChoice, &perkFx);   // seçimler değişti
+                        tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);   // seçimler değişti
+                        skill_set_xp_mult(perkFx.xpGainMult);
+                        hotbar_purge_closed(&hotbar, perkFx.abilityOpen);
+                        hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
                         if (guardIdx >= 0) guard_init(guardIdx);            // beyin sıfırdan (nöbete)
                         catchOpen = false;
                         lastSeenDay = gametime_day();   // günlük blok tetiklenmesin
@@ -1466,7 +1509,10 @@ int main(int argc, char *argv[])
                                     : load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus);
                             if (ok && act == MENU_ACTION_LOAD)
                             {
-                                perk_compute_effects(player.perkChoice, &perkFx);
+                                tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
+                                skill_set_xp_mult(perkFx.xpGainMult);
+                                hotbar_purge_closed(&hotbar, perkFx.abilityOpen);
+                                hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
                                 if (guardIdx >= 0) guard_init(guardIdx);   // beyin sıfırdan (nöbete)
                                 catchOpen = false;
                                 lastSeenDay = gametime_day();   // pano durumu save'den geldi
@@ -1489,51 +1535,110 @@ int main(int argc, char *argv[])
 
                     bool handled = false;
 
-                    // -1) Perk overlay'i açıksa: seçenek tıklaması (dışarısı kapatır)
-                    if (perkPickSkill >= 0)
+                    // -1) Skill ağacı paneli açıksa: düğüm seç / ikinci tıkta AL / respec
+                    if (treeOpenSkill >= 0)
                     {
-                        float ox = 40.0f + SKILL_PANEL_W + 10.0f, oy = 40.0f;
-                        int opt = perk_choice_option_at((float)event.button.x,
-                                                        (float)event.button.y, ox, oy);
-                        if (opt >= 0)
-                        {
-                            player.perkChoice[perkPickSkill][perkPickTier] = (Sint8)opt;
-                            perk_compute_effects(player.perkChoice, &perkFx);
-                            // Max HP perk'i türetilmiş stat bloğunda işlenir
-                            // (perk + sunak gear HP tek yerden, artış kadar iyileşme)
+                        float tpx = 40.0f + SKILL_PANEL_W + 10.0f, tpy = 40.0f;
+                        int node = tree_panel_node_at(treeOpenSkill,
+                                                      (float)event.button.x,
+                                                      (float)event.button.y, tpx, tpy);
+                        int ts = treeOpenSkill;
+                        bool isFate = (ts == TREE_FATE);
+                        Uint32 tsTaken = isFate ? player.fateTaken
+                                                : player.treeTaken[ts];
+                        int tsLevel = 0;
+                        if (isFate)
+                            for (int sl = 0; sl < SKILL_COUNT; sl++)
+                                tsLevel += player.skills[sl].level;
+                        else
+                            tsLevel = player.skills[ts].level;
+                        int earned = tree_points_earned(ts, tsLevel);
+                        int spent  = tree_points_spent(ts, tsTaken);
 
-                            const PerkOption *po = perk_option((SkillType)perkPickSkill,
-                                                               perkPickTier, opt);
-                            char buf[FLOAT_TEXT_LEN];
-                            snprintf(buf, sizeof(buf), "Perk: %s", po ? po->name : "?");
-                            SDL_Color gold = { 255, 210, 60, 255 };
-                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
-                                                 player.rect.x + player.rect.w / 2.0f,
-                                                 player.rect.y - 10.0f, buf, gold);
-                            audio_play(SFX_PERK);   // törensel arpej
-                            fx_burst(&weaponFx,
-                                     player.rect.x + player.rect.w / 2.0f,
-                                     player.rect.y + player.rect.h / 2.0f,
-                                     28, 110.0f, 255, 215, 90);   // altın halka
+                        if (node == TREE_CLICK_RESPEC)
+                        {
+                            // Sunak yakınında + harcanmış puan varsa: sıfırla (puan×50g)
+                            float adx = STATIONS[2].x - (player.rect.x + player.rect.w / 2.0f);
+                            float ady = STATIONS[2].y - (player.rect.y + player.rect.h / 2.0f);
+                            bool nearAltar =
+                                SDL_sqrtf(adx * adx + ady * ady) <= STATION_INTERACT_RANGE * 1.5f;
+                            int cost = spent * 50;
+                            SDL_Color red = { 255, 120, 100, 255 };
+                            if (!nearAltar || spent <= 0)
+                                ;   // satır görünmüyordu zaten — sessiz geç
+                            else if (player.gold < cost)
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f,
+                                                     "Altın yetersiz!", red);
+                            else
+                            {
+                                player.gold -= cost;
+                                if (isFate) player.fateTaken = 0;
+                                else        player.treeTaken[ts] = 0;
+                                tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
+                                skill_set_xp_mult(perkFx.xpGainMult);
+                                hotbar_purge_closed(&hotbar, perkFx.abilityOpen);
+                                hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
+                                treeSelNode = -1;
+                                audio_play(SFX_PERK);
+                                char buf[FLOAT_TEXT_LEN];
+                                snprintf(buf, sizeof(buf), "%s ağacı sıfırlandı (-%dg)",
+                                         isFate ? "Kader" : skill_name((SkillType)ts), cost);
+                                SDL_Color gold = { 255, 210, 60, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f, buf, gold);
+                            }
+                            handled = true;
                         }
-                        perkPickSkill = -1;
-                        perkPickTier = -1;
-                        handled = true;
+                        else if (node >= 0)
+                        {
+                            bool avail = tree_node_available(ts, node, tsTaken,
+                                                             earned - spent);
+                            if (node == treeSelNode && avail)
+                            {
+                                // İkinci tık: AL — kalıcı seçim (respec sunağda)
+                                if (isFate) player.fateTaken |= (1u << node);
+                                else        player.treeTaken[ts] |= (1u << node);
+                                tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
+                                skill_set_xp_mult(perkFx.xpGainMult);
+                                hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
+                                const SkillTreeDef *td = tree_get(ts);
+                                char buf[FLOAT_TEXT_LEN];
+                                snprintf(buf, sizeof(buf), "%s alındı!",
+                                         td->nodes[node].name);
+                                SDL_Color gold = { 255, 210, 60, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f, buf, gold);
+                                audio_play(SFX_PERK);   // törensel arpej
+                                fx_burst(&weaponFx,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y + player.rect.h / 2.0f,
+                                         28, 110.0f, 255, 215, 90);
+                            }
+                            else
+                            {
+                                treeSelNode = node;   // ilk tık: incele
+                                audio_play(SFX_UI);
+                            }
+                            handled = true;
+                        }
+                        // node == -1: panel dışı — K satırlarına düşebilsin (aşağıda)
                     }
-                    // 0a) Skill paneli açıkken satıra tıklama → bekleyen perk seçimi aç
-                    else if (skillsOpen)
+                    // 0a) Skill paneli açıkken satıra tıklama → o skill'in ağacını aç
+                    if (!handled && skillsOpen)
                     {
                         int row = skill_panel_row_at((float)event.button.x,
                                                      (float)event.button.y, 40.0f, 40.0f);
                         if (row >= 0)
                         {
-                            int tier = perk_pending_tier((SkillType)row,
-                                                         player.skills[row].level,
-                                                         player.perkChoice);
-                            if (tier >= 0)
+                            int tid = (row == SKILL_COUNT) ? TREE_FATE : row;
+                            if (tree_has_content(tid))
                             {
-                                perkPickSkill = row;
-                                perkPickTier = tier;
+                                treeOpenSkill = tid;
+                                treeSelNode = -1;
                                 audio_play(SFX_UI);
                             }
                             handled = true;
@@ -1551,7 +1656,8 @@ int main(int argc, char *argv[])
                             // Fiyat itibara göre: dip itibarda ×1.5, saygın müşteriye ×0.9
                             int shopRegion = region_of(player.rect.x, player.rect.y);
                             int buyPrice = (int)(it->value *
-                                                 rep_buy_mult(player.reputation[shopRegion]));
+                                                 rep_buy_mult(player.reputation[shopRegion]) *
+                                                 perkFx.shopBuyMult);
                             if (player.gold >= buyPrice &&
                                 inventory_add(&inventory, it, 1, 0))
                             {
@@ -1616,12 +1722,14 @@ int main(int argc, char *argv[])
                                         inventory_consume_n(&inventory,
                                                             &ITEM_TYPES[c->fetchItem], c->count);
                                     contract_turn_in(slot);
-                                    player.gold += c->gold;
-                                    rep_add(&player.reputation[bRegion], c->rep);
+                                    int cGold = (int)(c->gold * perkFx.contractGoldMult);
+                                    player.gold += cGold;
+                                    rep_add(&player.reputation[bRegion],
+                                            c->rep * perkFx.contractRepMult);
                                     audio_play(SFX_LOOT);
                                     char buf[FLOAT_TEXT_LEN];
                                     snprintf(buf, sizeof(buf), "+%dg  itibar +%d",
-                                             c->gold, (int)c->rep);
+                                             cGold, (int)(c->rep * perkFx.contractRepMult));
                                     floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                          player.rect.x + player.rect.w / 2.0f,
                                                          player.rect.y - 10.0f, buf, goldc);
@@ -1843,7 +1951,7 @@ int main(int argc, char *argv[])
                         {
                             // Altın hücresi: al + bildir
                             Loot *l = &loots[openLootIndex];
-                            player.gold += l->gold;
+                            player.gold += (int)(l->gold * perkFx.goldFindMult);
                             audio_play(SFX_LOOT);
                             char buf[FLOAT_TEXT_LEN];
                             snprintf(buf, sizeof(buf), "+%d Gold", l->gold);
@@ -1946,7 +2054,8 @@ int main(int argc, char *argv[])
                                     // Dükkan açıkken sağ tık = SAT (alışın yarısı × itibar, plus dahil)
                                     int sellRegion = region_of(player.rect.x, player.rect.y);
                                     int price = (int)(item_value(st) / 2 *
-                                                      rep_sell_mult(player.reputation[sellRegion]));
+                                                      rep_sell_mult(player.reputation[sellRegion]) *
+                                                      perkFx.shopSellMult);
                                     player.gold += price;
                                     audio_play(SFX_UI);
                                     st->count--;
@@ -2139,7 +2248,8 @@ int main(int argc, char *argv[])
                     {
                         // CD sürüyor — sessiz (bar perdesi zaten gösteriyor)
                     }
-                    else if (player.stamina < ad->stamina)
+                    else if (player.stamina < ad->stamina *
+                                 (needBow ? perkFx.bowStaminaMult : 1.0f))
                     {
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
@@ -2172,7 +2282,7 @@ int main(int argc, char *argv[])
 
                         // 140px'e kadar 14px adımlarla ilerle — katıya çarpınca dur
                         float moved = 0.0f;
-                        while (moved < 140.0f)
+                        while (moved < 140.0f + perkFx.disengageBonus)
                         {
                             SDL_FRect nf = feet_box(player.rect.x + ddx * 14.0f,
                                                     player.rect.y + ddy * 14.0f,
@@ -2183,7 +2293,7 @@ int main(int argc, char *argv[])
                             moved += 14.0f;
                         }
                         player.shooting = false;   // sıçrama çekmeyi bozar
-                        player.stamina -= ad->stamina;
+                        player.stamina -= ad->stamina * perkFx.bowStaminaMult;
                         player.abilityCd[ABILITY_DISENGAGE] = ad->cooldown;
                         audio_play(SFX_DODGE);
                         fx_burst(&weaponFx,
@@ -2291,7 +2401,11 @@ int main(int argc, char *argv[])
                     // (toplama animasyonu bulunursa buraya bağlanacak)
                     const ResourceDef *rd = &RESOURCES[gatherRes];
                     resource_add_progress(gatherRes,
-                        gather_mult(player.skills[rd->skill].level) * dt);
+                        gather_mult(player.skills[rd->skill].level) *
+                        ((rd->skill == SKILL_MINING)      ? perkFx.mineSpeedMult
+                       : (rd->skill == SKILL_HERBALISM)   ? perkFx.herbSpeedMult
+                       : (rd->skill == SKILL_WOODCUTTING) ? perkFx.woodSpeedMult
+                                                          : 1.0f) * dt);
                     if (resource_progress(gatherRes) >= rd->work)
                     {
                         gather_finish(gatherRes, &player, &inventory, &hotbar, floatTexts);
@@ -2404,10 +2518,12 @@ int main(int argc, char *argv[])
                 else if (craftRecipe >= 0 &&
                          STATIONS[craftStation].type != STATION_SMITH)
                 {
-                    // Kaynatma/rün üretimi: bar zamanla dolar (istasyon skill'i hızlandırır)
+                    // Kaynatma/rün üretimi: bar zamanla dolar (seviye × ağaç çarpanı)
                     bool enchSt = STATIONS[craftStation].type == STATION_ENCHANT;
                     SkillType csk = station_skill(STATIONS[craftStation].type);
-                    craftProgress += gather_mult(player.skills[csk].level) * dt;
+                    craftProgress += gather_mult(player.skills[csk].level) *
+                                     (enchSt ? perkFx.enchSpeedMult
+                                             : perkFx.alchSpeedMult) * dt;
                     if (randf() < dt * 8.0f)
                         fx_spawn(&weaponFx,
                                  STATIONS[craftStation].x + (randf() - 0.5f) * 30.0f,
@@ -2421,7 +2537,8 @@ int main(int argc, char *argv[])
                     {
                         // Sunak üretimi ŞANSLI: tutmayan rünün özleri yanar
                         float ch = ENCH_CRAFT_BASE_CHANCE +
-                                   (float)player.skills[SKILL_ENCHANTING].level * 0.4f;
+                                   (float)player.skills[SKILL_ENCHANTING].level * 0.4f +
+                                   perkFx.runeChanceBonus;   // Enchanting ağacı
                         if (ch > 95.0f) ch = 95.0f;
                         if (enchSt && randf() * 100.0f >= ch)
                         {
@@ -2447,8 +2564,8 @@ int main(int argc, char *argv[])
                 else if (enchAction > 0 &&
                          STATIONS[craftStation].type == STATION_ENCHANT)
                 {
-                    // Basma töreni: sabit süreli (skill hızlandırmaz), mor parçacıklar
-                    craftProgress += dt;
+                    // Basma töreni: taban süre sabit — yalnız Enchanting AĞACI hızlandırır
+                    craftProgress += perkFx.enchSpeedMult * dt;
                     if (randf() < dt * 10.0f)
                         fx_spawn(&weaponFx,
                                  STATIONS[craftStation].x + (randf() - 0.5f) * 40.0f,
@@ -2573,8 +2690,9 @@ int main(int argc, char *argv[])
                     {
                         float adx = aimX - (player.rect.x + player.rect.w / 2.0f);
                         float ady = aimY - (player.rect.y + player.rect.h / 2.0f);
-                        float atkRange = player.bowEquipped ? PLAYER_BOW_RANGE
-                                                            : PLAYER_ATTACK_RANGE;
+                        float atkRange = player.bowEquipped
+                                       ? PLAYER_BOW_RANGE + perkFx.bowRangeBonus
+                                       : PLAYER_ATTACK_RANGE;
                         if (SDL_sqrtf(adx * adx + ady * ady) <= atkRange)
                         {
                             attackPressed = true;
@@ -2651,8 +2769,9 @@ int main(int argc, char *argv[])
                     float tdx = vAimX - (player.rect.x + player.rect.w / 2.0f);
                     float tdy = vAimY - (player.rect.y + player.rect.h / 2.0f);
                     float tdist = SDL_sqrtf(tdx * tdx + tdy * tdy);
-                    float atkRange = player.bowEquipped ? PLAYER_BOW_RANGE
-                                                        : PLAYER_ATTACK_RANGE;
+                    float atkRange = player.bowEquipped
+                                   ? PLAYER_BOW_RANGE + perkFx.bowRangeBonus
+                                   : PLAYER_ATTACK_RANGE;
 
                     if (tdist > atkRange)
                     {
@@ -2682,7 +2801,9 @@ int main(int argc, char *argv[])
                                          ? perkFx.qsCdMult : 1.0f;
                             player.abilityCd[player.pendingAbility] =
                                 ABILITIES[player.pendingAbility].cooldown * cdMult;
-                            player.stamina -= ABILITIES[player.pendingAbility].stamina;
+                            player.stamina -= ABILITIES[player.pendingAbility].stamina *
+                                (ABILITIES[player.pendingAbility].skill == SKILL_ARCHERY
+                                 ? perkFx.bowStaminaMult : 1.0f);
                             if (player.stamina < 0.0f) player.stamina = 0.0f;
                         }
                     }
@@ -2702,6 +2823,7 @@ int main(int argc, char *argv[])
             // Yay kuşanımı: attackPressed slash yerine SHOOT başlatsın (player_update)
             player.bowEquipped = (wpnStack->type != NULL &&
                                   wpnStack->type->weaponType == WEAPON_BOW);
+            player.drawSpeedMult = perkFx.drawSpeedMult;   // ağaç: çekme hızı
 
             // Kaynatma/tören animasyonu: kazan ve sunakta süreç sürerken spellcast;
             // kamp ateşi kurulumu da aynı duruşu kullanır (çömelip uğraşma hissi)
@@ -2733,8 +2855,10 @@ int main(int argc, char *argv[])
                 player.maxHealth = newMaxHp;
                 if (player.health > player.maxHealth) player.health = player.maxHealth;
 
-                player.maxMana    = 50.0f  + (float)gearStat[STAT_MP];
-                player.maxStamina = 100.0f + (float)gearStat[STAT_STA];
+                player.maxMana    = 50.0f  + (float)gearStat[STAT_MP]
+                                  + perkFx.maxManaBonus;
+                player.maxStamina = 100.0f + (float)gearStat[STAT_STA]
+                                  + perkFx.maxStaminaBonus;
                 // (DEF ekipmanı equipment_total_defense içinde toplanır)
             }
 
@@ -2752,7 +2876,7 @@ int main(int argc, char *argv[])
                 if (sTarget != NULL)
                     ammoMult = ammo_consume(&inventory, &activeAmmo, floatTexts,
                                             player.rect.x + player.rect.w / 2.0f,
-                                            player.rect.y);
+                                            player.rect.y, perkFx.ammoSaveChance);
                 if (sTarget != NULL && ammoMult > 0.0f)
                 {
                     int pa = player.pendingAbility;
@@ -2771,9 +2895,9 @@ int main(int argc, char *argv[])
                         };
                         break;
                     }
-                    if (pa == ABILITY_VOLLEY)   // kalan 2 ok kuyruğa (0.15sn arayla)
+                    if (pa == ABILITY_VOLLEY)   // kalan oklar kuyruğa (0.15sn arayla)
                     {
-                        volleyLeft = 2;
+                        volleyLeft = 2 + perkFx.volleyExtra;   // Çifte Yaylım +1
                         volleyTimer = 0.15f;
                     }
                 }
@@ -2798,7 +2922,7 @@ int main(int argc, char *argv[])
                     if (vTarget != NULL)
                         vAmmoMult = ammo_consume(&inventory, &activeAmmo, floatTexts,
                                                  player.rect.x + player.rect.w / 2.0f,
-                                                 player.rect.y);
+                                                 player.rect.y, perkFx.ammoSaveChance);
                     if (vTarget != NULL && vAmmoMult > 0.0f)
                     {
                         for (int a = 0; a < MAX_ARROWS; a++)
@@ -2823,11 +2947,16 @@ int main(int argc, char *argv[])
                 }
             }
 
-            // Havuz yenilenmesi (mana yavaş, stamina hızlı — tüketiciler gelecekte)
-            player.mana += 2.0f * dt;
+            // Havuz yenilenmesi — Kader düğümleri hızlandırır
+            player.mana += 2.0f * perkFx.manaRegenMult * dt;
             if (player.mana > player.maxMana) player.mana = player.maxMana;
-            player.stamina += 15.0f * dt;
+            player.stamina += 15.0f * perkFx.stamRegenMult * dt;
             if (player.stamina > player.maxStamina) player.stamina = player.maxStamina;
+            if (perkFx.hpRegenPerSec > 0.0f)   // Yaşam Gücü: pasif can
+            {
+                player.health += perkFx.hpRegenPerSec * dt;
+                if (player.health > player.maxHealth) player.health = player.maxHealth;
+            }
 
             // Süreli tüketilebilir etkileri sayaçları
             if (player.speedBuffTimer > 0.0f) player.speedBuffTimer -= dt;
@@ -2899,7 +3028,7 @@ int main(int argc, char *argv[])
                 {
                     // Muhafız vuruşu mob vuruşuyla aynı savunma hattından geçer
                     bool dodged = false;
-                    bool yaraliAyi = (player.perkChoice[SKILL_MEDIUM_ARMOR][2] == 1);
+                    bool yaraliAyi = perkFx.yaraliAyi;
                     float dmg = combat_mob_damage(gt.attackDamage, &equipment, &perkFx,
                                                   player.state == PLAYER_IDLE,
                                                   player.health / player.maxHealth,
@@ -2996,7 +3125,7 @@ int main(int argc, char *argv[])
                         // Sinsi vuruş: eğilmiş + hedef fark etmemiş → ×2 hasar + Sneak XP
                         if (player.sneaking && !target->aggro)
                         {
-                            hit.damage *= 2.0f;
+                            hit.damage *= perkFx.backstabMult;   // taban 2.0 + ağaç düğümleri
                             SDL_Color purple = { 200, 140, 255, 255 };
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  target->e.rect.x + target->e.rect.w / 2.0f,
@@ -3031,16 +3160,12 @@ int main(int argc, char *argv[])
                             target->bleedTime = 3.0f * perkFx.bleedPower;
                         }
 
-                        // Zehir (rün/kaplama): 4 sn'de hasarın %25'i DoT.
-                        // Kanatma ile üst üste binmez — güçlü olan kalır.
+                        // Zehir (rün/kaplama): 4 sn'de hasarın %25'i — kanamadan
+                        // AYRI kanal, ÜST ÜSTE BİNER (tam DoT build'i meşru)
                         if (player.weaponFx == WEAPON_FX_POISON)
                         {
-                            float dps = hit.damage * 0.25f / 4.0f;
-                            if (dps > target->bleedDps)
-                            {
-                                target->bleedDps = dps;
-                                target->bleedTime = 4.0f;
-                            }
+                            target->poisonDps = hit.damage * 0.25f / 4.0f;
+                            target->poisonTime = 4.0f;   // süre tazelenir
                         }
 
                         // Vurulan mob + kamp arkadaşları alarma geçer (grup aggro)
@@ -3159,10 +3284,14 @@ int main(int argc, char *argv[])
                 }
                 else if (gatherRes >= 0 && RESOURCES[gatherRes].toolItem >= 0)
                 {
-                    // Toplama savurması: vuruş = iş ilerler (kademeli seviye çarpanı)
+                    // Toplama savurması: vuruş = iş (seviye × meslek ağacı çarpanı)
                     const ResourceDef *rd = &RESOURCES[gatherRes];
                     resource_add_progress(gatherRes,
-                        gather_mult(player.skills[rd->skill].level));
+                        gather_mult(player.skills[rd->skill].level) *
+                        ((rd->skill == SKILL_MINING)      ? perkFx.mineSpeedMult
+                       : (rd->skill == SKILL_HERBALISM)   ? perkFx.herbSpeedMult
+                       : (rd->skill == SKILL_WOODCUTTING) ? perkFx.woodSpeedMult
+                                                          : 1.0f));
                     audio_play(SFX_HIT);
                     fx_burst(&weaponFx, rd->x, rd->y - 20.0f, 5, 60.0f, 210, 205, 190);
 
@@ -3174,8 +3303,9 @@ int main(int argc, char *argv[])
                 }
                 else if (craftOpen && craftStation >= 0 && (craftRecipe >= 0 || plusForge))
                 {
-                    // Dövme vuruşu: ocakta iş ilerler (Smithing hızlandırır)
-                    craftProgress += gather_mult(player.skills[SKILL_SMITHING].level);
+                    // Dövme vuruşu: ocakta iş ilerler (Smithing seviye × ağaç çarpanı)
+                    craftProgress += gather_mult(player.skills[SKILL_SMITHING].level) *
+                                     perkFx.smithSpeedMult;
                     audio_play(SFX_HIT);
                     fx_burst(&weaponFx, STATIONS[craftStation].x,
                              STATIONS[craftStation].y - 30.0f,
@@ -3282,7 +3412,7 @@ int main(int argc, char *argv[])
 
                 if (player.sneaking && !at->aggro)
                 {
-                    hit.damage *= 2.0f;
+                    hit.damage *= perkFx.backstabMult;   // taban 2.0 + ağaç düğümleri
                     SDL_Color purple = { 200, 140, 255, 255 };
                     floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                          tx, at->e.rect.y - 26.0f,
@@ -3298,15 +3428,11 @@ int main(int argc, char *argv[])
                 if (hit.crit)
                     fx_burst(&weaponFx, tx, ty, 12, 90.0f, 255, 240, 120);
 
-                // Zehir rünü/kaplaması ok ucuna da işler (melee ile aynı kural)
+                // Zehir rünü/kaplaması ok ucuna da işler — kanamayla üst üste biner
                 if (player.weaponFx == WEAPON_FX_POISON)
                 {
-                    float dps = hit.damage * 0.25f / 4.0f;
-                    if (dps > at->bleedDps)
-                    {
-                        at->bleedDps = dps;
-                        at->bleedTime = 4.0f;
-                    }
+                    at->poisonDps = hit.damage * 0.25f / 4.0f;
+                    at->poisonTime = 4.0f;
                 }
 
                 // Buz Oku: %40 yavaşlatma 3 sn + buz kristali serpintisi
@@ -3332,7 +3458,8 @@ int main(int argc, char *argv[])
                         if (!nb->e.alive || nb == at) continue;
                         float ndx = (nb->e.rect.x + nb->e.rect.w / 2.0f) - tx;
                         float ndy = (nb->e.rect.y + nb->e.rect.h / 2.0f) - ty;
-                        if (ndx * ndx + ndy * ndy > AOE_ARROW_RADIUS * AOE_ARROW_RADIUS)
+                        float aoeR = AOE_ARROW_RADIUS + perkFx.aoeRadiusBonus;
+                        if (ndx * ndx + ndy * ndy > aoeR * aoeR)
                             continue;
                         HitResult splash = combat_player_hit(&player, bowStack,
                                                              nb->type->defense,
@@ -3439,7 +3566,7 @@ int main(int argc, char *argv[])
 
                 mobProjs[pj].active = false;
                 bool dodged = false;
-                bool yaraliAyi = (player.perkChoice[SKILL_MEDIUM_ARMOR][2] == 1);
+                bool yaraliAyi = perkFx.yaraliAyi;
                 float dmg = combat_mob_damage(mobProjs[pj].dmg, &equipment, &perkFx,
                                               player.state == PLAYER_IDLE,
                                               player.health / player.maxHealth,
@@ -3490,14 +3617,18 @@ int main(int argc, char *argv[])
 
             // Gece tehlikesi: spawn 2x hızlı (dt şişirilir), algı menzili 1.5x
             float nightSpawnMul = gametime_is_night() ? 2.0f : 1.0f;
-            float detectMul = (gametime_is_night() ? 1.5f : 1.0f)
-                            * perkFx.detectOnPlayerMult;   // Hayalet perki
+            float detectMul = (gametime_is_night() ? 1.5f * perkFx.nightDetectMult : 1.0f)
+                            * perkFx.detectOnPlayerMult;   // Hayalet/Hortlak düğümleri
 
             // Hız çarpanı: perk (Çevik/Rüzgar/Uyumlu) × gece (Gölge Adımı) × eğilme.
             // player_update tile hızıyla çarpar (doğrudan speed yazmak eziliyordu — bug'dı)
             player.speedMult = perkFx.speedMult
                              * (gametime_is_night() ? perkFx.nightSpeedMult : 1.0f)
-                             * (player.sneaking ? sneak_speed_mult(player.skills[SKILL_SNEAK].level) : 1.0f)
+                             * (player.sneaking
+                                ? (sneak_speed_mult(player.skills[SKILL_SNEAK].level) +
+                                   (1.0f - sneak_speed_mult(player.skills[SKILL_SNEAK].level)) *
+                                   perkFx.sneakSpeedRelief)
+                                : 1.0f)
                              * (player.speedBuffTimer > 0.0f ? player.speedBuffMult : 1.0f);
             spawn_zones_update(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId,
                                dt * nightSpawnMul);
@@ -3516,7 +3647,8 @@ int main(int argc, char *argv[])
             for (int i = 0; i < mobCount; i++)
             {
                 // Algı: gece/perk çarpanı × gizlilik (eğilme + açı + siper + örtü)
-                float stealthMul = sneak_detect_mul(player.sneaking,
+                float stealthMul = perkFx.sneakDetectMult *
+                                   sneak_detect_mul(player.sneaking,
                                                     player.skills[SKILL_SNEAK].level,
                                                     inConceal, px, py, &mobs[i]);
                 mob_update(&mobs[i], mobs, mobCount, px, py, dt, detectMul * stealthMul);
@@ -3544,10 +3676,25 @@ int main(int argc, char *argv[])
                                  (randf() - 0.5f) * 15.0f, 40.0f + randf() * 30.0f,
                                  0.55f, 8.0f + randf() * 6.0f, 190, 20, 20,
                                  WEAPON_FX_NONE);
-
-                    if (mobs[i].e.health <= 0.0f)
-                        mob_die(&mobs[i], mobs, MAX_MOBS, &nextMobId, loots, questStatus, floatTexts, &player);
                 }
+                // Zehir: kanamadan AYRI kanal — ikisi birden akar (tam DoT build'i)
+                if (mobs[i].poisonTime > 0.0f && mobs[i].e.alive)
+                {
+                    mobs[i].poisonTime -= dt;
+                    mobs[i].e.health -= mobs[i].poisonDps * dt;
+
+                    // Yeşil zehir kabarcıkları: yukarı süzülür
+                    if (randf() < dt * 6.0f)
+                        fx_spawn(&weaponFx,
+                                 mobs[i].e.rect.x + mobs[i].e.rect.w * (0.3f + randf() * 0.4f),
+                                 mobs[i].e.rect.y + mobs[i].e.rect.h * 0.5f,
+                                 (randf() - 0.5f) * 12.0f, -20.0f - randf() * 20.0f,
+                                 0.5f, 6.0f + randf() * 5.0f, 90, 220, 60,
+                                 WEAPON_FX_NONE);
+                }
+                // DoT ölümü (alive korumalı — direkt vuruş ölümüyle çakışmaz)
+                if (mobs[i].e.alive && mobs[i].e.health <= 0.0f)
+                    mob_die(&mobs[i], mobs, MAX_MOBS, &nextMobId, loots, questStatus, floatTexts, &player);
 
                 // Düşman bu kare saldırdıysa ve oyuncu menzildeyse, hasarı BURADA uygula
                 if (mobs[i].attackTriggered &&
@@ -3585,7 +3732,7 @@ int main(int argc, char *argv[])
                         player.targetMobId = mobs[i].id;
 
                     bool dodged = false;
-                    bool yaraliAyi = (player.perkChoice[SKILL_MEDIUM_ARMOR][2] == 1);
+                    bool yaraliAyi = perkFx.yaraliAyi;
                     float dmg = combat_mob_damage(mobs[i].type->damage, &equipment,
                                                   &perkFx,
                                                   player.state == PLAYER_IDLE,
@@ -4130,12 +4277,33 @@ int main(int argc, char *argv[])
         {
             // Envanter paneliyle çakışmasın diye sol tarafta
             skill_panel_render(player.skills, renderer, gameFont, 40.0f, 40.0f);
-            perk_pips_render(player.skills, player.perkChoice, renderer, gameFont,
-                             40.0f, 40.0f);
-            if (perkPickSkill >= 0)
-                perk_choice_render((SkillType)perkPickSkill, perkPickTier,
-                                   renderer, gameFont,
-                                   40.0f + SKILL_PANEL_W + 10.0f, 40.0f);
+
+            // Skill ağacı paneli (Faz 21): satıra tıklayınca sağda açılır.
+            // Respec satırı yalnız sunak yakınında + puan harcanmışsa görünür.
+            if (treeOpenSkill >= 0)
+            {
+                int ts = treeOpenSkill;
+                bool isFate = (ts == TREE_FATE);
+                Uint32 tsTaken = isFate ? player.fateTaken : player.treeTaken[ts];
+                int tsLevel = 0;
+                if (isFate)
+                    for (int sl = 0; sl < SKILL_COUNT; sl++)
+                        tsLevel += player.skills[sl].level;
+                else
+                    tsLevel = player.skills[ts].level;
+
+                int spent = tree_points_spent(ts, tsTaken);
+                float adx = STATIONS[2].x - (player.rect.x + player.rect.w / 2.0f);
+                float ady = STATIONS[2].y - (player.rect.y + player.rect.h / 2.0f);
+                bool nearAltar =
+                    SDL_sqrtf(adx * adx + ady * ady) <= STATION_INTERACT_RANGE * 1.5f;
+                int respecCost = (nearAltar && spent > 0) ? spent * 50 : -1;
+
+                tree_panel_render(ts, tsTaken, tsLevel,
+                                  treeSelNode, respecCost,
+                                  renderer, gameFont,
+                                  40.0f + SKILL_PANEL_W + 10.0f, 40.0f);
+            }
         }
 
         if (shopOpen)
@@ -4230,12 +4398,14 @@ int main(int argc, char *argv[])
             int bribeSp = player.skills[SKILL_SPEECH].level;
             int bribePct = (bribeSp >= CRIME_BRIBE_SPEECH) ? 100
                          : (int)((float)bribeSp / CRIME_BRIBE_SPEECH * 70.0f);
+            int bribeShown = (int)(player.bounty[guardRegion] / 2 *
+                                   perkFx.bribeCostMult);   // Arabulucu indirimi dahil
             if (bribePct >= 100)
                 snprintf(line, sizeof(line), "[3] Rüşvet teklif et (%dg) [Speech %d]",
-                         player.bounty[guardRegion] / 2, CRIME_BRIBE_SPEECH);
+                         bribeShown, CRIME_BRIBE_SPEECH);
             else
                 snprintf(line, sizeof(line), "[3] Rüşvet teklif et (%dg) [Speech %d - %%%d]",
-                         player.bounty[guardRegion] / 2, CRIME_BRIBE_SPEECH, bribePct);
+                         bribeShown, CRIME_BRIBE_SPEECH, bribePct);
             SDL_Color bribeCol = { 200, 170, 255, 255 };
             draw_text(renderer, gameFont, line, pX + 24.0f, pY + 122.0f, bribeCol);
         }

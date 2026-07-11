@@ -49,6 +49,9 @@ void skills_init(Skill *skills);
 // Tek seferde birden çok seviye atlanabilir; taşan XP kaybolmaz.
 bool skill_add_xp(Skill *skills, SkillType t, float xp);
 
+// Kader Ağacı XP çarpanı (main ağaç değişiminde yazar; tüm XP kazançlarına işler)
+void skill_set_xp_mult(float m);
+
 // Panelde/loglarda gösterilecek isim.
 const char *skill_name(SkillType t);
 

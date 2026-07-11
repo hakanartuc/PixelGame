@@ -45,14 +45,18 @@ WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/is
 - CuteFantasy-5x9.ttf glyph seti eksik (boşluk yok) — font PublicPixel'de kaldı.
 - Save dünya durumunu (mob/loot) içermez; harita değişirse eski save konumu tuhaf düşebilir.
 - CREDITS.md'de lisans TODO'ları var (ULPC parça listesi + Cute_Fantasy ticari lisans teyidi) — mobil yayın öncesi şart.
-- Perk eşiği 25'ten başlar; test F10 ile.
+- Skill sistemi = PUANLI DÜĞÜM AĞACI (Faz 21, skilltree.c): 14 ağaç (7 savaş/sosyal +
+  6 meslek mini + Kader). 4 seviye = 1 puan (Kader: 10 TOPLAM seviye = 1). Aktif beceriler
+  (PS/QS + 5 yay) ağaçtan SATIN ALINIR (mavi AKTİF düğüm) — hotbar oradan dolar.
+  Keystone'lar bedelli. Respec sunakta (harcanan×50g). Test F10 ile.
 
 ## Sıradaki iş
-**Mob fazları devamı** (PROGRESS #2): Bombschroom (patlayan mantar + Toxic_Gas_Cloud VFX)
-→ iç mekan/zindanlar ya da çöl/volkan biyomları (+boss scroll/taş dropları).
-TAMAM: Meslek 5/5 (Faz 13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) +
-İskelet ailesi & mob mermileri & ok kademeleri (20). Mermiler KAÇILABİLİR (düz hat) —
-oyuncu okları güdümlü kalır; bu asimetri bilinçli tasarım kararı.
+**Mob fazları devamı / Zindan** (PROGRESS #2-3): Bombschroom → iç mekan/zindanlar
+(kapı→ayrı harita; Lockpicking mini ağacı zindan sandıklarıyla gelir) ya da
+çöl/volkan biyomları (+boss scroll/taş dropları).
+TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
+mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13). Mermiler KAÇILABİLİR —
+oyuncu okları güdümlü; bilinçli asimetri. Zehir + kanama DoT'ları ÜST ÜSTE BİNER.
 
 Tamamlananlar (2026-07-10): GPU-3 (shader gece aydınlatması + shake + vinyet),
 **Suç & İtibar paketi** (NPC ölümü, muhafız, Sneak + mob şüphesi, bölgesel bounty+itibar; save v8),

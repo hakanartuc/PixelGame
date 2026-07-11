@@ -104,7 +104,9 @@ typedef struct {
     float suspicion;      // 0..1 şüphe: menzilde birikir (yakınsa hızlı), dışında söner;
                           // 1'e ulaşınca aggro — algı ikili değil, "fark edilme süreci"
     float alertFlash;     // aggro anında baş üstü "!" süresi (sn)
-    float bleedDps, bleedTime;   // Kanatma perki DoT'u (main işler — ölüm/loot orada)
+    float bleedDps, bleedTime;   // Kanatma DoT'u (main işler — ölüm/loot orada)
+    float poisonDps, poisonTime; // Zehir DoT'u (rün/kaplama) — kanamayla AYRI kanal,
+                                 // ÜST ÜSTE biner (tam DoT build'i meşru)
     int arrowsHit;        // saplanan ok sayısı — ölünce ~%30'u lootta geri (Faz 5)
     float slowMult, slowTimer;   // Buz Oku: süre boyunca hız çarpanı (0 = etkisiz)
     float fleeTimer;      // pasif av: kalan kaçış süresi (vuruş tazeler)

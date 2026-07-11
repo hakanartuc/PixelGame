@@ -85,6 +85,10 @@ HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
     if (fx->executeBonus > 0.0f && targetHpRatio < 0.20f)
         perkScale *= 1.0f + fx->executeBonus;
 
+    // Yay ağacı: yay hasar çarpanı (Berserker'ın yay karşılığı düğümlerde)
+    if (isBow)
+        perkScale *= fx->bowDmgMult;
+
     float raw = base * strScale * skillScale * perkScale
               * abilityScale * damage_variance();
 

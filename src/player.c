@@ -311,10 +311,15 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
         p->lastFacing = p->facing;
     }
 
+    // Çekme hızı düğümleri: yalnız SHOOT karelerini ölçekler (Akıncı/Keskin Nişancı)
+    float frameDur = anim->frameDur;
+    if (p->state == PLAYER_SHOOT && p->drawSpeedMult > 0.0f)
+        frameDur *= p->drawSpeedMult;
+
     p->animTimer += dt;
-    if (p->animTimer >= anim->frameDur)
+    if (p->animTimer >= frameDur)
     {
-        p->animTimer -= anim->frameDur;
+        p->animTimer -= frameDur;
         p->currentFrame++;
 
         if (p->currentFrame >= anim->frameCount)

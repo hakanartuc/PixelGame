@@ -11,9 +11,9 @@
 #include "contract.h"   // ilan panosu durumu (v12)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 12u  // ...; v10: öğrenilen tarifler;
-                          // v11: ItemStack instance (fx/rün + stat slotları);
-                          // v12: ilan panosu (gün + slot durum/ilerleme)
+#define SAVE_VERSION 13u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+                          // v12: ilan panosu (gün + slot durum/ilerleme);
+                          // v13: skill ağacı maskeleri (perkChoice'un yerini aldı)
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -115,11 +115,11 @@ bool save_game(const char *path, const Player *p,
     if (ok && exploredBytes > 0)
         ok = fwrite(exploredBuf, (size_t)exploredBytes, 1, f) == 1;
 
-    // Perk seçimleri (v6): skill × tier matris
-    ok = ok && w32(f, SKILL_COUNT) && w32(f, PERK_TIERS);
+    // Skill ağacı seçimleri (v13): skill başına alınmış-düğüm maskesi + Kader
+    ok = ok && w32(f, SKILL_COUNT);
     for (int s = 0; ok && s < SKILL_COUNT; s++)
-        for (int t = 0; ok && t < PERK_TIERS; t++)
-            ok = w32(f, p->perkChoice[s][t]);
+        ok = w32(f, (Sint32)p->treeTaken[s]);
+    ok = ok && w32(f, (Sint32)p->fateTaken);
 
     // Suç (v7/v8): bölgesel bounty + itibar + son suç günü + NPC yaşam bayrakları
     ok = ok && w32(f, MAX_REGIONS);
@@ -237,10 +237,10 @@ bool load_game(const char *path, Player *p,
     float tmpHours;
     ok = ok && r32(f, &tmpDay) && rf(f, &tmpHours);
 
-    // Perk seçimleri geçici matrisi (v6)
+    // Skill ağacı maskeleri sıfırdan (v13'te dosyadan dolar)
     for (int s = 0; s < SKILL_COUNT; s++)
-        for (int t = 0; t < PERK_TIERS; t++)
-            tmpP.perkChoice[s][t] = PERK_UNCHOSEN;
+        tmpP.treeTaken[s] = 0;
+    tmpP.fateTaken = 0;
 
     // Keşif haritası (v5)
     static Uint8 exploredBuf[EXPLORED_BUF_CAP];
@@ -251,17 +251,20 @@ bool load_game(const char *path, Player *p,
     if (ok && exploredBytes > 0)
         ok = fread(exploredBuf, (size_t)exploredBytes, 1, f) == 1;
 
-    // Perk seçimleri (v6): boyutlar da okunur (ileride skill/tier artarsa tolerans)
-    Sint32 nSkill, nTier;
-    ok = ok && r32(f, &nSkill) && r32(f, &nTier);
-    for (int s = 0; ok && s < nSkill; s++)
-        for (int t = 0; ok && t < nTier; t++) {
-            Sint32 c;
-            ok = r32(f, &c);
-            if (ok && s < SKILL_COUNT && t < PERK_TIERS &&
-                c >= PERK_UNCHOSEN && c < PERK_OPTIONS)
-                tmpP.perkChoice[s][t] = (Sint8)c;
-        }
+    // Skill ağacı maskeleri (v13): boyut da okunur (ileride skill artarsa tolerans)
+    Sint32 nSkill;
+    ok = ok && r32(f, &nSkill);
+    for (int s = 0; ok && s < nSkill; s++) {
+        Sint32 mask;
+        ok = r32(f, &mask);
+        if (ok && s < SKILL_COUNT)
+            tmpP.treeTaken[s] = (Uint32)mask;
+    }
+    {
+        Sint32 fmask = 0;
+        ok = ok && r32(f, &fmask);
+        if (ok) tmpP.fateTaken = (Uint32)fmask;
+    }
 
     // Suç (v7/v8): bölgesel bounty/itibar + son suç günü + NPC yaşam bayrakları
     Sint32 nRegion = 0;

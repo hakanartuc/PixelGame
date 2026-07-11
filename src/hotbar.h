@@ -31,9 +31,12 @@ typedef struct {
     HotbarSlot slots[HOTBAR_SLOTS];
 } Hotbar;
 
-// Skill seviyelerine göre açılmış ama barda olmayan ability'leri ilk boş
-// slotlara yerleştir. Başlangıçta ve her level-up sonrası çağrılır.
-void hotbar_place_unlocks(Hotbar *hb, const Skill *skills);
+// AĞAÇTAN açılmış (AKTİF düğüm satın alınmış) ama barda olmayan ability'leri
+// ilk boş slotlara yerleştir. Başlangıçta, her düğüm alımı ve level-up sonrası çağrılır.
+void hotbar_place_unlocks(Hotbar *hb, const bool abilityOpen[ABILITY_COUNT]);
+
+// Respec sonrası: artık açık olmayan aktifleri bardan kaldır
+void hotbar_purge_closed(Hotbar *hb, const bool abilityOpen[ABILITY_COUNT]);
 
 // Tüketilebilir türü ilk boş slota ata (zaten bardaysa dokunma). Başarılıysa true.
 bool hotbar_assign_item(Hotbar *hb, const ItemType *type);

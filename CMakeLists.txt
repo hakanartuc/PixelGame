@@ -45,7 +45,7 @@ add_executable(game
     src/music.c
     src/minimap.c
     src/ui_theme.c
-    src/perk.c
+    src/skilltree.c
     src/light.c
     src/crime.c
     src/guard.c

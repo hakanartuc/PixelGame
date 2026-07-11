@@ -11,6 +11,10 @@ static float xp_threshold(int level)
     return 100.0f * SDL_powf((float)level, 1.5f);
 }
 
+// Kader Ağacı XP çarpanı — main her ağaç değişiminde yazar (tek nokta köprü)
+static float g_xpMult = 1.0f;
+void skill_set_xp_mult(float m) { g_xpMult = (m > 0.0f) ? m : 1.0f; }
+
 void skills_init(Skill *skills)
 {
     for (int i = 0; i < SKILL_COUNT; i++) {
@@ -29,7 +33,7 @@ bool skill_add_xp(Skill *skills, SkillType t, float xp)
     if (s->level >= SKILL_MAX_LEVEL)
         return false;   // tavan — XP birikmez
 
-    s->xp += xp;
+    s->xp += xp * g_xpMult;   // Kader: Hızlı Öğrenen / Bilge / AZİM
 
     // Tek vuruşta çok XP gelirse birden fazla seviye atlanabilir; taşan devreder.
     bool leveled = false;
@@ -76,7 +80,7 @@ void skill_panel_render(const Skill *skills, R2D *renderer,
     float pad = SKILL_PANEL_PAD;
     float rowH = SKILL_PANEL_ROW_H;
     float panelW = SKILL_PANEL_W;
-    float panelH = SKILL_COUNT * rowH + pad * 2 + SKILL_PANEL_HEADER + 20.0f;   // +20 alt ipucu
+    float panelH = (SKILL_COUNT + 1) * rowH + pad * 2 + SKILL_PANEL_HEADER + 20.0f;   // +Kader satırı + alt ipucu
 
     ui_panel(renderer, panelX, panelY, panelW, panelH);
 
@@ -113,10 +117,21 @@ void skill_panel_render(const Skill *skills, R2D *renderer,
         rowY += rowH;
     }
 
-    // Alt ipucu: perk seçimi nasıl yapılır
+    // Kader Ağacı satırı (özel — toplam seviyeden puan; row_at SKILL_COUNT döner)
+    if (font != NULL) {
+        int total = 0;
+        for (int i = 0; i < SKILL_COUNT; i++) total += skills[i].level;
+        char fbuf[48];
+        snprintf(fbuf, sizeof(fbuf), "%-13s %3d", "* Kader", total);
+        SDL_Color fate = { 200, 150, 255, 255 };
+        draw_text(renderer, font, fbuf, panelX + pad, rowY, fate);
+    }
+    rowY += rowH;
+
+    // Alt ipucu: skill ağacı nasıl açılır (Faz 21)
     if (font != NULL) {
         SDL_Color hint = { 255, 210, 60, 255 };
-        draw_text(renderer, font, "Sarı nokta = perk hazır, satıra tıkla",
+        draw_text(renderer, font, "Satıra tıkla: ağacı aç (4 sv = 1p; Kader: 10 toplam sv = 1p)",
                   panelX + pad, rowY + 4.0f, hint);
     }
 }
@@ -126,6 +141,6 @@ int skill_panel_row_at(float x, float y, float panelX, float panelY)
     float gridY = panelY + SKILL_PANEL_PAD + SKILL_PANEL_HEADER;
     if (x < panelX || x > panelX + SKILL_PANEL_W) return -1;
     int row = (int)((y - gridY) / SKILL_PANEL_ROW_H);
-    if (y < gridY || row < 0 || row >= SKILL_COUNT) return -1;
-    return row;
+    if (y < gridY || row < 0 || row > SKILL_COUNT) return -1;
+    return row;   // SKILL_COUNT = Kader satırı (özel)
 }
