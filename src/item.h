@@ -216,6 +216,7 @@ typedef enum {
     ITEM_STONE_INT,       // Bilgelik Taşı (sunak: INT basımı — büyü hasarı)
     ITEM_STAFF,           // Asa (iki el; zayıf melee + büyü gücü +%20)
     ITEM_POTION_MANA,     // Mana İksiri (+40 mana)
+    ITEM_LOCKPICK,        // Maymuncuk (kilit minigame'i — kırılınca gider)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

@@ -17,6 +17,12 @@ typedef enum {
     LOOT_CLOSING,   // YENİ — kapanıyor (animasyon ters)
 } LootState;
 
+// Görsel/davranış türü: kasa (mob dropu) ya da zindan sandığı (kilitli olabilir)
+typedef enum {
+    LOOT_KIND_CRATE = 0,
+    LOOT_KIND_CHEST,
+} LootKind;
+
 typedef struct {
     SDL_FRect rect;
     bool active;
@@ -26,6 +32,9 @@ typedef struct {
     ItemStack items[MAX_LOOT_ITEMS];   // ← kasanın içindekiler
     int itemCount;
     int gold;                          // kasadaki altın (açılınca otomatik alınır)
+    Sint8 kind;                        // LootKind
+    Sint8 lockTier;                    // sandık: -1 kilitsiz, 0..2 kademe (açılınca -1)
+    Sint8 chestId;                     // worldmap CHESTS indeksi (günlük durum takibi)
 } Loot;
 
 // Boş slota bir loot (kasa) düşür; içerik verilen tablodan roll'lanır.
@@ -35,7 +44,8 @@ int loot_spawn(Loot *loots, int maxLoot, float x, float y,
                const LootEntry *table, int tableCount, int goldMin, int goldMax);
 
 // Tüm loot'ları çiz.
-void loot_render_all(Loot *loots, int maxLoot, R2D *renderer, R2DTexture *crateTex, const Camera *camera);
+void loot_render_all(Loot *loots, int maxLoot, R2D *renderer, R2DTexture *crateTex,
+                     R2DTexture *chestTex, const Camera *camera);
 
 // Dünya noktasındaki aktif kasanın slot indeksini döndürür (yoksa -1).
 int loot_find_at(Loot *loots, int maxLoot, float worldX, float worldY);

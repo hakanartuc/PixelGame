@@ -20,10 +20,24 @@ static const AnimClip CRATE_CLIP = {
     .feetY = 33,   // kasa alt hizası (ölçtüğümüz son kare ~33)
 };
 
+// Zindan sandığı (Chest_anim.png: 8 kare, 32×32 — kapalı→açık)
+static const AnimClip CHEST_CLIP = {
+    .x = 0, .y = 0,
+    .frameW = 32, .frameH = 32,
+    .frameCount = 8,
+    .frameDuration = 0.07f,
+    .feetY = 28,
+};
+
+static const AnimClip *loot_clip(const Loot *l)
+{
+    return (l->kind == LOOT_KIND_CHEST) ? &CHEST_CLIP : &CRATE_CLIP;
+}
+
 // Kasanın dünyadaki görsel dikdörtgenini hesaplar (çizim + tıklama aynı kaynaktan).
 static SDL_FRect loot_visual_rect(const Loot *l)
 {
-    const AnimClip *clip = &CRATE_CLIP;
+    const AnimClip *clip = loot_clip(l);
     float scale = CRATE_SCALE;   // ← sabit yap (aşağıda)
     float drawW = clip->frameW * scale;
     float drawH = clip->frameH * scale;
@@ -66,6 +80,9 @@ int loot_spawn(Loot *loots, int maxLoot, float x, float y,
         .state = LOOT_CLOSED,
         .currentFrame = 0,        // kapalı kasa karesi
         .animTimer = 0.0f,
+        .kind = LOOT_KIND_CRATE,
+        .lockTier = -1,           // kasalar kilitsiz
+        .chestId = -1,
     };
 
     // 2) İçeriği tablodan roll'la: her girdi bağımsız zar
@@ -85,13 +102,14 @@ int loot_spawn(Loot *loots, int maxLoot, float x, float y,
     return slot;
 }
 
-void loot_render_all(Loot *loots, int maxLoot, R2D *renderer, R2DTexture *crateTex, const Camera *camera)
+void loot_render_all(Loot *loots, int maxLoot, R2D *renderer, R2DTexture *crateTex,
+                     R2DTexture *chestTex, const Camera *camera)
 {
     for (int i = 0; i < maxLoot; i++) {
         Loot *l = &loots[i];
         if (!l->active) continue;
 
-        const AnimClip *clip = &CRATE_CLIP;
+        const AnimClip *clip = loot_clip(l);
 
         // Kaynak: currentFrame'inci kare
         SDL_FRect src = {
@@ -110,7 +128,19 @@ void loot_render_all(Loot *loots, int maxLoot, R2D *renderer, R2DTexture *crateT
             .w = vr.w * zoom,
             .h = vr.h * zoom
         };
-        r2d_draw_texture(renderer, crateTex, &src, &screen);
+        r2d_draw_texture(renderer,
+                         (l->kind == LOOT_KIND_CHEST) ? chestTex : crateTex,
+                         &src, &screen);
+
+        // Kilitli sandık rozeti: kademe rengi (yeşil/sarı/kırmızı) baş üstünde
+        if (l->kind == LOOT_KIND_CHEST && l->lockTier >= 0) {
+            Uint8 cr = (l->lockTier == 0) ?  90 : 255;
+            Uint8 cg = (l->lockTier == 0) ? 200 : (l->lockTier == 1) ? 210 : 80;
+            Uint8 cb = (l->lockTier == 0) ?  90 : (l->lockTier == 1) ?  60 : 80;
+            r2d_set_color(renderer, cr, cg, cb, 255);
+            r2d_fill_rect(renderer, &(SDL_FRect){
+                screen.x + screen.w / 2.0f - 4.0f, screen.y - 10.0f, 8.0f, 8.0f });
+        }
     }
 }
 
@@ -135,23 +165,24 @@ void loot_update_all(Loot *loots, int maxLoot, float dt)
         Loot *l = &loots[i];
         if (!l->active) continue;
 
+        const AnimClip *clip = loot_clip(l);
         if (l->state == LOOT_OPENING) {
-            // Açılma: currentFrame ileri (0→5)
+            // Açılma: currentFrame ileri
             l->animTimer += dt;
-            if (l->animTimer >= CRATE_CLIP.frameDuration) {
-                l->animTimer -= CRATE_CLIP.frameDuration;
+            if (l->animTimer >= clip->frameDuration) {
+                l->animTimer -= clip->frameDuration;
                 l->currentFrame++;
-                if (l->currentFrame >= CRATE_CLIP.frameCount) {
-                    l->currentFrame = CRATE_CLIP.frameCount - 1;
+                if (l->currentFrame >= clip->frameCount) {
+                    l->currentFrame = clip->frameCount - 1;
                     l->state = LOOT_OPEN;
                 }
             }
         }
         else if (l->state == LOOT_CLOSING) {
-            // Kapanma: currentFrame geri (5→0)
+            // Kapanma: currentFrame geri
             l->animTimer += dt;
-            if (l->animTimer >= CRATE_CLIP.frameDuration) {
-                l->animTimer -= CRATE_CLIP.frameDuration;
+            if (l->animTimer >= clip->frameDuration) {
+                l->animTimer -= clip->frameDuration;
                 l->currentFrame--;
                 if (l->currentFrame <= 0) {
                     l->currentFrame = 0;

@@ -102,6 +102,13 @@ typedef struct {
     float xpGainMult;         // TÜM skill XP çarpanı
     float hpRegenPerSec;      // pasif can yenilenmesi
     float goldFindMult;       // kasa altını çarpanı
+    // Lockpicking (kilit minigame'i — lockpick.c okur)
+    float lockZoneMult;      // yeşil bölge genişliği çarpanı
+    float lockCursorMult;    // imleç hızı çarpanı (küçük = yavaş = kolay)
+    float pickSaveChance;    // kırılınca maymuncuğu kurtarma şansı (0..1)
+    float lockNoiseMult;     // başarısızlık gürültü yarıçapı çarpanı
+    bool  lockMasterEase;    // KİLİT FISILDAYAN: usta kilit bir kademe kolay
+    bool  lockAlwaysConsume; // bedeli: başarıda da 1 maymuncuk gider
 } PerkEffects;
 
 #endif

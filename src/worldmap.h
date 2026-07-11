@@ -65,4 +65,30 @@ const RegionCamp *map_camps(MapId id, int *count);
 int map_append_lights(MapId id, R2DLight *out, int n, int cap,
                       const Camera *cam, int sw, int sh);
 
+// --- Zindan sandıkları (kilit kademeli, GÜNLÜK yeniden kilitlenir) ---
+typedef struct {
+    MapId map;
+    float x, y;        // dünya px (sandık tabanı)
+    Sint8 lockTier;    // -1 kilitsiz, 0 Basit, 1 Sağlam, 2 Usta
+} ChestDef;
+extern const ChestDef CHESTS[];
+extern const int CHEST_COUNT;
+
+// Sandık günlük kilit durumu (save v15 köprüsü — durum burada yaşar)
+int  chest_opened_day(int idx);              // -999 = hiç açılmadı
+void chest_set_opened_day(int idx, int day);
+
+// --- Tuzaklar ---
+typedef struct { MapId map; float x, y; float phaseOffset; } SpikeDef;   // periyodik diken
+typedef struct {
+    MapId map;
+    float plateX, plateY;   // basınç plakası
+    float bowX, bowY;       // duvardaki arbalet
+    float dirX, dirY;       // atış yönü (normalize)
+} BoltTrapDef;
+extern const SpikeDef SPIKES[];
+extern const int SPIKE_COUNT;
+extern const BoltTrapDef BOLT_TRAPS[];
+extern const int BOLT_TRAP_COUNT;
+
 #endif

@@ -21,6 +21,8 @@
 #include "hotbar.h"
 #include "region.h"
 #include "worldmap.h"
+#include "lockpick.h"
+#include "trap.h"
 #include "npc.h"
 #include "dialog.h"
 #include "shop.h"
@@ -106,6 +108,77 @@ static void dialog_apply_fx(const DialogOpt *o, Player *p, int npcRegion)
                 if (p->bounty[npcRegion] < 0) p->bounty[npcRegion] = 0;
                 break;
             default: break;   // DVAR_SPEECH parser'da reddedilir
+        }
+    }
+}
+
+// Zindan sandığını kademesine göre doldur (tablolar: denge PROGRESS'te)
+static void chest_fill(Loot *l, int tier, int today)
+{
+    (void)today;
+    l->itemCount = 0;
+    int n = 0;
+    switch (tier) {
+    case 2:   // USTA: garantili büyük ödül
+        l->gold = 120 + rand() % 81;
+        l->items[n++] = item_make(&ITEM_TYPES[(rand() % 2) ? ITEM_SCROLL_ARCHERY
+                                                    : ITEM_SCROLL_ENCHANT], 1, 0);
+        l->items[n++] = item_make(&ITEM_TYPES[ITEM_INGOT_IRON], 1 + rand() % 2, 0);
+        if (randf() < 0.5f)
+            l->items[n++] = item_make(&ITEM_TYPES[ITEM_STONE_HP], 1, 0);
+        break;
+    case 1:   // SAĞLAM
+        l->gold = 50 + rand() % 41;
+        l->items[n++] = item_make(&ITEM_TYPES[ITEM_INGOT_IRON], 1, 0);
+        if (randf() < 0.35f)
+            l->items[n++] = item_make(&ITEM_TYPES[ITEM_BONE], 2 + rand() % 3, 0);
+        if (randf() < 0.25f)
+            l->items[n++] = item_make(&ITEM_TYPES[ITEM_POTION_HP], 2, 0);
+        break;
+    default:  // BASİT / kilitsiz
+        l->gold = 20 + rand() % 21;
+        if (randf() < 0.6f)
+            l->items[n++] = item_make(&ITEM_TYPES[ITEM_BONE], 1 + rand() % 2, 0);
+        if (randf() < 0.4f)
+            l->items[n++] = item_make(&ITEM_TYPES[ITEM_POTION_HP], 1, 0);
+        break;
+    }
+    l->itemCount = n;
+}
+
+// Aktif haritanın zindan sandıklarını loots[]'a yerleştir (harita girişinde).
+// Bugün açılmışsa: açık + boş durur (yarın yeniden kilitlenip dolar).
+static void place_dungeon_chests(Loot *loots, MapId map, int today)
+{
+    for (int c = 0; c < CHEST_COUNT; c++)
+    {
+        if (CHESTS[c].map != map) continue;
+        int slot = -1;
+        for (int i = MAX_LOOT - 1; i >= 0; i--)   // sondan: mob kasalarıyla yarışmasın
+            if (!loots[i].active) { slot = i; break; }
+        if (slot < 0) return;
+
+        Loot *l = &loots[slot];
+        *l = (Loot){
+            .rect = { .x = CHESTS[c].x - 24.0f, .y = CHESTS[c].y - 24.0f,
+                      .w = 48.0f, .h = 48.0f },
+            .active = true,
+            .kind = LOOT_KIND_CHEST,
+            .chestId = (Sint8)c,
+        };
+        if (chest_opened_day(c) == today)
+        {
+            l->state = LOOT_OPEN;                  // bugün açılmış: boş sergi
+            l->currentFrame = 7;
+            l->lockTier = -1;
+            l->itemCount = 0;
+            l->gold = 0;
+        }
+        else
+        {
+            l->state = LOOT_CLOSED;
+            l->lockTier = CHESTS[c].lockTier;
+            chest_fill(l, CHESTS[c].lockTier, today);
         }
     }
 }
@@ -495,6 +568,7 @@ int main(int argc, char *argv[])
     }
 
     R2DTexture *crateTex = load_texture(renderer, "assets/loot/chest_small.png");
+    R2DTexture *chestTex = load_texture(renderer, "assets/decor/Chest_anim.png");
     if (crateTex == NULL)
     {
         SDL_Log("Kasa texture yuklenemedi");
@@ -820,11 +894,13 @@ int main(int argc, char *argv[])
         generate_map();
     minimap_init(renderer);   // harita boyutu belli olduktan SONRA
     worldmap_init(renderer);  // geçit görselleri
+    trap_init(renderer);      // diken/plaka/arbalet sprite'ları (sandık günleri worldmap'te)
 
     // Harita geçişi: E ile geçit (pendingPortal) ya da yükleme sonrası (mapReload)
     int pendingPortal = -1;
     bool mapReloadNeeded = false;
     int nearPortal = -1;
+    int nearestChest = -1;   // menzildeki kapalı sandık ([E] ile açılır)
 
     // Bölge splash durumu: bölge değişince ad 3 sn görünür
     int currentRegion = -1;
@@ -923,6 +999,67 @@ int main(int argc, char *argv[])
                     // Eğilme (Sneak): algı/tanık azalır, hız düşer — kesin gizlilik değil
                     player.sneaking = !player.sneaking;
                     audio_play(SFX_UI);
+                }
+                else if (event.key.key == SDLK_SPACE && gameState == GAME_PLAYING &&
+                         lockpick_active())
+                {
+                    // Kilit minigame'i: Space = zamanlama denemesi
+                    int li = lockpick_loot();
+                    int res = lockpick_press(&perkFx, player.skills[SKILL_LOCKPICKING].level);
+                    if (res == 1 && li >= 0 && loots[li].active)
+                    {
+                        // AÇILDI: keystone bedeli varsa başarıda da maymuncuk gider
+                        if (perkFx.lockAlwaysConsume)
+                            inventory_consume(&inventory, &ITEM_TYPES[ITEM_LOCKPICK]);
+                        loots[li].lockTier = -1;
+                        loots[li].state = LOOT_OPENING;
+                        loots[li].currentFrame = 0;
+                        loots[li].animTimer = 0.0f;
+                        openLootIndex = li;
+                        if (loots[li].chestId >= 0)
+                            chest_set_opened_day((int)loots[li].chestId, gametime_day());
+                        int tier = lockpick_tier();
+                        if (skill_add_xp(player.skills, SKILL_LOCKPICKING,
+                                         12.0f * (float)(tier + 1)))
+                            on_skill_levelup(&player, SKILL_LOCKPICKING, &hotbar, floatTexts);
+                        audio_play(SFX_LOOT);
+                        SDL_Color green = { 120, 255, 120, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f, "Kilit açıldı!", green);
+                    }
+                    else if (res == -1)
+                    {
+                        // KIRILDI: maymuncuk gider (Sağlam/Usta Uç kurtarabilir) + GÜRÜLTÜ
+                        bool saved = randf() < perkFx.pickSaveChance;
+                        if (!saved)
+                            inventory_consume(&inventory, &ITEM_TYPES[ITEM_LOCKPICK]);
+                        if (skill_add_xp(player.skills, SKILL_LOCKPICKING, 4.0f))
+                            on_skill_levelup(&player, SKILL_LOCKPICKING, &hotbar, floatTexts);
+                        audio_play(SFX_REFLECT);   // metalik tinlama = gürültü
+                        SDL_Color red = { 255, 120, 100, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f,
+                                             saved ? "Kaydı! (maymuncuk kurtuldu)"
+                                                   : "Maymuncuk kırıldı!", red);
+
+                        // Gürültü: yakın mobların şüphesi dolar (Sessiz Çalışma yarılatır)
+                        float noiseR = 260.0f * perkFx.lockNoiseMult;
+                        for (int m = 0; m < MAX_MOBS; m++)
+                        {
+                            if (!mobs[m].e.alive) continue;
+                            float ndx = (mobs[m].e.rect.x + mobs[m].e.rect.w / 2.0f)
+                                      - (player.rect.x + player.rect.w / 2.0f);
+                            float ndy = (mobs[m].e.rect.y + mobs[m].e.rect.h / 2.0f)
+                                      - (player.rect.y + player.rect.h / 2.0f);
+                            if (SDL_sqrtf(ndx * ndx + ndy * ndy) <= noiseR)
+                            {
+                                mobs[m].suspicion += 0.65f;
+                                if (mobs[m].suspicion > 1.0f) mobs[m].suspicion = 1.0f;
+                            }
+                        }
+                    }
                 }
                 else if (event.key.key == SDLK_SPACE && gameState == GAME_PLAYING)
                 {
@@ -1291,9 +1428,41 @@ int main(int argc, char *argv[])
                     audio_play(SFX_UI);
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
+                         dialogNpc < 0 && nearestChest >= 0 && !lockpick_active())
+                {
+                    // Sandık aç (tıklamayla aynı akış — E oyunun genel etkileşim dili)
+                    int li = nearestChest;
+                    if (loots[li].lockTier >= 0)
+                    {
+                        if (inventory_count(&inventory, &ITEM_TYPES[ITEM_LOCKPICK]) <= 0)
+                        {
+                            SDL_Color red = { 255, 120, 100, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f,
+                                                 "Maymuncuk yok!", red);
+                        }
+                        else
+                        {
+                            lockpick_start(loots[li].lockTier, li, &perkFx);
+                            player.autoAttack = false;
+                            audio_play(SFX_UI);
+                        }
+                    }
+                    else
+                    {
+                        loots[li].state = LOOT_OPENING;
+                        loots[li].currentFrame = 0;
+                        loots[li].animTimer = 0.0f;
+                        openLootIndex = li;
+                        if (loots[li].chestId >= 0)
+                            chest_set_opened_day((int)loots[li].chestId, gametime_day());
+                    }
+                }
+                else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
                          dialogNpc < 0 && map_current() != MAP_WORLD)
                 {
-                    // Zindanda E yalnız geçitler içindir (NPC/istasyon/pano dünyada)
+                    // Zindanda E başka işe bakmaz (NPC/istasyon/pano dünyada)
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
                          dialogNpc < 0)
@@ -2075,7 +2244,8 @@ int main(int argc, char *argv[])
                             l->gold = 0;
                             if (loot_is_empty(l))
                             {
-                                l->active = false;   // boş kasa kaybolur
+                                if (l->kind != LOOT_KIND_CHEST)
+                                    l->active = false;   // boş kasa kaybolur (sandık kalır)
                                 openLootIndex = -1;
                             }
                             handled = true;
@@ -2094,8 +2264,13 @@ int main(int argc, char *argv[])
                                     stack->plusLevel = 0;
                                     if (loot_is_empty(&loots[openLootIndex]))
                                     {
-                                        loots[openLootIndex].active = false; // boş kasa KAYBOLUR
-                                        openLootIndex = -1;
+                                        if (loots[openLootIndex].kind == LOOT_KIND_CHEST)
+                                            openLootIndex = -1;   // sandık açık sergilenir
+                                        else
+                                        {
+                                            loots[openLootIndex].active = false; // boş kasa KAYBOLUR
+                                            openLootIndex = -1;
+                                        }
                                     }
                                 }
                             }
@@ -2128,12 +2303,34 @@ int main(int argc, char *argv[])
                     if (!handled)
                     {
                         int li = loot_find_at(loots, MAX_LOOT, worldX, worldY);
-                        if (li >= 0 && loots[li].state == LOOT_CLOSED)
+                        if (li >= 0 && loots[li].state == LOOT_CLOSED &&
+                            loots[li].kind == LOOT_KIND_CHEST && loots[li].lockTier >= 0)
+                        {
+                            // Kilitli sandık: maymuncuk varsa minigame başlar
+                            if (inventory_count(&inventory, &ITEM_TYPES[ITEM_LOCKPICK]) <= 0)
+                            {
+                                SDL_Color red = { 255, 120, 100, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f,
+                                                     "Maymuncuk yok!", red);
+                            }
+                            else if (!lockpick_active())
+                            {
+                                lockpick_start(loots[li].lockTier, li, &perkFx);
+                                player.autoAttack = false;
+                                audio_play(SFX_UI);
+                            }
+                            handled = true;
+                        }
+                        else if (li >= 0 && loots[li].state == LOOT_CLOSED)
                         {
                             loots[li].state = LOOT_OPENING;
                             loots[li].currentFrame = 0;
                             loots[li].animTimer = 0.0f;
                             openLootIndex = li;
+                            if (loots[li].kind == LOOT_KIND_CHEST && loots[li].chestId >= 0)
+                                chest_set_opened_day((int)loots[li].chestId, gametime_day());
                             // (altın popup'ta hücre olarak durur, tıklayınca alınır)
                         }
                     }
@@ -2349,9 +2546,12 @@ int main(int argc, char *argv[])
                 gatherRes = -1;
                 fx_init(&weaponFx);   // partiküller haritayla gitsin
 
-                // 3) Yeni haritanın kampları
+                // 3) Yeni haritanın kampları + sandıkları + tuzak durumu
                 spawnZoneCount = build_spawn_zones(spawnZones, to);
                 spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId);
+                place_dungeon_chests(loots, to, gametime_day());
+                trap_reset();
+                lockpick_cancel();
 
                 // 4) Oyuncu geçit hedefine düşer (yüklemede pos zaten save'den geldi)
                 if (pendingPortal >= 0)
@@ -2378,6 +2578,64 @@ int main(int argc, char *argv[])
             // Menzildeki geçit ([E] etiketi + kullanım için)
             nearPortal = map_portal_near(player.rect.x + player.rect.w / 2.0f,
                                          player.rect.y + player.rect.h / 2.0f);
+
+            // Menzildeki kapalı sandık ([E] ipucu + E ile açma)
+            nearestChest = -1;
+            {
+                float pcx = player.rect.x + player.rect.w / 2.0f;
+                float pcy = player.rect.y + player.rect.h / 2.0f;
+                float best = 90.0f;
+                for (int i = 0; i < MAX_LOOT; i++)
+                {
+                    if (!loots[i].active || loots[i].kind != LOOT_KIND_CHEST) continue;
+                    if (loots[i].state != LOOT_CLOSED) continue;
+                    float cdx = (loots[i].rect.x + loots[i].rect.w / 2.0f) - pcx;
+                    float cdy = (loots[i].rect.y + loots[i].rect.h / 2.0f) - pcy;
+                    float d = SDL_sqrtf(cdx * cdx + cdy * cdy);
+                    if (d < best) { best = d; nearestChest = i; }
+                }
+            }
+
+            // Kilit minigame'i imleci
+            lockpick_update(dt, &perkFx);
+
+            // Tuzaklar: diken hasarı + plaka→arbalet atışları (yalnız zindanda)
+            if (map_is_dungeon(map_current()))
+            {
+                TrapShot trapShots[4];
+                int trapShotN = 0;
+                SDL_FRect pFeet = feet_box(player.rect.x, player.rect.y,
+                                           player.rect.w, player.rect.h);
+                float spikeDmg = trap_update(dt, map_current(), pFeet,
+                                             trapShots, 4, &trapShotN);
+                if (spikeDmg > 0.0f)
+                {
+                    // Tuzak hasarı zırh delici (dikenler ayaktan girer)
+                    player.health -= spikeDmg;
+                    if (player.health < 0.0f) player.health = 0.0f;
+                    flashTime = 0.35f;
+                    audio_play(SFX_HIT);
+                    char tbuf[FLOAT_TEXT_LEN];
+                    snprintf(tbuf, sizeof(tbuf), "-%d", (int)spikeDmg);
+                    SDL_Color red = { 255, 90, 70, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 10.0f, tbuf, red);
+                }
+                for (int t = 0; t < trapShotN; t++)
+                {
+                    for (int pj = 0; pj < MAX_MOB_PROJS; pj++)
+                        if (!mobProjs[pj].active)
+                        {
+                            mobProjs[pj] = (MobProj){ .active = true,
+                                .x = trapShots[t].x, .y = trapShots[t].y,
+                                .vx = trapShots[t].vx, .vy = trapShots[t].vy,
+                                .dmg = trapShots[t].dmg, .kind = 0 };
+                            break;
+                        }
+                    audio_play(SFX_REFLECT);   // kurulu yay boşalması (metalik)
+                }
+            }
 
             // --- COOLDOWN'LAR: ability + item türü başına geri sayım ---
             for (int a = 0; a < ABILITY_COUNT; a++)
@@ -4544,6 +4802,8 @@ int main(int argc, char *argv[])
             continue;
         tilemap_render(renderer, tile_textures, &camera);     // haritayı çiz
         decor_render_all(renderer, decor_textures, &camera);  // evler (zemin üstü, entity altı)
+        if (map_is_dungeon(map_current()))
+            trap_render(renderer, map_current(), &camera);   // dikenler/plaka/arbalet (zemin)
         map_portals_render(renderer, &camera, gameFont, nearPortal);  // geçit kapı/merdivenleri
         if (map_current() == MAP_WORLD)
         {
@@ -4782,7 +5042,23 @@ int main(int argc, char *argv[])
         if (openLootIndex >= 0)
             loot_popup_render(renderer, &loots[openLootIndex], itemIconTex, &itemTex, gameFont, &camera);
 
-        loot_render_all(loots, MAX_LOOT, renderer, crateTex, &camera); // ← kasalar (mob'lardan sonra, HUD'dan önce)
+        loot_render_all(loots, MAX_LOOT, renderer, crateTex, chestTex, &camera); // ← kasa + sandıklar
+
+        // Menzildeki sandığın baş üstü ipucu (kilitliyse kademesiyle)
+        if (nearestChest >= 0 && gameFont != NULL && !lockpick_active())
+        {
+            const Loot *nc = &loots[nearestChest];
+            const char *lbl = (nc->lockTier < 0)  ? "[E] Ac"
+                            : (nc->lockTier == 0) ? "[E] Kilit ac (Basit)"
+                            : (nc->lockTier == 1) ? "[E] Kilit ac (Saglam)"
+                                                  : "[E] Kilit ac (Usta)";
+            SDL_Color hint = { 255, 230, 80, 255 };
+            int tw = 0, th = 0;
+            TTF_GetStringSize(gameFont, lbl, 0, &tw, &th);
+            draw_text(renderer, gameFont, lbl,
+                      (nc->rect.x + nc->rect.w / 2.0f - camera.x) * camera.zoom - tw / 2.0f,
+                      (nc->rect.y - 34.0f - camera.y) * camera.zoom, hint);
+        }
 
         // Hasar yazıları (mob'ların üstünde, dünya uzayında)
         floattext_render_all(floatTexts, MAX_FLOAT_TEXTS, renderer, gameFont, &camera); // ← BURAYA (present'tan önce)
@@ -4929,6 +5205,9 @@ int main(int argc, char *argv[])
             draw_text(renderer, gameFont, ammoBuf,
                       winW / 2.0f - 40.0f, winH - 96.0f, ammoCol);
         }
+
+        lockpick_render(renderer, gameFont, winW, winH, &perkFx,
+                        player.skills[SKILL_LOCKPICKING].level);
 
         if (minimapOpen)
             minimap_render(renderer, player.rect.x + player.rect.w / 2.0f,

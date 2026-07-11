@@ -336,6 +336,16 @@ static const TreeNode T_SMITHING[] = {
     N_NOT("Kusursuz Dövme","'+basma' şansı +%8",               5, 5, 3),
     M_KEY("USTA ÇEKİÇ",    "'+basma' şansı +%15 — dövme %20 yavaş"),
 };
+static const TreeNode T_LOCKPICK[] = {
+    M_ROOT("Çırak Parmaklar", "Yeşil bölge +%15 geniş"),
+    N_MIN("Yağlı Menteşe",  "İmleç %10 yavaş",                     0, 1, 1),
+    N_MIN("Sağlam Uç",      "Kırılan maymuncuk %25 şansla kurtulur", 0, 5, 1),
+    N_NOT("Geniş Bölge",    "Yeşil bölge +%20 daha",               1, 1, 2),
+    N_NOT("Sakin Nabız",    "İmleç %15 daha yavaş",                1, 1, 3),
+    N_NOT("Usta Uç",        "Kurtarma şansı %40'a çıkar",          2, 5, 2),
+    N_NOT("Sessiz Çalışma", "Başarısızlık gürültüsü yarıya iner",  2, 5, 3),
+    M_KEY("KİLİT FISILDAYAN", "Usta kilitler bir kademe kolay — her açılış 1 maymuncuk yer"),
+};
 static const TreeNode T_ALCHEMY[] = {
     M_ROOT("Kazan Bilgisi", "Kaynatma +%5 hızlı"),
     N_MIN("Kıvam Ustası",  "Kaynatma +%8 hızlı",               0, 1, 1),
@@ -370,6 +380,7 @@ static const SkillTreeDef TREES[] = {
     TREE_DEF(SKILL_HERBALISM,    T_HERBALISM),
     TREE_DEF(SKILL_WOODCUTTING,  T_WOODCUT),
     TREE_DEF(SKILL_SMITHING,     T_SMITHING),
+    TREE_DEF(SKILL_LOCKPICKING,  T_LOCKPICK),
     TREE_DEF(SKILL_ALCHEMY,      T_ALCHEMY),
     TREE_DEF(SKILL_ENCHANTING,   T_ENCHANTING),
     TREE_DEF(SKILL_DESTRUCTION,  T_DESTRUCTION),
@@ -462,6 +473,7 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         .xpGainMult = 1.0f, .goldFindMult = 1.0f,
         .spellDmgMult = 1.0f, .manaCostMult = 1.0f, .castSpeedMult = 1.0f,
         .staffDmgMult = 1.0f,
+        .lockZoneMult = 1.0f, .lockCursorMult = 1.0f, .lockNoiseMult = 1.0f,
     };
 
     // Temel kıvılcım: Ateş Topu HERKESTE açık (büyünün 'normal vuruşu' —
@@ -679,6 +691,17 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         if (ON(T, 5)) fx->woodDouble += 0.08f;
         if (ON(T, 6)) fx->woodDouble += 0.15f;
         if (ON(T, 7)) { fx->woodDouble += 0.25f; fx->woodSpeedMult *= 0.80f; }       // ORMANIN DOSTU
+    }
+    {
+        const int T = SKILL_LOCKPICKING;
+        if (ON(T, 0)) fx->lockZoneMult *= 1.15f;
+        if (ON(T, 1)) fx->lockCursorMult *= 0.90f;
+        if (ON(T, 2)) fx->pickSaveChance = 0.25f;
+        if (ON(T, 3)) fx->lockZoneMult *= 1.20f;
+        if (ON(T, 4)) fx->lockCursorMult *= 0.85f;
+        if (ON(T, 5)) fx->pickSaveChance = 0.40f;
+        if (ON(T, 6)) fx->lockNoiseMult *= 0.5f;
+        if (ON(T, 7)) { fx->lockMasterEase = true; fx->lockAlwaysConsume = true; } // KİLİT FISILDAYAN
     }
     {
         const int T = SKILL_SMITHING;

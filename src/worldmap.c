@@ -131,6 +131,53 @@ int map_append_lights(MapId id, R2DLight *out, int n, int cap,
 }
 
 // ---------------------------------------------------------------------------
+// Sandıklar — oda düzenine göre (gen_dungeon.py yerleşimi). Günlük kilit
+// durumunu main tutar (save v15: açılan gün).
+// ---------------------------------------------------------------------------
+const ChestDef CHESTS[] = {
+    { MAP_DUNGEON_F1, T(13), T(24), -1 },   // C odası dibi: kilitsiz (öğretici tat)
+    { MAP_DUNGEON_F1, T(27), T(6),   0 },   // B odası: Basit
+    { MAP_DUNGEON_F1, T(31), T(28),  0 },   // D odası: Basit
+    { MAP_DUNGEON_F2, T(24), T(5),   1 },   // salon: Sağlam
+    { MAP_DUNGEON_F2, T(15), T(26),  1 },   // boss odası köşe: Sağlam
+    { MAP_DUNGEON_F2, T(30), T(21),  2 },   // boss odası dip: USTA (nadir ödül)
+};
+const int CHEST_COUNT = (int)(sizeof(CHESTS) / sizeof(CHESTS[0]));
+
+// Açıldığı OYUN günü (-999 = hiç) — gün dönünce otomatik "eski" kalır → kilitlenir
+static int chestOpenedDay[16] = { [0 ... 15] = -999 };
+
+int chest_opened_day(int idx)
+{
+    return (idx >= 0 && idx < 16) ? chestOpenedDay[idx] : -999;
+}
+
+void chest_set_opened_day(int idx, int day)
+{
+    if (idx >= 0 && idx < 16) chestOpenedDay[idx] = day;
+}
+
+// ---------------------------------------------------------------------------
+// Tuzaklar — koridor/oda girişleri (kaçınılabilir yerleşim: kenardan geçiş var)
+// ---------------------------------------------------------------------------
+const SpikeDef SPIKES[] = {
+    { MAP_DUNGEON_F1, T(25.5f), T(13), 0.0f },   // B→D koridoru
+    { MAP_DUNGEON_F1, T(25.5f), T(16), 0.9f },   // aynı koridor, faz kaymalı
+    { MAP_DUNGEON_F1, T(18),    T(21.5f), 0.4f },// C→D koridoru
+    { MAP_DUNGEON_F2, T(20.5f), T(15), 0.0f },   // F→G koridoru
+    { MAP_DUNGEON_F2, T(20.5f), T(17), 1.1f },
+};
+const int SPIKE_COUNT = (int)(sizeof(SPIKES) / sizeof(SPIKES[0]));
+
+const BoltTrapDef BOLT_TRAPS[] = {
+    // K1: D odası girişi — plakaya basınca sağ duvardan sola bolt
+    { MAP_DUNGEON_F1, T(21.5f), T(21.5f), T(23.5f), T(21.5f), -1.0f, 0.0f },
+    // K2: boss koridoru — plakaya basınca soldan sağa bolt
+    { MAP_DUNGEON_F2, T(20.5f), T(18.5f), T(19.2f), T(18.5f),  1.0f, 0.0f },
+};
+const int BOLT_TRAP_COUNT = (int)(sizeof(BOLT_TRAPS) / sizeof(BOLT_TRAPS[0]));
+
+// ---------------------------------------------------------------------------
 // Durum + geçit yardımcıları
 // ---------------------------------------------------------------------------
 static MapId curMap = MAP_WORLD;

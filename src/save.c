@@ -12,7 +12,7 @@
 #include "contract.h"   // ilan panosu durumu (v12)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 14u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+#define SAVE_VERSION 15u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
                           // v12: ilan panosu (gün + slot durum/ilerleme);
                           // v13: skill ağacı maskeleri (perkChoice'un yerini aldı)
 
@@ -147,6 +147,11 @@ bool save_game(const char *path, const Player *p,
 
     // Aktif harita (v14) — oyuncu pos bu haritanın koordinatı
     ok = ok && w32(f, (Sint32)map_current());
+
+    // Sandık günleri (v15)
+    ok = ok && w32(f, CHEST_COUNT);
+    for (int i = 0; ok && i < CHEST_COUNT; i++)
+        ok = w32(f, chest_opened_day(i));
 
     fclose(f);
     if (!ok)
@@ -311,6 +316,14 @@ bool load_game(const char *path, Player *p,
     if (ok && (savedMap < 0 || savedMap >= MAP_COUNT))
         savedMap = MAP_WORLD;
 
+    // Sandık günleri (v15)
+    Sint32 nChest = 0;
+    Sint32 chestDays[16];
+    ok = ok && r32(f, &nChest);
+    if (ok && (nChest < 0 || nChest > 16)) ok = false;
+    for (int i = 0; ok && i < nChest; i++)
+        ok = r32(f, &chestDays[i]);
+
     fclose(f);
     if (!ok) {
         SDL_Log("Save okunamadi (bozuk dosya): %s", path);
@@ -325,6 +338,8 @@ bool load_game(const char *path, Player *p,
     memcpy(quests, tmpQ, sizeof(tmpQ));
     gametime_set(tmpDay, tmpHours);
     map_set_current((MapId)savedMap);   // main, değişimi görüp haritayı yeniden yükler
+    for (int i = 0; i < nChest && i < CHEST_COUNT; i++)
+        chest_set_opened_day(i, chestDays[i]);
     if (exploredBytes > 0)
         minimap_unpack_explored(exploredBuf, exploredBytes);
     npc_reset();   // önce herkes canlı, sonra save'deki ölümler uygulanır

@@ -306,6 +306,10 @@ const ItemType ITEM_TYPES[] = {
       .consumable = true, .manaAmount = 40.0f, .useCooldown = 10.0f,
       .iconSpritePath = "assets/icons/items/food.png",
       .iconSrc = { 112, 0, 16, 16 } },   // mavi şişe (Food Icons son sütun)
+    { .name = "Maymuncuk", .iconIndex = 7, .maxStack = 20, .value = 15,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/tool_icons.png",
+      .iconSrc = { 112, 0, 16, 16 } },   // tool_icons 7. hücre (çubuk görünümlü)
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

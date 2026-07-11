@@ -146,6 +146,10 @@ const RecipeDef RECIPES[] = {
       .in1Item = ITEM_INGOT_IRON, .in1Count = 1, .in2Item = ITEM_WOOD, .in2Count = 1,
       .outItem = ITEM_ARROW_IRON, .outCount = 10, .work = 5.0f, .xp = 8.0f,
       .minSkill = 10 },
+    { .station = STATION_SMITH, .name = "Maymuncuk x3",
+      .in1Item = ITEM_INGOT_IRON, .in1Count = 1, .in2Item = -1,
+      .outItem = ITEM_LOCKPICK, .outCount = 3, .work = 4.0f, .xp = 5.0f,
+      .minSkill = 5 },
 };
 const int RECIPE_COUNT = (int)(sizeof(RECIPES) / sizeof(RECIPES[0]));
 
