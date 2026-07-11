@@ -80,6 +80,7 @@ static const LootEntry SKEL_M_LOOT[] = {
     { &ITEM_TYPES[ITEM_BONE], 0.50f, 0 },
     { &ITEM_TYPES[ITEM_ESSENCE_PALE],   0.15f, 0 },   // büyücü — sunak kaynağı
     { &ITEM_TYPES[ITEM_SCROLL_ENCHANT], 0.04f, 0 },
+    { &ITEM_TYPES[ITEM_STONE_INT],      0.03f, 0 },   // Bilgelik Taşı (Faz 22)
 };
 
 // Faz 6 — av: deri/et (girdiler bağımsız zar → 1-2 adet hissi)

@@ -135,6 +135,13 @@ const RecipeDef RECIPES[] = {
     { .station = STATION_SMITH, .name = "Kemik Oku x10",
       .in1Item = ITEM_BONE, .in1Count = 1, .in2Item = ITEM_WOOD, .in2Count = 1,
       .outItem = ITEM_ARROW_BONE, .outCount = 10, .work = 4.0f, .xp = 6.0f },
+    { .station = STATION_ALCH, .name = "Mana İksiri",
+      .in1Item = ITEM_HERB_BLUE, .in1Count = 2, .in2Item = -1,
+      .outItem = ITEM_POTION_MANA, .outCount = 1, .work = 4.0f, .xp = 8.0f },
+    { .station = STATION_SMITH, .name = "Asa",
+      .in1Item = ITEM_WOOD, .in1Count = 2, .in2Item = ITEM_ESSENCE_PALE, .in2Count = 1,
+      .outItem = ITEM_STAFF, .outCount = 1, .work = 8.0f, .xp = 14.0f,
+      .minSkill = 5 },
     { .station = STATION_SMITH, .name = "Demir Ok x10",
       .in1Item = ITEM_INGOT_IRON, .in1Count = 1, .in2Item = ITEM_WOOD, .in2Count = 1,
       .outItem = ITEM_ARROW_IRON, .outCount = 10, .work = 5.0f, .xp = 8.0f,
@@ -379,7 +386,8 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
 
         // Stat basma satırları: hedefteki kademe + maliyet (garantili ama pahalı)
         const int stoneItem[STAT_COUNT] = { ITEM_STONE_STR, ITEM_STONE_DEX, ITEM_STONE_HP,
-                                            ITEM_STONE_DEF, ITEM_STONE_MP, ITEM_STONE_STA };
+                                            ITEM_STONE_DEF, ITEM_STONE_MP, ITEM_STONE_STA,
+                                            ITEM_STONE_INT };
         for (int s = 0; s < STAT_COUNT; s++) {
             SDL_FRect srow = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
             ui_cell_gray(renderer, srow.x, srow.y, srow.w, srow.h);

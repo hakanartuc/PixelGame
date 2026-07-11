@@ -45,6 +45,7 @@ typedef enum {
                        // SALDIRAMAZ ("Silah kuşan!") — toplama savurması için
     WEAPON_BOW,        // yay: iki el (SHIELD kilitli), köklü atış + ok tüketir,
                        // hasar DEX ile ölçeklenir, skill = Archery
+    WEAPON_STAFF,      // asa: iki el, zayıf melee + büyü gücü (skill = Staff; Faz 22)
 } WeaponType;
 
 // Item TÜRÜ — bir kez tanımlanır, tüm o item'ler paylaşır
@@ -73,6 +74,7 @@ typedef struct {
     // --- Tüketilebilir (iksir vb.) ---
     bool consumable;             // sağ tık hotbar'a atar, hotbar tuşuyla kullanılır
     float healAmount;            // kullanınca iyileşen can
+    float manaAmount;            // kullanınca dolan mana (Mana İksiri; Faz 22)
     float useCooldown;           // kullanım sonrası bu TÜRÜN kilit süresi (sn)
     float buffSpeedMult;         // >1: süreli hız buff'ı çarpanı (Hız İksiri 1.2)
     float buffDuration;          // hız buff süresi (sn)
@@ -90,6 +92,7 @@ typedef struct {
     bool trapItem;               // Yapışkan Tuzağı: hotbar kullanımı yere tuzak kurar (Faz 7)
 
     float ammoDmgMult;           // ok kademesi hasar çarpanı (>0 = mühimmat; Faz 8)
+    float spellPower;            // silahın büyü gücü katkısı (asa 0.20 = +%20; Faz 22)
 
     const char *iconSpritePath;   // ikon dosyasi (NULL → tool_icons fallback)
     SDL_FRect   iconSrc;          // o dosyadaki kare {x, y, w, h}
@@ -103,6 +106,7 @@ typedef enum {
     STAT_DEF,       // defans
     STAT_MP,        // max mana
     STAT_STA,       // max stamina
+    STAT_INT,       // büyü hasar ölçeği (Faz 22 — büyücünün STR'ı)
     STAT_COUNT,
 } StatType;
 
@@ -208,6 +212,10 @@ typedef enum {
     // Ok kademeleri (Faz 8): standart en ucuz, kemik/demir pahalı ve sert
     ITEM_ARROW_BONE,      // Kemik Oku (×1.15 hasar)
     ITEM_ARROW_IRON,      // Demir Ok (×1.3 hasar, Smithing 10)
+    // Büyü paketi (Faz 22)
+    ITEM_STONE_INT,       // Bilgelik Taşı (sunak: INT basımı — büyü hasarı)
+    ITEM_STAFF,           // Asa (iki el; zayıf melee + büyü gücü +%20)
+    ITEM_POTION_MANA,     // Mana İksiri (+40 mana)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

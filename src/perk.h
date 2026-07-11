@@ -84,6 +84,18 @@ typedef struct {
     float plusChanceBonus;    // '+basma' şansına eklenen yüzde puanı
     float runeChanceBonus;    // rün üretim şansına eklenen yüzde puanı
 
+    // Büyü (Yıkım ağacı — Faz 22)
+    float spellDmgMult;       // büyü hasar çarpanı
+    float manaCostMult;       // büyü mana maliyeti çarpanı (<1 verimli)
+    float castSpeedMult;      // cast süresi çarpanı (<1 hızlı)
+    float burnBonus;          // Ateş Topu yanma DoT çarpanı payı (0 = taban)
+    float novaRadiusBonus;    // Buz Novası yarıçapına eklenen px
+    float meleeManaRegen;     // SAVAŞ RAHİBİ: melee vuruş başına mana
+
+    // Asa (Staff ağacı)
+    float staffDmgMult;       // asa melee çarpanı
+    float staffSpellBonus;    // asa KUŞANILIYKEN ek büyü çarpanı payı
+
     // Kader Ağacı (karakter-geneli)
     float maxStaminaBonus, maxManaBonus;
     float stamRegenMult, manaRegenMult;

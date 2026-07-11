@@ -300,6 +300,31 @@ static float plus_chance(int targetPlus, int smithLevel)
     return (c > 95.0f) ? 95.0f : c;
 }
 
+// Büyü Kalkanı: vuruş hasarını HP yerine manadan emer (×1.2 mana bedeli).
+// Mana yetmezse karşılayabildiğini emer, kalkan kırılır; kalan HP hasarı döner.
+static float mana_shield_absorb(Player *p, float dmg, FloatText *floatTexts)
+{
+    if (p->manaShieldTimer <= 0.0f || dmg <= 0.0f) return dmg;
+    SDL_Color icy = { 150, 220, 255, 255 };
+    float need = dmg * 1.2f;
+    if (p->mana >= need)
+    {
+        p->mana -= need;
+        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                             p->rect.x + p->rect.w / 2.0f,
+                             p->rect.y - 26.0f, "Emildi", icy);
+        return 0.0f;
+    }
+    float absorbed = p->mana / 1.2f;
+    p->mana = 0.0f;
+    p->manaShieldTimer = 0.0f;
+    p->shieldBreakT = 0.001f;   // kırılma animasyonu
+    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                         p->rect.x + p->rect.w / 2.0f,
+                         p->rect.y - 26.0f, "Kalkan kırıldı!", icy);
+    return dmg - absorbed;
+}
+
 // Toplama tamamlandı: miktar rulosu + envanter + XP + bildirim.
 // Dönen: süreç kapansın mı (çanta doluysa bar dolu-altında bekler, süreç yine kapanır).
 static void gather_finish(int res, Player *player, Inventory *inv,
@@ -555,6 +580,24 @@ int main(int argc, char *argv[])
     R2DTexture *boardTex = load_texture(renderer, "assets/decor/notice_board.png");
     bool boardOpen = false;
 
+    // Büyü VFX sprite'ları (Faz 22): mermi küreleri + arcane patlama + alev
+    R2DTexture *orbFireTex  = load_texture(renderer, "assets/fx/orb_fire.png");
+    R2DTexture *orbBlueTex  = load_texture(renderer, "assets/fx/orb_blue.png");
+    R2DTexture *arcaneTex   = load_texture(renderer, "assets/fx/arcane_burst.png");
+    R2DTexture *flameTex    = load_texture(renderer, "assets/fx/flame_small.png");
+    R2DTexture *shieldTex   = load_texture(renderer, "assets/fx/iceshield.png");
+    R2DTexture *spikesTex   = load_texture(renderer, "assets/fx/spikes.png");
+
+    // Diken patlaması görselleri (yer efekti — 10 kare × 0.06sn)
+    #define MAX_SPIKE_FX 6
+    typedef struct { bool active; float x, y, t; } SpikeFxAnim;
+    SpikeFxAnim spikeFx[MAX_SPIKE_FX] = {0};
+
+    // Tek atımlık patlama animasyonları (arcane 7 kare × 0.045sn)
+    #define MAX_BURSTS 8
+    typedef struct { bool active; float x, y, t, scale; } BurstFx;
+    BurstFx bursts[MAX_BURSTS] = {0};
+
     // Oyuncu kamp ateşi kurulumu (Faz 6): Odun'a sağ tık başlatır, 3 sn süreç.
     // Konum STATIONS[STATION_PLAYER_FIRE_IDX]'te yaşar (sönük = CAMPFIRE_PARKED).
     // Ömür: kurulumdan itibaren 24 OYUN SAATİ (gece yarısı sınırı değil —
@@ -690,6 +733,21 @@ int main(int argc, char *argv[])
     typedef struct { bool active; float x, y; } GooTrap;
     GooTrap traps[MAX_TRAPS] = {0};
     int nextTrap = 0;
+
+    // Büyü sistemi (Faz 22): cast KÖKLÜ (~0.45sn × ağaç çarpanı), mana COMMIT'te.
+    // Ateş Topu mermisi oyuncu okları gibi güdümlü (SpellProj).
+    #define SPELL_RANGE 300.0f
+    #define SPELL_CAST_TIME 0.45f
+    #define MAX_SPELL_PROJS 8
+    #define SPELL_PROJ_SPEED 380.0f
+    typedef struct { bool active; float x, y; int targetId; } SpellProj;
+    SpellProj spellProjs[MAX_SPELL_PROJS] = {0};
+    int castSpell = -1;        // aktif cast (AbilityId; -1 yok)
+    float castTimer = 0.0f;
+
+    // Zırh ağırlığı (Faz 22): türetilmiş statlarda hesaplanır, hız/mana'ya işler
+    float armorSpeedPenalty = 0.0f;   // 0..0.30 (STR telafi eder)
+    float armorManaMult = 1.0f;       // ağır/orta parça mana yenilenmesini kısar
 
     // Mob mermileri (Faz 8): atış ANINDAKİ oyuncu konumuna DÜZ hat — güdüm yok,
     // yana yürüyerek KAÇILABİLİR (oyuncu oklarına bilinçli asimetri).
@@ -1408,13 +1466,14 @@ int main(int argc, char *argv[])
                     // Yayın öncesi kaldırılacak — commit'e girer ama işaretli.
                     // Eğri dik: seviye 25 ≈ 125k, 100 ≈ 4M XP → basış başına 1M
                     // (1 basış ~lv57, 2 ~lv75, 4 = tüm eşikler açık)
-                    SkillType dbg[13] = { SKILL_ONE_HANDED, SKILL_LIGHT_ARMOR,
+                    SkillType dbg[15] = { SKILL_ONE_HANDED, SKILL_LIGHT_ARMOR,
                                           SKILL_MEDIUM_ARMOR, SKILL_HEAVY_ARMOR,
                                           SKILL_SMITHING, SKILL_ALCHEMY, SKILL_MINING,
                                           SKILL_HERBALISM, SKILL_WOODCUTTING,
                                           SKILL_ENCHANTING, SKILL_ARCHERY,
-                                          SKILL_SNEAK, SKILL_SPEECH };   // ağaç testi
-                    for (int d = 0; d < 13; d++)
+                                          SKILL_SNEAK, SKILL_SPEECH,
+                                          SKILL_DESTRUCTION, SKILL_STAFF };   // ağaç testi
+                    for (int d = 0; d < 15; d++)
                         if (skill_add_xp(player.skills, dbg[d], 1000000.0f))
                             on_skill_levelup(&player, dbg[d], &hotbar, floatTexts);
 
@@ -1449,10 +1508,19 @@ int main(int argc, char *argv[])
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_STICKY_TRAP], 3, 0);
                     // Faz 8 iskelet test seti: kemik + premium ok örnekleri
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_BONE], 6, 0);
+                    // Faz 22 büyü test seti: asa + Bilgelik Taşları + havuzlar full
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_STAFF], 1, 0);
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_STONE_INT], 6, 0);
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_POTION_MANA], 5, 0);
+                    player.health  = player.maxHealth;
+                    player.mana    = player.maxMana;
+                    player.stamina = player.maxStamina;
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_ARROW_BONE], 20, 0);
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_ARROW_IRON], 20, 0);
                     player.gold += 500;
-                    SDL_Log("DEBUG F10: +1M XP (savas+meslek) + craft malzeme seti + 500g");
+                    // Ağaç testi: her ağaca 99 serbest puan (tüm düğümler alınabilsin)
+                    tree_set_debug_points(99);
+                    SDL_Log("DEBUG F10: +1M XP (savas+meslek) + craft malzeme seti + 500g + 99 agac puani");
                 }
                 else if (event.key.key == SDLK_F5 && gameState == GAME_PLAYING)
                 {
@@ -1803,7 +1871,8 @@ int main(int argc, char *argv[])
                             int s = CRAFT_ROW_STAT_BASE - hit;   // 0..5
                             static const int stone[STAT_COUNT] = {
                                 ITEM_STONE_STR, ITEM_STONE_DEX, ITEM_STONE_HP,
-                                ITEM_STONE_DEF, ITEM_STONE_MP, ITEM_STONE_STA };
+                                ITEM_STONE_DEF, ITEM_STONE_MP, ITEM_STONE_STA,
+                                ITEM_STONE_INT };
                             ItemStack *tgt = &equipment.slots[enchTarget];
 
                             int cur = 0, used = 0;
@@ -2234,9 +2303,48 @@ int main(int argc, char *argv[])
                     // GO/BO/GS/YA/AO yay) — yanlış silahla CD boşa yanmasın
                     const AbilityDef *ad = &ABILITIES[hs->abilityId];
                     bool needBow = (ad->skill == SKILL_ARCHERY);
+                    bool isSpell = (ad->skill == SKILL_DESTRUCTION);
                     SDL_Color red = { 255, 120, 100, 255 };
 
-                    if (needBow != player.bowEquipped)
+                    if (isSpell)
+                    {
+                        // BÜYÜ: silahtan bağımsız (battlemage özgürlüğü) — mana + hedef
+                        float cost = ad->mana * perkFx.manaCostMult;
+                        bool needTarget = (hs->abilityId == ABILITY_FIREBOLT ||
+                                           hs->abilityId == ABILITY_LIGHTNING);
+                        Mob *spTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                        float spDist = 1e9f;
+                        if (spTarget != NULL)
+                        {
+                            float sdx = (spTarget->e.rect.x + spTarget->e.rect.w / 2.0f)
+                                      - (player.rect.x + player.rect.w / 2.0f);
+                            float sdy = (spTarget->e.rect.y + spTarget->e.rect.h / 2.0f)
+                                      - (player.rect.y + player.rect.h / 2.0f);
+                            spDist = SDL_sqrtf(sdx * sdx + sdy * sdy);
+                        }
+
+                        if (player.abilityCd[hs->abilityId] > 0.0f)
+                            ;   // CD sürüyor — bar perdesi gösteriyor
+                        else if (player.mana < cost)
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f,
+                                                 "Manan yetmiyor!", red);
+                        else if (needTarget && (spTarget == NULL || spDist > SPELL_RANGE))
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f,
+                                                 spTarget == NULL ? "Hedef gerekli!"
+                                                                  : "Menzil dışı!", red);
+                        else if (!player.attacking && !player.shooting && castSpell < 0)
+                        {
+                            castSpell = (int)hs->abilityId;   // cast başlar (köklü)
+                            castTimer = 0.0f;
+                            player.autoAttack = false;
+                            audio_play(SFX_UI);
+                        }
+                    }
+                    else if (needBow != player.bowEquipped)
                     {
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
@@ -2312,8 +2420,10 @@ int main(int argc, char *argv[])
                     // Tüketilebilir: tür CD'deyse / (iksirse can fulse) / yoksa geç
                     int typeIdx = (int)(hs->itemType - ITEM_TYPES);
                     bool heals = hs->itemType->healAmount > 0.0f;
+                    bool manas = hs->itemType->manaAmount > 0.0f;
                     if (player.itemCd[typeIdx] <= 0.0f &&
                         (!heals || player.health < player.maxHealth) &&
+                        (!manas || player.mana < player.maxMana) &&
                         inventory_consume(&inventory, hs->itemType))
                     {
                         // Akıcı: CD kısalır; İlk Yardım: iyileşme artar
@@ -2332,6 +2442,18 @@ int main(int argc, char *argv[])
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  player.rect.x + player.rect.w / 2.0f,
                                                  player.rect.y - 10.0f, buf, green);
+                        }
+                        if (manas)
+                        {
+                            player.mana += hs->itemType->manaAmount;
+                            if (player.mana > player.maxMana)
+                                player.mana = player.maxMana;
+                            snprintf(buf, sizeof(buf), "+%d MP",
+                                     (int)hs->itemType->manaAmount);
+                            SDL_Color blue = { 120, 170, 255, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f, buf, blue);
                         }
                         if (hs->itemType->buffDuration > 0.0f)
                         {
@@ -2443,6 +2565,256 @@ int main(int argc, char *argv[])
                         craftProgress = 0.0f;
                     }
                 }
+            }
+
+            // --- BÜYÜ CAST'İ: köklü — hareket bozar (mana yanmaz); commit'te etki ---
+            if (castSpell >= 0)
+            {
+                bool csMoving = keys[SDL_SCANCODE_W] || keys[SDL_SCANCODE_A] ||
+                                keys[SDL_SCANCODE_S] || keys[SDL_SCANCODE_D];
+                if (csMoving)
+                {
+                    castSpell = -1;
+                    SDL_Color dim = { 255, 170, 120, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 10.0f, "Büyü bozuldu", dim);
+                }
+                else
+                {
+                    castTimer += dt;
+                    if (randf() < dt * 14.0f)   // kanalize kıvılcımları
+                        fx_spawn(&weaponFx,
+                                 player.rect.x + player.rect.w / 2.0f + (randf() - 0.5f) * 24.0f,
+                                 player.rect.y + player.rect.h / 2.0f - 10.0f - randf() * 20.0f,
+                                 (randf() - 0.5f) * 15.0f, -25.0f - randf() * 20.0f,
+                                 0.4f, 5.0f + randf() * 5.0f, 190, 120, 235, WEAPON_FX_NONE);
+
+                    if (castTimer >= SPELL_CAST_TIME * perkFx.castSpeedMult)
+                    {
+                        const AbilityDef *sd = &ABILITIES[castSpell];
+                        float cost = sd->mana * perkFx.manaCostMult;
+                        const ItemStack *wpn = &equipment.slots[EQUIP_WEAPON];
+                        float pcx = player.rect.x + player.rect.w / 2.0f;
+                        float pcy = player.rect.y + player.rect.h / 2.0f;
+
+                        player.mana -= cost;
+                        if (player.mana < 0.0f) player.mana = 0.0f;
+                        player.abilityCd[castSpell] = sd->cooldown;
+                        for (int b = 0; b < MAX_BURSTS; b++)
+                            if (!bursts[b].active)
+                            {
+                                bursts[b] = (BurstFx){ true, pcx, pcy - 20.0f, 0.0f, 0.7f };
+                                break;
+                            }
+
+                        if (castSpell == ABILITY_FIREBOLT)
+                        {
+                            // Güdümlü ateş mermisi (hasar varışta)
+                            for (int sp = 0; sp < MAX_SPELL_PROJS; sp++)
+                            {
+                                if (spellProjs[sp].active) continue;
+                                spellProjs[sp] = (SpellProj){
+                                    .active = true, .x = pcx, .y = pcy - 14.0f,
+                                    .targetId = player.targetMobId,
+                                };
+                                break;
+                            }
+                            audio_play(SFX_HIT);
+                        }
+                        else if (castSpell == ABILITY_ICE_NOVA)
+                        {
+                            // ÇEVRENE buz patlaması: hasar + alan yavaşlatma
+                            float novaR = 120.0f + perkFx.novaRadiusBonus;
+                            fx_burst(&weaponFx, pcx, pcy, 26, 150.0f, 150, 210, 255);
+                            audio_play(SFX_DODGE);   // buz whoosh
+                            for (int m2 = 0; m2 < mobCount; m2++)
+                            {
+                                Mob *nb = &mobs[m2];
+                                if (!nb->e.alive) continue;
+                                float ndx = (nb->e.rect.x + nb->e.rect.w / 2.0f) - pcx;
+                                float ndy = (nb->e.rect.y + nb->e.rect.h / 2.0f) - pcy;
+                                if (ndx * ndx + ndy * ndy > novaR * novaR) continue;
+                                HitResult sh = combat_spell_hit(&player, wpn,
+                                                                sd->damageScale,
+                                                                nb->type->defense, &perkFx);
+                                nb->e.health -= sh.damage;
+                                nb->e.hitFlash = 0.15f;
+                                nb->slowMult = 0.5f;
+                                nb->slowTimer = 4.0f;
+                                nb->aggro = true;
+                                floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                                nb->e.rect.x + nb->e.rect.w / 2.0f + 10.0f,
+                                                nb->e.rect.y, (int)sh.damage, sh.crit);
+                                float sxp = combat_xp_for_hit(sh.damage, nb->type->level,
+                                                player.skills[SKILL_DESTRUCTION].level);
+                                if (skill_add_xp(player.skills, SKILL_DESTRUCTION, sxp))
+                                    on_skill_levelup(&player, SKILL_DESTRUCTION,
+                                                     &hotbar, floatTexts);
+                                if (nb->e.health <= 0.0f)
+                                    mob_die(nb, mobs, MAX_MOBS, &nextMobId, loots,
+                                            questStatus, floatTexts, &player);
+                            }
+                        }
+                        else if (castSpell == ABILITY_LIGHTNING)
+                        {
+                            // Anında çarpma (hedef cast sırasında ölmediyse)
+                            Mob *lt = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                            if (lt != NULL)
+                            {
+                                float tx = lt->e.rect.x + lt->e.rect.w / 2.0f;
+                                float ty = lt->e.rect.y + lt->e.rect.h / 2.0f;
+                                HitResult sh = combat_spell_hit(&player, wpn,
+                                                                sd->damageScale,
+                                                                lt->type->defense, &perkFx);
+                                lt->e.health -= sh.damage;
+                                lt->e.hitFlash = 0.2f;
+                                lt->aggro = true;
+                                mob_alert_camp(mobs, mobCount, lt);
+                                fx_burst(&weaponFx, tx, ty, 18, 160.0f, 250, 250, 160);
+                                for (int b = 0; b < MAX_BURSTS; b++)
+                                    if (!bursts[b].active)
+                                    {
+                                        bursts[b] = (BurstFx){ true, tx, ty, 0.0f, 1.2f };
+                                        break;
+                                    }
+                                audio_play(SFX_CRIT);
+                                floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                                tx + 10.0f, lt->e.rect.y,
+                                                (int)sh.damage, sh.crit);
+                                float sxp = combat_xp_for_hit(sh.damage, lt->type->level,
+                                                player.skills[SKILL_DESTRUCTION].level);
+                                if (skill_add_xp(player.skills, SKILL_DESTRUCTION, sxp))
+                                    on_skill_levelup(&player, SKILL_DESTRUCTION,
+                                                     &hotbar, floatTexts);
+                                if (lt->e.health <= 0.0f)
+                                    mob_die(lt, mobs, MAX_MOBS, &nextMobId, loots,
+                                            questStatus, floatTexts, &player);
+                            }
+                        }
+                        else if (castSpell == ABILITY_FLAME_ARMOR)
+                        {
+                            player.flameArmorTimer = 15.0f;
+                            fx_burst(&weaponFx, pcx, pcy, 20, 90.0f, 255, 150, 50);
+                            audio_play(SFX_PERK);
+                            SDL_Color warm = { 255, 170, 80, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 pcx, player.rect.y - 10.0f,
+                                                 "Alev Zırhı!", warm);
+                        }
+                        else if (castSpell == ABILITY_MAGIC_SHIELD)
+                        {
+                            // Büyü Kalkanı: hasar HP yerine manadan emilir (×1.2)
+                            player.manaShieldTimer = 12.0f;
+                            player.shieldBreakT = 0.0f;
+                            audio_play(SFX_PERK);
+                            SDL_Color icy = { 150, 220, 255, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 pcx, player.rect.y - 10.0f,
+                                                 "Büyü Kalkanı!", icy);
+                        }
+                        else if (castSpell == ABILITY_SPIKES)
+                        {
+                            // Toprak Dikenleri: çevrende patlama + yavaşlatma
+                            float spikeR = 130.0f;
+                            audio_play(SFX_HIT);
+                            for (int k = 0; k < 3; k++)   // 3 diken kümesi görseli
+                            {
+                                float ang = (float)k * 2.094f + randf();
+                                for (int q = 0; q < MAX_SPIKE_FX; q++)
+                                    if (!spikeFx[q].active)
+                                    {
+                                        spikeFx[q] = (SpikeFxAnim){ true,
+                                            pcx + SDL_cosf(ang) * 70.0f,
+                                            pcy + SDL_sinf(ang) * 45.0f, 0.0f };
+                                        break;
+                                    }
+                            }
+                            for (int m2 = 0; m2 < mobCount; m2++)
+                            {
+                                Mob *nb = &mobs[m2];
+                                if (!nb->e.alive) continue;
+                                float ndx = (nb->e.rect.x + nb->e.rect.w / 2.0f) - pcx;
+                                float ndy = (nb->e.rect.y + nb->e.rect.h / 2.0f) - pcy;
+                                if (ndx * ndx + ndy * ndy > spikeR * spikeR) continue;
+                                HitResult sh = combat_spell_hit(&player, wpn,
+                                                                sd->damageScale,
+                                                                nb->type->defense, &perkFx);
+                                nb->e.health -= sh.damage;
+                                nb->e.hitFlash = 0.15f;
+                                nb->slowMult = 0.35f;   // dikenlere saplanma hissi
+                                nb->slowTimer = 1.5f;
+                                nb->aggro = true;
+                                floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                                nb->e.rect.x + nb->e.rect.w / 2.0f + 10.0f,
+                                                nb->e.rect.y, (int)sh.damage, sh.crit);
+                                float sxp = combat_xp_for_hit(sh.damage, nb->type->level,
+                                                player.skills[SKILL_DESTRUCTION].level);
+                                if (skill_add_xp(player.skills, SKILL_DESTRUCTION, sxp))
+                                    on_skill_levelup(&player, SKILL_DESTRUCTION,
+                                                     &hotbar, floatTexts);
+                                if (nb->e.health <= 0.0f)
+                                    mob_die(nb, mobs, MAX_MOBS, &nextMobId, loots,
+                                            questStatus, floatTexts, &player);
+                            }
+                        }
+
+                        castSpell = -1;
+                        castTimer = 0.0f;
+                    }
+                }
+            }
+
+            // Ateş Topu mermileri: hedefe güdümlü, varışta büyü vuruşu + YANMA
+            for (int sp = 0; sp < MAX_SPELL_PROJS; sp++)
+            {
+                if (!spellProjs[sp].active) continue;
+                Mob *ft = mob_find_by_id(mobs, mobCount, spellProjs[sp].targetId);
+                if (ft == NULL) { spellProjs[sp].active = false; continue; }
+                float tx = ft->e.rect.x + ft->e.rect.w / 2.0f;
+                float ty = ft->e.rect.y + ft->e.rect.h / 2.0f;
+                float fdx = tx - spellProjs[sp].x, fdy = ty - spellProjs[sp].y;
+                float fdist = SDL_sqrtf(fdx * fdx + fdy * fdy);
+                float fstep = SPELL_PROJ_SPEED * dt;
+
+                // Ateş izi
+                if (randf() < dt * 40.0f)
+                    fx_spawn(&weaponFx, spellProjs[sp].x, spellProjs[sp].y,
+                             (randf() - 0.5f) * 25.0f, (randf() - 0.5f) * 25.0f,
+                             0.3f, 6.0f + randf() * 5.0f, 255, 160, 60, WEAPON_FX_NONE);
+
+                if (fdist > fstep + 8.0f)
+                {
+                    spellProjs[sp].x += fdx / fdist * fstep;
+                    spellProjs[sp].y += fdy / fdist * fstep;
+                    continue;
+                }
+
+                spellProjs[sp].active = false;
+                const ItemStack *wpn2 = &equipment.slots[EQUIP_WEAPON];
+                HitResult sh = combat_spell_hit(&player, wpn2,
+                                                ABILITIES[ABILITY_FIREBOLT].damageScale,
+                                                ft->type->defense, &perkFx);
+                ft->e.health -= sh.damage;
+                ft->e.hitFlash = 0.15f;
+                ft->aggro = true;
+                mob_alert_camp(mobs, mobCount, ft);
+                audio_play(sh.crit ? SFX_CRIT : SFX_HIT);
+                fx_burst(&weaponFx, tx, ty, 12, 100.0f, 255, 150, 50);
+
+                // YANMA: 3. bağımsız DoT kanalı (Közleme/Yangın düğümleri büyütür)
+                ft->burnDps = sh.damage * 0.30f * (1.0f + perkFx.burnBonus) / 3.0f;
+                ft->burnTime = 3.0f;
+
+                floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                tx + 10.0f, ft->e.rect.y, (int)sh.damage, sh.crit);
+                float sxp = combat_xp_for_hit(sh.damage, ft->type->level,
+                                player.skills[SKILL_DESTRUCTION].level);
+                if (skill_add_xp(player.skills, SKILL_DESTRUCTION, sxp))
+                    on_skill_levelup(&player, SKILL_DESTRUCTION, &hotbar, floatTexts);
+                if (ft->e.health <= 0.0f)
+                    mob_die(ft, mobs, MAX_MOBS, &nextMobId, loots, questStatus,
+                            floatTexts, &player);
             }
 
             // --- KAMP ATEŞİ KURULUMU: 3 sn süreç, hareket iptal eder ---
@@ -2606,7 +2978,8 @@ int main(int argc, char *argv[])
                             int s = enchAction - 10;
                             static const int stone[STAT_COUNT] = {
                                 ITEM_STONE_STR, ITEM_STONE_DEX, ITEM_STONE_HP,
-                                ITEM_STONE_DEF, ITEM_STONE_MP, ITEM_STONE_STA };
+                                ITEM_STONE_DEF, ITEM_STONE_MP, ITEM_STONE_STA,
+                                ITEM_STONE_INT };
                             ItemStack *tgt = &equipment.slots[enchTarget];
                             int cur = 0;
                             int slotK = -1, emptyK = -1;
@@ -2684,9 +3057,27 @@ int main(int argc, char *argv[])
                 else
                 {
                     player.attackTimer -= dt;
-                    // Menzil dışıysa zamanlayıcı 0'da bekler, menzile girince hemen vurur
-                    if (player.attackTimer <= 0.0f && !player.attacking &&
-                        !player.shooting && !attackPressed)
+
+                    // ASA taban atağı: Space döngüsü ATEŞ TOPU cast'i atar (silahın
+                    // doğal atağı — kullanıcı kuralı: Space = kuşanılı silahın tabanı).
+                    // Mana yetmezse aşağıdaki melee dürtme yoluna düşer.
+                    bool staffCast = player.staffEquipped && player.targetMobId != 0 &&
+                                     player.mana >= ABILITIES[ABILITY_FIREBOLT].mana *
+                                                    perkFx.manaCostMult;
+                    if (staffCast && castSpell < 0 && !player.attacking &&
+                        player.abilityCd[ABILITY_FIREBOLT] <= 0.0f)
+                    {
+                        float adx = aimX - (player.rect.x + player.rect.w / 2.0f);
+                        float ady = aimY - (player.rect.y + player.rect.h / 2.0f);
+                        if (SDL_sqrtf(adx * adx + ady * ady) <= SPELL_RANGE)
+                        {
+                            castSpell = ABILITY_FIREBOLT;   // köklü cast başlar
+                            castTimer = 0.0f;
+                        }
+                    }
+                    else if (!staffCast &&
+                             player.attackTimer <= 0.0f && !player.attacking &&
+                             !player.shooting && !attackPressed && castSpell < 0)
                     {
                         float adx = aimX - (player.rect.x + player.rect.w / 2.0f);
                         float ady = aimY - (player.rect.y + player.rect.h / 2.0f);
@@ -2823,6 +3214,8 @@ int main(int argc, char *argv[])
             // Yay kuşanımı: attackPressed slash yerine SHOOT başlatsın (player_update)
             player.bowEquipped = (wpnStack->type != NULL &&
                                   wpnStack->type->weaponType == WEAPON_BOW);
+            player.staffEquipped = (wpnStack->type != NULL &&
+                                    wpnStack->type->weaponType == WEAPON_STAFF);
             player.drawSpeedMult = perkFx.drawSpeedMult;   // ağaç: çekme hızı
 
             // Kaynatma/tören animasyonu: kazan ve sunakta süreç sürerken spellcast;
@@ -2830,7 +3223,7 @@ int main(int argc, char *argv[])
             player.casting = (craftOpen && craftStation >= 0 &&
                               STATIONS[craftStation].type != STATION_SMITH &&
                               (craftRecipe >= 0 || enchAction > 0)) ||
-                             campBuild >= 0.0f;
+                             campBuild >= 0.0f || castSpell >= 0;
 
             // Türetilmiş statlar: taban + perk + sunak stat basımları (her kare).
             // STR/DEX taban 10 (combat STAT_BASE ile aynı); max havuzlar taban + gear.
@@ -2845,8 +3238,31 @@ int main(int argc, char *argv[])
                             gearStat[st->statType[k]] +=
                                 STAT_TIER_VALUE[st->statType[k]] * st->statTier[k];
                 }
-                player.strength  = 10 + gearStat[STAT_STR];
-                player.dexterity = 10 + gearStat[STAT_DEX];
+                player.strength     = 10 + gearStat[STAT_STR];
+                player.dexterity    = 10 + gearStat[STAT_DEX];
+                player.intelligence = 10 + gearStat[STAT_INT];
+
+                // Zırh ağırlığı (Faz 22): ağır 5 / orta 2 / hafif 1 puan;
+                // STR (taban 10 üstü) puan başına 1 telafi eder. Kalan puan
+                // başına hız -%2 (tavan -%30). Ağır/orta parça mana yenilemesini kısar
+                // ("demir kutuda kanalize etmek zor" — Zihin/MP ile telafi edilir).
+                {
+                    int weight = 0, heavyN = 0, medN = 0;
+                    for (int s2 = 0; s2 < EQUIP_SLOT_COUNT; s2++)
+                    {
+                        const ItemType *it2 = equipment.slots[s2].type;
+                        if (it2 == NULL) continue;
+                        if (it2->armorClass == ARMOR_HEAVY)  { weight += 5; heavyN++; }
+                        else if (it2->armorClass == ARMOR_MEDIUM) { weight += 2; medN++; }
+                        else if (it2->armorClass == ARMOR_LIGHT)  weight += 1;
+                    }
+                    int over = weight - (player.strength - 10);
+                    if (over < 0) over = 0;
+                    armorSpeedPenalty = 0.02f * (float)over;
+                    if (armorSpeedPenalty > 0.30f) armorSpeedPenalty = 0.30f;
+                    armorManaMult = 1.0f - (0.06f * (float)heavyN + 0.03f * (float)medN);
+                    if (armorManaMult < 0.4f) armorManaMult = 0.4f;
+                }
 
                 // Max can: artış kadar iyileş (perk/gear takınca), azalışta kırp
                 float newMaxHp = BASE_MAX_HP + perkFx.maxHpBonus + (float)gearStat[STAT_HP];
@@ -2948,7 +3364,7 @@ int main(int argc, char *argv[])
             }
 
             // Havuz yenilenmesi — Kader düğümleri hızlandırır
-            player.mana += 2.0f * perkFx.manaRegenMult * dt;
+            player.mana += 2.0f * perkFx.manaRegenMult * armorManaMult * dt;
             if (player.mana > player.maxMana) player.mana = player.maxMana;
             player.stamina += 15.0f * perkFx.stamRegenMult * dt;
             if (player.stamina > player.maxStamina) player.stamina = player.maxStamina;
@@ -2972,6 +3388,24 @@ int main(int argc, char *argv[])
                 // Slime zehri: yavaş erime (ölüm kontrolü aşağıdaki genel yolda)
                 player.poisonTimer -= dt;
                 player.health -= player.poisonDps * dt;
+            }
+            if (player.manaShieldTimer > 0.0f)
+            {
+                player.manaShieldTimer -= dt;
+                if (player.manaShieldTimer <= 0.0f)
+                    player.shieldBreakT = 0.001f;   // kırılma animasyonu başlat
+            }
+            if (player.shieldBreakT > 0.0f) player.shieldBreakT += dt;
+            if (player.shieldBreakT > 4 * 0.07f) player.shieldBreakT = 0.0f;
+            if (player.flameArmorTimer > 0.0f)
+            {
+                player.flameArmorTimer -= dt;
+                if (randf() < dt * 10.0f)   // aura közleri
+                    fx_spawn(&weaponFx,
+                             player.rect.x + randf() * player.rect.w,
+                             player.rect.y + player.rect.h * (0.3f + randf() * 0.6f),
+                             (randf() - 0.5f) * 20.0f, -30.0f - randf() * 20.0f,
+                             0.35f, 5.0f + randf() * 5.0f, 255, 150, 50, WEAPON_FX_NONE);
             }
             if (player.coatTimer > 0.0f)
             {
@@ -3033,6 +3467,8 @@ int main(int argc, char *argv[])
                                                   player.state == PLAYER_IDLE,
                                                   player.health / player.maxHealth,
                                                   yaraliAyi, &dodged);
+                    if (!dodged)
+                        dmg = mana_shield_absorb(&player, dmg, floatTexts);
                     if (!dodged && dmg > 0.0f)
                     {
                         player.health -= dmg;
@@ -3093,7 +3529,11 @@ int main(int argc, char *argv[])
             }
 
             // --- SALDIRI HASARI: vuruş karesinde, hedef hâlâ menzildeyse ---
-            if (player.attacking && !player.attackHit && player.currentFrame == PLAYER_ATTACK_HIT_FRAME)
+            // (asa dürtmesi THRUST oynar — hasar karesi farklı)
+            if (player.attacking && !player.attackHit &&
+                player.currentFrame == (player.state == PLAYER_THRUST
+                                        ? PLAYER_THRUST_HIT_FRAME
+                                        : PLAYER_ATTACK_HIT_FRAME))
             {
                 Mob *target = mob_find_by_id(mobs, mobCount, player.targetMobId);
                 if (target != NULL)
@@ -3137,6 +3577,13 @@ int main(int argc, char *argv[])
                         target->e.health -= hit.damage;
                         target->e.hitFlash = 0.15f;
                         audio_play(hit.crit ? SFX_CRIT : SFX_HIT);
+
+                        // SAVAŞ RAHİBİ: melee vuruş mana yeniler (battlemage döngüsü)
+                        if (perkFx.meleeManaRegen > 0.0f)
+                        {
+                            player.mana += perkFx.meleeManaRegen;
+                            if (player.mana > player.maxMana) player.mana = player.maxMana;
+                        }
 
                         // Crit: hedefte sarı-beyaz kıvılcım patlaması + mini sarsıntı
                         if (hit.crit)
@@ -3497,6 +3944,22 @@ int main(int argc, char *argv[])
                     mob_die(at, mobs, MAX_MOBS, &nextMobId, loots, questStatus, floatTexts, &player);
             }
 
+            // Diken patlaması animasyonları: 10 kare × 0.06sn
+            for (int q = 0; q < MAX_SPIKE_FX; q++)
+            {
+                if (!spikeFx[q].active) continue;
+                spikeFx[q].t += dt;
+                if (spikeFx[q].t >= 10 * 0.06f) spikeFx[q].active = false;
+            }
+
+            // Arcane patlamaları: 7 kare × 0.045sn, bitince söner
+            for (int b = 0; b < MAX_BURSTS; b++)
+            {
+                if (!bursts[b].active) continue;
+                bursts[b].t += dt;
+                if (bursts[b].t >= 7 * 0.045f) bursts[b].active = false;
+            }
+
             // --- YAPIŞKAN TUZAKLARI: mob basınca patlar, alandakileri yavaşlatır ---
             for (int tI = 0; tI < MAX_TRAPS; tI++)
             {
@@ -3572,6 +4035,8 @@ int main(int argc, char *argv[])
                                               player.health / player.maxHealth,
                                               yaraliAyi, &dodged);
                 float pcx = player.rect.x + player.rect.w / 2.0f;
+                if (!dodged)
+                    dmg = mana_shield_absorb(&player, dmg, floatTexts);
                 if (dodged)
                 {
                     SDL_Color cyan = { 90, 220, 255, 255 };
@@ -3622,7 +4087,8 @@ int main(int argc, char *argv[])
 
             // Hız çarpanı: perk (Çevik/Rüzgar/Uyumlu) × gece (Gölge Adımı) × eğilme.
             // player_update tile hızıyla çarpar (doğrudan speed yazmak eziliyordu — bug'dı)
-            player.speedMult = perkFx.speedMult
+            player.speedMult = (1.0f - armorSpeedPenalty)   // zırh ağırlığı (STR telafili)
+                             * perkFx.speedMult
                              * (gametime_is_night() ? perkFx.nightSpeedMult : 1.0f)
                              * (player.sneaking
                                 ? (sneak_speed_mult(player.skills[SKILL_SNEAK].level) +
@@ -3675,6 +4141,19 @@ int main(int argc, char *argv[])
                                  mobs[i].e.rect.y + mobs[i].e.rect.h * 0.4f,
                                  (randf() - 0.5f) * 15.0f, 40.0f + randf() * 30.0f,
                                  0.55f, 8.0f + randf() * 6.0f, 190, 20, 20,
+                                 WEAPON_FX_NONE);
+                }
+                // Yanma: 3. bağımsız kanal (Ateş Topu) — turuncu közler
+                if (mobs[i].burnTime > 0.0f && mobs[i].e.alive)
+                {
+                    mobs[i].burnTime -= dt;
+                    mobs[i].e.health -= mobs[i].burnDps * dt;
+                    if (randf() < dt * 7.0f)
+                        fx_spawn(&weaponFx,
+                                 mobs[i].e.rect.x + mobs[i].e.rect.w * (0.3f + randf() * 0.4f),
+                                 mobs[i].e.rect.y + mobs[i].e.rect.h * 0.5f,
+                                 (randf() - 0.5f) * 15.0f, -30.0f - randf() * 25.0f,
+                                 0.4f, 6.0f + randf() * 6.0f, 255, 150, 50,
                                  WEAPON_FX_NONE);
                 }
                 // Zehir: kanamadan AYRI kanal — ikisi birden akar (tam DoT build'i)
@@ -3738,6 +4217,8 @@ int main(int argc, char *argv[])
                                                   player.state == PLAYER_IDLE,
                                                   player.health / player.maxHealth,
                                                   yaraliAyi, &dodged);
+                    if (!dodged)
+                        dmg = mana_shield_absorb(&player, dmg, floatTexts);
                     if (dodged)
                     {
                         SDL_Color cyan = { 90, 220, 255, 255 };
@@ -3789,8 +4270,9 @@ int main(int argc, char *argv[])
                                 on_skill_levelup(&player, asRaw, &hotbar, floatTexts);
                         }
 
-                        // Yansıtma: Karşılık (%) + Diken Zırh (sabit)
-                        float reflect = dmg * perkFx.reflectFrac + perkFx.reflectFlat;
+                        // Yansıtma: Karşılık (%) + Diken Zırh (sabit) + Alev Zırhı (büyü)
+                        float reflect = dmg * perkFx.reflectFrac + perkFx.reflectFlat
+                                      + (player.flameArmorTimer > 0.0f ? 8.0f : 0.0f);
                         if (reflect > 0.0f && mobs[i].e.alive)
                         {
                             mobs[i].e.health -= reflect;
@@ -4006,6 +4488,21 @@ int main(int argc, char *argv[])
             }
         }
 
+        // Toprak Dikenleri: zemin patlaması (moblardan/oyuncudan ÖNCE — yerden fışkırır)
+        if (spikesTex != NULL)
+            for (int q = 0; q < MAX_SPIKE_FX; q++)
+            {
+                if (!spikeFx[q].active) continue;
+                int sfr = (int)(spikeFx[q].t / 0.06f);
+                if (sfr > 9) sfr = 9;
+                SDL_FRect ssrc = { (float)(sfr * 64), 64, 64, 64 };   // satır 1: toprak kümesi
+                SDL_FRect sdst = world_to_screen(spikeFx[q].x - 32.0f,
+                                                 spikeFx[q].y - 52.0f,
+                                                 64.0f, 64.0f, &camera);
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                r2d_draw_texture(renderer, spikesTex, &ssrc, &sdst);
+            }
+
         PlayerLayer built[24];
         int builtCount = build_player_layers(layers, LAYER_COUNT, &equipment,
                                              &itemTex, built, 24);
@@ -4035,6 +4532,58 @@ int main(int argc, char *argv[])
             }
         }
 
+        // Yanan moblarda alev (12 karelik piksel alev — Ateş Topu DoT görseli)
+        if (flameTex != NULL)
+            for (int i = 0; i < mobCount; i++)
+            {
+                if (!mobs[i].e.alive || mobs[i].burnTime <= 0.0f) continue;
+                int ff = (int)((SDL_GetTicks() / 80) % 12);
+                SDL_FRect fsrc = { (float)((ff % 4) * 16), (float)((ff / 4) * 24), 16, 24 };
+                SDL_FRect fdst = world_to_screen(
+                    mobs[i].e.rect.x + mobs[i].e.rect.w / 2.0f - 12.0f,
+                    mobs[i].e.rect.y - 10.0f, 24.0f, 36.0f, &camera);
+                r2d_draw_texture(renderer, flameTex, &fsrc, &fdst);
+            }
+
+        // Alev Zırhı aurası: oyuncunun iki yanında animasyonlu alevler
+        if (flameTex != NULL && player.flameArmorTimer > 0.0f)
+            for (int fside = 0; fside < 2; fside++)
+            {
+                int ff = (int)((SDL_GetTicks() / 90 + fside * 6) % 12);
+                SDL_FRect fsrc = { (float)((ff % 4) * 16), (float)((ff / 4) * 24), 16, 24 };
+                SDL_FRect fdst = world_to_screen(
+                    player.rect.x + (fside == 0 ? -20.0f : player.rect.w + 2.0f),
+                    player.rect.y + player.rect.h * 0.35f, 20.0f, 30.0f, &camera);
+                r2d_draw_texture(renderer, flameTex, &fsrc, &fdst);
+            }
+
+        // Büyü Kalkanı kubbesi: oluşum(0-7) → dönme(8-11) → kırılma(12-15)
+        if (shieldTex != NULL &&
+            (player.manaShieldTimer > 0.0f || player.shieldBreakT > 0.0f))
+        {
+            int sf;
+            if (player.shieldBreakT > 0.0f)
+            {
+                sf = 12 + (int)(player.shieldBreakT / 0.07f);
+                if (sf > 15) sf = 15;
+            }
+            else
+            {
+                float elapsed = 12.0f - player.manaShieldTimer;
+                if (elapsed < 8 * 0.06f) sf = (int)(elapsed / 0.06f);
+                else                     sf = 8 + (int)(elapsed / 0.12f) % 4;
+            }
+            SDL_FRect ksrc = { (float)((sf % 4) * 128), (float)((sf / 4) * 128),
+                               128, 128 };
+            SDL_FRect kdst = world_to_screen(
+                player.rect.x + player.rect.w / 2.0f - 45.0f,
+                player.rect.y + player.rect.h / 2.0f - 55.0f,
+                90.0f, 90.0f, &camera);
+            r2d_texture_set_alpha_mod(shieldTex, 170);
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_draw_texture(renderer, shieldTex, &ksrc, &kdst);
+        }
+
         // Uçan oklar: hedefe dönük kısa çizgi (gövde koyu + uç açık)
         for (int a = 0; a < MAX_ARROWS; a++)
         {
@@ -4058,6 +4607,36 @@ int main(int argc, char *argv[])
             r2d_line(renderer, tip.x - adx * 3.0f, tip.y - ady * 3.0f, tip.x, tip.y);
         }
 
+        // Ateş Topu mermileri: piksel küre sprite'ı (Sog paketi)
+        if (orbFireTex != NULL)
+            for (int sp = 0; sp < MAX_SPELL_PROJS; sp++)
+            {
+                if (!spellProjs[sp].active) continue;
+                SDL_FRect osrc = { 0, 0, 20, 24 };
+                SDL_FRect odst = world_to_screen(spellProjs[sp].x - 15.0f,
+                                                 spellProjs[sp].y - 18.0f,
+                                                 30.0f, 36.0f, &camera);
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                r2d_draw_texture(renderer, orbFireTex, &osrc, &odst);
+            }
+
+        // Arcane patlamaları (Yıldırım çarpması + cast parlaması) — additive
+        if (arcaneTex != NULL)
+            for (int b = 0; b < MAX_BURSTS; b++)
+            {
+                if (!bursts[b].active) continue;
+                int frame = (int)(bursts[b].t / 0.045f);
+                if (frame > 6) frame = 6;
+                SDL_FRect bsrc = { (float)(frame * 96), 0, 96, 96 };
+                float bs = 96.0f * bursts[b].scale;
+                SDL_FRect bdst = world_to_screen(bursts[b].x - bs / 2.0f,
+                                                 bursts[b].y - bs / 2.0f,
+                                                 bs, bs, &camera);
+                r2d_set_blend(renderer, R2D_BLEND_ADD);
+                r2d_draw_texture(renderer, arcaneTex, &bsrc, &bdst);
+            }
+        r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+
         // Mob mermileri: iskelet oku = kemik rengi çizgi; büyü topu = mor çekirdek
         for (int pj = 0; pj < MAX_MOB_PROJS; pj++)
         {
@@ -4077,11 +4656,19 @@ int main(int argc, char *argv[])
                 r2d_set_color(renderer, 120, 120, 130, 255);   // demir uç
                 r2d_line(renderer, tip.x - ndx * 3.0f, tip.y - ndy * 3.0f, tip.x, tip.y);
             }
+            else if (orbBlueTex != NULL)
+            {
+                SDL_FRect bsrc = { 0, 0, 15, 18 };
+                SDL_FRect core = world_to_screen(mobProjs[pj].x - 11.0f,
+                                                 mobProjs[pj].y - 13.0f,
+                                                 22.0f, 27.0f, &camera);
+                r2d_draw_texture(renderer, orbBlueTex, &bsrc, &core);
+            }
             else
             {
                 SDL_FRect core = world_to_screen(mobProjs[pj].x - 4.0f,
                                                  mobProjs[pj].y - 4.0f, 8.0f, 8.0f, &camera);
-                r2d_set_color(renderer, 200, 130, 245, 255);   // mor çekirdek
+                r2d_set_color(renderer, 200, 130, 245, 255);   // mor çekirdek (fallback)
                 r2d_fill_rect(renderer, &core);
             }
         }
@@ -4450,6 +5037,12 @@ int main(int argc, char *argv[])
             r2d_texture_destroy(NULL, station_textures[i]);
     if (boardTex)
         r2d_texture_destroy(NULL, boardTex);
+    if (orbFireTex) r2d_texture_destroy(NULL, orbFireTex);
+    if (orbBlueTex) r2d_texture_destroy(NULL, orbBlueTex);
+    if (arcaneTex)  r2d_texture_destroy(NULL, arcaneTex);
+    if (shieldTex)  r2d_texture_destroy(NULL, shieldTex);
+    if (spikesTex)  r2d_texture_destroy(NULL, spikesTex);
+    if (flameTex)   r2d_texture_destroy(NULL, flameTex);
 
     if (glowTex)
         r2d_texture_destroy(NULL, glowTex);

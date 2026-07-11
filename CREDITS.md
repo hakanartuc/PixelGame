@@ -43,12 +43,28 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
 - Lisans: LPC parçaları (CC-BY-SA 3.0 / GPL 3.0 karışık — generator credits çıktısı
   `lpc_male_item_animations_2026-07-10T17-38-07/credits/` klasöründe)
 
+### ULPC Simple Staff (asa paper-doll katmanları)
+- Kaynak: Universal LPC Spritesheet Generator ("simple staff")
+- Dosyalar: `assets/equipment/weapon/staff_140.png, staff_009.png`
+  (spellcast+thrust+walk satırları tam sheet'e kompoze edildi)
+- Lisans: LPC parçaları (generator credits çıktısı
+  `lpc_male_item_animations_2026-07-11T13-45-19/credits/` klasöründe)
+
 ### LPC Hand Tools (kazma/balta/çekiç smash katmanları)
 - Yapımcılar: bluecarrot16, Pierre Vigier, Tuomo Untinen, Johannes Sjölund (wulax), Inboxninja
 - Kaynak: https://opengameart.org/content/lpc-hand-tools
 - Dosyalar: `assets/equipment/weapon/pickaxe_*.png, axe_*.png, hammer_*.png`
 - Lisans: CC-BY-SA 3.0 (axe/pickaxe/hammer ayrıca OGA-BY 3.0 seçeneğiyle —
   mobil dağıtımda OGA-BY 3.0 tercih edilebilir, atıf şart)
+
+### Büyü efektleri (Faz 22 — küre/patlama/alev/kalkan/diken sprite'ları)
+- Dosyalar: `assets/fx/orb_fire.png, orb_blue.png, orb_earth.png` (Sog paketi),
+  `assets/fx/arcane_burst.png` (Arcane_Effect paketi),
+  `assets/fx/flame_small.png` (flames paketi),
+  `assets/fx/iceshield.png, spikes.png` (magic_pack)
+- Kaynak klasörler: `~/Downloads/Sog.png, Arcane_Effect, flames, magic_pack`
+- TODO: her paketin indirildiği sayfa + yazar + lisans teyidi
+  (mobil dağıtım öncesi şart — magic_pack LPC uyumlu görünüyor).
 
 ## Font
 - **Public Pixel** (`assets/fonts/PublicPixel-rv0pA.ttf`) — GGBotNet,

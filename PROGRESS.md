@@ -230,6 +230,43 @@ Güncelleme: 2026-07-10
 - Sonraki dalga notu: Lockpicking/Pickpocket mini ağaçları MEKANİKLERİYLE gelir
   (zindan + suç genişlemesi); Two-Handed/Block ağaçları item'larıyla
 
+### Faz 22 — BÜYÜ SİSTEMİ (silahtan bağımsız büyüler + Asa + INT + zırh ağırlığı)
+- ÖZGÜRLÜK İLKESİ (kullanıcı kararı): büyü SİLAHTAN BAĞIMSIZ — kılıçlı büyücü meşru;
+  her zırh sınıfı serbest ama BEDELLİ ("her seçim bir vazgeçiştir")
+- 2 YENİ SKILL (save-toleranslı append): **Destruction** (büyü hasarıyla gelişir, tam ağaç:
+  3 dal + 2 keystone + 6 AKTİF düğüm) + **Staff** (asa melee'siyle, standart ağaç) → 16 ağaç
+- BÜYÜLER (aktif düğümle açılır; Ateş Topu HER ZAMAN açık — büyünün "normal vuruşu"):
+  · **Ateş Topu** (15 mana/2s): güdümlü mermi + %30 yakma DoT'u (yanma kanalı AYRI — zehir/
+    kanamayla ÜST ÜSTE BİNER, tam DoT build'i)
+  · **Buz Novası** (20/6s): çevre 120px hasar + %50 yavaş 4sn
+  · **Yıldırım** (30/8s): tek hedef anında yüksek hasar
+  · **Alev Zırhı** (25/20s): 15sn — vurana +8 yansıtma, yan alev aurası
+  · **Büyü Kalkanı** (25/25s): 12sn hasar HP yerine MANADAN (×1.2 bedel); mana biterse
+    kalan cana + kalkan KIRILIR; melee/ok/muhafız emilir, zehir DoT'u deler; buz kubbesi
+    görseli (oluşum→dönme→kırılma)
+  · **Toprak Dikenleri** (22/10s): çevre 130px hasar + %65 yavaş 1.5sn; yerden fışkıran
+    diken animasyonu (zemin katmanı)
+- HASAR FORMÜLÜ (kullanıcı kuralı: "MP sadece resource"): baz × INT (+%2/10 üstü puan) ×
+  Destruction seviyesi × silah çarpanı (asa spellPower + PEMBE rün ×1.08) × ağaç × varyans;
+  DEX krit geçerli — statlar/rünler/silah HEPSİ ölçekler (combat_spell_hit)
+- CAST: 0.45sn köklenme (castSpeedMult ölçekler), hareket BOZAR ("Büyü bozuldu"),
+  mana commit'te yanar; hedefli büyüler (Ateş Topu/Yıldırım) Z hedefi + 300px menzil ister
+- ASA (craft: 2 Odun + 1 Soluk Öz, Smithing 5; vendor'da da var): iki elli; Space =
+  Ateş Topu cast'i (mana/menzil yoksa melee dürtme fallback — "Space silahın base atağı"
+  kuralı); melee'si SKILL_STAFF XP'si verir; spellPower 0.20; thrust animasyonu (satır 4-7)
+- INT STAT: Bilgelik Taşı (sunak töreni, iskelet büyücü %3 drop, scrolls.png cyan hücre)
+- ZIRH AĞIRLIĞI (kullanıcı tasarımı): ağır 5 / orta 2 / hafif 1 puan; taşıma = STR−10;
+  aşım × %2 hız cezası (tavan %30) + mana rejeni çarpanı (ağır −%6, orta −%3, taban 0.4) —
+  STR'siz ağır zırh büyücüsü YAVAŞ + mana rejensiz (bedelli özgürlük)
+- MANA İKSİRİ ayrı içecek (40 mana, 10s CD; Alchemy: 2 Ayotu); envanter 32→40 slot (8×5)
+- VFX (4 yeni paket, assets/fx/): ateş küresi mermisi (Sog), arcane patlama additive
+  (Yıldırım + cast parlaması), yanan mobda 12-kare alev + Alev Zırhı yan alevleri (flames),
+  buz kalkanı kubbesi + toprak dikenleri (magic_pack); iskelet büyücü mermisi mavi küre oldu
+- DEBUG: F10 → asa + 6 INT taşı + 5 mana iksiri + havuzlar full + **her ağaca 99 puan**
+  (tree_set_debug_points — kaydedilmez, restart'ta sıfır; yayında F10 ile birlikte gider)
+- Gelecek dalga notu: magic_pack kalanları (tornado/firelion/icetacle/lightningclaw) yeni
+  büyüler; snake/turtleshell sprite'ları summon/mob adayı; magic_icons.png ikon sistemine
+
 ## 🔜 Kalanlar (öncelik sırası)
 1. **Boss scroll/taş dropları** (yüksek kademe) mob fazlarıyla gelecek; yay walk/idle görseli (asset gelince)
 2. **Mob fazları** (devamı): Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda; iskelet "mezardan kalkma" spawn animasyonu

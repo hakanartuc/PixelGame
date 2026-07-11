@@ -24,6 +24,7 @@ SkillType combat_weapon_skill(const ItemType *weapon)
         case WEAPON_TWO_HAND:  return SKILL_TWO_HANDED;
         case WEAPON_SHIELD:    return SKILL_BLOCK;
         case WEAPON_BOW:       return SKILL_ARCHERY;
+        case WEAPON_STAFF:     return SKILL_STAFF;
         default:               return SKILL_NONE;
     }
 }
@@ -89,6 +90,10 @@ HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
     if (isBow)
         perkScale *= fx->bowDmgMult;
 
+    // Asa ağacı: asa melee'si (zayıf tabanı düğümler toparlar)
+    if (sk == SKILL_STAFF)
+        perkScale *= fx->staffDmgMult;
+
     float raw = base * strScale * skillScale * perkScale
               * abilityScale * damage_variance();
 
@@ -97,6 +102,49 @@ HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
         raw *= 1.08f;
 
     // Kritik: DEX şansı + Keskin Göz; çarpan Derin Kesik'le yükselir
+    float critChance = CRIT_BASE_CHANCE
+                     + (float)(p->dexterity - STAT_BASE) * CRIT_PER_DEX
+                     + fx->critChanceBonus;
+    if (randf() < critChance) {
+        raw *= fx->critMult;
+        hit.crit = true;
+    }
+
+    hit.damage = apply_defense(raw, targetDefense);
+    return hit;
+}
+
+// Büyü vuruşu: silah TABANI değil büyünün kendi tabanı ölçeklenir.
+// Silahın katkısı spellPower (asa +%20) + Pembe Rün (+%8) — "kılıçlı büyücü"
+// rünlü kılıçla da büyüsünü güçlendirebilir (kullanıcı kararı: her şey trade-off).
+HitResult combat_spell_hit(const struct Player *p, const ItemStack *weapon,
+                           float baseDamage, float targetDefense,
+                           const PerkEffects *fx)
+{
+    HitResult hit = {0};
+
+    // INT ölçeği (taban 10 = çarpansız) — büyücünün STR'ı
+    float intScale = 1.0f + (float)(p->intelligence - STAT_BASE) * STR_DAMAGE_PER_POINT;
+
+    // Yıkım seviyesi
+    float skillScale = 1.0f +
+        (float)(p->skills[SKILL_DESTRUCTION].level - 1) * SKILL_DAMAGE_PER_LEVEL;
+
+    // Silahın büyü katkısı: asa spellPower + ağaç çarpanı + Pembe Rün
+    float weaponScale = 1.0f;
+    if (weapon != NULL && weapon->type != NULL)
+    {
+        weaponScale += weapon->type->spellPower;
+        if (weapon->type->weaponType == WEAPON_STAFF)
+            weaponScale += fx->staffSpellBonus;   // Asa ağacı yalnız asayla işler
+        if (weapon->fx == WEAPON_FX_PINK)
+            weaponScale *= 1.08f;   // rün büyüye de işler
+    }
+
+    float raw = baseDamage * intScale * skillScale * weaponScale
+              * fx->spellDmgMult * damage_variance();
+
+    // Kritik: DEX + ağaç bonusları (silah vuruşuyla aynı kural)
     float critChance = CRIT_BASE_CHANCE
                      + (float)(p->dexterity - STAT_BASE) * CRIT_PER_DEX
                      + fx->critChanceBonus;

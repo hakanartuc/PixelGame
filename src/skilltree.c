@@ -206,6 +206,66 @@ static const TreeNode T_SPEECH[] = {
     N_KEY("ALTIN AĞIZ",    "Alış -%12, satış +%15 — kontrat itibarı yarıya",   10, 15, 4),
 };
 
+// --- DESTRUCTION: "Yıkım Yolu" — Ateş / Verim / Kontrol + 4 büyü aktifi.
+// Büyüler SİLAHTAN BAĞIMSIZ (mana tüketir) — kılıçlı/yaylı/zırhlı büyücü serbest.
+static const TreeNode T_DESTRUCTION[] = {
+    N_ROOT("İlk Kıvılcım",  "Büyü hasarı +%3"),
+    N_MIN("Kor",            "Büyü hasarı +%3",                  0, 1, 1),
+    N_MIN("Közleme",        "Yanma DoT'u +%25",                 1, 1, 2),
+    N_NOT("Yangın",         "Yanma DoT'u +%50 daha",            2, 1, 3),
+    N_MIN("Isı",            "Büyü hasarı +%4",                  3, 1, 4),
+    N_NOT("Cehennem",       "Büyü hasarı +%12",                 4, 1, 5),
+
+    N_MIN("Tutumlu Kanal",  "Büyü mana maliyeti -%5",           0, 3, 1),
+    N_MIN("Akış",           "Büyü mana maliyeti -%5",           6, 3, 2),
+    N_NOT("Verimli Büyü",   "Büyü mana maliyeti -%15",          7, 3, 3),
+    N_MIN("Hızlı Söz",      "Cast süresi -%10",                 8, 3, 4),
+    N_NOT("Anında Kanal",   "Cast süresi -%20",                 9, 3, 5),
+
+    N_MIN("Soğuk Dokunuş",  "Büyü hasarı +%3",                  0, 5, 1),
+    N_MIN("Geniş Dalga",    "Buz Novası yarıçapı +20px",       11, 5, 2),
+    N_NOT("Buz Fırtınası",  "Buz Novası yarıçapı +40px daha",  12, 5, 3),
+    N_MIN("Statik",         "Kritik şansı +%3",                13, 5, 4),
+    N_NOT("Yüksek Gerilim", "Büyü hasarı +%10",                14, 5, 5),
+
+    N_KEY("ARŞİBÜYÜCÜ",     "Büyü hasarı +%30 — max HP -15",               5, 10, 2),
+    N_KEY("SAVAŞ RAHİBİ",   "Melee vuruş +4 mana yeniler — büyü -%10",    10, 15, 4),
+
+    // Aktif büyüler (satın al → hotbar; mana tüketir, cast köklü).
+    // Ateş Topu AĞAÇTA DEĞİL: temel kıvılcım herkeste doğuştan açık —
+    // yoksa Yıkım XP'si kazanılamaz (bootstrap). Melee'deki 'normal vuruş' dengi.
+    N_ACT("Buz Novası",     "AKTİF: çevrene patlama + %50 yavaş (20 mana)",11, 6, 2, ABILITY_ICE_NOVA),
+    N_ACT("Yıldırım",       "AKTİF: hedefe anında 45 hasar (30 mana)",      7, 2, 3, ABILITY_LIGHTNING),
+    N_ACT("Alev Zırhı",     "AKTİF: 15sn yakın saldırgana 8 hasar (25 mana)", 1, 0, 2, ABILITY_FLAME_ARMOR),
+    N_ACT("Büyü Kalkanı",   "AKTİF: 12sn hasar HP yerine MANADAN emilir (25 mana)", 6, 4, 2, ABILITY_MAGIC_SHIELD),
+    N_ACT("Toprak Dikenleri","AKTİF: çevrende diken patlaması + yavaş (22 mana)", 12, 6, 4, ABILITY_SPIKES),
+};
+
+// --- STAFF: "Asa Yolu" — tam büyücünün silah ağacı (asa kuşanılıyken parlar)
+static const TreeNode T_STAFFTREE[] = {
+    N_ROOT("Asa Tutuşu",    "Asa melee hasarı +%5"),
+    N_MIN("Odak Kristali",  "Asa ile büyü +%3",                 0, 1, 1),
+    N_MIN("Kanal Oyması",   "Asa ile büyü +%4",                 1, 1, 2),
+    N_NOT("Güç Kanalı",     "Asa ile büyü +%8",                 2, 1, 3),
+    N_MIN("Uyumlanma",      "Asa ile büyü +%5",                 3, 1, 4),
+    N_NOT("Kadim Asa",      "Asa ile büyü +%10",                4, 1, 5),
+
+    N_MIN("Mana Damarı",    "Mana yenilenmesi +%10",            0, 3, 1),
+    N_MIN("Derin Kuyu",     "+10 max mana",                     6, 3, 2),
+    N_NOT("Taşan Kaynak",   "Mana yenilenmesi +%20",            7, 3, 3),
+    N_MIN("Geniş Havuz",    "+10 max mana",                     8, 3, 4),
+    N_NOT("Öz Cimriliği",   "Büyü mana maliyeti -%10",          9, 3, 5),
+
+    N_MIN("Savurma",        "Asa melee +%5",                    0, 5, 1),
+    N_MIN("Denge Ucu",      "Asa melee +%5",                   11, 5, 2),
+    N_NOT("Asa Dövüşü",     "Asa melee +%15",                  12, 5, 3),
+    N_MIN("Sağlam Tutuş",   "Verdiğin itme +%10",              13, 5, 4),
+    N_NOT("Kırbaç Ucu",     "Asa melee +%20",                  14, 5, 5),
+
+    N_KEY("BAŞ BÜYÜCÜ",     "Asa ile büyü +%25 — asa melee -%30",          5, 10, 2),
+    N_KEY("SIR TAŞIYICI",   "+25 mana, yenilenme +%25 — max stamina -20", 10, 15, 4),
+};
+
 // --- KADER: karakter-geneli ağaç (puan TOPLAM seviyeden — herkes kazanır) ---
 static const TreeNode T_FATE[] = {
     N_ROOT("Yolcu",        "+5 max HP"),
@@ -312,6 +372,8 @@ static const SkillTreeDef TREES[] = {
     TREE_DEF(SKILL_SMITHING,     T_SMITHING),
     TREE_DEF(SKILL_ALCHEMY,      T_ALCHEMY),
     TREE_DEF(SKILL_ENCHANTING,   T_ENCHANTING),
+    TREE_DEF(SKILL_DESTRUCTION,  T_DESTRUCTION),
+    TREE_DEF(SKILL_STAFF,        T_STAFFTREE),
     TREE_DEF(TREE_FATE,          T_FATE),
 };
 static const int TREE_COUNT = (int)(sizeof(TREES) / sizeof(TREES[0]));
@@ -331,10 +393,19 @@ int tree_node_cost(NodeClass c)
          : (c == NODE_NOTABLE || c == NODE_ACTIVE) ? 2 : 1;
 }
 
+// DEBUG (F10): her ağaca eklenen serbest puan — kaydedilmez, restart'ta sıfır
+static int g_debugPoints = 0;
+
+void tree_set_debug_points(int bonus)
+{
+    g_debugPoints = bonus;
+}
+
 int tree_points_earned(int treeId, int level)
 {
     return level / (treeId == TREE_FATE ? FATE_LEVELS_PER_POINT
-                                        : TREE_LEVELS_PER_POINT);
+                                        : TREE_LEVELS_PER_POINT)
+         + g_debugPoints;
 }
 
 int tree_points_spent(int treeId, Uint32 taken)
@@ -389,7 +460,13 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         .smithSpeedMult = 1.0f, .alchSpeedMult = 1.0f, .enchSpeedMult = 1.0f,
         .stamRegenMult = 1.0f, .manaRegenMult = 1.0f,
         .xpGainMult = 1.0f, .goldFindMult = 1.0f,
+        .spellDmgMult = 1.0f, .manaCostMult = 1.0f, .castSpeedMult = 1.0f,
+        .staffDmgMult = 1.0f,
     };
+
+    // Temel kıvılcım: Ateş Topu HERKESTE açık (büyünün 'normal vuruşu' —
+    // Yıkım XP'sinin başlangıç kaynağı; gerçek büyüler ağaçtan satın alınır)
+    fx->abilityOpen[ABILITY_FIREBOLT] = true;
 
     // Aktif düğümler: hangi beceriler açık (tüm ağaçlarda grantAbility taraması)
     for (int t = 0; t < TREE_COUNT; t++)
@@ -635,6 +712,53 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         if (ON(T, 5)) fx->runeChanceBonus += 4.0f;
         if (ON(T, 6)) fx->runeChanceBonus += 8.0f;
         if (ON(T, 7)) { fx->runeChanceBonus += 15.0f; fx->enchSpeedMult *= 0.70f; }  // RÜN HAKİMİ
+    }
+
+    // --- Destruction (Yıkım Yolu) ---
+    {
+        const int T = SKILL_DESTRUCTION;
+        if (ON(T, 0))  fx->spellDmgMult *= 1.03f;
+        if (ON(T, 1))  fx->spellDmgMult *= 1.03f;
+        if (ON(T, 2))  fx->burnBonus += 0.25f;
+        if (ON(T, 3))  fx->burnBonus += 0.50f;
+        if (ON(T, 4))  fx->spellDmgMult *= 1.04f;
+        if (ON(T, 5))  fx->spellDmgMult *= 1.12f;
+        if (ON(T, 6))  fx->manaCostMult *= 0.95f;
+        if (ON(T, 7))  fx->manaCostMult *= 0.95f;
+        if (ON(T, 8))  fx->manaCostMult *= 0.85f;
+        if (ON(T, 9))  fx->castSpeedMult *= 0.90f;
+        if (ON(T, 10)) fx->castSpeedMult *= 0.80f;
+        if (ON(T, 11)) fx->spellDmgMult *= 1.03f;
+        if (ON(T, 12)) fx->novaRadiusBonus += 20.0f;
+        if (ON(T, 13)) fx->novaRadiusBonus += 40.0f;
+        if (ON(T, 14)) fx->critChanceBonus += 0.03f;
+        if (ON(T, 15)) fx->spellDmgMult *= 1.10f;
+        if (ON(T, 16)) { fx->spellDmgMult *= 1.30f; fx->maxHpBonus -= 15.0f; }      // ARŞİBÜYÜCÜ
+        if (ON(T, 17)) { fx->meleeManaRegen += 4.0f; fx->spellDmgMult *= 0.90f; }   // SAVAŞ RAHİBİ
+    }
+
+    // --- Staff (Asa Yolu) ---
+    {
+        const int T = SKILL_STAFF;
+        if (ON(T, 0))  fx->staffDmgMult *= 1.05f;
+        if (ON(T, 1))  fx->staffSpellBonus += 0.03f;
+        if (ON(T, 2))  fx->staffSpellBonus += 0.04f;
+        if (ON(T, 3))  fx->staffSpellBonus += 0.08f;
+        if (ON(T, 4))  fx->staffSpellBonus += 0.05f;
+        if (ON(T, 5))  fx->staffSpellBonus += 0.10f;
+        if (ON(T, 6))  fx->manaRegenMult *= 1.10f;
+        if (ON(T, 7))  fx->maxManaBonus += 10.0f;
+        if (ON(T, 8))  fx->manaRegenMult *= 1.20f;
+        if (ON(T, 9))  fx->maxManaBonus += 10.0f;
+        if (ON(T, 10)) fx->manaCostMult *= 0.90f;
+        if (ON(T, 11)) fx->staffDmgMult *= 1.05f;
+        if (ON(T, 12)) fx->staffDmgMult *= 1.05f;
+        if (ON(T, 13)) fx->staffDmgMult *= 1.15f;
+        if (ON(T, 14)) fx->kbDealtMult *= 1.10f;
+        if (ON(T, 15)) fx->staffDmgMult *= 1.20f;
+        if (ON(T, 16)) { fx->staffSpellBonus += 0.25f; fx->staffDmgMult *= 0.70f; } // BAŞ BÜYÜCÜ
+        if (ON(T, 17)) { fx->maxManaBonus += 25.0f; fx->manaRegenMult *= 1.25f;
+                         fx->maxStaminaBonus -= 20.0f; }                            // SIR TAŞIYICI
     }
 
     // --- Kader Ağacı (karakter-geneli) ---

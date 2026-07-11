@@ -10,12 +10,14 @@
 
 const ShopEntry SHOP_STOCK[] = {
     { &ITEM_TYPES[ITEM_POTION_HP] },
+    { &ITEM_TYPES[ITEM_POTION_MANA] },
     { &ITEM_TYPES[ITEM_TORCH] },       // gece hazirligi: envanterdeyken isik verir
     { &ITEM_TYPES[ITEM_PICKAXE] },     // madencilik araci
     { &ITEM_TYPES[ITEM_AXE] },         // oduculuk araci
     { &ITEM_TYPES[ITEM_BP_POTION_SPEED] },  // Hiz Iksiri tarifi (altin gideri)
     { &ITEM_TYPES[ITEM_STONE_HP] },    // stat tasi: vendor'da nadir/pahali giris kademesi
     { &ITEM_TYPES[ITEM_BOW] },         // yay: craft (~90g maliyet) ya da hazir 180g
+    { &ITEM_TYPES[ITEM_STAFF] },       // asa: tam-buyucu silahi (buyu +%20)
     { &ITEM_TYPES[ITEM_ARROW] },       // ok: tik basina 1 (craft 10'lu, ~yari fiyat)
     { &ITEM_TYPES[ITEM_LONG_SWORD] },
     { &ITEM_TYPES[ITEM_HELMET_IRON] },

@@ -28,6 +28,9 @@ typedef enum {
     SKILL_MINING,         // madencilik (toplama — cevher)
     SKILL_HERBALISM,      // bitkicilik (toplama — bitki)
     SKILL_WOODCUTTING,    // oduculuk (toplama — odun)
+    // Faz 22 — büyü (SONA eklendi: save skill bloğu sayı-toleranslı)
+    SKILL_DESTRUCTION,    // yıkım büyüleri (büyü hasarıyla XP)
+    SKILL_STAFF,          // asa (asa vuruşu + tam-büyücü silah ağacı)
     SKILL_COUNT,
     SKILL_NONE = -1,      // skill'e bağlı olmayan eylem (örn. silahsız vuruş)
 } SkillType;

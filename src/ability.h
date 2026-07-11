@@ -16,6 +16,13 @@ typedef enum {
     ABILITY_DISENGAGE,      // Geri Sıçrama: hedeften ters yöne 140px kaçış (ok atmaz)
     ABILITY_VOLLEY,         // Yaylım: tek hedefe 0.15sn arayla 3 ok (×0.6/ok, 3 ok tüketir)
     ABILITY_AOE_ARROW,      // Alan Oku: varışta patlar — hedef ×1.0 + 90px çevre ×0.6
+    // Büyüler (Faz 22) — silahtan bağımsız, MANA tüketir, köklü cast (~0.45sn)
+    ABILITY_FIREBOLT,       // Ateş Topu: güdümlü mermi + 3sn yanma DoT'u
+    ABILITY_ICE_NOVA,       // Buz Novası: ÇEVRENE patlama + alan yavaşlatma
+    ABILITY_LIGHTNING,      // Yıldırım: hedefe anında sert vuruş (pahalı, uzun CD)
+    ABILITY_FLAME_ARMOR,    // Alev Zırhı: 15sn yakın saldırgana hasar yansıtma
+    ABILITY_MAGIC_SHIELD,   // Büyü Kalkanı: 12sn hasar HP yerine MANADAN emilir (×1.2)
+    ABILITY_SPIKES,         // Toprak Dikenleri: çevrende diken patlaması + yavaşlatma
     ABILITY_COUNT,
 } AbilityId;
 
@@ -28,6 +35,7 @@ typedef struct {
     float damageScale;    // normal vuruş hasarının çarpanı
     float cooldown;       // saniye
     float stamina;        // atım maliyeti (0 = kaynaksız); yetmezse atılmaz, CD yanmaz
+    float mana;           // büyü maliyeti (Destruction becerileri; 0 = manasız)
 } AbilityDef;
 
 extern const AbilityDef ABILITIES[ABILITY_COUNT];

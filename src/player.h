@@ -57,8 +57,11 @@ typedef enum {
     PLAYER_SLASH,   // kılıç saldırısı (satır 12-15, 6 kare)
     PLAYER_CAST,    // spellcast (satır 0-3, 7 kare) — simya kaynatma/büyü
     PLAYER_SHOOT,   // yay çekme (satır 16-19, 13 kare) — KÖKLÜ: hareket iptal eder
-    // ileride: THRUST, HURT, RUN, DEATH...
+    PLAYER_THRUST,  // asa dürtmesi (satır 4-7, 8 kare) — asa melee'si (Faz 22)
+    // ileride: HURT, RUN, DEATH...
 } PlayerState;
+
+#define PLAYER_THRUST_HIT_FRAME 5   // dürtmenin hasar karesi
 
 // player.h — AnimClip gibi
 typedef struct PlayerLayer {
@@ -100,11 +103,15 @@ typedef struct Player {
     float coatTimer;
     float foodRegenRate, foodTimer;        // yemek: sn başına can, kalan süre (Faz 6)
     float poisonDps, poisonTimer;          // mavi slime zehri: sn hasarı + süre (Faz 7)
+    float flameArmorTimer;                 // Alev Zırhı: yakın saldırgana hasar (Faz 22)
+    float manaShieldTimer;                 // Büyü Kalkanı: hasar manadan emilir (×1.2)
+    float shieldBreakT;                    // kalkan kırılma animasyonu sayacı (görsel)
 
     // Statlar: dağıtım yok — sabit taban (10), ileride ekipman/perk bonusu ekler.
     // Skill'ler stat değil doğrudan hasar çarpanı verir (use-based felsefe).
-    int strength;    // hasar ölçeği
+    int strength;    // hasar ölçeği (+ zırh ağırlığı telafisi, Faz 22)
     int dexterity;   // kritik şansı
+    int intelligence; // büyü hasar ölçeği (Faz 22 — taban 10 + INT taşları)
     int gold;        // para (loot'tan gelir, vendor'da harcanacak)
 
     // Suç & itibar — BÖLGE BAŞINA (indeks: region_at; -1 dışarısı → 0'a düşer)
@@ -135,6 +142,7 @@ typedef struct Player {
     // Yay durumu (Faz 5): main her kare bowEquipped yazar; attackPressed
     // yay kuşanılıyken slash yerine SHOOT başlatır. Hareket atışı iptal eder.
     bool bowEquipped;
+    bool staffEquipped;  // asa melee'si SLASH değil THRUST oynar (main yazar; Faz 22)
     bool shooting;       // çekme animasyonu sürüyor
     bool shotReleased;   // bu çekmede ok çıktı mı (release karesinde main atar)
     float drawSpeedMult; // çekme süresi çarpanı (ağaç düğümleri — main yazar, <1 hızlı)

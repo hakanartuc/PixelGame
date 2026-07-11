@@ -42,4 +42,43 @@ const AbilityDef ABILITIES[ABILITY_COUNT] = {
         .skill = SKILL_ARCHERY, .unlockLevel = 45,
         .damageScale = 1.0f, .cooldown = 15.0f, .stamina = 35.0f,
     },
+
+    // Büyüler (Faz 22): silahtan bağımsız — MANA tüketir; damageScale = büyü
+    // taban hasarının çarpanı değil, TABAN hasar combat_spell_hit'e ayrıca gider.
+    [ABILITY_FIREBOLT] = {
+        .name = "Ateş Topu", .abbrev = "AT",
+        .skill = SKILL_DESTRUCTION, .unlockLevel = 1,
+        .damageScale = 25.0f,   // büyü TABAN hasarı (spell_hit ölçekler)
+        .cooldown = 2.0f, .mana = 15.0f,
+    },
+    [ABILITY_ICE_NOVA] = {
+        .name = "Buz Novası", .abbrev = "BN",
+        .skill = SKILL_DESTRUCTION, .unlockLevel = 1,
+        .damageScale = 18.0f,
+        .cooldown = 6.0f, .mana = 20.0f,
+    },
+    [ABILITY_LIGHTNING] = {
+        .name = "Yıldırım", .abbrev = "YI",
+        .skill = SKILL_DESTRUCTION, .unlockLevel = 1,
+        .damageScale = 45.0f,
+        .cooldown = 8.0f, .mana = 30.0f,
+    },
+    [ABILITY_FLAME_ARMOR] = {
+        .name = "Alev Zırhı", .abbrev = "AZ",
+        .skill = SKILL_DESTRUCTION, .unlockLevel = 1,
+        .damageScale = 0.0f,
+        .cooldown = 20.0f, .mana = 25.0f,
+    },
+    [ABILITY_MAGIC_SHIELD] = {
+        .name = "Büyü Kalkanı", .abbrev = "BK",
+        .skill = SKILL_DESTRUCTION, .unlockLevel = 1,
+        .damageScale = 0.0f,
+        .cooldown = 25.0f, .mana = 25.0f,
+    },
+    [ABILITY_SPIKES] = {
+        .name = "Toprak Dikenleri", .abbrev = "TD",
+        .skill = SKILL_DESTRUCTION, .unlockLevel = 1,
+        .damageScale = 20.0f,   // büyü taban hasarı
+        .cooldown = 10.0f, .mana = 22.0f,
+    },
 };

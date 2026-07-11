@@ -52,6 +52,9 @@ int tree_node_cost(NodeClass c);                     // 1/2/2/3
 int tree_points_earned(int treeId, int level);       // skill: /4, kader: /10
 int tree_points_spent(int treeId, Uint32 taken);     // alınanların toplam maliyeti
 
+// DEBUG (F10): her ağaca ekstra puan — kaydedilmez, yayında hep 0
+void tree_set_debug_points(int bonus);
+
 // Düğüm alınabilir mi: yol açık + puan yeter + zaten alınmamış
 bool tree_node_available(int treeId, int node, Uint32 taken, int freePoints);
 

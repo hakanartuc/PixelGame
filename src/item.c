@@ -282,11 +282,35 @@ const ItemType ITEM_TYPES[] = {
       .ammoDmgMult = 1.30f,   // en sert kademe
       .iconSpritePath = "assets/icons/items/arrow_iron_icon.png",
       .iconSrc = { 0, 0, 32, 32 } },
+
+    // --- Faz 22: büyü paketi ---
+    { .name = "Bilgelik Taşı", .iconIndex = 0, .maxStack = 10, .value = 120,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/scrolls.png",
+      .iconSrc = { 208, 0, 16, 16 } },
+    { .name = "Asa", .iconIndex = 0, .maxStack = 1, .value = 220,
+      .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_STAFF,
+      .damage = 15.0f,                 // zayıf melee (asıl gücü büyüde)
+      .attackInterval = 1.3f,
+      .spellPower = 0.20f,             // asa: büyü hasarı +%20 (tam-büyücü silahı)
+      // ULPC simple_staff: spellcast+thrust+walk satırları dolu (ön+arka katman).
+      // Melee'si SLASH değil THRUST oynar (asa dürtmesi — main staffEquipped yazar)
+      .equipSpritePath     = "assets/equipment/weapon/staff_140.png",
+      .equipSpritePathBack = "assets/equipment/weapon/staff_009.png",
+      .equipZ = 140, .equipZBack = 9,
+      .equipIdleRow = 8,               // idle: walk kare 0 (asa elde duruş)
+      .iconSpritePath = "assets/icons/items/resources.png",
+      .iconSrc = { 32, 64, 16, 16 } },
+    { .name = "Mana İksiri", .iconIndex = 5, .maxStack = 10, .value = 30,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .consumable = true, .manaAmount = 40.0f, .useCooldown = 10.0f,
+      .iconSpritePath = "assets/icons/items/food.png",
+      .iconSrc = { 112, 0, 16, 16 } },   // mavi şişe (Food Icons son sütun)
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 
-const int STAT_TIER_VALUE[STAT_COUNT] = { 2, 2, 10, 3, 8, 10 };
-const char *const STAT_NAMES[STAT_COUNT] = { "STR", "DEX", "HP", "DEF", "MP", "STA" };
+const int STAT_TIER_VALUE[STAT_COUNT] = { 2, 2, 10, 3, 8, 10, 2 };
+const char *const STAT_NAMES[STAT_COUNT] = { "STR", "DEX", "HP", "DEF", "MP", "STA", "INT" };
 
 ItemStack item_make(const ItemType *type, int count, int plusLevel)
 {

@@ -25,6 +25,7 @@ static const LpcAnim PLAYER_ANIMS[] = {
     [PLAYER_SLASH] = {.startRow = 12, .frameCount = 6, .frameDur = 0.08f, .loop = false},
     [PLAYER_CAST] = {.startRow = 0, .frameCount = 7, .frameDur = 0.12f, .loop = true}, // spellcast 0-3
     [PLAYER_SHOOT] = {.startRow = 16, .frameCount = 13, .frameDur = 0.07f, .loop = false}, // yay 16-19 (~0.9sn)
+    [PLAYER_THRUST] = {.startRow = 4, .frameCount = 8, .frameDur = 0.08f, .loop = false},   // asa dürtmesi 4-7
 };
 
 // Silahin bir karedeki eldeki konumu
@@ -261,7 +262,7 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
     // --- DURUM (state) belirleme ---
     if (p->attacking)
     {
-        p->state = PLAYER_SLASH;
+        p->state = p->staffEquipped ? PLAYER_THRUST : PLAYER_SLASH;
     }
     else if (p->shooting)
     {
@@ -292,7 +293,7 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
         else
         {
             p->attacking = true;
-            p->state = PLAYER_SLASH;
+            p->state = p->staffEquipped ? PLAYER_THRUST : PLAYER_SLASH;
             p->attackHit = false;
         }
         p->currentFrame = 0;
@@ -330,9 +331,9 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
             }
             else
             {
-                // tek-seferlik (slash/shoot) bitti
+                // tek-seferlik (slash/thrust/shoot) bitti
                 p->currentFrame = anim->frameCount - 1;
-                if (p->state == PLAYER_SLASH)
+                if (p->state == PLAYER_SLASH || p->state == PLAYER_THRUST)
                 {
                     p->attacking = false; // saldırı bitti
                 }

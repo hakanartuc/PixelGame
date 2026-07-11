@@ -48,4 +48,10 @@ float equipment_total_defense(const Equipment *eq, const PerkEffects *fx);
 // seviyesinin çok üstündeyse azalan getiri (düşük mob'da grind engeli).
 float combat_xp_for_hit(float damage, int mobLevel, int skillLevel);
 
+// Büyü vuruşu (Faz 22): INT × Destruction seviyesi × silah büyü gücü (asa/rün)
+// × ağaç çarpanı; DEX kritiği uygulanır, hedef defansı kısar.
+HitResult combat_spell_hit(const struct Player *p, const ItemStack *weapon,
+                           float baseDamage, float targetDefense,
+                           const PerkEffects *fx);
+
 #endif

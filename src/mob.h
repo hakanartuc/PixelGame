@@ -107,6 +107,7 @@ typedef struct {
     float bleedDps, bleedTime;   // Kanatma DoT'u (main işler — ölüm/loot orada)
     float poisonDps, poisonTime; // Zehir DoT'u (rün/kaplama) — kanamayla AYRI kanal,
                                  // ÜST ÜSTE biner (tam DoT build'i meşru)
+    float burnDps, burnTime;     // Yanma DoT'u (Ateş Topu) — 3. bağımsız kanal (Faz 22)
     int arrowsHit;        // saplanan ok sayısı — ölünce ~%30'u lootta geri (Faz 5)
     float slowMult, slowTimer;   // Buz Oku: süre boyunca hız çarpanı (0 = etkisiz)
     float fleeTimer;      // pasif av: kalan kaçış süresi (vuruş tazeler)
