@@ -102,8 +102,13 @@ static const NpcStop *current_stop(const NpcDef *def, float hours)
     return best;
 }
 
+static bool npcActive = true;   // dünyada mıyız (zindanda NPC işlemez)
+
+void npc_set_active(bool active) { npcActive = active; }
+
 void npc_update(float dt, float hours)
 {
+    if (!npcActive) return;
     for (int i = 0; i < NPC_COUNT && i < 8; i++) {
         NpcState *st = &npcState[i];
         if (!st->alive) continue;   // ölü NPC rutin yürümez
@@ -140,6 +145,7 @@ void npc_update(float dt, float hours)
 
 bool npc_visible_pos(int i, float *x, float *y)
 {
+    if (!npcActive) return false;
     if (i < 0 || i >= NPC_COUNT || i >= 8 ||
         npcState[i].hidden || !npcState[i].alive)
         return false;
@@ -212,6 +218,7 @@ void npc_set_pos(int i, float x, float y)
 
 int npc_nearest_in_range(float px, float py)
 {
+    if (!npcActive) return -1;
     int best = -1;
     float bestDist = NPC_INTERACT_RANGE;
     for (int i = 0; i < NPC_COUNT && i < 8; i++) {
@@ -230,6 +237,7 @@ int npc_nearest_in_range(float px, float py)
 void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
                     const Camera *camera, TTF_Font *font, int nearestIdx)
 {
+    if (!npcActive) return;
     float zoom = camera->zoom;
     // Tüm NPC'ler aynı ritimde soluk alır — NPC başına sayaç tutmaya değmez
     int frame = (int)(SDL_GetTicks() / NPC_IDLE_SPEED_MS) % NPC_IDLE_FRAMES;

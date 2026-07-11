@@ -20,7 +20,8 @@ extern const int LIGHT_COUNT;
 
 // Statik ışıklar + oyuncu ışıklarını (meşale + silah efekti) ekran-uzayına toplar.
 // sw/sh: ekran boyutu (ekran dışı ışıklar atlanır). Dönen: out'a yazılan adet.
-int light_collect(R2DLight *out, int cap, const Camera *cam, int sw, int sh,
+// staticLights=false: köy/sabit ışıklar atlanır (zindan — koordinat çakışması)
+int light_collect(R2DLight *out, int cap, const Camera *cam, int sw, int sh, bool staticLights,
                   float torchX, float torchY, bool torchOn, WeaponFxType weaponFx);
 
 // Kamp ateşi ışığı (Faz 6): konumu dinamik (oyuncu kurar) — çağıran dünya

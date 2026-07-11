@@ -28,69 +28,6 @@ static const LpcAnim PLAYER_ANIMS[] = {
     [PLAYER_THRUST] = {.startRow = 4, .frameCount = 8, .frameDur = 0.08f, .loop = false},   // asa dürtmesi 4-7
 };
 
-// Silahin bir karedeki eldeki konumu
-typedef struct
-{
-    float handX; // hucre icinde el X
-    float handY; // hucre icinde el Y
-    float angle; // silah acisi (0 = dik yukari)
-} WeaponAnchor;
-
-// SLASH animasyonu — DOWN (south) yonu, 6 kare.
-// Kilic: yukari kalkar (0-1) → asagi-one savrulur (2-3) → biter (4-5)
-// Bu degerler BASLANGIC TAHMINI — test edip ayarlayacagiz.
-// SLASH anchor — [facing][frame]. facing: UP=0, LEFT=1, DOWN=2, RIGHT=3
-// DOWN olculdu/ayarlandi. Digerleri tahmin — test edip ayarlanacak.
-// SLASH anchor — [facing][frame]. facing: UP=0, LEFT=1, DOWN=2, RIGHT=3
-// MANTIK: el SABIT (kilic elde durur), sadece ACI doner → sapin etrafinda savrulur.
-static const WeaponAnchor SLASH_ANCHORS[4][6] = {
-    // UP (0) — el sabit, kilic dar yay (yukari savurma)
-    {
-        {42.0f, 44.0f, 30.0f},
-        {42.0f, 44.0f, 0.0f},
-        {42.0f, 44.0f, -30.0f},
-        {42.0f, 44.0f, -60.0f},
-        {42.0f, 44.0f, -50.0f},
-        {42.0f, 44.0f, -20.0f},
-    },
-    // LEFT (1) — el sabit, kilic sola dar yay
-    {
-        {23.0f, 44.0f, -110.0f},
-        {23.0f, 44.0f, -140.0f},
-        {23.0f, 44.0f, -180.0f},
-        {23.0f, 44.0f, -210.0f},
-        {23.0f, 44.0f, -200.0f},
-        {23.0f, 44.0f, -160.0f},
-    },
-    // DOWN (2) — el sabit, kilic one dar yay
-    {
-        {20.0f, 45.0f, 20.0f},
-        {20.0f, 45.0f, 50.0f},
-        {20.0f, 45.0f, 90.0f},
-        {20.0f, 45.0f, 120.0f},
-        {20.0f, 45.0f, 110.0f},
-        {20.0f, 45.0f, 70.0f},
-    },
-    // RIGHT (3) — el sabit, kilic saga dar yay
-    {
-        {28.0f, 45.0f, 110.0f},
-        {28.0f, 45.0f, 140.0f},
-        {28.0f, 45.0f, 180.0f},
-        {28.0f, 45.0f, 210.0f},
-        {28.0f, 45.0f, 200.0f},
-        {28.0f, 45.0f, 160.0f},
-    },
-};
-
-// Idle/walk icin yon-bazli silah durusu (kare yok — yone gore sabit)
-// facing: UP=0, LEFT=1, DOWN=2, RIGHT=3
-static const WeaponAnchor IDLE_ANCHORS[4] = {
-    {42.0f, 44.0f, -20.0f}, // UP — kabza ele indi, kilic daha dik yukari
-    {23.0f, 44.0f, -70.0f}, // LEFT — kilic biraz daha yatay/yukari
-    {20.0f, 45.0f, -10.0f}, // DOWN — iyi (degismedi)
-    {28.0f, 45.0f, 60.0f},  // RIGHT — iyi (hafif el ayari)
-};
-
 // Oyuncuyu çizer - sadece OKUR, değiştirmez.
 void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera)
 {

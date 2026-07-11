@@ -13,6 +13,13 @@ const TileType TILE_TYPES[] = {
     [3] = { .solid = true,  .r = 110, .g = 110, .b = 120, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // taş: şimdilik renk
     [4] = { .solid = false, .r = 90, .g = 110, .b = 70, .texturePath = NULL, .speedMultiplier = 0.4f, .damage = 0.0f },  // bataklık: yavaşlatır
     [5] = { .solid = false, .r = 200, .g = 60, .b = 40, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 20.0f },  // diken: saniyede 20 hasar
+
+    // --- Zindan tile'lari (Cute_Fantasy Dungeons, 16px kirpimlar) ---
+    [6] = { .solid = false, .r = 60,  .g = 62,  .b = 88,  .texturePath = "assets/tiles/dungeon/d1_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // K1 doseme
+    [7] = { .solid = true,  .r = 95,  .g = 100, .b = 130, .texturePath = "assets/tiles/dungeon/d1_wall.png",  .speedMultiplier = 1.0f, .damage = 0.0f }, // K1 duvar
+    [8] = { .solid = false, .r = 70,  .g = 72,  .b = 100, .texturePath = "assets/tiles/dungeon/d2_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // K2 doseme
+    [9] = { .solid = true,  .r = 105, .g = 110, .b = 140, .texturePath = "assets/tiles/dungeon/d2_wall.png",  .speedMultiplier = 1.0f, .damage = 0.0f }, // K2 duvar
+    [10] = { .solid = true, .r = 7,   .g = 7,   .b = 13,  .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // void: oda disi karanlik (duz renk)
 };
 const int TILE_TYPE_COUNT = (int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0]));
 

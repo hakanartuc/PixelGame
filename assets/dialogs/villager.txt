@@ -9,7 +9,7 @@ fx: rep += 2
 opt: Uyarı için sağol. -> end
 
 [haber]
-text: Doğudaki karanlık ormanın derinliğinde eski bir geçit varmış derler. Kimse dönüp anlatamadı ama.
+text: Karanlık Orman'ın kuzeyinde eski bir geçit bulunmuş — taş bir kemer, yerin altına iniyor. Kimse inmeye cesaret edemiyor; içinden kemik takırtıları geliyormuş...
 opt: İlginç... -> end
 
 [icki]

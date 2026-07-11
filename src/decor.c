@@ -35,6 +35,9 @@ const int DECOR_COUNT = (int)(sizeof(DECORS) / sizeof(DECORS[0]));
 #define DECOR_CAP 32
 static float texW[DECOR_CAP], texH[DECOR_CAP];
 
+static bool decorActive = true;
+void decor_set_active(bool active) { decorActive = active; }
+
 void decor_set_texture_sizes(R2DTexture **decorTextures)
 {
     for (int i = 0; i < DECOR_COUNT && i < DECOR_CAP; i++) {
@@ -56,6 +59,7 @@ static SDL_FRect decor_rect(int i)
 void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
                       const Camera *camera)
 {
+    if (!decorActive) return;
     float zoom = camera->zoom;
     for (int i = 0; i < DECOR_COUNT; i++) {
         if (decorTextures[i] == NULL) continue;
@@ -70,6 +74,7 @@ void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
 
 bool decor_blocks(SDL_FRect box)
 {
+    if (!decorActive) return false;
     for (int i = 0; i < DECOR_COUNT; i++) {
         if (texW[i] <= 0.0f || !DECORS[i].solidBase) continue;   // çalı/saman engellemez
         SDL_FRect r = decor_rect(i);

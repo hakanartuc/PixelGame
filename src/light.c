@@ -33,14 +33,14 @@ static float flicker_mul(float amount, float t, int i)
 // Oyuncu meşalesi (envanterde Meşale varsa)
 #define TORCH_RADIUS 220.0f
 
-int light_collect(R2DLight *out, int cap, const Camera *cam, int sw, int sh,
+int light_collect(R2DLight *out, int cap, const Camera *cam, int sw, int sh, bool staticLights,
                   float torchX, float torchY, bool torchOn, WeaponFxType weaponFx)
 {
     float zoom = cam->zoom;
     float t = (float)SDL_GetTicks() / 1000.0f;   // titreşim saati (sn)
     int n = 0;
 
-    for (int i = 0; i < LIGHT_COUNT && n < cap; i++) {
+    for (int i = 0; staticLights && i < LIGHT_COUNT && n < cap; i++) {
         float sx = (LIGHTS[i].x - cam->x) * zoom;
         float sy = (LIGHTS[i].y - cam->y) * zoom;
         float sr = LIGHTS[i].radius * zoom;

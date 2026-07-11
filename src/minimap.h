@@ -14,6 +14,10 @@
 void minimap_init(R2D *renderer);   // harita boyutunda target texture
 void minimap_quit(void);
 
+// Harita geçişinde çağır: texture yeni harita boyutunda kurulur.
+// worldPersistent=true → kalıcı dünya keşfi; false → geçici (zindan, sıfırlanır)
+void minimap_set_map(R2D *renderer, bool worldPersistent);
+
 // Oyuncunun çevresini keşfet (her kare çağrılır; yeni tile'ları texture'a işler)
 void minimap_reveal(R2D *renderer, float worldX, float worldY);
 

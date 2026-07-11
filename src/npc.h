@@ -41,6 +41,10 @@ typedef struct {
 extern const NpcDef NPCS[];
 extern const int NPC_COUNT;
 
+// Harita geçişi: dünyada değilken NPC'ler tamamen devre dışı
+// (update/render/nearest/visible hepsi boş döner)
+void npc_set_active(bool active);
+
 // Rutin: saate göre hedef durak seç, oraya yürü, indoors'ta gizlen.
 void npc_update(float dt, float hours);
 

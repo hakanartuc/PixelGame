@@ -7,7 +7,10 @@
 #define MINIMAP_SIZE 170.0f  // ekrandaki kenar uzunluğu (uzun kenara göre ölçek)
 #define MINIMAP_PAD 16.0f
 
-static Uint8 explored[MAP_H_MAX][MAP_W_MAX];   // 0 = sis, 1 = keşfedildi
+// İki keşif tamponu: dünya KALICI (save'e girer), zindan GEÇİCİ (girişte sıfırlanır)
+static Uint8 exploredWorld[MAP_H_MAX][MAP_W_MAX];
+static Uint8 exploredTemp[MAP_H_MAX][MAP_W_MAX];
+static Uint8 (*explored)[MAP_W_MAX] = exploredWorld;   // aktif tampon
 static R2DTexture *mapTex = NULL;             // keşfedilen tile'ların rengi
 static bool rebuildAll = false;                // load sonrası komple yeniden işle
 
@@ -26,9 +29,13 @@ static void paint_tile(R2D *renderer, int col, int row)
     r2d_point(renderer, (float)col, (float)row);
 }
 
+static int worldW = 0, worldH = 0;   // dünya boyutu (pack/unpack HEP bununla)
+
 void minimap_init(R2D *renderer)
 {
-    memset(explored, 0, sizeof(explored));
+    memset(exploredWorld, 0, sizeof(exploredWorld));
+    worldW = map_width();
+    worldH = map_height();
 
     mapTex = r2d_target_create(renderer, map_width(), map_height());
     if (mapTex == NULL) {
@@ -39,6 +46,26 @@ void minimap_init(R2D *renderer)
     // Başlangıç: her yer sis (koyu) — boş pass sadece clear yapar
     r2d_target_begin(renderer, mapTex, true, 8, 8, 12);
     r2d_target_end(renderer);
+}
+
+// Harita değişimi: texture'ı yeni boyutta yeniden kur; dünya tamponu KORUNUR,
+// zindan tamponu her girişte sıfırlanır (zindan keşfi kalıcı değil — bilinçli)
+void minimap_set_map(R2D *renderer, bool worldPersistent)
+{
+    if (mapTex) { r2d_texture_destroy(renderer, mapTex); mapTex = NULL; }
+
+    if (worldPersistent) {
+        explored = exploredWorld;
+    } else {
+        memset(exploredTemp, 0, sizeof(exploredTemp));
+        explored = exploredTemp;
+    }
+
+    mapTex = r2d_target_create(renderer, map_width(), map_height());
+    if (mapTex == NULL) return;
+    r2d_target_begin(renderer, mapTex, true, 8, 8, 12);
+    r2d_target_end(renderer);
+    rebuildAll = true;   // mevcut keşif (dünyaya dönüşte) yeniden işlensin
 }
 
 void minimap_quit(void)
@@ -138,14 +165,14 @@ void minimap_render(R2D *renderer, float playerX, float playerY,
 
 int minimap_pack_explored(Uint8 *out, int cap)
 {
-    int mw = map_width(), mh = map_height();
+    int mw = worldW, mh = worldH;   // aktif harita zindan olsa bile dünya keşfi yazılır
     int bytes = (mw * mh + 7) / 8;
     if (bytes > cap) return 0;
 
     memset(out, 0, bytes);
     for (int row = 0; row < mh; row++)
         for (int col = 0; col < mw; col++)
-            if (explored[row][col]) {
+            if (exploredWorld[row][col]) {
                 int bit = row * mw + col;
                 out[bit / 8] |= (Uint8)(1u << (bit % 8));
             }
@@ -154,14 +181,14 @@ int minimap_pack_explored(Uint8 *out, int cap)
 
 void minimap_unpack_explored(const Uint8 *in, int bytes)
 {
-    int mw = map_width(), mh = map_height();
-    memset(explored, 0, sizeof(explored));
+    int mw = worldW, mh = worldH;
+    memset(exploredWorld, 0, sizeof(exploredWorld));
     for (int row = 0; row < mh; row++)
         for (int col = 0; col < mw; col++) {
             int bit = row * mw + col;
             if (bit / 8 >= bytes) return;
             if (in[bit / 8] & (1u << (bit % 8)))
-                explored[row][col] = 1;
+                exploredWorld[row][col] = 1;
         }
     rebuildAll = true;   // texture bir sonraki reveal'da yeniden işlenir
 }

@@ -20,6 +20,9 @@ typedef struct {
 extern const DecorDef DECORS[];
 extern const int DECOR_COUNT;
 
+// Harita geçişi: dünya dışında dekorlar işlemez (çizim + çarpışma + LoS)
+void decor_set_active(bool active);
+
 // Hepsini çiz (tilemap'ten sonra, entity'lerden önce)
 void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
                       const Camera *camera);

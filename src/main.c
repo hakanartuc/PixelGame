@@ -20,6 +20,7 @@
 #include "save.h"
 #include "hotbar.h"
 #include "region.h"
+#include "worldmap.h"
 #include "npc.h"
 #include "dialog.h"
 #include "shop.h"
@@ -107,6 +108,36 @@ static void dialog_apply_fx(const DialogOpt *o, Player *p, int npcRegion)
             default: break;   // DVAR_SPEECH parser'da reddedilir
         }
     }
+}
+
+// Aktif haritanın spawn bölgelerini kur: dünya REGIONS kamplarından,
+// zindan katları worldmap kamplarından. Dönen: bölge sayısı.
+static int build_spawn_zones(SpawnZone *zones, MapId map)
+{
+    int n = 0;
+    if (map == MAP_WORLD)
+    {
+        for (int r = 0; r < REGION_COUNT; r++)
+            for (int c = 0; c < REGIONS[r].campCount && n < MAX_SPAWN_ZONES; c++)
+            {
+                const RegionCamp *camp = &REGIONS[r].camps[c];
+                zones[n++] = (SpawnZone){
+                    .x = camp->x, .y = camp->y, .radius = camp->radius,
+                    .type = camp->type, .maxCount = camp->maxCount, .respawnTimer = 0.0f,
+                };
+            }
+    }
+    else
+    {
+        int count = 0;
+        const RegionCamp *camps = map_camps(map, &count);
+        for (int c = 0; c < count && n < MAX_SPAWN_ZONES; c++)
+            zones[n++] = (SpawnZone){
+                .x = camps[c].x, .y = camps[c].y, .radius = camps[c].radius,
+                .type = camps[c].type, .maxCount = camps[c].maxCount, .respawnTimer = 0.0f,
+            };
+    }
+    return n;
 }
 
 // Mob ölümü — saldırıdan da kanamadan da aynı yol: animasyon + loot + görev.
@@ -761,18 +792,7 @@ int main(int argc, char *argv[])
     // Spawn bölgeleri BÖLGE tanımlarından kurulur (region.c) — kamplar veride,
     // main sadece düzleştirir. Yeni kamp eklemek = region.c'ye bir satır.
     SpawnZone spawnZones[MAX_SPAWN_ZONES];
-    int spawnZoneCount = 0;
-    for (int r = 0; r < REGION_COUNT; r++)
-    {
-        for (int c = 0; c < REGIONS[r].campCount && spawnZoneCount < MAX_SPAWN_ZONES; c++)
-        {
-            const RegionCamp *camp = &REGIONS[r].camps[c];
-            spawnZones[spawnZoneCount++] = (SpawnZone){
-                .x = camp->x, .y = camp->y, .radius = camp->radius,
-                .type = camp->type, .maxCount = camp->maxCount, .respawnTimer = 0.0f,
-            };
-        }
-    }
+    int spawnZoneCount = build_spawn_zones(spawnZones, MAP_WORLD);
     spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId); // ← başlangıçta doldur
 
     // Tile texture'ları: TILE_TYPES tablosundaki path'lerden yükle.
@@ -799,6 +819,12 @@ int main(int argc, char *argv[])
     if (!tilemap_load_csv("assets/maps/world.csv"))
         generate_map();
     minimap_init(renderer);   // harita boyutu belli olduktan SONRA
+    worldmap_init(renderer);  // geçit görselleri
+
+    // Harita geçişi: E ile geçit (pendingPortal) ya da yükleme sonrası (mapReload)
+    int pendingPortal = -1;
+    bool mapReloadNeeded = false;
+    int nearPortal = -1;
 
     // Bölge splash durumu: bölge değişince ad 3 sn görünür
     int currentRegion = -1;
@@ -1258,6 +1284,18 @@ int main(int argc, char *argv[])
                     }
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
+                         dialogNpc < 0 && nearPortal >= 0)
+                {
+                    // Geçit kullan (kapı/merdiven) — asıl geçiş update başında yapılır
+                    pendingPortal = nearPortal;
+                    audio_play(SFX_UI);
+                }
+                else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
+                         dialogNpc < 0 && map_current() != MAP_WORLD)
+                {
+                    // Zindanda E yalnız geçitler içindir (NPC/istasyon/pano dünyada)
+                }
+                else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
                          dialogNpc < 0)
                 {
                     // NPC'nin bölgesinde bounty ya da dip itibar → kapılar kapalı
@@ -1535,8 +1573,11 @@ int main(int argc, char *argv[])
                 else if (event.key.key == SDLK_F9 && gameState == GAME_PLAYING)
                 {
                     // Hızlı yükleme (dünya durumu değişmez, sadece oyuncu+eşyalar)
+                    MapId mapBeforeLoad = map_current();
                     if (load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus))
                     {
+                        if (map_current() != mapBeforeLoad)
+                            mapReloadNeeded = true;
                         tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);   // seçimler değişti
                         skill_set_xp_mult(perkFx.xpGainMult);
                         hotbar_purge_closed(&hotbar, perkFx.abilityOpen);
@@ -1572,11 +1613,14 @@ int main(int argc, char *argv[])
                         else if (act == MENU_ACTION_SAVE || act == MENU_ACTION_LOAD)
                         {
                             // F5/F9 ile aynı yol; bildirim oyuna dönünce görünür
+                            MapId mapBeforeMenuLoad = map_current();
                             bool ok = (act == MENU_ACTION_SAVE)
                                     ? save_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus)
                                     : load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus);
                             if (ok && act == MENU_ACTION_LOAD)
                             {
+                                if (map_current() != mapBeforeMenuLoad)
+                                    mapReloadNeeded = true;
                                 tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
                                 skill_set_xp_mult(perkFx.xpGainMult);
                                 hotbar_purge_closed(&hotbar, perkFx.abilityOpen);
@@ -2284,6 +2328,56 @@ int main(int argc, char *argv[])
         {
 
             const bool *keys = SDL_GetKeyboardState(NULL); // basılı tuşların anlık görüntüsü (SDL'e ait, free etme)
+
+            // --- HARİTA GEÇİŞİ: E-geçit ya da yükleme sonrası harita değişimi ---
+            if (pendingPortal >= 0 || mapReloadNeeded)
+            {
+                MapId to = mapReloadNeeded ? map_current() : PORTALS[pendingPortal].to;
+
+                // 1) Haritayı yükle + minimap'ı yeni boyuta kur
+                if (!tilemap_load_csv(MAPS[to].csvPath))
+                    generate_map();   // dosya kayıpsa test haritası (oyun ölmesin)
+                minimap_set_map(renderer, to == MAP_WORLD);
+
+                // 2) Eski haritanın canlıları/ganimeti gider (dünya, dönüşte tazelenir —
+                //    save zaten dünya durumunu tutmuyor, davranış tutarlı)
+                for (int i = 0; i < MAX_MOBS; i++) mobs[i] = (Mob){0};
+                for (int i = 0; i < MAX_LOOT; i++) loots[i] = (Loot){0};
+                openLootIndex = -1;
+                player.targetMobId = 0;
+                player.autoAttack = false;
+                gatherRes = -1;
+                fx_init(&weaponFx);   // partiküller haritayla gitsin
+
+                // 3) Yeni haritanın kampları
+                spawnZoneCount = build_spawn_zones(spawnZones, to);
+                spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId);
+
+                // 4) Oyuncu geçit hedefine düşer (yüklemede pos zaten save'den geldi)
+                if (pendingPortal >= 0)
+                {
+                    player.rect.x = PORTALS[pendingPortal].tx;
+                    player.rect.y = PORTALS[pendingPortal].ty;
+                }
+                player.knockbackX = player.knockbackY = 0.0f;
+
+                // 5) Dünya-özel sistemler kapanır/açılır + ambiyans
+                npc_set_active(to == MAP_WORLD);
+                decor_set_active(to == MAP_WORLD);
+                map_set_current(to);
+                if (MAPS[to].name[0] != '\0')
+                {
+                    splashText = MAPS[to].name;
+                    splashTimer = 3.0f;
+                }
+                currentRegion = -2;   // dünyaya dönüşte bölge splash'i yeniden tetiklensin
+                pendingPortal = -1;
+                mapReloadNeeded = false;
+            }
+
+            // Menzildeki geçit ([E] etiketi + kullanım için)
+            nearPortal = map_portal_near(player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y + player.rect.h / 2.0f);
 
             // --- COOLDOWN'LAR: ability + item türü başına geri sayım ---
             for (int a = 0; a < ABILITY_COUNT; a++)
@@ -3421,7 +3515,8 @@ int main(int argc, char *argv[])
             fx_update(&weaponFx, dt);
 
             gametime_update(dt);                      // dünya saati
-            npc_update(dt, gametime_hours());         // NPC rutinleri (yürü/eve gir)
+            if (map_current() == MAP_WORLD)
+                npc_update(dt, gametime_hours());     // NPC rutinleri (yürü/eve gir)
 
             // Günlük itibar toparlanması: suçsuz geçen gün, negatif itibar 0'a doğru +1
             // (pozitif itibar zamanla artmaz — güven kazanmak iş ister)
@@ -3445,7 +3540,7 @@ int main(int argc, char *argv[])
             }
 
             // --- MUHAFIZ: bounty takibi / yakalama / düşmanlık (guard.c beyni) ---
-            if (guardIdx >= 0)
+            if (guardIdx >= 0 && map_current() == MAP_WORLD)
             {
                 bool uiFrozen = catchOpen || dialogNpc >= 0;
                 GuardTick gt = guard_update(dt,
@@ -4390,6 +4485,10 @@ int main(int argc, char *argv[])
             {
                 mood = MOOD_COMBAT;
             }
+            else if (map_current() != MAP_WORLD)
+            {
+                mood = MAPS[map_current()].mood;   // zindan: sabit tekinsizlik
+            }
             else
             {
                 int mreg = region_at(px, py);
@@ -4423,8 +4522,8 @@ int main(int argc, char *argv[])
             nearestRes = resource_nearest_available(px, py);
             nearestStation = station_nearest(px, py);
 
-            // --- BÖLGE TAKİBİ: yeni bölgeye girince adı belirir ---
-            int reg = region_at(px, py);
+            // --- BÖLGE TAKİBİ: yeni bölgeye girince adı belirir (yalnız dünya) ---
+            int reg = (map_current() == MAP_WORLD) ? region_at(px, py) : currentRegion;
             if (reg != currentRegion)
             {
                 currentRegion = reg;
@@ -4445,12 +4544,16 @@ int main(int argc, char *argv[])
             continue;
         tilemap_render(renderer, tile_textures, &camera);     // haritayı çiz
         decor_render_all(renderer, decor_textures, &camera);  // evler (zemin üstü, entity altı)
-        resource_render_all(renderer, resource_textures, &camera, gameFont,
-                            (dialogNpc < 0 && nearestNpc < 0) ? nearestRes : -1);  // NPC önceliği
-        station_render_all(renderer, station_textures, &camera, gameFont,
-                           (dialogNpc < 0 && nearestNpc < 0 && !craftOpen) ? nearestStation : -1,
-                           (craftOpen && (craftRecipe >= 0 || plusForge || enchAction > 0))
-                               ? craftStation : -1);
+        map_portals_render(renderer, &camera, gameFont, nearPortal);  // geçit kapı/merdivenleri
+        if (map_current() == MAP_WORLD)
+        {
+            resource_render_all(renderer, resource_textures, &camera, gameFont,
+                                (dialogNpc < 0 && nearestNpc < 0) ? nearestRes : -1);  // NPC önceliği
+            station_render_all(renderer, station_textures, &camera, gameFont,
+                               (dialogNpc < 0 && nearestNpc < 0 && !craftOpen) ? nearestStation : -1,
+                               (craftOpen && (craftRecipe >= 0 || plusForge || enchAction > 0))
+                                   ? craftStation : -1);
+        }
 
         // İlan panosu (dünya objesi): taban-orta hizalı, yaklaşınca [E] ipucu
         if (boardTex != NULL)
@@ -4688,18 +4791,31 @@ int main(int argc, char *argv[])
         // altına (HUD gece de okunur). Ambient ay ışığı mavisine iner; ışık
         // kaynakları (pencere/direk/meşale) piksel başına sıcak renk katar.
         float dark01 = gametime_darkness01();
-        if (dark01 > 0.0f)
+        bool inDungeon = map_is_dungeon(map_current());
+        if (dark01 > 0.0f || inDungeon)
         {
-            // Zifiri gecede sahne çarpanı (mavi ağırlıklı ay ışığı)
-            float ambR = 1.0f - dark01 * (1.0f - 0.30f);
-            float ambG = 1.0f - dark01 * (1.0f - 0.33f);
-            float ambB = 1.0f - dark01 * (1.0f - 0.55f);
+            float ambR, ambG, ambB;
+            if (inDungeon)
+            {
+                // Zindan: saatten bağımsız sabit loşluk (soğuk taş tonu)
+                float a = MAPS[map_current()].ambient;
+                ambR = a;
+                ambG = a * 1.02f;
+                ambB = a * 1.35f;
+            }
+            else
+            {
+                // Zifiri gecede sahne çarpanı (mavi ağırlıklı ay ışığı)
+                ambR = 1.0f - dark01 * (1.0f - 0.30f);
+                ambG = 1.0f - dark01 * (1.0f - 0.33f);
+                ambB = 1.0f - dark01 * (1.0f - 0.55f);
 
-            // Altın saat: alacakaranlık/şafak ortasında sahne turuncuya ısınır
-            // (sin eğrisi: geçişin ortasında tepe, gündüz ve zifiri gecede sıfır)
-            float golden = SDL_sinf(dark01 * SDL_PI_F) * 0.18f;
-            ambR += golden;
-            ambG += golden * 0.45f;
+                // Altın saat: alacakaranlık/şafak ortasında sahne turuncuya ısınır
+                // (sin eğrisi: geçişin ortasında tepe, gündüz ve zifiri gecede sıfır)
+                float golden = SDL_sinf(dark01 * SDL_PI_F) * 0.18f;
+                ambR += golden;
+                ambG += golden * 0.45f;
+            }
 
             // Meşale: envanterde varsa oyuncu ışık taşır
             bool hasTorch = false;
@@ -4708,16 +4824,26 @@ int main(int argc, char *argv[])
 
             R2DLight lights[R2D_MAX_LIGHTS];
             int lightN = light_collect(lights, R2D_MAX_LIGHTS, &camera, winW, winH,
+                                       !inDungeon,   // köy ışıkları yalnız dünyada
                                        player.rect.x + player.rect.w / 2.0f,
                                        player.rect.y + player.rect.h / 2.0f,
                                        hasTorch, player.weaponFx);
-            // Kamp ateşleri: yanan her ateş (köy sabiti + oyuncununki) ışık verir
-            for (int i = 0; i < STATION_COUNT; i++)
-                if (STATIONS[i].type == STATION_CAMPFIRE &&
-                    STATIONS[i].x > CAMPFIRE_PARKED + 1.0f)
-                    lightN = light_append_campfire(lights, lightN, R2D_MAX_LIGHTS,
-                                                   &camera, winW, winH,
-                                                   STATIONS[i].x, STATIONS[i].y - 24.0f);
+            if (inDungeon)
+            {
+                // Zindan duvar meşaleleri
+                lightN = map_append_lights(map_current(), lights, lightN, R2D_MAX_LIGHTS,
+                                           &camera, winW, winH);
+            }
+            else
+            {
+                // Kamp ateşleri: yanan her ateş (köy sabiti + oyuncununki) ışık verir
+                for (int i = 0; i < STATION_COUNT; i++)
+                    if (STATIONS[i].type == STATION_CAMPFIRE &&
+                        STATIONS[i].x > CAMPFIRE_PARKED + 1.0f)
+                        lightN = light_append_campfire(lights, lightN, R2D_MAX_LIGHTS,
+                                                       &camera, winW, winH,
+                                                       STATIONS[i].x, STATIONS[i].y - 24.0f);
+            }
             r2d_light_pass(renderer, ambR, ambG, ambB, lights, lightN);
         }
 
