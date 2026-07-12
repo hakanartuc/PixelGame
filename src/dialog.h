@@ -85,12 +85,24 @@ bool dialog_load(Dialog *d, const char *path);
 // Düğüm adı → indeks (-1 = yok)
 int dialog_find(const Dialog *d, const char *id);
 
-// Alt panel: NPC adı + metin (sarılı) + numaralı seçenekler.
+// Alt panel: portre + NPC adı + metin (typewriter) + numaralı seçenekler.
 // states: seçenek başına durum (NULL = hepsi açık); kilitliler soluk +
 // speech eşiği/şansı etiketli çizilir.
+// sheet: NPC sprite sheet'i (NULL = portresiz) — idle-down ilk karenin baş
+// bölgesi kırpılıp panel soluna büyütülür. frameSize: sheet hücre boyutu.
 void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
                    const DialogOptState *states,
-                   R2D *renderer, TTF_Font *font, int winW, int winH);
+                   R2D *renderer, TTF_Font *font, int winW, int winH,
+                   R2DTexture *sheet, float frameSize);
+
+// --- Typewriter (anlatı Faz A): metin akarak yazılır, ATLANMAZ ama E ile
+// tamamlanır. Seçenekler metin bitmeden görünmez/seçilemez. ---
+#define DIALOG_CPS 55.0f   // karakter/sn (diyalog vinyetten hızlı — okuma temposu)
+
+void dialog_type_reset(void);    // diyalog AÇILIRKEN çağrılır (düğüm geçişi otomatik)
+void dialog_type_update(const Dialog *d, int nodeIdx, float dt);
+void dialog_type_reveal(void);   // E: metni anında tamamla
+bool dialog_type_done(const Dialog *d, int nodeIdx);
 
 // Seçeneğin speech eşiği (varsa). Dönen: var mı; outThreshold'a eşik yazılır.
 bool dialog_opt_speech_req(const DialogOpt *o, float *outThreshold);

@@ -12,7 +12,7 @@
 #include "contract.h"   // ilan panosu durumu (v12)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 16u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+#define SAVE_VERSION 17u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
                           // v12: ilan panosu (gün + slot durum/ilerleme);
                           // v13: skill ağacı maskeleri (perkChoice'un yerini aldı)
 
@@ -155,6 +155,12 @@ bool save_game(const char *path, const Player *p,
 
     // Boss durumu (v16)
     ok = ok && w32(f, boss_last_kill_day()) && w32(f, boss_first_kill_done() ? 1 : 0);
+
+    // Yankılar (v17): mühür ekseni sayaçları + nokta bayrakları
+    ok = ok && w32(f, p->echoesWitnessed) && w32(f, p->echoesConsumed);
+    ok = ok && w32(f, ECHO_COUNT);
+    for (int i = 0; ok && i < ECHO_COUNT; i++)
+        ok = w32(f, echo_done(i) ? 1 : 0);
 
     fclose(f);
     if (!ok)
@@ -331,6 +337,14 @@ bool load_game(const char *path, Player *p,
     Sint32 bossDay = -999, bossFirst = 0;
     ok = ok && r32(f, &bossDay) && r32(f, &bossFirst);
 
+    // Yankılar (v17)
+    Sint32 nEcho = 0, echoFlag[16] = {0};
+    ok = ok && r32(f, &tmpP.echoesWitnessed) && r32(f, &tmpP.echoesConsumed);
+    ok = ok && r32(f, &nEcho);
+    if (ok && (nEcho < 0 || nEcho > 16)) ok = false;
+    for (int i = 0; ok && i < nEcho; i++)
+        ok = r32(f, &echoFlag[i]);
+
     fclose(f);
     if (!ok) {
         SDL_Log("Save okunamadi (bozuk dosya): %s", path);
@@ -349,6 +363,8 @@ bool load_game(const char *path, Player *p,
         chest_set_opened_day(i, chestDays[i]);
     boss_set_last_kill_day(bossDay);
     boss_set_first_kill_done(bossFirst != 0);
+    for (int i = 0; i < nEcho && i < ECHO_COUNT; i++)
+        echo_set_done(i, echoFlag[i] != 0);
     if (exploredBytes > 0)
         minimap_unpack_explored(exploredBuf, exploredBytes);
     npc_reset();   // önce herkes canlı, sonra save'deki ölümler uygulanır

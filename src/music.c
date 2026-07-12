@@ -17,6 +17,8 @@ static SDL_AudioStream *trkStream[MOOD_COUNT];
 static float trkGain[MOOD_COUNT];   // 0..1 (MUSIC_VOLUME ile çarpılır)
 static MusicMood target = MOOD_TOWN;
 static bool musicReady = false;
+static float duckTarget = 1.0f;   // anlatı kısması hedefi
+static float duckNow = 1.0f;      // yumuşak yaklaşan mevcut değer
 
 bool music_init(void)
 {
@@ -50,6 +52,13 @@ bool music_init(void)
     return true;
 }
 
+void music_set_duck(float duck01)
+{
+    if (duck01 < 0.0f) duck01 = 0.0f;
+    if (duck01 > 1.0f) duck01 = 1.0f;
+    duckTarget = duck01;
+}
+
 void music_set_mood(MusicMood m)
 {
     if (!musicReady || m < 0 || m >= MOOD_COUNT || m == target) return;
@@ -64,6 +73,11 @@ void music_update(float dt)
 {
     if (!musicReady) return;
 
+    // Duck yumuşak yaklaşır (vinyet girişi ~0.7 sn'de çöker)
+    float dstep = dt / 0.7f;
+    if (duckNow < duckTarget) { duckNow += dstep; if (duckNow > duckTarget) duckNow = duckTarget; }
+    if (duckNow > duckTarget) { duckNow -= dstep; if (duckNow < duckTarget) duckNow = duckTarget; }
+
     float step = dt / FADE_SECONDS;
     for (int i = 0; i < MOOD_COUNT; i++) {
         if (trkStream[i] == NULL || trkBuf[i] == NULL) continue;
@@ -72,7 +86,7 @@ void music_update(float dt)
         float want = (i == (int)target) ? 1.0f : 0.0f;
         if (trkGain[i] < want) { trkGain[i] += step; if (trkGain[i] > want) trkGain[i] = want; }
         if (trkGain[i] > want) { trkGain[i] -= step; if (trkGain[i] < want) trkGain[i] = want; }
-        SDL_SetAudioStreamGain(trkStream[i], trkGain[i] * MUSIC_VOLUME);
+        SDL_SetAudioStreamGain(trkStream[i], trkGain[i] * MUSIC_VOLUME * duckNow);
 
         // Duyulur parçanın kuyruğu azaldıysa baştan ekle (kesintisiz loop)
         if (trkGain[i] > 0.001f &&

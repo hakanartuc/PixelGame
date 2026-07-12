@@ -56,6 +56,7 @@ add_executable(game
     src/worldmap.c
     src/lockpick.c
     src/trap.c
+    src/scene.c
     src/r2d.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle

@@ -4,6 +4,7 @@
 #include "dialog.h"
 #include "font.h"
 #include "ui_theme.h"
+#include "audio.h"    // typewriter tık sesi
 
 // Satır sonundaki \n ve \r'ı kırp
 static void chomp(char *s)
@@ -186,14 +187,82 @@ bool dialog_opt_speech_req(const DialogOpt *o, float *outThreshold)
     return false;
 }
 
+// ---------------------------------------------------------------------------
+// Typewriter — kod noktası bazlı (Türkçe karakter ortadan kesilmez)
+// ---------------------------------------------------------------------------
+static int utf8_count(const char *s)
+{
+    int n = 0;
+    for (; *s; s++)
+        if (((unsigned char)*s & 0xC0) != 0x80) n++;
+    return n;
+}
+
+static int utf8_bytes_for(const char *s, int n)
+{
+    int i = 0;
+    while (s[i] && n > 0) {
+        i++;
+        while (((unsigned char)s[i] & 0xC0) == 0x80) i++;
+        n--;
+    }
+    return i;
+}
+
+static float dlgTyped = 0.0f;    // yazılmış kod noktası (float — dt birikir)
+static float dlgTick = 0.0f;     // tık sesi sayacı
+static const Dialog *typeDlg = NULL;   // düğüm değişimini yakalamak için
+static int typeNode = -1;
+
+void dialog_type_reset(void)
+{
+    dlgTyped = 0.0f;
+    dlgTick = 0.0f;
+    typeDlg = NULL;
+    typeNode = -1;
+}
+
+void dialog_type_reveal(void) { dlgTyped = 1e9f; }
+
+void dialog_type_update(const Dialog *d, int nodeIdx, float dt)
+{
+    if (d == NULL || nodeIdx < 0 || nodeIdx >= d->nodeCount) return;
+    if (d != typeDlg || nodeIdx != typeNode) {   // düğüm geçişi → baştan yaz
+        typeDlg = d;
+        typeNode = nodeIdx;
+        dlgTyped = 0.0f;
+        dlgTick = 0.0f;
+    }
+    int len = utf8_count(d->nodes[nodeIdx].text);
+    if (dlgTyped >= (float)len) { dlgTyped = (float)len; return; }
+
+    float before = dlgTyped;
+    dlgTyped += DIALOG_CPS * dt;
+    if (dlgTyped > (float)len) dlgTyped = (float)len;
+
+    dlgTick += dlgTyped - before;   // her ~3 karakterde yumuşak tık
+    if (dlgTick >= 3.0f) {
+        dlgTick = 0.0f;
+        audio_play(SFX_TYPETICK);
+    }
+}
+
+bool dialog_type_done(const Dialog *d, int nodeIdx)
+{
+    if (d == NULL || nodeIdx < 0 || nodeIdx >= d->nodeCount) return true;
+    if (d != typeDlg || nodeIdx != typeNode) return false;   // henüz başlamadı
+    return dlgTyped >= (float)utf8_count(d->nodes[nodeIdx].text);
+}
+
 void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
                    const DialogOptState *states,
-                   R2D *renderer, TTF_Font *font, int winW, int winH)
+                   R2D *renderer, TTF_Font *font, int winW, int winH,
+                   R2DTexture *sheet, float frameSize)
 {
     if (nodeIdx < 0 || nodeIdx >= d->nodeCount) return;
     const DialogNode *n = &d->nodes[nodeIdx];
 
-    // Panel: alt bölge, hotbar'ın üstünde
+    // Panel: alt bölge, hotbar'ın üstünde (portre varsa sola taşar)
     float pad = 16.0f;
     float panelW = winW * 0.6f;
     float panelH = 150.0f;
@@ -202,9 +271,24 @@ void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
 
     ui_panel(renderer, px, py, panelW, panelH);
 
+    // Portre: idle-down ilk karenin baş bölgesi, panel soluna tam-piksel katla
+    if (sheet != NULL && frameSize > 0.0f) {
+        float box = 96.0f;
+        float bx = px - box - 10.0f, by = py + panelH - box;
+        ui_panel(renderer, bx, by, box, box);
+        SDL_FRect src = { frameSize * 0.25f, frameSize * 0.02f,
+                          frameSize * 0.5f, frameSize * 0.5f };
+        float inw = box - 12.0f;
+        int k = (int)(inw / src.w);
+        if (k < 1) k = 1;
+        float dw = src.w * (float)k, dh = src.h * (float)k;
+        SDL_FRect dst = { bx + (box - dw) / 2.0f, by + (box - dh) / 2.0f, dw, dh };
+        r2d_draw_texture(renderer, sheet, &src, &dst);
+    }
+
     if (font == NULL) return;
 
-    // NPC adı + metin (sarılı) + seçenekler
+    // NPC adı + metin (typewriter, sarılı) + seçenekler (metin bitince)
     SDL_Color gold  = { 255, 210, 60, 255 };
     SDL_Color white = { 235, 235, 245, 255 };
     SDL_Color gray  = { 170, 200, 255, 255 };
@@ -212,8 +296,21 @@ void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
     float y = py + pad;
     draw_text(renderer, font, npcName, px + pad, y, gold);
     y += 24.0f;
-    y += draw_text_wrapped(renderer, font, n->text,
+
+    char shown[DIALOG_TEXT_LEN];
+    int typedN = (d == typeDlg && nodeIdx == typeNode)
+               ? (int)dlgTyped : utf8_count(n->text);
+    int nbytes = utf8_bytes_for(n->text, typedN);
+    memcpy(shown, n->text, (size_t)nbytes);
+    shown[nbytes] = '\0';
+    y += draw_text_wrapped(renderer, font, shown,
                            px + pad, y, panelW - pad * 2, white) + 10.0f;
+
+    if (!dialog_type_done(d, nodeIdx)) {
+        SDL_Color hint = { 150, 150, 160, 160 };
+        draw_text(renderer, font, "[E]", px + panelW - 40.0f, py + panelH - 26.0f, hint);
+        return;   // seçenekler metin bitmeden görünmez
+    }
 
     SDL_Color dim = { 120, 120, 130, 255 };
     for (int i = 0; i < n->optCount; i++) {

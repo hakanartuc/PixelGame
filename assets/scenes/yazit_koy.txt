@@ -1,0 +1,25 @@
+# Köy dikilitaşı — çevresel anlatı (yazıt: fx yok, tekrar okunabilir).
+# Perde 1 sızıntısı: "sayma" imgesi. Açıklama YOK — sadece iz.
+
+[giris]
+image: assets/scenes/yazit_stone.png
+duck: 0.4
+text: Taş, köydeki her şeyden eski. Evlerin temeli düzgün kesilmiş; bu değil. Kimse dikili görmemiş, kimse dikildiğini hatırlamıyor — hep buradaymış.
+text: Yüzeyi yosun tutmuş. Ama yosunun altında, parmakla hissedilecek kadar derin: satırlar.
+opt: Yosunu kazı, yazıyı sök. -> yazi
+opt: Taşı rahat bırak. -> end
+
+[yazi]
+duck: 0.3
+text: Çoğu gitmiş. Rüzgar mı silmiş, biri mi kazımış, belli değil. Okunabilen tek satır şu: "...VE HERKES KENDİ GÜNÜNDE..."
+text: Gerisi kırık. Ama dibe doğru, yosunun bile tutmadığı yerde, daha yeni bir kazıntı var. Acele, derin, tırnakla ya da çakıyla:
+text: "saydım. dokuzdu."
+opt: Taşın dibini yokla. -> dip
+opt: Geri çekil. -> end
+
+[dip]
+duck: 0.3
+text: Taşın dibinde ot boy vermemiş — biri burada uzun oturmuş. Uzun, ve sık.
+text: Parmakların toprakta küçük, pürüzsüz bir çakıl taşına takılıyor. Başparmak yalağı açılmış üstünde; yüzlerce kez, belki binlerce kez ovulmuş.
+text: Bekleyen biri. Sayan biri. Kim olduğuna dair başka hiçbir iz yok.
+opt: Çakılı yerine bırak, kalk. -> end

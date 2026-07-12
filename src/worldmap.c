@@ -167,6 +167,42 @@ bool boss_first_kill_done(void)        { return bossFirstKill; }
 void boss_set_first_kill_done(bool d)  { bossFirstKill = d; }
 
 // ---------------------------------------------------------------------------
+// Anlatı noktaları — yankılar (bir kez) + yazıtlar (tekrar okunur). Faz A.
+// ---------------------------------------------------------------------------
+const EchoDef ECHOES[] = {
+    // Köy doğusu, yol kenarı: devrik araba (ilk yankı prototipi)
+    { ECHO_ANI, MAP_WORLD, T(20), T(8), "assets/scenes/echo_cart.txt", NULL, 0.0f },
+    // Köy yolu kıyısı: eski dikilitaş — çevresel anlatı (tekrar okunabilir)
+    { ECHO_YAZIT, MAP_WORLD, T(11), T(14), "assets/scenes/yazit_koy.txt",
+      "assets/decor/obelisk.png", 1.6f },
+};
+const int ECHO_COUNT = (int)(sizeof(ECHOES) / sizeof(ECHOES[0]));
+
+static bool echoDone[16];   // save v17 köprüsü
+
+bool echo_done(int idx)              { return (idx >= 0 && idx < 16) ? echoDone[idx] : true; }
+void echo_set_done(int idx, bool d)  { if (idx >= 0 && idx < 16) echoDone[idx] = d; }
+
+static R2DTexture *echoTex[16];   // ECHOES ile paralel decor görselleri
+
+void map_echo_decor_render(R2D *renderer, const Camera *cam)
+{
+    float zoom = cam->zoom;
+    for (int i = 0; i < ECHO_COUNT && i < 16; i++) {
+        if (ECHOES[i].map != map_current() || echoTex[i] == NULL) continue;
+        float w, h;
+        r2d_texture_size(echoTex[i], &w, &h);
+        float dw = w * ECHOES[i].decorScale, dh = h * ECHOES[i].decorScale;
+        SDL_FRect dst = {
+            (ECHOES[i].x - dw / 2.0f - cam->x) * zoom,
+            (ECHOES[i].y - dh + 8.0f - cam->y) * zoom,   // taban hizası
+            dw * zoom, dh * zoom,
+        };
+        r2d_draw_texture(renderer, echoTex[i], NULL, &dst);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Tuzaklar — koridor/oda girişleri (kaçınılabilir yerleşim: kenardan geçiş var)
 // ---------------------------------------------------------------------------
 const SpikeDef SPIKES[] = {
@@ -197,6 +233,9 @@ bool worldmap_init(R2D *renderer)
     for (int i = 0; i < PORTAL_COUNT && i < 8; i++)
         portalTex[i] = (PORTALS[i].decorTex != NULL)
                      ? load_texture(renderer, PORTALS[i].decorTex) : NULL;
+    for (int i = 0; i < ECHO_COUNT && i < 16; i++)
+        echoTex[i] = (ECHOES[i].decorTex != NULL)
+                   ? load_texture(renderer, ECHOES[i].decorTex) : NULL;
     return true;
 }
 
@@ -204,6 +243,8 @@ void worldmap_quit(void)
 {
     for (int i = 0; i < PORTAL_COUNT && i < 8; i++)
         if (portalTex[i]) { r2d_texture_destroy(NULL, portalTex[i]); portalTex[i] = NULL; }
+    for (int i = 0; i < ECHO_COUNT && i < 16; i++)
+        if (echoTex[i]) { r2d_texture_destroy(NULL, echoTex[i]); echoTex[i] = NULL; }
 }
 
 MapId map_current(void) { return curMap; }

@@ -26,6 +26,10 @@ bool music_init(void);
 // Hedef mood'u değiştir (aynıysa no-op; geçiş crossfade ile)
 void music_set_mood(MusicMood m);
 
+// Anlatı kısması: 1.0 normal, 0.15 vinyet — yumuşak geçişle uygulanır
+// ("duyular kelimelerden önce": sahneler müziği çekip alanı fısıltıya bırakır)
+void music_set_duck(float duck01);
+
 // Her kare: fade ilerlet + biten kuyrukları besle (loop). Menüde de çağrılır.
 void music_update(float dt);
 

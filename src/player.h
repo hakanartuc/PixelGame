@@ -154,6 +154,11 @@ typedef struct Player {
     float abilityCd[ABILITY_COUNT];   // ability başına kalan cooldown
     float itemCd[MAX_ITEM_TYPES];     // item TÜRÜ başına kalan cooldown (pot kilidi)
     WeaponFxType weaponFx;   // aktif silah efekti (her frame kusanili silahtan senkronlanir)
+
+    // Mühür ekseni (anlatı, Faz A) — GİZLİ sayaçlar: UI'da GÖSTERİLMEZ.
+    // Fısıltının tonu ve dünyanın tepkisi bunlardan türer (save v17).
+    int echoesWitnessed;   // Dinle/Defnet seçimleri
+    int echoesConsumed;    // Çek/Sömür seçimleri
 } Player;
 
 

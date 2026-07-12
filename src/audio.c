@@ -14,6 +14,9 @@ static const char *SFX_FILES[SFX_COUNT] = {
     [SFX_DODGE]     = "dodge",
     [SFX_REFLECT]   = "reflect",
     [SFX_DEATHSAVE] = "deathsave",
+    [SFX_WHISPER]   = "whisper",
+    [SFX_HEARTBEAT] = "heartbeat",
+    [SFX_TYPETICK]  = "typetick",
 };
 
 // Efekt başına: ham WAV verisi + cihaza bağlı stream

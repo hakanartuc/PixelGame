@@ -1,0 +1,42 @@
+# İlk yankı: devrik araba (köy doğusu, yol kenarı)
+# İki hat: Tanık (dinle/defnet) — Sömüren (çek/al). İkisi de "...henüz değil" ile kapanır.
+
+[giris]
+image: assets/scenes/echo_cart.png
+duck: 0.2
+sfx: heartbeat
+text: Yol kenarında bir araba. Devrilmiş; tekerleklerinden biri hala dönüyor gibi duruyor ama dönmüyor. Sandıklar dağılmış, ot bürümüş.
+text: Kemiklerin arasında mor bir soluk titreşiyor. Yaklaştıkça göğsündeki mühür ısınıyor — sanki bir şey nefes alıyor, senin nefesinle aynı anda.
+opt: Elini mühre koy, dinle. -> yanki
+opt: Soluğu kendine çek. -> somur
+opt: Geri çekil. -> end
+
+[yanki]
+image: assets/scenes/echo_cart_memory.png
+duck: 0.12
+sfx: whisper
+text: Karanlık. Sonra bir sabah: eller dizginlerde, kızının ördüğü yün eldivenler. Pazara yetişmeliydi — bal küpleri kışı çıkarmazdı.
+text: Sonra tekerlek sesi kesiliyor. Ok değil, düşüş değil; sadece bir duraksama. Dünya bir nefeslik duruyor ve o nefes geri gelmiyor.
+text: Son düşüncesi bir isim değil, bir koku: ocakta unutulmuş süt. Sonra fısıltı, sana değil ona: "...henüz değil."
+opt: Kemikleri toprağa göm. -> defin
+opt: Elini çek. -> end
+fx: witness
+
+[defin]
+image: assets/scenes/echo_cart_burial.png
+duck: 0.3
+text: Toprak yumuşak; uzun sürmüyor. Üstüne bir taş koyuyorsun — isimsiz, ama artık sahipsiz değil.
+text: Mühür soğuyor. Mor soluk sönerken bir an, sadece bir an, omzunda bir el ağırlığı hissediyorsun. Teşekkür gibi. Ya da veda.
+opt: Yola devam et. -> end
+fx: witness
+
+[somur]
+image: assets/scenes/echo_cart_drain.png
+duck: 0.12
+sfx: whisper
+text: Mühür ısınıyor — bu sefer içeri doğru. Mor soluk direniyor, bir balığın oltada direnmesi gibi; sonra kopuyor ve sana akıyor.
+text: Bir sabahın, bir kokunun, bir ismin kırıntıları damarlarında eriyor. Güç. Soğuk ve pürüzsüz.
+text: Fısıltı bu kez sana yakın, kulağının hemen dibinde, neredeyse memnun: "...henüz değil."
+opt: Avucunu kapat, kalanı al. -> end
+fx: consume
+fx: essence

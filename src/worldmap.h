@@ -84,6 +84,32 @@ void boss_set_last_kill_day(int day);
 bool boss_first_kill_done(void);
 void boss_set_first_kill_done(bool done);
 
+// --- Anlatı noktaları (Faz A) ---
+// İki tür, tek makine (vinyet sahnesi — scene.c çalar):
+//   ECHO_ANI:   ölünün son anları. Mor soluk + [E] Dokun. BİR KEZ yaşanır
+//               (seçim yapılınca echo_done, save v17) — anı iki kez okunmaz.
+//   ECHO_YAZIT: taş yazıt/kitap — çevresel anlatı. Görseli decorTex çizer,
+//               [E] Oku. TEKRAR okunabilir (fx'siz sahne done işaretlenmez).
+typedef enum { ECHO_ANI = 0, ECHO_YAZIT } EchoKind;
+
+typedef struct {
+    EchoKind kind;
+    MapId map;
+    float x, y;             // dünya px (soluk merkezi / taşın TABANI)
+    const char *scenePath;  // assets/scenes/*.txt
+    const char *decorTex;   // dünyada duran görsel (NULL = yok; yazıt taşı vb.)
+    float decorScale;
+} EchoDef;
+extern const EchoDef ECHOES[];
+extern const int ECHO_COUNT;
+
+// Yazıt/anı decor görselleri + en yakına [E] etiketi (mor soluğu main çizer —
+// nabız efekti glow dokusuyla orada yaşıyor)
+void map_echo_decor_render(R2D *renderer, const Camera *cam);
+
+bool echo_done(int idx);
+void echo_set_done(int idx, bool done);
+
 // --- Tuzaklar ---
 typedef struct { MapId map; float x, y; float phaseOffset; } SpikeDef;   // periyodik diken
 typedef struct {

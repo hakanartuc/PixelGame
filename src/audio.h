@@ -20,6 +20,9 @@ typedef enum {
     SFX_DODGE,     // Kaçınma perki tetiklendi (whoosh)
     SFX_REFLECT,   // Karşılık/Diken yansıması (metalik ting)
     SFX_DEATHSAVE, // Yıkılmaz/Ölümsüz kurtarışı (gong + yükseliş)
+    SFX_WHISPER,   // fısıltı — yankı imzası ("...henüz değil" hissi)
+    SFX_HEARTBEAT, // tek kalp atımı (lub-dub) — Sessiz Gün ritmi
+    SFX_TYPETICK,  // typewriter yumuşak tık (vinyet metni)
     SFX_COUNT,
 } SfxId;
 

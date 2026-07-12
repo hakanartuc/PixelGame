@@ -23,6 +23,7 @@
 #include "worldmap.h"
 #include "lockpick.h"
 #include "trap.h"
+#include "scene.h"
 #include "npc.h"
 #include "dialog.h"
 #include "shop.h"
@@ -913,12 +914,15 @@ int main(int argc, char *argv[])
     minimap_init(renderer);   // harita boyutu belli olduktan SONRA
     worldmap_init(renderer);  // geçit görselleri
     trap_init(renderer);      // diken/plaka/arbalet sprite'ları (sandık günleri worldmap'te)
+    scene_set_renderer(renderer);   // vinyet sahneleri görsel yükleyebilsin
 
     // Harita geçişi: E ile geçit (pendingPortal) ya da yükleme sonrası (mapReload)
     int pendingPortal = -1;
     bool mapReloadNeeded = false;
     int nearPortal = -1;
     int nearestChest = -1;   // menzildeki kapalı sandık ([E] ile açılır)
+    int nearestEcho = -1;    // menzildeki OKUNMAMIŞ yankı noktası ([E] ile yaşanır)
+    int activeEcho = -1;     // şu an yaşanan yankı (seçim yapılınca done işaretlenir)
     bool arenaClosed = false;   // boss arena kapısı (tile duvarı) indi mi
     #define T_BOSS_X (22.0f * TILE_SIZE)
     #define T_BOSS_Y (23.0f * TILE_SIZE)
@@ -1020,6 +1024,12 @@ int main(int argc, char *argv[])
                     // Eğilme (Sneak): algı/tanık azalır, hız düşer — kesin gizlilik değil
                     player.sneaking = !player.sneaking;
                     audio_play(SFX_UI);
+                }
+                else if ((event.key.key == SDLK_E || event.key.key == SDLK_SPACE) &&
+                         gameState == GAME_PLAYING && scene_active())
+                {
+                    // Sahne açıkken E/Space yalnız typewriter'ı hızlandırır
+                    // (basılı tutma update'te poll edilir) — başka işe BAKMAZ
                 }
                 else if (event.key.key == SDLK_SPACE && gameState == GAME_PLAYING &&
                          lockpick_active())
@@ -1208,7 +1218,38 @@ int main(int argc, char *argv[])
                 else if (event.key.key >= SDLK_1 && event.key.key <= SDLK_8 &&
                          gameState == GAME_PLAYING)
                 {
-                    if (dialogNpc >= 0)
+                    if (scene_active())
+                    {
+                        // Vinyet açıkken sayılar SAHNE seçeneği seçer
+                        SceneFx sfx;
+                        int sel = (int)(event.key.key - SDLK_1);
+                        if (scene_choose(sel, &sfx))
+                        {
+                            player.echoesWitnessed += sfx.witness;
+                            player.echoesConsumed += sfx.consume;
+                            if ((sfx.witness > 0 || sfx.consume > 0) && activeEcho >= 0)
+                                echo_set_done(activeEcho, true);   // anı bir kez yaşanır
+                            if (sfx.gold > 0)
+                                player.gold += sfx.gold;
+                            if (sfx.essence > 0)
+                            {
+                                inventory_add(&inventory, &ITEM_TYPES[ITEM_ESSENCE_PALE],
+                                              sfx.essence, 0);
+                                SDL_Color purple = { 200, 150, 255, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f,
+                                                     "+Soluk Öz", purple);
+                            }
+                        }
+                    }
+                    else if (dialogNpc >= 0 &&
+                             !dialog_type_done(&npcDialogs[dialogNpc], dialogNode))
+                    {
+                        // Metin hâlâ akıyor: sayı da E gibi tamamlar (seçim yapmaz)
+                        dialog_type_reveal();
+                    }
+                    else if (dialogNpc >= 0)
                     {
                         // Diyalog açıkken sayılar SEÇENEK seçer (hotbar devre dışı)
                         Dialog *dlg = &npcDialogs[dialogNpc];
@@ -1442,6 +1483,23 @@ int main(int argc, char *argv[])
                     }
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
+                         dialogNpc >= 0)
+                {
+                    // Diyalog açıkken E: akan metni anında tamamla
+                    dialog_type_reveal();
+                }
+                else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
+                         dialogNpc < 0 && nearestEcho >= 0)
+                {
+                    // Yankıya dokun: dünya bir nefeslik durur, sahne süzülür
+                    if (scene_start(ECHOES[nearestEcho].scenePath))
+                    {
+                        activeEcho = nearestEcho;
+                        player.autoAttack = false;
+                        player.attacking = false;
+                    }
+                }
+                else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
                          dialogNpc < 0 && nearPortal >= 0)
                 {
                     // Geçit kullan (kapı/merdiven) — asıl geçiş update başında yapılır
@@ -1538,6 +1596,7 @@ int main(int argc, char *argv[])
                         if (dialogNode >= 0)
                         {
                             dialogNpc = nearestNpc;
+                            dialog_type_reset();         // metin akarak yazılsın
                             player.autoAttack = false;   // konuşurken savaş durur
                             gatherRes = -1;              // toplama da durur
                             craftOpen = false;           // craft paneli de kapanır
@@ -1830,7 +1889,7 @@ int main(int argc, char *argv[])
                     }
                     // menu acikken oyun tiklamasi islenmez
                 }
-                else if (event.button.button == SDL_BUTTON_LEFT)
+                else if (event.button.button == SDL_BUTTON_LEFT && !scene_active())
                 {
                     float worldX = event.button.x / camera.zoom + camera.x;
                     float worldY = event.button.y / camera.zoom + camera.y;
@@ -2559,7 +2618,17 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (gameState == GAME_PLAYING && deathTimer <= 0.0f)
+        // Vinyet sahnesi: dünya bir nefeslik durur (Sessiz Gün'ün küçük kopyası).
+        // Yalnız sahne akar; E/Space basılıysa typewriter hızlanır (atlamaz).
+        if (gameState == GAME_PLAYING && scene_active())
+        {
+            const bool *sk = SDL_GetKeyboardState(NULL);
+            scene_update(dt, sk[SDL_SCANCODE_E] || sk[SDL_SCANCODE_SPACE]);
+            if (!scene_active())
+                activeEcho = -1;   // sahne kapandı — müzik duck'ı motor geri açtı
+        }
+
+        if (gameState == GAME_PLAYING && deathTimer <= 0.0f && !scene_active())
         {
 
             const bool *keys = SDL_GetKeyboardState(NULL); // basılı tuşların anlık görüntüsü (SDL'e ait, free etme)
@@ -2643,6 +2712,21 @@ int main(int argc, char *argv[])
                     float cdy = (loots[i].rect.y + loots[i].rect.h / 2.0f) - pcy;
                     float d = SDL_sqrtf(cdx * cdx + cdy * cdy);
                     if (d < best) { best = d; nearestChest = i; }
+                }
+            }
+
+            // Menzildeki okunmamış yankı noktası ([E] ipucu + tetik)
+            nearestEcho = -1;
+            {
+                float pcx = player.rect.x + player.rect.w / 2.0f;
+                float pcy = player.rect.y + player.rect.h / 2.0f;
+                float best = 70.0f;
+                for (int i = 0; i < ECHO_COUNT; i++)
+                {
+                    if (ECHOES[i].map != map_current() || echo_done(i)) continue;
+                    float edx = ECHOES[i].x - pcx, edy = ECHOES[i].y - pcy;
+                    float d = SDL_sqrtf(edx * edx + edy * edy);
+                    if (d < best) { best = d; nearestEcho = i; }
                 }
             }
 
@@ -2735,6 +2819,10 @@ int main(int argc, char *argv[])
 
             // Kilit minigame'i imleci
             lockpick_update(dt, &perkFx);
+
+            // Diyalog typewriter'ı (metin akar, E/sayı tamamlar)
+            if (dialogNpc >= 0)
+                dialog_type_update(&npcDialogs[dialogNpc], dialogNode, dt);
 
             // Tuzaklar: diken hasarı + plaka→arbalet atışları (yalnız zindanda)
             if (map_is_dungeon(map_current()))
@@ -5205,6 +5293,43 @@ int main(int argc, char *argv[])
                       (nc->rect.y - 34.0f - camera.y) * camera.zoom, hint);
         }
 
+        // Anlatı noktaları: yazıt taşları (decor) + yankıların mor soluğu
+        map_echo_decor_render(renderer, &camera);
+        for (int i = 0; i < ECHO_COUNT; i++)
+        {
+            if (ECHOES[i].map != map_current() || echo_done(i)) continue;
+
+            if (ECHOES[i].kind == ECHO_ANI && glowTex != NULL)
+            {
+                // Mor soluk: nabız gibi titrer — ölünün son anı burada asılı
+                float tsec = (float)((double)SDL_GetTicks() / 1000.0);
+                float pulse = 0.62f + 0.38f * SDL_sinf(tsec * 2.4f);
+                float size = (34.0f + 10.0f * pulse) * camera.zoom;
+                SDL_FRect gdst = { (ECHOES[i].x - camera.x) * camera.zoom - size / 2.0f,
+                                   (ECHOES[i].y - camera.y) * camera.zoom - size / 2.0f,
+                                   size, size };
+                r2d_texture_set_color_mod(glowTex, 170, 110, 255);
+                r2d_texture_set_alpha_mod(glowTex, (Uint8)(120.0f + 100.0f * pulse));
+                r2d_draw_texture(renderer, glowTex, NULL, &gdst);
+                r2d_texture_set_color_mod(glowTex, 255, 255, 255);
+                r2d_texture_set_alpha_mod(glowTex, 255);
+            }
+
+            if (i == nearestEcho && gameFont != NULL && !scene_active())
+            {
+                bool ani = ECHOES[i].kind == ECHO_ANI;
+                const char *lbl = ani ? "[E] Dokun" : "[E] Oku";
+                SDL_Color hint = ani ? (SDL_Color){ 200, 160, 255, 255 }
+                                     : (SDL_Color){ 255, 230, 80, 255 };
+                float lift = ani ? 44.0f : 150.0f;   // yazıt taşı uzun — etiket tepede
+                int tw = 0, th = 0;
+                TTF_GetStringSize(gameFont, lbl, 0, &tw, &th);
+                draw_text(renderer, gameFont, lbl,
+                          (ECHOES[i].x - camera.x) * camera.zoom - tw / 2.0f,
+                          (ECHOES[i].y - lift - camera.y) * camera.zoom, hint);
+            }
+        }
+
         // Hasar yazıları (mob'ların üstünde, dünya uzayında)
         floattext_render_all(floatTexts, MAX_FLOAT_TEXTS, renderer, gameFont, &camera); // ← BURAYA (present'tan önce)
 
@@ -5383,6 +5508,9 @@ int main(int argc, char *argv[])
         lockpick_render(renderer, gameFont, winW, winH, &perkFx,
                         player.skills[SKILL_LOCKPICKING].level);
 
+        // Vinyet sahnesi: dünyanın üstüne karartı + diorama + typewriter metin
+        scene_render(renderer, gameFont, winW, winH);
+
         if (minimapOpen)
             minimap_render(renderer, player.rect.x + player.rect.w / 2.0f,
                            player.rect.y + player.rect.h / 2.0f,
@@ -5539,8 +5667,10 @@ int main(int argc, char *argv[])
                                 dialogNpc < 8 &&
                                 dlgBurnDay[dialogNpc][dialogNode][oi] == gametime_day(),
                                 &dstates[oi]);
+            int dfs = NPCS[dialogNpc].frameSize > 0 ? NPCS[dialogNpc].frameSize : 64;
             dialog_render(&npcDialogs[dialogNpc], dialogNode, NPCS[dialogNpc].name,
-                          dstates, renderer, gameFont, winW, winH);
+                          dstates, renderer, gameFont, winW, winH,
+                          npc_textures[dialogNpc], (float)dfs);
         }
 
         // Muhafız yakalama paneli: öde / karşı koy / rüşvet
