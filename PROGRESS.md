@@ -291,6 +291,16 @@ Güncelleme: 2026-07-11
   çözüldü); tüm moblar tam canla başa döner (boss dahil); dünyada ölünce kamplar tazelenir
 
 ## 🔜 Kalanlar (öncelik sırası — 2026-07-11 kullanıcı seçimi)
+0. **ANLATI HATTI (aktif — STORY.md + LORE_SECRET.md kanon):**
+   · Faz A: vinyet/sahne motoru (pixel diorama + typewriter + dokunma beat'leri +
+     duyusal direktifler: müzik kısma/kalp atışı ritmi) + diyalog portresi/isim plakası
+     + [Yankı]/[Sömür] etiketleri — İLK YANKI PROTOTİPİ (iki hat: Tanık/Sömüren)
+   · Faz B: açılış senaryosu (ilk 15 dk: Sessiz Gün vinyeti, köye varış, ilk yankı,
+     kanca) + quest log → "Yolculuk" günlüğü (birinci ağız + Book_UI) + bildirim dili
+   · Faz C: in-engine sahne araçları (letterbox, kamera pan, NPC yürütme, bark sistemi)
+   · Dünya Olayları sistemi (yaşayan dünya: olay tablosu + haber ağı + atmosfer saati
+     + NPC yayları) + dinlenme/rüya mekaniği (kamp ateşi → rüya vinyeti)
+   · Kural: her anlatı fazında İKİ hat yazılır (Tanık + Sömüren — tam ayrı kötü yol)
 1. **Mob fazları** (devamı): Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda; iskelet "mezardan kalkma" spawn animasyonu
 3. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
 4. **Onaylı yeni mekanikler** (2026-07-11 — uygun fazlarda gelir):
