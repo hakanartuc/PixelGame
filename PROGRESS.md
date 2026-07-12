@@ -291,10 +291,14 @@ Güncelleme: 2026-07-11
   çözüldü); tüm moblar tam canla başa döner (boss dahil); dünyada ölünce kamplar tazelenir
 
 ## 🔜 Kalanlar (öncelik sırası — 2026-07-11 kullanıcı seçimi)
-0. **ANLATI HATTI (aktif — STORY.md + LORE_SECRET.md kanon):**
+0. **ANLATI HATTI (aktif — STORY.md + LORE_SECRET.md + STORY_CARDS.md kanon):**
    · Faz A: vinyet/sahne motoru (pixel diorama + typewriter + dokunma beat'leri +
      duyusal direktifler: müzik kısma/kalp atışı ritmi) + diyalog portresi/isim plakası
      + [Yankı]/[Sömür] etiketleri — İLK YANKI PROTOTİPİ (iki hat: Tanık/Sömüren)
+     → KOD TAMAM (test bekliyor): sinematik tam ekran vinyet + crossfade, yankı +
+     yazıt (ECHO_ANI/ECHO_YAZIT), save v17, diyalog portre+typewriter
+   · HİKAYE MİMARİSİ kilitli (2026-07-12): karma düğüm ana hat + 5 saga + 10 kısa
+     öykü (kartlar: STORY_CARDS.md — hepsi onaylı; işaretsiz finale bağları)
    · Faz B: açılış senaryosu (ilk 15 dk: Sessiz Gün vinyeti, köye varış, ilk yankı,
      kanca) + quest log → "Yolculuk" günlüğü (birinci ağız + Book_UI) + bildirim dili
    · Faz C: in-engine sahne araçları (letterbox, kamera pan, NPC yürütme, bark sistemi)

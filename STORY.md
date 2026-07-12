@@ -99,6 +99,40 @@ oyuncu kötü karakter "seçmez" — kötü şeyler yapar, dünya tepki verir.
   bölge vinyet dizisi: dünyanın seni nasıl hatırladığı — itibarlar + kalıcı ölüler +
   mühür yolu + son seçimden DERLENİR (vinyet sistemiyle üretilir).
 
+## HİKAYE MİMARİSİ — ana hat + yan hikayeler (kararlar 2026-07-12)
+Hedef kalite çıtası: Witcher 3 — yan hikaye, ana hikaye kadar özenli; dolgu içerik YASAK.
+W3 kalitesinin dört direği her hikayede aranır: (1) görev değil İNSAN — hikaye dertli
+birinden başlar; (2) beklenti KIRILIR — ilk görünen asla tamamı değil; (3) temiz çözüm
+YOK — iki uç da bedelli; (4) sonuç GECİKİR — karar, saatler sonra beklenmedik yerde döner.
+
+- **Ana hat: karma düğüm.** Perde geçişleri elle yazılmış sabit set-piece'ler (sinematik
+  vinyet). Aralarda tam serbestlik: perdeyi açan şey tek görev değil, birkaç yoldan
+  doldurulabilen **iz eşiği** (yankılar, yazıtlar, saga keşifleri hepsi sayar). Yan
+  içerik ana hatta doğal kanıt sızdırır.
+- **Ölçek: 5 büyük saga + 10 kısa öykü** (sonradan genişletilebilir; oyuncuyu boğmadan).
+  Saga = 3-5 perdeli, geç sonuçlu, bölgesini kalıcı değiştiren (Baron kalitesi).
+  Kısa öykü = 10-15 dk, TEK vurucu fikir, vinyet ağırlıklı.
+- **DNA karışımı (Hakan kararı):** hem mühür kesişimli hem bağımsız insan hikayeleri.
+  Sagaların çoğunda (3-4/5) mühür kesişimi; kısalarda ~yarı yarıya. İki kural:
+  1. Mühür ASLA zorunlu çözüm değil — ölüyü okumak hızlı-ama-izli seçenek; yaşayanların
+     yolu (tanık, delil, ikna) her zaman var. Mühürsüz oyuncu hikayeyi eksik değil,
+     FARKLI yaşar.
+  2. Bağımsız hikayeler de tema akrabası: kayıp, bekleyiş, yarım kalan işler, sayılan
+     günler. Koronun başka bir sesi — asla alakasız dolgu.
+- **Sonuç bağı karışık ve İŞARETSİZ (Hakan kararı):** 5 saganın hepsi + kısaların 2-3'ü
+  epilog kartlarına ve 3. perdeye işler (müttefik/hayalet/boşluk); kalan kısalar kendi
+  içinde kapanır. HANGİSİNİN finale işlediği oyuncuya önceden belli edilmez — geç sonuç
+  şoku W3'ün en güçlü numarasıdır.
+- **Coğrafya hikayeyle büyür:** her saga kendi mekânını getirir (yeni köy/biyom/harita,
+  multi-map sistemi hazır; Cute_Fantasy biyom paketleri kaynak). Boş açık-dünya sendromu
+  yerine anlatıyla dolan harita.
+- **Üretim süreci:** pitch turu (aday havuzu) → Hakan seçer/eler → seçilen her hikaye
+  tek sayfalık **hikaye kartı** olur (dert sahibi / görünen hikaye / gizli gerçek /
+  mühür yolu vs yaşayan yolu / bedeller / geç sonuç / finale bağı) → üretim karttan.
+  Sıra: önce Faz B (açılış 15 dk), yan hikaye üretimi sonrasında başlar.
+- **Kartlar: STORY_CARDS.md** (onay 2026-07-12 — 15 pitch'in tamamı seçildi; S1-S5 +
+  K1-K10, dağılım/perde/çapraz referans tabloları orada).
+
 ## Yazım ilkeleri
 - Amnezi klişesi YOK — hafıza kaybı yalnız o dokuz atımlık "başkasında olma" gizemi.
 - Oyuncu "seçilmiş" değil "tanık" — dünya ona görev vermez, o soru sorar.
