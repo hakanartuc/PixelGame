@@ -15,12 +15,14 @@
 #include "npc.h"
 #include "craft.h"   // öğrenilen tarifler (v10)
 #include "contract.h"   // ilan panosu durumu (v12)
+#include "journal.h"    // Yolculuk günlüğü girişleri (v19)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 18u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+#define SAVE_VERSION 19u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
                           // v12: ilan panosu (gün + slot durum/ilerleme);
                           // v13: skill ağacı maskeleri (perkChoice'un yerini aldı);
-                          // v18: özet bloğu (slot kartları) + kişilik sayaçları
+                          // v18: özet bloğu (slot kartları) + kişilik sayaçları;
+                          // v19: Yolculuk günlüğü girişleri
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -218,6 +220,13 @@ bool save_game(const char *path, const Player *p,
     ok = ok && w32(f, p->persKaba) && w32(f, p->persKibar) && w32(f, p->persKetum)
             && w32(f, p->guardGreeted ? 1 : 0);
 
+    // Yolculuk günlüğü (v19): kod+param+gün üçlüleri (metin türetilir)
+    ok = ok && w32(f, journal_count());
+    for (int i = 0; ok && i < journal_count(); i++) {
+        const JournalEntry *je = journal_get(i);
+        ok = w32(f, je->type) && w32(f, je->param) && w32(f, je->day);
+    }
+
     fclose(f);
     if (!ok)
         SDL_Log("Save yazilamadi (disk dolu?): %s", path);
@@ -414,6 +423,14 @@ bool load_game(const char *path, Player *p,
             && r32(f, &tmpP.persKetum) && r32(f, &greeted);
     tmpP.guardGreeted = greeted != 0;
 
+    // Yolculuk günlüğü (v19)
+    Sint32 nJournal = 0;
+    Sint32 jT[JOURNAL_MAX], jP[JOURNAL_MAX], jD[JOURNAL_MAX];
+    ok = ok && r32(f, &nJournal);
+    if (ok && (nJournal < 0 || nJournal > JOURNAL_MAX)) ok = false;
+    for (int i = 0; ok && i < nJournal; i++)
+        ok = r32(f, &jT[i]) && r32(f, &jP[i]) && r32(f, &jD[i]);
+
     fclose(f);
     if (!ok) {
         SDL_Log("Save okunamadi (bozuk dosya): %s", path);
@@ -434,6 +451,9 @@ bool load_game(const char *path, Player *p,
     boss_set_first_kill_done(bossFirst != 0);
     for (int i = 0; i < nEcho && i < ECHO_COUNT; i++)
         echo_set_done(i, echoFlag[i] != 0);
+    journal_reset();
+    for (int i = 0; i < nJournal; i++)
+        journal_load_entry(jT[i], jP[i], jD[i]);
     if (exploredBytes > 0)
         minimap_unpack_explored(exploredBuf, exploredBytes);
     npc_reset();   // önce herkes canlı, sonra save'deki ölümler uygulanır

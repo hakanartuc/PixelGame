@@ -39,6 +39,7 @@ add_executable(game
     src/dialog.c
     src/shop.c
     src/quest.c
+    src/journal.c
     src/gametime.c
     src/decor.c
     src/audio.c

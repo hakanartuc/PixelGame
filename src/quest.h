@@ -36,6 +36,7 @@ typedef struct {
     int fetchCount;            // FETCH adedi (0 = KILL görevi)
     int rewardItem;            // ek item ödülü (ItemId; 0/negatif = yok — ITEM_BOW=0
                                //        ödül olamaz, sorun değil)
+    const char *journal;       // Yolculuk günlüğü metni (birinci ağız — Faz B2)
 } QuestDef;
 
 // Oyuncunun bir görevdeki durumu (QUESTS ile paralel dizi)
@@ -54,8 +55,6 @@ int quest_find(const char *id);
 // Bu ölümle DONE'a geçen görevin indeksi döner (-1 = yok; UI bildirimi için).
 int quest_on_kill(QuestStatus *status, const MobType *killed);
 
-// Quest log paneli (J): tüm görevler — durum, ilerleme çubuğu, ödül.
-void quest_log_render(const QuestStatus *status, R2D *renderer,
-                      TTF_Font *font, float panelX, float panelY);
+// (Eski quest_log_render kaldırıldı — J paneli artık journal.c'deki kitap)
 
 #endif

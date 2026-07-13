@@ -28,6 +28,7 @@
 #include "dialog.h"
 #include "shop.h"
 #include "quest.h"
+#include "journal.h"
 #include "gametime.h"
 #include "decor.h"
 #include "audio.h"
@@ -265,6 +266,7 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
     if (target->type->isBoss)
     {
         boss_set_last_kill_day(gametime_day());
+        journal_add_unique(JE_BOSS_KILL, 0);
         if (!boss_first_kill_done() && li >= 0 &&
             loots[li].itemCount < MAX_LOOT_ITEMS)
         {
@@ -312,7 +314,7 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                              player->rect.x + player->rect.w / 2.0f,
                              player->rect.y - 30.0f,
-                             "Görev tamam! Ödül için dön.", green);
+                             "Söz yerine geldi — haber vermeliyim.", green);
     }
 }
 
@@ -713,6 +715,7 @@ int main(int argc, char *argv[])
     #define BOARD_Y (7.0f * TILE_SIZE)
     #define BOARD_RANGE 90.0f
     R2DTexture *boardTex = load_texture(renderer, "assets/decor/notice_board.png");
+    R2DTexture *bookTex  = load_texture(renderer, "assets/ui/Book_UI.png");   // Yolculuk günlüğü
     bool boardOpen = false;
 
     // Büyü VFX sprite'ları (Faz 22): mermi küreleri + arcane patlama + alev
@@ -764,7 +767,10 @@ int main(int argc, char *argv[])
     float deathTimer = 0.0f;
     int deathGoldLost = 0;
 
-    bool questLogOpen = false;
+    bool questLogOpen = false;   // J: Yolculuk günlüğü (kitap)
+    int journalTab = 0;          // 0=Görevler 1=Günlük
+    int journalPage = 0;
+    int journalPageCount = 1;    // son render'ın döndürdüğü (klamp için)
     bool minimapOpen = true;   // M ile kapatılabilir
 
     // NPC'ler: texture + diyalog dosyaları (yüklenemeyen NPC konuşamaz, oyun çökmez)
@@ -1271,7 +1277,11 @@ int main(int argc, char *argv[])
                             player.echoesWitnessed += sfx.witness;
                             player.echoesConsumed += sfx.consume;
                             if ((sfx.witness > 0 || sfx.consume > 0) && activeEcho >= 0)
+                            {
                                 echo_set_done(activeEcho, true);   // anı bir kez yaşanır
+                                journal_add(sfx.witness > 0 ? JE_ECHO_WITNESS
+                                                            : JE_ECHO_CONSUME, activeEcho);
+                            }
                             if (sfx.gold > 0)
                                 player.gold += sfx.gold;
                             if (sfx.essence > 0)
@@ -1379,8 +1389,9 @@ int main(int argc, char *argv[])
                                     {
                                         questStatus[q].state = QUEST_ACTIVE;
                                         questStatus[q].progress = 0;
+                                        journal_add(JE_QUEST_ACCEPT, q);
                                         char buf[FLOAT_TEXT_LEN];
-                                        snprintf(buf, sizeof(buf), "Görev: %s", QUESTS[q].name);
+                                        snprintf(buf, sizeof(buf), "Üstlendim: %s", QUESTS[q].name);
                                         SDL_Color cyan = { 90, 220, 255, 255 };
                                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                              player.rect.x + player.rect.w / 2.0f,
@@ -1427,6 +1438,12 @@ int main(int argc, char *argv[])
                                                 ? region_of(qnx, qny) : 0;
                                     rep_add(&player.reputation[qRegion], REP_QUEST);
 
+                                    journal_add(JE_QUEST_DONE, q);
+                                    SDL_Color pers = { 235, 225, 200, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 26.0f,
+                                                         "Sözümü tuttum.", pers);
                                     char buf[FLOAT_TEXT_LEN];
                                     snprintf(buf, sizeof(buf), "+%d Gold", QUESTS[q].rewardGold);
                                     SDL_Color gold = { 255, 210, 60, 255 };
@@ -1540,6 +1557,9 @@ int main(int argc, char *argv[])
                         activeEcho = nearestEcho;
                         player.autoAttack = false;
                         player.attacking = false;
+                        // Yazıt: ilk okuma günlüğe düşer (ANI seçimde işlenir)
+                        if (ECHOES[nearestEcho].kind == ECHO_YAZIT)
+                            journal_add_unique(JE_ECHO_YAZIT, nearestEcho);
                     }
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
@@ -1788,6 +1808,26 @@ int main(int argc, char *argv[])
                 else if (event.key.key == SDLK_J && gameState == GAME_PLAYING)
                 {
                     questLogOpen = !questLogOpen;
+                    if (questLogOpen) { journalTab = 0; journalPage = 0; }
+                    audio_play(SFX_UI);
+                }
+                else if (questLogOpen && gameState == GAME_PLAYING &&
+                         (event.key.key == SDLK_TAB ||
+                          event.key.key == SDLK_LEFT ||
+                          event.key.key == SDLK_RIGHT))
+                {
+                    // Günlük gezinme: Tab sekme, oklar yaprak (render klampler)
+                    if (event.key.key == SDLK_TAB)
+                    {
+                        journalTab = 1 - journalTab;
+                        // Günlük sekmesi son yaprağa açılır (en taze yaşanmışlık)
+                        journalPage = (journalTab == 1) ? 9999 : 0;
+                    }
+                    else if (event.key.key == SDLK_LEFT && journalPage > 0)
+                        journalPage--;
+                    else if (event.key.key == SDLK_RIGHT &&
+                             journalPage < journalPageCount - 1)
+                        journalPage++;
                     audio_play(SFX_UI);
                 }
                 else if (event.key.key == SDLK_M && gameState == GAME_PLAYING)
@@ -2060,6 +2100,8 @@ int main(int argc, char *argv[])
                                 chest_set_opened_day(i, -999);
                             if (guardIdx >= 0) guard_init(guardIdx);
                             catchOpen = false;
+                            journal_reset();
+                            journal_add(JE_WAKE, 0);   // günlüğün ilk satırı
                             map_set_current(MAP_WORLD);
                             mapReloadNeeded = true;   // geçiş bloğu kamp/sandık/tuzağı kurar
                             currentRegion = -2;
@@ -2863,6 +2905,8 @@ int main(int argc, char *argv[])
                 // 4) Oyuncu geçit hedefine düşer (yüklemede pos zaten save'den geldi)
                 if (pendingPortal >= 0)
                 {
+                    if (map_is_dungeon(to))
+                        journal_add_unique(JE_DUNGEON_FIRST, (int)to);
                     player.rect.x = PORTALS[pendingPortal].tx;
                     player.rect.y = PORTALS[pendingPortal].ty;
                 }
@@ -4211,6 +4255,7 @@ int main(int argc, char *argv[])
             if (today != lastSeenDay)
             {
                 lastSeenDay = today;
+                journal_day_tick(today);    // günlük atmosfer satırları (seyrek)
                 resource_daily_respawn();   // doğa tazelenir (cevher/bitki/ağaç)
                 contract_new_day(today);    // pano yenilenir (yarım kontratlar düşer)
                 spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS,
@@ -5163,6 +5208,7 @@ int main(int argc, char *argv[])
             if (player.health <= 0.0f && deathTimer <= 0.0f)
             {
                 deathTimer = 2.5f;
+                journal_add(JE_DEATH, 0);
                 deathGoldLost = player.gold / 10;
                 player.gold -= deathGoldLost;
                 player.autoAttack = false;
@@ -5752,8 +5798,14 @@ int main(int argc, char *argv[])
                            mobs, mobCount, winW, winH);
 
         if (questLogOpen)
-            quest_log_render(questStatus, renderer, gameFont,
-                             (float)winW - 340.0f - 20.0f, 60.0f);
+        {
+            // Yolculuk günlüğü (Faz B2): kitap paneli — sayfa klampi burada
+            journalPageCount = journal_render(renderer, gameFont, bookTex,
+                                              questStatus, journalTab,
+                                              journalPage, winW, winH);
+            if (journalPage >= journalPageCount)
+                journalPage = journalPageCount - 1;
+        }
 
         // Ölüm ekranı: koyu kızıl karartma + yazılar (her şeyin üstünde, menü hariç)
         if (deathTimer > 0.0f && splashFont != NULL)
@@ -6014,6 +6066,7 @@ int main(int argc, char *argv[])
     if (orbFireTex) r2d_texture_destroy(NULL, orbFireTex);
     if (orbBlueTex) r2d_texture_destroy(NULL, orbBlueTex);
     if (arcaneTex)  r2d_texture_destroy(NULL, arcaneTex);
+    if (bookTex)    r2d_texture_destroy(NULL, bookTex);
     if (shieldTex)  r2d_texture_destroy(NULL, shieldTex);
     if (spikesTex)  r2d_texture_destroy(NULL, spikesTex);
     if (flameTex)   r2d_texture_destroy(NULL, flameTex);
