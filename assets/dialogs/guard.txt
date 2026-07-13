@@ -1,4 +1,28 @@
 # Muhafız — kanun adamı (yakalama paneli ayrı sistemdir, bu sadece sohbet)
+# [karsilama]: köye ilk varış (Faz B1) — kişilik seçimleri gizli sayaçlara işler.
+
+[karsilama]
+text: Dur bakalım. Yabancısın — bu aralar yoldan gelen pek olmuyor. Adın, işin? Köye ne için geldin?
+opt: Yolcuyum. Kimseye zararım yok, yol ver. -> k_kaba
+fx: kaba += 1
+opt: Selam sana. Uzak yoldan geliyorum, sıcak bir ocak arıyorum. -> k_kibar
+fx: kibar += 1
+fx: rep += 2
+opt: ... (Sessizce başınla köyü işaret et.) -> k_ketum
+fx: ketum += 1
+
+[k_kaba]
+text: Dilin sertmiş. Peki. Ama gözüm üstünde, yolcu — burada kanun benim. Derdini Yaşlı Kemal'e anlat, meydanda oturur.
+opt: (Devam et.) -> end
+
+[k_kibar]
+text: Hoş geldin öyleyse. Yorgun görünüyorsun... ve yüzün soluk, yolda bir şey mi gördün? Neyse — Yaşlı Kemal'le konuş, meydanda bulursun. Yeni gelenleri o karşılar.
+opt: Sağ ol, muhafız. -> end
+
+[k_ketum]
+text: Az konuşanı severim, işine bakana karışmam. Ama köyde bir işin olacaksa Yaşlı Kemal'i bul — meydanda. O bilir, o karar verir.
+opt: (Başınla onayla.) -> end
+
 [start]
 text: Köyde asayişten ben sorumluyum. Kanunlara uy, sorun çıkmasın.
 opt: Anlaşıldı. -> end

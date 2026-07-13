@@ -30,5 +30,7 @@ void minimap_render(R2D *renderer, float playerX, float playerY,
 int  minimap_pack_explored(Uint8 *out, int cap);
 // unpack: yükleme sonrası çağrılır; texture bir sonraki render'da yeniden işlenir.
 void minimap_unpack_explored(const Uint8 *in, int bytes);
+// yeni oyun: tüm keşif silinir (dünya + geçici)
+void minimap_reset_explored(void);
 
 #endif

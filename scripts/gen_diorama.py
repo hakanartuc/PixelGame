@@ -134,13 +134,52 @@ def purple_column(c, x=128, w=5, height=46, peak=26):
         a = int(peak * (1.0 - y/height))
         c.rect(x, y, w, 1, (150, 110, 210), alpha=a)
 
+# --- Araba: pakette cart sprite'i YOK — piksel piksel cizilir --------------
+def wheel(c, cx, cy, r, rgb, alpha=255, squash=1.0):
+    # Jant halkasi + 4 parmak + gobek. squash<1: yerde yatan tekerlek (elips)
+    for ang in range(0, 360, 6):
+        x = cx + int(round(r * math.cos(math.radians(ang))))
+        y = cy + int(round(r * math.sin(math.radians(ang)) * squash))
+        c.rect(x, y, 1, 1, rgb, alpha=alpha)
+    dark = tuple(v*2//3 for v in rgb)
+    c.rect(cx - r + 1, cy, 2*r - 2, 1, dark, alpha=alpha)              # yatay parmak
+    for y in range(cy - int(r*squash) + 1, cy + int(r*squash)):        # dikey parmak
+        c.rect(cx, y, 1, 1, dark, alpha=alpha)
+    c.rect(cx - 1, cy - 1, 3, 3, dark, alpha=alpha)                    # gobek
+
+def cart_upright(c, x, y, body=(146,108,66)):
+    # Saglam araba (ani paneli): kasa + iki teker + cekme oku
+    dark = tuple(v*3//4 for v in body)
+    edge = tuple(v//2 for v in body)
+    c.rect(x, y, 44, 14, body, alpha=255)          # kasa
+    c.rect(x, y, 44, 2, dark, alpha=255)           # ust kenar tahtasi
+    for px_ in range(x + 6, x + 44, 9):
+        c.rect(px_, y, 1, 14, edge, alpha=170)     # tahta derzleri
+    c.rect(x - 14, y + 9, 15, 2, dark, alpha=255)  # cekme oku (sola)
+    wheel(c, x + 9,  y + 15, 7, (74, 52, 34))
+    wheel(c, x + 35, y + 15, 7, (74, 52, 34))
+
+def cart_tipped(c, x, y, body=(120,92,60), wheel_rgb=(64,46,32)):
+    # DEVRIK araba (metnin kaynagi): yana yatmis kasa — kasanin TABANI bize
+    # donuk; bir teker havada ("hala donuyor gibi"), digeri yerde yatik.
+    dark = tuple(v*3//4 for v in body)
+    edge = tuple(v//2 for v in body)
+    for i in range(5):                              # yatik kasa: kayarak yukselen serit
+        c.rect(x + i*2, y - i, 30, 4, body if i % 2 == 0 else dark, alpha=255)
+    c.rect(x + 2, y - 8, 32, 3, edge, alpha=220)    # kirilmis yan tahta
+    c.rect(x - 8, y + 6, 12, 2, dark, alpha=255)    # kopmus cekme oku (yerde, egik)
+    c.rect(x - 12, y + 8, 6, 2, edge, alpha=255)
+    wheel(c, x + 38, y - 12, 8, wheel_rgb)          # HAVADA duran teker (aksta)
+    c.rect(x + 33, y - 4, 3, 10, edge, alpha=255)   # kirik aks
+    wheel(c, x + 10, y + 14, 8, wheel_rgb, squash=0.35)   # yerde YATIK teker
+
 # --- [giris]: devrik araba, kemikler, ufukta soluk mor iz -------------------
 c = Canvas(W, H, rgb=(24, 27, 24))
 grass_floor(c, (70, 80, 66))
 road(c, (52, 42, 30))
-c.rect(86, 78, 30, 6, (10, 10, 8), alpha=120)               # golge
-c.blit(CRATE, 0, 0, 48, 32, 80, 52, tint=(150,130,110))     # devrik kasalar
-c.blit(CRATE, 96, 0, 48, 32, 118, 60, tint=(120,105,90))
+c.rect(74, 78, 52, 6, (10, 10, 8), alpha=120)               # golge
+cart_tipped(c, 78, 62)                                      # DEVRIK araba (teker havada)
+c.blit(CRATE, 0, 0, 48, 32, 118, 64, tint=(120,105,90))     # savrulmus kasa (yuk)
 bones(c)
 purple_column(c)
 c.vignette(150)
@@ -152,9 +191,9 @@ print("OK assets/scenes/echo_cart.png")
 c = Canvas(W, H, rgb=(44, 38, 26))
 grass_floor(c, (120, 128, 74))                              # sabah cimeni
 road(c, (96, 76, 50), alpha=210)                            # aydinlik yol
-c.rect(60, 84, 44, 5, (26, 20, 12), alpha=110)              # uzun sabah golgesi
-c.blit(CRATE, 0, 0, 48, 32, 66, 56, tint=(225,190,140))     # kasalar AYAKTA, saglam
-c.blit(CRATE, 0, 0, 48, 32, 112, 54, tint=(205,175,130))
+c.rect(60, 84, 60, 5, (26, 20, 12), alpha=110)              # uzun sabah golgesi
+cart_upright(c, 76, 52, body=(196,148,92))                  # araba AYAKTA, saglam
+c.blit(CRATE, 0, 0, 48, 32, 112, 40, tint=(225,190,140))    # yuk: kasalar kasada
 c.glow(30, 18, 60, (255, 215, 140), strength=170)           # dogan gunes
 c.glow(150, 95, 40, (255, 200, 120), strength=40)           # yola vuran isik
 c.rect(0, 0, W, H, (255, 205, 130), alpha=22)               # sicak ani tulu (sepya his)
@@ -167,8 +206,8 @@ print("OK assets/scenes/echo_cart_memory.png")
 c = Canvas(W, H, rgb=(24, 27, 24))
 grass_floor(c, (66, 76, 64))
 road(c, (52, 42, 30))
-c.blit(CRATE, 0, 0, 48, 32, 80, 52, tint=(130,112,96))      # kasalar duruyor (soluk)
-c.blit(CRATE, 96, 0, 48, 32, 118, 60, tint=(105,92,80))
+cart_tipped(c, 78, 62, body=(104,82,56))                    # devrik araba duruyor (soluk)
+c.blit(CRATE, 0, 0, 48, 32, 118, 64, tint=(105,92,80))
 # mezar yigini: yol kenarinda kabarik toprak (kat kat, ustte dar)
 c.rect(46, 78, 34, 8, (58, 44, 30), alpha=235)
 c.rect(50, 74, 26, 5, (66, 50, 34), alpha=235)
@@ -188,8 +227,8 @@ print("OK assets/scenes/echo_cart_burial.png")
 c = Canvas(W, H, rgb=(15, 15, 22))
 grass_floor(c, (42, 48, 52))                                # soguk, morarmis cimen
 road(c, (38, 32, 30), alpha=200)
-c.blit(CRATE, 0, 0, 48, 32, 80, 52, tint=(95,85,95))        # kasalar renksizlesmis
-c.blit(CRATE, 96, 0, 48, 32, 118, 60, tint=(78,70,82))
+cart_tipped(c, 78, 62, body=(82,72,84), wheel_rgb=(52,46,58))  # araba renksizlesmis
+c.blit(CRATE, 0, 0, 48, 32, 118, 64, tint=(78,70,82))
 bones(c, t1=(135,130,145), t2=(110,106,122))                # kemikler soluk/soguk
 purple_column(c, x=124, w=13, height=70, peak=95)           # sutun BUYUMUS
 purple_column(c, x=120, w=21, height=52, peak=40)

@@ -1,6 +1,6 @@
 # HANDOVER — Pixe Game
 
-Güncelleme: 2026-07-11 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
+Güncelleme: 2026-07-13 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
 
 ## Çalışma kuralları
 - **Asistan kodu yazar** (2026-07-09'dan beri), faz faz ilerler; her faz sonunda durur, Hakan test eder, onayla commit atılır.
@@ -41,9 +41,11 @@ Cute_Fantasy paketleri (`/Users/hakanartuc/Cute Fantasy` — NPC, ev, düşman, 
 
 ## Tuşlar
 WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/istasyon/topla · I envanter · K skill/ağaç · J görevler
-· M minimap · C eğilme · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 kaydet/yükle · ESC katmanlı kapatma/menü
+· M minimap · C eğilme · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 AKTİF slota kaydet/yükle · ESC katmanlı kapatma/menü
 (K = skill listesi + ağaç paneli; ok mühimmatı sağ tıkla seçilir)
 (F efekt önizleme KALDIRILDI 2026-07-10 — rünün instance efektini eziyordu)
+AÇILIŞ AKIŞI (Faz B1): başlık ekranı → ana menü (Yeni Oyun/Yükle/Çıkış) → 20+1 slot;
+vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü).
 
 ## Kritik bilinenler
 - **Kanama/perk VFX'leri olay bazlı**; F10 sonrası moblar tek vuruşta ölürse kanama görülmez (Orc'ta dene).
@@ -59,13 +61,21 @@ WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/is
 - BÜYÜ (Faz 22): silahtan bağımsız cast (0.45sn köklenme, hareket bozar, mana commit'te);
   hasar combat_spell_hit (INT + Destruction + silah spellPower + PEMBE rün). Asa Space'i
   Ateş Topu atar (mana yoksa melee dürtme). Zırh ağırlığı: aşım = hız + mana rejeni cezası.
+- SAVE v18 + SLOTLAR (Faz B1): `saves/slot_NN.dat` (20) + `saves/auto.dat` (şafak +
+  harita geçişi); dosya başında ÖZET BLOĞU (save_read_summary — slot kartları tam
+  yükleme yapmadan dolar). Eski `save.dat` yolu ARTIK KULLANILMIYOR. Yeni oyun reset'i
+  playerTemplate'ten; başlangıç = gezgin çıkını (Uzun Kılıç + deri set kuşanılı +
+  3 iksir/2 et/meşale/50g). Kişilik sayaçları persKaba/Kibar/Ketum gizli (dialog
+  `fx: kaba += 1` biçimiyle işler, req ile okunur).
 
 ## Sıradaki iş
-**ZİNDAN PAKETİ TAMAM** (Faz 23, save v14-16): çoklu harita (worldmap.c), Eski Geçit 2 kat,
-Lockpicking minigame + mini ağaç, günlük sandıklar, diken/arbalet tuzakları, İskelet Lordu
-boss (2 faz + arena kilidi + haftalık diriliş + Lord'un Kılıcı lifesteal). ÖLÜM=WIPE.
-Sıradaki (PROGRESS "Kalanlar" #1): **Mob fazları devamı** (Shroomling/Bombschroom →
-Mummy/Cowling/Flying Skull, yeni biyomlarla) ya da **yeni biyomlar** (çöl/volkan/mantar).
+**FAZ B1 TAMAM** (2026-07-13, save v18): başlık ekranı + ana menü + 20+1 slot +
+Sessiz Gün açılış vinyeti (gen_intro.py) + köye varış (muhafız otomatik karşılama →
+kişilik sayaçları; Kemal'de Eski Geçit iması) + gezgin çıkını + sahne tuş kilidi +
+yankı panellerine piksel araba (pakette cart sprite'ı yok — gen_diorama.py çizer).
+Sıradaki: **Faz B2 — "Yolculuk" günlüğü** (J quest log'u birinci ağız günlüğe dönüşür,
+Book_UI.png Cute Fantasy'de hazır) + bildirim dili taraması. Sonrası: Faz C sahne
+araçları / mob fazları / biyomlar (PROGRESS "Kalanlar").
 Backlog onaylı 4 mekanik: element sinerjileri, summon hattı (mana rezerve bedeli),
 pişirme+yemek buffları, davranış ünvanları (ayrıntı PROGRESS "Kalanlar" #4).
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &

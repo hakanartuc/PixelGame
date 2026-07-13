@@ -290,6 +290,38 @@ Güncelleme: 2026-07-11
 - **ÖLÜM = WIPE**: zindanda ölünce dünyaya çıkış (eski "zindan içinde köy koordinatı" bug'ı
   çözüldü); tüm moblar tam canla başa döner (boss dahil); dünyada ölünce kamplar tazelenir
 
+### Faz B1 — AÇILIŞ PAKETİ (başlık ekranı + ana menü + slot sistemi + Sessiz Gün; save v18)
+- **AKIŞ**: atmosferik başlık ekranı ("PIXE" + fısıltı + nabızlı "bir tuşa bas") →
+  ANA MENÜ (Yeni Oyun / Yükle / Çıkış) — dünya artık menüden önce başlamaz
+- **SLOT SİSTEMİ** (kullanıcı: "1 PC'de birden çok oyuncu — kısıtlama"): 20 manuel +
+  1 otomatik slot (`saves/slot_NN.dat`, `saves/auto.dat`; .gitignore'da); save v18
+  başına ÖZET BLOĞU (toplam seviye/gün/altın/harita — save_read_summary tam yükleme
+  yapmadan slot kartını doldurur); dolu slota yeni oyun = üzerine yazma onayı
+- F5/F9 = AKTİF slot (girilen/kaydedilen slot aktif olur; auto'dan yüklemede aktif yok);
+  OTOMATİK KAYIT: her şafak + her harita geçişi ("Otomatik kayıt" bildirimi)
+- ESC menüsü: Devam / Kaydet (slot) / Yükle (slot) / Ana Menüye Dön (kayıpsız uyarısı) / Çık
+- **YENİ OYUN RESET**: playerTemplate şablonu (init'le tek kaynak) + tüm dünya durumu
+  sıfırlanır (mob/loot/quest/keşif/yankı/sandık/boss/pano/tarif/debug puanları);
+  minimap_reset_explored eklendi
+- **SESSİZ GÜN AÇILIŞ VİNYETİ** (scripts/gen_intro.py, 4 panel): donmuş dünya (havada
+  asılı tavuk/yapraklar) → dokuz atım (iç içe mor nabız halkaları) → başkasının anısı
+  (BULANIK: kazan eller, çukur, bakan şey — tek geçiş blur) → uyanış (şafak + göğüste
+  mühür). Metin: assets/scenes/intro_sessiz_gun.txt
+- **KÖYE VARIŞ**: yeni oyun spawn'ı köy doğusu yol kenarı (T24,8) — araba yankısının
+  yanından geçilir (öğretici doğal yerde); meydanda MUHAFIZ OTOMATİK DURDURUR:
+  3 kişilik cevabı → GİZLİ SAYAÇLAR (persKaba/Kibar/Ketum, save v18; dialog fx/req:
+  `kaba/kibar/ketum` değişkenleri) — ileride NPC'ler oyuncuyu "tanır"; kibar +2 itibar
+- **KEMAL KANCASI**: goblin görevi ödülü sonrası "Eski Geçit iması" düğümü
+  (hayvanlar o yöne gitmiyor + gece uğultusu + "mühür bir an ısınıyor")
+- **GEZGİN ÇIKINI** (kullanıcı: zırhsız başlangıç iade riski): Uzun Kılıç + DERİ SET
+  (başlık/zırh/bot = 15 def, hafif → ağırlık cezasız) kuşanılı + 3 Can İksiri +
+  2 Pişmiş Et + Meşale + 50g
+- **ARABA GÖRSELİ** (kullanıcı tespiti: pakette cart sprite'ı YOK): gen_diorama.py'a
+  piksel araba çizimi — devrik (havada dönen teker + yatık teker + kopmuş ok) ve
+  sağlam (anı paneli) varyantları; 4 yankı paneli yeniden üretildi
+- **SAHNE TUŞ KİLİDİ** (kullanıcı: immersion): vinyet açıkken TÜM panel/oyun tuşları
+  yutulur — yalnız 1-8 (seçim), E/Space (typewriter hızı), ESC (menü) çalışır
+
 ## 🔜 Kalanlar (öncelik sırası — 2026-07-11 kullanıcı seçimi)
 0. **ANLATI HATTI (aktif — STORY.md + LORE_SECRET.md + STORY_CARDS.md kanon):**
    · Faz A: vinyet/sahne motoru (pixel diorama + typewriter + dokunma beat'leri +
@@ -299,8 +331,10 @@ Güncelleme: 2026-07-11
      yazıt (ECHO_ANI/ECHO_YAZIT), save v17, diyalog portre+typewriter
    · HİKAYE MİMARİSİ kilitli (2026-07-12): karma düğüm ana hat + 5 saga + 10 kısa
      öykü (kartlar: STORY_CARDS.md — hepsi onaylı; işaretsiz finale bağları)
-   · Faz B: açılış senaryosu (ilk 15 dk: Sessiz Gün vinyeti, köye varış, ilk yankı,
-     kanca) + quest log → "Yolculuk" günlüğü (birinci ağız + Book_UI) + bildirim dili
+   · Faz B1 TAMAM (2026-07-13, save v18): başlık ekranı + ana menü + slot sistemi +
+     Sessiz Gün açılışı + köye varış + gezgin çıkını (ayrıntı: Faz B1 bölümü)
+   · Faz B2 (SIRADAKİ): quest log → "Yolculuk" günlüğü (birinci ağız + Book_UI —
+     `Cute Fantasy/Cute_Fantasy_UI/UI/Book_UI.png` hazır, kopyalanmadı) + bildirim dili
    · Faz C: in-engine sahne araçları (letterbox, kamera pan, NPC yürütme, bark sistemi)
    · Dünya Olayları sistemi (yaşayan dünya: olay tablosu + haber ağı + atmosfer saati
      + NPC yayları) + dinlenme/rüya mekaniği (kamp ateşi → rüya vinyeti)

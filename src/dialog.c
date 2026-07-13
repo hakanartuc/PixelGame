@@ -21,13 +21,16 @@ static const char *skip_ws(const char *s)
     return s;
 }
 
-// "speech" / "gold" / "rep" / "bounty" → DialogVar. Tanınmazsa false.
+// "speech" / "gold" / "rep" / "bounty" / kişilik → DialogVar. Tanınmazsa false.
 static bool parse_var(const char *s, size_t len, DialogVar *out)
 {
     if (len == 6 && strncmp(s, "speech", 6) == 0) { *out = DVAR_SPEECH; return true; }
     if (len == 4 && strncmp(s, "gold", 4) == 0)   { *out = DVAR_GOLD;   return true; }
     if (len == 3 && strncmp(s, "rep", 3) == 0)    { *out = DVAR_REP;    return true; }
     if (len == 6 && strncmp(s, "bounty", 6) == 0) { *out = DVAR_BOUNTY; return true; }
+    if (len == 4 && strncmp(s, "kaba", 4) == 0)   { *out = DVAR_KABA;   return true; }
+    if (len == 5 && strncmp(s, "kibar", 5) == 0)  { *out = DVAR_KIBAR;  return true; }
+    if (len == 5 && strncmp(s, "ketum", 5) == 0)  { *out = DVAR_KETUM;  return true; }
     return false;
 }
 

@@ -25,9 +25,18 @@ opt: Teşekkürler. -> complete:goblin_derdi
 
 [rewarded]
 text: Tekrar hoş geldin evlat. Sayende sürüler güvende.
+opt: Goblinler neden bu kadar saldırgandı? -> huzursuzluk
 opt: Köyün eski sırlarını anlatsana. -> sir
 req: speech >= 20
 opt: Önemli değil. -> end
+
+[huzursuzluk]
+text: Kimse bilmiyor. Ama sana bir şey söyleyeyim: o Sessiz Gün'den beri hayvanlar kuzeydeki Eski Geçit'e yaklaşmıyor. Köpekler o yöne havlamıyor bile — kuyruklarını kısıp susuyorlar.
+opt: Eski Geçit? -> gecit_ima
+
+[gecit_ima]
+text: Eskilerin kapısı. Büyükbabam "orası kapatıldı, sebepsiz kapatılmaz" derdi, fazlasını sormazdık. Son zamanlarda geceleri oradan bir uğultu geliyor... Sen bana bakma, ihtiyar kulağı işte. Ama oraya gideceksen, gündüz git.
+opt: (Göğsündeki mühür bir an ısınıyor.) -> end
 
 [sir]
 text: Madem dilin tatlı... Kuzeydoğuda, karanlık ormanın sınırındaki harabelerde kadim bir sunak varmış. Büyükbabam, bilenlerin orada silahlara güç işlediğini söylerdi. Kimse sahiplenmemiş, cesaretin varsa git bak.

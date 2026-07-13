@@ -179,6 +179,13 @@ int minimap_pack_explored(Uint8 *out, int cap)
     return bytes;
 }
 
+void minimap_reset_explored(void)
+{
+    memset(exploredWorld, 0, sizeof(exploredWorld));
+    memset(exploredTemp, 0, sizeof(exploredTemp));
+    rebuildAll = true;   // texture bir sonraki reveal'da yeniden işlenir
+}
+
 void minimap_unpack_explored(const Uint8 *in, int bytes)
 {
     int mw = worldW, mh = worldH;

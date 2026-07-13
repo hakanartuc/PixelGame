@@ -1,6 +1,11 @@
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef _WIN32
+#include <direct.h>     // _mkdir
+#else
+#include <sys/stat.h>   // mkdir (saves/ klasörü)
+#endif
 #include "save.h"
 #include "item.h"
 #include "skill.h"
@@ -12,9 +17,10 @@
 #include "contract.h"   // ilan panosu durumu (v12)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 17u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+#define SAVE_VERSION 18u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
                           // v12: ilan panosu (gün + slot durum/ilerleme);
-                          // v13: skill ağacı maskeleri (perkChoice'un yerini aldı)
+                          // v13: skill ağacı maskeleri (perkChoice'un yerini aldı);
+                          // v18: özet bloğu (slot kartları) + kişilik sayaçları
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -57,6 +63,42 @@ static bool read_stack(FILE *f, ItemStack *s)
     return true;
 }
 
+const char *save_slot_path(int slot)
+{
+    static char buf[64];
+#ifdef _WIN32
+    _mkdir("saves");
+#else
+    mkdir("saves", 0755);   // varsa sessizce geçer
+#endif
+    if (slot == SAVE_SLOT_AUTO)
+        SDL_snprintf(buf, sizeof(buf), "saves/auto.dat");
+    else
+        SDL_snprintf(buf, sizeof(buf), "saves/slot_%02d.dat", slot + 1);
+    return buf;
+}
+
+bool save_read_summary(const char *path, SaveSummary *out)
+{
+    memset(out, 0, sizeof(*out));
+    FILE *f = fopen(path, "rb");
+    if (f == NULL) return false;
+
+    char magic[4];
+    Sint32 version, lvl, day, gold, mapId;
+    bool ok = fread(magic, 4, 1, f) == 1 && memcmp(magic, SAVE_MAGIC, 4) == 0 &&
+              r32(f, &version) && version == (Sint32)SAVE_VERSION &&
+              r32(f, &lvl) && r32(f, &day) && r32(f, &gold) && r32(f, &mapId);
+    fclose(f);
+    if (!ok) return false;
+    out->used = true;
+    out->totalLevel = lvl;
+    out->day = day;
+    out->gold = gold;
+    out->mapId = mapId;
+    return true;
+}
+
 bool save_game(const char *path, const Player *p,
                const Inventory *inv, const Equipment *eq, const Hotbar *hb,
                const QuestStatus *quests)
@@ -68,6 +110,16 @@ bool save_game(const char *path, const Player *p,
     }
 
     bool ok = fwrite(SAVE_MAGIC, 4, 1, f) == 1 && w32(f, (Sint32)SAVE_VERSION);
+
+    // Özet bloğu (v18) — slot kartları tam yükleme yapmadan okur (save_read_summary)
+    {
+        Sint32 totalLvl = 0;
+        for (int i = 0; i < SKILL_COUNT; i++) totalLvl += p->skills[i].level;
+        int sDay; float sHours;
+        gametime_get(&sDay, &sHours);
+        ok = ok && w32(f, totalLvl) && w32(f, sDay)
+                && w32(f, p->gold) && w32(f, (Sint32)map_current());
+    }
 
     // Oyuncu
     ok = ok && wf(f, p->rect.x) && wf(f, p->rect.y)
@@ -162,6 +214,10 @@ bool save_game(const char *path, const Player *p,
     for (int i = 0; ok && i < ECHO_COUNT; i++)
         ok = w32(f, echo_done(i) ? 1 : 0);
 
+    // Kişilik izi + karşılama bayrağı (v18)
+    ok = ok && w32(f, p->persKaba) && w32(f, p->persKibar) && w32(f, p->persKetum)
+            && w32(f, p->guardGreeted ? 1 : 0);
+
     fclose(f);
     if (!ok)
         SDL_Log("Save yazilamadi (disk dolu?): %s", path);
@@ -183,6 +239,13 @@ bool load_game(const char *path, Player *p,
         SDL_Log("Save dosyasi taninmadi/eski surum: %s", path);
         fclose(f);
         return false;
+    }
+
+    // Özet bloğu (v18) atlanır — asıl alanlar aşağıda tek tek okunur
+    {
+        Sint32 skip;
+        for (int i = 0; i < 4; i++)
+            if (!r32(f, &skip)) { fclose(f); return false; }
     }
 
     // Önce GEÇİCİ kopyalara oku: dosya yarıda bozuksa mevcut oyun durumu bozulmasın
@@ -344,6 +407,12 @@ bool load_game(const char *path, Player *p,
     if (ok && (nEcho < 0 || nEcho > 16)) ok = false;
     for (int i = 0; ok && i < nEcho; i++)
         ok = r32(f, &echoFlag[i]);
+
+    // Kişilik izi + karşılama bayrağı (v18)
+    Sint32 greeted = 0;
+    ok = ok && r32(f, &tmpP.persKaba) && r32(f, &tmpP.persKibar)
+            && r32(f, &tmpP.persKetum) && r32(f, &greeted);
+    tmpP.guardGreeted = greeted != 0;
 
     fclose(f);
     if (!ok) {

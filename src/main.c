@@ -70,6 +70,9 @@ static void dialog_eval_opt(const DialogOpt *o, const Player *p, int npcRegion,
             case DVAR_GOLD:   cur = (float)p->gold; break;
             case DVAR_REP:    cur = p->reputation[npcRegion]; break;
             case DVAR_BOUNTY: cur = (float)p->bounty[npcRegion]; break;
+            case DVAR_KABA:   cur = (float)p->persKaba; break;
+            case DVAR_KIBAR:  cur = (float)p->persKibar; break;
+            case DVAR_KETUM:  cur = (float)p->persKetum; break;
         }
         bool pass = r->lessEq ? (cur <= r->value) : (cur >= r->value);
 
@@ -108,6 +111,10 @@ static void dialog_apply_fx(const DialogOpt *o, Player *p, int npcRegion)
                 else p->bounty[npcRegion] = (int)v;
                 if (p->bounty[npcRegion] < 0) p->bounty[npcRegion] = 0;
                 break;
+            // Kişilik izi (Faz B1): gizli sayaçlar — yalnız birikir (+)
+            case DVAR_KABA:  if (x->op == '+') p->persKaba  += (int)v; break;
+            case DVAR_KIBAR: if (x->op == '+') p->persKibar += (int)v; break;
+            case DVAR_KETUM: if (x->op == '+') p->persKetum += (int)v; break;
             default: break;   // DVAR_SPEECH parser'da reddedilir
         }
     }
@@ -680,6 +687,10 @@ int main(int argc, char *argv[])
     Hotbar hotbar = {0};
     hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
 
+    // Yeni oyun şablonu (Faz B1): "Yeni Oyun" bu bakir kopyadan başlar —
+    // init bloğuyla asla desenkron olmaz (tek kaynak yukarıdaki init)
+    const Player playerTemplate = player;
+
     // Dekorlar (ev/ağaç/çalı/saman): texture + boyutları (render/collision tek kaynaktan)
     R2DTexture *decor_textures[32] = {0};
     for (int i = 0; i < DECOR_COUNT && i < 32; i++)
@@ -902,8 +913,16 @@ int main(int argc, char *argv[])
 
     bool inventoryOpen = false;
     bool skillsOpen = false;
-    GameState gameState = GAME_PLAYING;
-    MenuScreen menuScreen = MENU_MAIN;
+    GameState gameState = GAME_TITLE;      // açılış: başlık ekranı → ana menü (Faz B1)
+    MenuScreen menuScreen = MENU_ROOT;
+
+    // Slot sistemi (Faz B1): aktif slot (F5/F9 hedefi) + kart özetleri
+    int activeSlot = -1;   // -1 = slot seçilmedi (auto'dan yüklendi / hiç)
+    SaveSummary slotSums[SAVE_SLOT_COUNT + 1];
+    for (int i = 0; i <= SAVE_SLOT_COUNT; i++)
+        save_read_summary(save_slot_path(i), &slotSums[i]);
+    float titlePulse = 0.0f;   // "bir tuşa bas" nefes animasyonu
+    audio_play(SFX_WHISPER);   // başlık ekranı: fısıltı temayı ilk saniyede kurar
 
     // 4) Oyun döngüsü
     bool running = true;
@@ -957,12 +976,36 @@ int main(int argc, char *argv[])
             }
             else if (event.type == SDL_EVENT_KEY_DOWN)
             { // Bir tuşa basıldı mı?
-                if (event.key.key == SDLK_ESCAPE)
+                if (gameState == GAME_TITLE)
+                {
+                    // Başlık ekranı: herhangi bir tuş → ana menü
+                    gameState = GAME_MENU;
+                    menuScreen = MENU_ROOT;
+                    for (int i = 0; i <= SAVE_SLOT_COUNT; i++)
+                        save_read_summary(save_slot_path(i), &slotSums[i]);
+                    audio_play(SFX_UI);
+                }
+                else if (gameState == GAME_MENU)
+                {
+                    // Ana menüde ESC: alt ekrandan köke dön (kökte yutulur)
+                    if (event.key.key == SDLK_ESCAPE && menuScreen != MENU_ROOT)
+                        menuScreen = MENU_ROOT;
+                }
+                else if (gameState == GAME_PLAYING && scene_active() &&
+                         event.key.key != SDLK_ESCAPE &&
+                         event.key.key != SDLK_E && event.key.key != SDLK_SPACE &&
+                         !(event.key.key >= SDLK_1 && event.key.key <= SDLK_8))
+                {
+                    // Sahne (vinyet) açıkken diğer TÜM tuşlar yutulur — panel
+                    // açılması immersion'ı bozar. Sahnenin dili: 1-8 seçim,
+                    // E/Space typewriter hızı (aşağıda ayrıca yutulur), ESC menü.
+                }
+                else if (event.key.key == SDLK_ESCAPE)
                 {
                     if (gameState == GAME_PAUSED)
                     {
-                        // Menu acikken ESC: onaydaysan ana menuye, ana menudeysen oyuna don
-                        if (menuScreen == MENU_CONFIRM_QUIT)
+                        // Menu acikken ESC: alt ekrandaysan MAIN'e, MAIN'deysen oyuna don
+                        if (menuScreen != MENU_MAIN)
                             menuScreen = MENU_MAIN;
                         else
                             gameState = GAME_PLAYING;
@@ -1572,7 +1615,13 @@ int main(int argc, char *argv[])
                     else if (nearestNpc >= 0 && npcDialogOk[nearestNpc])
                     {
                         const char *entry = "start";
-                        if (NPCS[nearestNpc].questId != NULL)
+                        // Köye varış karşılaması (Faz B1): muhafızla ilk konuşma
+                        if (nearestNpc == guardIdx && !player.guardGreeted)
+                        {
+                            entry = "karsilama";
+                            player.guardGreeted = true;   // bir kez yaşanır
+                        }
+                        else if (NPCS[nearestNpc].questId != NULL)
                         {
                             int q = quest_find(NPCS[nearestNpc].questId);
                             if (q >= 0)
@@ -1811,9 +1860,19 @@ int main(int argc, char *argv[])
                 }
                 else if (event.key.key == SDLK_F5 && gameState == GAME_PLAYING)
                 {
-                    // Hızlı kayıt
-                    const char *msg = save_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus)
-                                    ? "Kaydedildi" : "Kayıt HATASI";
+                    // Hızlı kayıt: AKTİF slota (slot menüden seçilir)
+                    const char *msg;
+                    if (activeSlot < 0)
+                        msg = "Aktif slot yok - ESC > Kaydet";
+                    else if (save_game(save_slot_path(activeSlot), &player,
+                                       &inventory, &equipment, &hotbar, questStatus))
+                    {
+                        msg = "Kaydedildi";
+                        save_read_summary(save_slot_path(activeSlot),
+                                          &slotSums[activeSlot]);
+                    }
+                    else
+                        msg = "Kayıt HATASI";
                     SDL_Color white = { 255, 255, 255, 255 };
                     floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                          player.rect.x + player.rect.w / 2.0f,
@@ -1821,9 +1880,11 @@ int main(int argc, char *argv[])
                 }
                 else if (event.key.key == SDLK_F9 && gameState == GAME_PLAYING)
                 {
-                    // Hızlı yükleme (dünya durumu değişmez, sadece oyuncu+eşyalar)
+                    // Hızlı yükleme: AKTİF slottan (dünya durumu save dışı)
                     MapId mapBeforeLoad = map_current();
-                    if (load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus))
+                    if (activeSlot >= 0 &&
+                        load_game(save_slot_path(activeSlot), &player,
+                                  &inventory, &equipment, &hotbar, questStatus))
                     {
                         if (map_current() != mapBeforeLoad)
                             mapReloadNeeded = true;
@@ -1844,50 +1905,177 @@ int main(int argc, char *argv[])
             }
             else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
             {
-                // MENU ACIKSA: tiklama oyuna degil menuye gider
-                if (gameState == GAME_PAUSED)
+                // BAŞLIK EKRANI: tıklama da "bir tuş" sayılır
+                if (gameState == GAME_TITLE)
+                {
+                    if (event.button.button == SDL_BUTTON_LEFT)
+                    {
+                        gameState = GAME_MENU;
+                        menuScreen = MENU_ROOT;
+                        for (int i = 0; i <= SAVE_SLOT_COUNT; i++)
+                            save_read_summary(save_slot_path(i), &slotSums[i]);
+                        audio_play(SFX_UI);
+                    }
+                }
+                // MENÜ AÇIKSA (ana menü ya da ESC): tıklama menüye gider
+                else if (gameState == GAME_PAUSED || gameState == GAME_MENU)
                 {
                     if (event.button.button == SDL_BUTTON_LEFT)
                     {
                         int mw, mh;
                         SDL_GetWindowSize(window, &mw, &mh);
+                        int actSlot = -1;
+                        bool fromPause = (gameState == GAME_PAUSED);
                         MenuAction act = menu_handle_click(&menuScreen,
-                                                           (float)event.button.x, (float)event.button.y, mw, mh);
+                                                           (float)event.button.x,
+                                                           (float)event.button.y,
+                                                           mw, mh, slotSums, &actSlot);
+                        // ESC kökenli Yükle ekranından "Geri" ROOT verir — MAIN'e çevir
+                        if (fromPause && menuScreen == MENU_ROOT)
+                            menuScreen = MENU_MAIN;
                         if (act != MENU_ACTION_NONE)
                             audio_play(SFX_UI);
+
                         if (act == MENU_ACTION_RESUME)
                             gameState = GAME_PLAYING;
                         else if (act == MENU_ACTION_QUIT)
                             running = false;
-                        else if (act == MENU_ACTION_SAVE || act == MENU_ACTION_LOAD)
+                        else if (act == MENU_ACTION_TO_MAINMENU)
                         {
-                            // F5/F9 ile aynı yol; bildirim oyuna dönünce görünür
-                            MapId mapBeforeMenuLoad = map_current();
-                            bool ok = (act == MENU_ACTION_SAVE)
-                                    ? save_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus)
-                                    : load_game(SAVE_PATH, &player, &inventory, &equipment, &hotbar, questStatus);
-                            if (ok && act == MENU_ACTION_LOAD)
+                            // Oyun içi panelleri kapat, ana menüye dön (dünya bellekte
+                            // bayat kalır — Yeni Oyun/Yükle zaten her şeyi tazeler)
+                            gameState = GAME_MENU;
+                            menuScreen = MENU_ROOT;
+                            dialogNpc = -1; shopOpen = false; inventoryOpen = false;
+                            skillsOpen = false; questLogOpen = false; boardOpen = false;
+                            craftOpen = false; craftRecipe = -1; catchOpen = false;
+                            treeOpenSkill = -1; treeSelNode = -1;
+                            player.autoAttack = false;
+                            activeSlot = -1;
+                            for (int i = 0; i <= SAVE_SLOT_COUNT; i++)
+                                save_read_summary(save_slot_path(i), &slotSums[i]);
+                        }
+                        else if (act == MENU_ACTION_SAVE_SLOT && actSlot >= 0)
+                        {
+                            bool ok = save_game(save_slot_path(actSlot), &player,
+                                                &inventory, &equipment, &hotbar,
+                                                questStatus);
+                            if (ok)
                             {
-                                if (map_current() != mapBeforeMenuLoad)
-                                    mapReloadNeeded = true;
-                                tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
-                                skill_set_xp_mult(perkFx.xpGainMult);
-                                hotbar_purge_closed(&hotbar, perkFx.abilityOpen);
-                                hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
-                                if (guardIdx >= 0) guard_init(guardIdx);   // beyin sıfırdan (nöbete)
-                                catchOpen = false;
-                                lastSeenDay = gametime_day();   // pano durumu save'den geldi
+                                activeSlot = actSlot;   // kaydedilen slot aktif olur
+                                save_read_summary(save_slot_path(actSlot),
+                                                  &slotSums[actSlot]);
                             }
-                            const char *msg = !ok ? ((act == MENU_ACTION_SAVE) ? "Kayıt HATASI" : "Kayıt bulunamadı")
-                                            : (act == MENU_ACTION_SAVE) ? "Kaydedildi" : "Yüklendi";
+                            const char *msg = ok ? "Kaydedildi" : "Kayıt HATASI";
                             SDL_Color white = { 255, 255, 255, 255 };
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  player.rect.x + player.rect.w / 2.0f,
                                                  player.rect.y - 10.0f, msg, white);
-                            gameState = GAME_PLAYING;   // işlem sonrası oyuna dön
+                            gameState = GAME_PLAYING;
+                        }
+                        else if (act == MENU_ACTION_LOAD_SLOT && actSlot >= 0)
+                        {
+                            MapId mapBeforeMenuLoad = map_current();
+                            if (load_game(save_slot_path(actSlot), &player,
+                                          &inventory, &equipment, &hotbar, questStatus))
+                            {
+                                // (F9 yükleme-sonrası dizisiyle aynı — desenkron etme!)
+                                if (map_current() != mapBeforeMenuLoad)
+                                    mapReloadNeeded = true;
+                                tree_compute_effects(player.treeTaken,
+                                                     player.fateTaken, &perkFx);
+                                skill_set_xp_mult(perkFx.xpGainMult);
+                                hotbar_purge_closed(&hotbar, perkFx.abilityOpen);
+                                hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
+                                if (guardIdx >= 0) guard_init(guardIdx);
+                                catchOpen = false;
+                                lastSeenDay = gametime_day();
+                                deathTimer = 0.0f;
+                                // otomatik kayıttan yüklemede aktif slot seçilmemiş olur
+                                activeSlot = (actSlot < SAVE_SLOT_COUNT) ? actSlot : -1;
+                                gameState = GAME_PLAYING;
+                                SDL_Color white = { 255, 255, 255, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f,
+                                                     "Yüklendi", white);
+                            }
+                            // yükleme başarısızsa slot ekranında kalınır (bozuk dosya)
+                        }
+                        else if (act == MENU_ACTION_NEW_GAME && actSlot >= 0)
+                        {
+                            // === YENİ OYUN: her şey şablondan/sıfırdan (Faz B1) ===
+                            activeSlot = actSlot;
+                            player = playerTemplate;
+                            player.rect.x = 24.0f * TILE_SIZE;   // köy doğusu, yol kenarı —
+                            player.rect.y = 8.0f * TILE_SIZE;    // varışta yankının yanından geçilir
+                            inventory = (Inventory){0};
+                            equipment = (Equipment){0};
+                            // Gezgin çıkını: uyanan yolcunun üstündekiler — kılıç +
+                            // DERİ set (hafif: ağırlık cezasız, 15 def — ilk goblinler
+                            // öldürmesin ama demir set hâlâ hedef olarak kalsın)
+                            equipment.slots[EQUIP_WEAPON] =
+                                item_make(&ITEM_TYPES[ITEM_LONG_SWORD], 1, 0);
+                            equipment.slots[EQUIP_HELMET] =
+                                item_make(&ITEM_TYPES[ITEM_HELMET_LEATHER], 1, 0);
+                            equipment.slots[EQUIP_CHEST] =
+                                item_make(&ITEM_TYPES[ITEM_CHEST_LEATHER], 1, 0);
+                            equipment.slots[EQUIP_BOOTS] =
+                                item_make(&ITEM_TYPES[ITEM_BOOTS_LEATHER], 1, 0);
+                            inventory_add(&inventory, &ITEM_TYPES[ITEM_POTION_HP], 3, 0);
+                            inventory_add(&inventory, &ITEM_TYPES[ITEM_MEAT_COOKED], 2, 0);
+                            inventory_add(&inventory, &ITEM_TYPES[ITEM_TORCH], 1, 0);
+                            tree_set_debug_points(0);   // F10 kalıntısı yeni oyuna taşınmaz
+                            tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
+                            skill_set_xp_mult(perkFx.xpGainMult);
+                            hotbar = (Hotbar){0};
+                            hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
+                            memset(questStatus, 0, sizeof(QuestStatus) * MAX_QUESTS);
+                            for (int i = 0; i < MAX_MOBS; i++) mobs[i] = (Mob){0};
+                            nextMobId = 1;
+                            for (int i = 0; i < MAX_LOOT; i++) loots[i] = (Loot){0};
+                            openLootIndex = -1;
+                            for (int i = 0; i < MAX_ARROWS; i++) arrows[i].active = false;
+                            for (int i = 0; i < MAX_TRAPS; i++) traps[i].active = false;
+                            for (int i = 0; i < MAX_MOB_PROJS; i++) mobProjs[i].active = false;
+                            for (int i = 0; i < MAX_SPELL_PROJS; i++) spellProjs[i].active = false;
+                            for (int i = 0; i < MAX_BURSTS; i++) bursts[i].active = false;
+                            for (int i = 0; i < MAX_SPIKE_FX; i++) spikeFx[i].active = false;
+                            memset(floatTexts, 0, sizeof(FloatText) * MAX_FLOAT_TEXTS);
+                            deathTimer = 0.0f;
+                            volleyLeft = 0;
+                            activeAmmo = ITEM_ARROW;
+                            castSpell = -1;
+                            gametime_init();
+                            lastSeenDay = gametime_day();
+                            contract_new_day(lastSeenDay);
+                            resource_reset();
+                            npc_reset();
+                            craft_reset_learned();
+                            minimap_reset_explored();
+                            for (int i = 0; i < ECHO_COUNT; i++) echo_set_done(i, false);
+                            boss_set_last_kill_day(-999);
+                            boss_set_first_kill_done(false);
+                            for (int i = 0; i < CHEST_COUNT; i++)
+                                chest_set_opened_day(i, -999);
+                            if (guardIdx >= 0) guard_init(guardIdx);
+                            catchOpen = false;
+                            map_set_current(MAP_WORLD);
+                            mapReloadNeeded = true;   // geçiş bloğu kamp/sandık/tuzağı kurar
+                            currentRegion = -2;
+
+                            // Slot hemen mühürlenir (kart dolu görünsün, F5 hedefi belli)
+                            save_game(save_slot_path(actSlot), &player,
+                                      &inventory, &equipment, &hotbar, questStatus);
+                            save_read_summary(save_slot_path(actSlot),
+                                              &slotSums[actSlot]);
+
+                            // Sessiz Gün açılış vinyeti — bitince köy doğusunda "uyanış"
+                            gameState = GAME_PLAYING;
+                            scene_start("assets/scenes/intro_sessiz_gun.txt");
                         }
                     }
-                    // menu acikken oyun tiklamasi islenmez
+                    // menü açıkken oyun tıklaması işlenmez
                 }
                 else if (event.button.button == SDL_BUTTON_LEFT && !scene_active())
                 {
@@ -2690,8 +2878,24 @@ int main(int argc, char *argv[])
                     splashTimer = 3.0f;
                 }
                 currentRegion = -2;   // dünyaya dönüşte bölge splash'i yeniden tetiklensin
+                bool wasPortal = pendingPortal >= 0;
                 pendingPortal = -1;
                 mapReloadNeeded = false;
+
+                // Otomatik kayıt (Faz B1): harita GEÇİŞİ kritik an sayılır
+                // (yüklemeden gelen reload'da yazmaya gerek yok — durum aynı)
+                if (wasPortal &&
+                    save_game(save_slot_path(SAVE_SLOT_AUTO), &player,
+                              &inventory, &equipment, &hotbar, questStatus))
+                {
+                    save_read_summary(save_slot_path(SAVE_SLOT_AUTO),
+                                      &slotSums[SAVE_SLOT_AUTO]);
+                    SDL_Color dim = { 170, 170, 190, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 24.0f,
+                                         "Otomatik kayıt", dim);
+                }
             }
 
             // Menzildeki geçit ([E] etiketi + kullanım için)
@@ -4011,6 +4215,19 @@ int main(int argc, char *argv[])
                 contract_new_day(today);    // pano yenilenir (yarım kontratlar düşer)
                 spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS,
                                  &nextMobId);   // av sürüleri tazelenir (eksik dolar)
+
+                // Otomatik kayıt (Faz B1): her şafak auto slotuna yazılır
+                if (save_game(save_slot_path(SAVE_SLOT_AUTO), &player,
+                              &inventory, &equipment, &hotbar, questStatus))
+                {
+                    save_read_summary(save_slot_path(SAVE_SLOT_AUTO),
+                                      &slotSums[SAVE_SLOT_AUTO]);
+                    SDL_Color dim = { 170, 170, 190, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 24.0f,
+                                         "Otomatik kayıt", dim);
+                }
                 // (kamp ateşi burada SÖNMEZ — kendi 24 saatlik ömrünü yaşar)
                 if (player.lastCrimeDay < today - 1 || player.lastCrimeDay == 0)
                     for (int r = 0; r < MAX_REGIONS; r++)
@@ -5013,6 +5230,24 @@ int main(int argc, char *argv[])
             nearestRes = resource_nearest_available(px, py);
             nearestStation = station_nearest(px, py);
 
+            // Köye varış (Faz B1): muhafız yaklaşan yabancıyı DURDURUR —
+            // ilk karşılama diyaloğu kendiliğinden açılır (bir kez)
+            if (!player.guardGreeted && guardIdx >= 0 && dialogNpc < 0 &&
+                map_current() == MAP_WORLD && !scene_active() &&
+                nearestNpc == guardIdx && npcDialogOk[guardIdx])
+            {
+                int kn = dialog_find(&npcDialogs[guardIdx], "karsilama");
+                if (kn >= 0)
+                {
+                    dialogNpc = guardIdx;
+                    dialogNode = kn;
+                    dialog_type_reset();
+                    player.autoAttack = false;
+                    player.guardGreeted = true;
+                    audio_play(SFX_UI);
+                }
+            }
+
             // --- BÖLGE TAKİBİ: yeni bölgeye girince adı belirir (yalnız dünya) ---
             int reg = (map_current() == MAP_WORLD) ? region_at(px, py) : currentRegion;
             if (reg != currentRegion)
@@ -5706,8 +5941,38 @@ int main(int argc, char *argv[])
             draw_text(renderer, gameFont, line, pX + 24.0f, pY + 122.0f, bribeCol);
         }
 
-        if (gameState == GAME_PAUSED)                          // ← EKLE
-            menu_render(renderer, gameFont, menuScreen, winW, winH);
+        if (gameState == GAME_PAUSED || gameState == GAME_MENU)
+            menu_render(renderer, gameFont, menuScreen, winW, winH, slotSums);
+        else if (gameState == GAME_TITLE)
+        {
+            // Atmosferik başlık: tam karanlık + oyun adı + nefes alan çağrı satırı
+            titlePulse += dt;
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_set_color(renderer, 6, 4, 10, 255);
+            SDL_FRect full = { 0, 0, (float)winW, (float)winH };
+            r2d_fill_rect(renderer, &full);
+
+            const char *tt = "PIXE";
+            int tw = 0, th = 0;
+            TTF_GetStringSize(splashFont, tt, 0, &tw, &th);
+            SDL_Color pale = { 205, 195, 220, 255 };
+            draw_text(renderer, splashFont, tt,
+                      (winW - tw) / 2.0f, winH * 0.34f, pale);
+
+            const char *st = "Sessiz Gün'den beri dünya nefesini tutuyor.";
+            TTF_GetStringSize(gameFont, st, 0, &tw, &th);
+            SDL_Color dimc = { 120, 105, 145, 255 };
+            draw_text(renderer, gameFont, st,
+                      (winW - tw) / 2.0f, winH * 0.34f + 56.0f, dimc);
+
+            // "bir tuşa bas" — kalp atışı ritminde soluk alır
+            float a = 0.55f + 0.45f * SDL_sinf(titlePulse * 2.2f);
+            SDL_Color call = { 220, 215, 235, (Uint8)(a * 255.0f) };
+            const char *pr = "- devam etmek için bir tuşa bas -";
+            TTF_GetStringSize(gameFont, pr, 0, &tw, &th);
+            draw_text(renderer, gameFont, pr,
+                      (winW - tw) / 2.0f, winH * 0.72f, call);
+        }
 
         r2d_end_frame(renderer); // batch'i GPU'ya gönder + ekrana bas
     }

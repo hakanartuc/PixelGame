@@ -159,6 +159,13 @@ typedef struct Player {
     // Fısıltının tonu ve dünyanın tepkisi bunlardan türer (save v17).
     int echoesWitnessed;   // Dinle/Defnet seçimleri
     int echoesConsumed;    // Çek/Sömür seçimleri
+
+    // Kişilik izi (anlatı, Faz B1) — GİZLİ: diyalog seçimlerinden birikir,
+    // ileride NPC'ler "seni tanır" (kimlik davranıştan doğar; save v18)
+    int persKaba;    // kaba/sert cevaplar
+    int persKibar;   // kibar/yardımsever cevaplar
+    int persKetum;   // ketum/mesafeli cevaplar
+    bool guardGreeted;   // köye varış karşılaması yaşandı (bir kez)
 } Player;
 
 

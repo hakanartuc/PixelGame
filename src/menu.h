@@ -3,34 +3,49 @@
 #include "r2d.h"
 #include <SDL3/SDL.h>
 #include "font.h"
+#include "save.h"   // SaveSummary + SAVE_SLOT_COUNT
 
-// Oyunun ust-duzey durumu. Ileride GAME_SETTINGS, GAME_SAVE vs. eklenebilir.
+// Oyunun ust-duzey durumu.
 typedef enum {
+    GAME_TITLE,      // atmosferik baslik ekrani ("bir tusa bas") — Faz B1
+    GAME_MENU,       // ana menu (Yeni Oyun / Yukle / Cikis)
     GAME_PLAYING,    // normal oynanis
     GAME_PAUSED,     // ESC menusu acik, dunya donmus
 } GameState;
 
-// Pause menusunun ic durumu (hangi ekran gosteriliyor).
+// Menu ekranlari (hem ana menu hem ESC menusu bu makineden gecer).
 typedef enum {
-    MENU_MAIN,         // ana menu (Devam / Cik)
-    MENU_CONFIRM_QUIT, // "Emin misin?" onayi
+    MENU_MAIN,              // ESC menusu (Devam/Kaydet/Yukle/Ana Menu/Cik)
+    MENU_CONFIRM_QUIT,      // "Emin misin?" (oyundan cikis)
+    MENU_CONFIRM_MAINMENU,  // "Kaydedilmemis ilerleme kaybolur" (ana menuye don)
+    MENU_ROOT,              // ana menu (Yeni Oyun / Yukle / Cikis)
+    MENU_SLOTS_NEW,         // yeni oyun icin slot secimi
+    MENU_SLOTS_SAVE,        // kaydet icin slot secimi
+    MENU_SLOTS_LOAD,        // yukle icin slot secimi (+ otomatik kayit)
+    MENU_CONFIRM_OVERWRITE, // dolu slota YENI OYUN yazma onayi
 } MenuScreen;
 
-// Menu butonuna tiklaninca donen aksiyon.
+// Menu tiklamasinin sonucu. Slotlu aksiyonlarda slot outSlot'a yazilir.
 typedef enum {
-    MENU_ACTION_NONE,    // bir sey olmadi / tiklama bos alana
-    MENU_ACTION_RESUME,  // oyuna don
-    MENU_ACTION_SAVE,    // oyunu kaydet (main halleder — menu dosya bilmez)
-    MENU_ACTION_LOAD,    // kayittan yukle
-    MENU_ACTION_QUIT,    // oyundan cik
+    MENU_ACTION_NONE,       // bir sey olmadi / ekran ici gecis
+    MENU_ACTION_RESUME,     // oyuna don (ESC menusu)
+    MENU_ACTION_QUIT,       // programdan cik
+    MENU_ACTION_NEW_GAME,   // secilen slotta yeni oyun baslat
+    MENU_ACTION_SAVE_SLOT,  // secilen slota kaydet
+    MENU_ACTION_LOAD_SLOT,  // secilen slottan yukle
+    MENU_ACTION_TO_MAINMENU,// ana menuye don (onaylandi)
 } MenuAction;
 
-// Pause menusunu cizer (yari saydam karartma + butonlar).
+// Menu cizimi. sums: SAVE_SLOT_COUNT+1 ozet (son eleman otomatik kayit) —
+// yalniz slot ekranlarinda okunur, digerlerinde NULL olabilir.
 void menu_render(R2D *renderer, TTF_Font *font,
-                 MenuScreen screen, int winW, int winH);
+                 MenuScreen screen, int winW, int winH,
+                 const SaveSummary *sums);
 
-// Tiklama testi: verilen ekrandaki hangi butona basildi → aksiyon.
-// screen'i degistirebilir (orn. Cik → CONFIRM_QUIT'e gecis) — o yuzden pointer.
-MenuAction menu_handle_click(MenuScreen *screen, float mx, float my, int winW, int winH);
+// Tiklama testi. screen'i degistirebilir (ekran gecisleri menu icinde cozulur).
+// Slotlu aksiyon donerse secilen slot *outSlot'a yazilir.
+MenuAction menu_handle_click(MenuScreen *screen, float mx, float my,
+                             int winW, int winH,
+                             const SaveSummary *sums, int *outSlot);
 
 #endif

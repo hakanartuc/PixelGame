@@ -1,0 +1,37 @@
+# Sessiz Gün açılışı (Faz B1): donmuş dünya → dokuz atım → başkasının anısı → uyanış.
+# Seçim yok — tek yol. E/Space typewriter'ı hızlandırır (atlamaz).
+# Bitince oyuncu köy doğusunda, yol kenarında ayağa kalkar (spawn: T24,T8).
+
+[giris]
+image: assets/scenes/intro_frozen.png
+duck: 0.1
+text: Önce sesler durdu. Kuşlar havada asılı kaldı; yapraklar düşerken vazgeçti. İnsanlar adım ortasında, ağızlar yarı açık — dünya bir cümlenin ortasında kesilmiş gibi.
+text: Bir nefeslik sürdü, diyor anlatanlar. Ama kimse o nefesin kaç yıl olduğunu bilmiyor. Buna sonradan Sessiz Gün dediler.
+text: Sen o gün oradaydın. Ya da... kimse seni orada hatırlamıyor.
+opt: ... -> atim
+
+[atim]
+image: assets/scenes/intro_pulse.png
+duck: 0.05
+sfx: heartbeat
+text: Karanlıkta bir şey sayıyor.
+text: Bir. İki. Üç... Her atım göğsünde bir yerde yankılanıyor. Kendi kalbin değil bu — daha derin. Daha eski. Daha sabırlı.
+text: Dokuz. Ve duruyor.
+opt: ... -> ani
+
+[ani]
+image: assets/scenes/intro_memory.png
+duck: 0.05
+sfx: whisper
+text: Eller görüyorsun — senin ellerin değil. Toprağı kazıyorlar; tırnakların altı kara. Bir çukur. Çukurun dibinde bir şey parlıyor ve eller ona uzanıyor.
+text: Ve bir şey sana bakıyor. Çukurun içinden değil. Her yerden.
+text: Fısıltı, ilk kez: "...henüz değil."
+opt: (Uyan.) -> uyanis
+
+[uyanis]
+image: assets/scenes/intro_wake.png
+duck: 0.35
+text: Yol kenarında uyanıyorsun. Çimen ıslak, gün yeni doğmuş. Kim olduğunu biliyorsun; buraya nasıl geldiğini bilmiyorsun.
+text: Göğsünde, giysinin altında bir işaret var. Mühür gibi. Dokununca sıcak — ve bir nefes ritminde atıyor. Seninkiyle aynı anda.
+text: Batıda bir köyün dumanı tütüyor.
+opt: (Ayağa kalk.) -> end

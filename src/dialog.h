@@ -37,6 +37,9 @@ typedef enum {
     DVAR_GOLD,     // oyuncu altını
     DVAR_REP,      // NPC bölgesindeki itibar
     DVAR_BOUNTY,   // NPC bölgesindeki bounty
+    DVAR_KABA,     // kişilik izi: kaba/sert (gizli sayaç, Faz B1)
+    DVAR_KIBAR,    // kişilik izi: kibar/yardımsever
+    DVAR_KETUM,    // kişilik izi: ketum/mesafeli
 } DialogVar;
 
 typedef struct {
