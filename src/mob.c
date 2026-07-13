@@ -591,6 +591,76 @@ const MobType MOB_TYPES[] = {
             },
         },
     },
+
+    // --- Mob Ekolojisi E1 (SONA eklendi — indeksler save/tablolarda sabit) ---
+    // [16] Goblin Reisi — yuvanın kalbi: ölünce kamp ÇÖKER, kalanlar kaçışır.
+    // Goblin sheet'i, iri ve kızıl tonlu; erlerden belirgin güçlü ama boss değil.
+    {
+        .name = "Goblin Reisi",
+        .texturePath = "assets/characters/mobs/Goblin_Maceman.png",
+        .level = 4,
+        .maxHealth = 260.0f,
+        .speed = 190.0f,
+        .attackRange = 65.0f,
+        .detectRange = 320.0f,
+        .damage = 12.0f,
+        .defense = 4.0f,
+        .attackType = ATTACK_MELEE,
+        .lootTable = GOBLIN_LOOT, .lootTableCount = LOOT_COUNT(GOBLIN_LOOT),
+        .goldMin = 40, .goldMax = 80,
+        .attackHitFrame = 3,
+        .drawScale = 2.8f,
+        .tintR = 255, .tintG = 170, .tintB = 150,   // kızıl savaş boyası havası
+        .bodyW = 52.0f, .bodyH = 52.0f,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.18f, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.18f, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.18f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
+                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=23 },
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=23 },
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=23 },
+            },
+        },
+    },
+    // [17] Ork Savaş Totemi — YAPI: kımıldamaz, saldırmaz; yıkılınca kamp çöker.
+    // Görsel: assets/decor/nests.png hücre 0 (tek kare her durumda).
+    #define TOTEM_CLIP { .x=0, .y=0, .frameW=48, .frameH=48, .frameCount=1, \
+                         .frameDuration=1.0f, .feetY=46 }
+    {
+        .name = "Savaş Totemi",
+        .texturePath = "assets/decor/nests.png",
+        .level = 5,
+        .maxHealth = 300.0f,
+        .speed = 0.0f,
+        .attackRange = 0.0f,
+        .detectRange = 0.0f,
+        .damage = 0.0f,
+        .defense = 8.0f,
+        .attackType = ATTACK_MELEE,
+        .goldMin = 0, .goldMax = 0,
+        .attackHitFrame = 0,
+        .isStructure = true,
+        .bodyW = 56.0f, .bodyH = 56.0f,
+        .anims = {
+            { TOTEM_CLIP, TOTEM_CLIP, TOTEM_CLIP },
+            { TOTEM_CLIP, TOTEM_CLIP, TOTEM_CLIP },
+            { TOTEM_CLIP, TOTEM_CLIP, TOTEM_CLIP },
+            { TOTEM_CLIP, TOTEM_CLIP, TOTEM_CLIP },
+        },
+    },
 };
 
 const int MOB_TYPE_COUNT = (int)(sizeof(MOB_TYPES) / sizeof(MOB_TYPES[0]));
@@ -757,6 +827,39 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
 
     // --- PASİF AV (Faz 6): asla saldırmaz; vuruş/kamp alarmı = ürküp KAÇAR ---
     // Leash'ten ÖNCE: kaçan hayvan RETURN dokunulmazlığına (iyileşme) girmesin.
+    // Yuva çöktü (ekoloji): kalanlar kaçışır, süre bitince sessizce gider
+    if (m->scatter)
+    {
+        m->fleeTimer -= dt;
+        if (m->fleeTimer <= 0.0f) { m->e.alive = false; return; }
+        m->state = MOB_CHASE;
+        if (dist > 0.0f) {
+            float nx = -dx / dist, ny = -dy / dist;
+            if (SDL_fabsf(nx) > SDL_fabsf(ny)) {
+                m->e.facing = 2;
+                m->e.facingLeft = (nx < 0);
+            } else {
+                m->e.facing = (ny < 0) ? 1 : 0;
+            }
+            mob_move(m, nx * m->e.speed * 1.3f * dt, ny * m->e.speed * 1.3f * dt);
+        }
+        const AnimClip *sclip = &m->type->anims[m->state][m->e.facing];
+        if (m->state != m->lastState || m->e.facing != m->lastFacing) {
+            m->currentFrame = 0; m->animTimer = 0.0f;
+            m->lastState = m->state; m->lastFacing = m->e.facing;
+        }
+        m->animTimer += dt;
+        if (m->animTimer >= sclip->frameDuration) {
+            m->animTimer -= sclip->frameDuration;
+            m->currentFrame = (m->currentFrame + 1) % sclip->frameCount;
+        }
+        return;
+    }
+
+    // Yapı-mob (totem): hiçbir AI yok — durur, vurulur, yıkılır
+    if (m->type->isStructure)
+        return;
+
     if (m->type->passive)
     {
         if (m->aggro) {              // main her vuruşta aggro basar → kaçışa çevrilir

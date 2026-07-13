@@ -40,6 +40,7 @@ add_executable(game
     src/shop.c
     src/quest.c
     src/journal.c
+    src/ecology.c
     src/gametime.c
     src/decor.c
     src/audio.c

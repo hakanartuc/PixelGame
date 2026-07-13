@@ -69,14 +69,14 @@ vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü
   `fx: kaba += 1` biçimiyle işler, req ile okunur).
 
 ## Sıradaki iş
-**FAZ B1+B2 TAMAM** (2026-07-13, save v18-19): başlık ekranı + ana menü + 20+1 slot +
-Sessiz Gün açılışı + köye varış (kişilik sayaçları; Kemal'de Eski Geçit iması) +
-gezgin çıkını + sahne tuş kilidi + **Yolculuk günlüğü** (J = Book_UI kitabı, iki sekme:
-Görevler birinci ağız + kronolojik Günlük; girişler kod+param olarak save v19'da;
-bildirim dili kişisel+sistemik ikili).
-Sıradaki adaylar: **MOB EKOLOJİSİ REWORK** (PROGRESS Kalanlar #1 — KO slot spawn'ı
-gidiyor: yuva/popülasyon modeli, rutinler, göz önünde spawn yasak, kalıcı temizlik;
-faz başında tasarım anketi) ya da **Faz C sahne araçları** / biyomlar.
+**FAZ E1 TAMAM** (2026-07-13, save v20): MOB EKOLOJİSİ çekirdeği — KO slot spawn'ı
+dünyadan söküldü (ecology.c): yuva/popülasyon (şafakta +1, ölen geri gelmez),
+aileye göre yıkım (Goblin Reisi / Ork Savaş Totemi / gölcük kurutma / mezar
+mühürleme / sürü göçü), 5-15 günde alternatif sahaya koloni, zindan = mühür
+istisnası. Öncesi B1+B2 (save v18-19): ana menü + 20+1 slot + Sessiz Gün açılışı +
+Yolculuk günlüğü (J, iki sekme, birinci ağız).
+Sıradaki: **Faz E2** — mob rutinleri (gece/gündüz + devriye + su noktası) +
+haber ağı (göç duyuruları) + dinamik kontratlar (PROGRESS Kalanlar #1).
 Backlog onaylı 4 mekanik: element sinerjileri, summon hattı (mana rezerve bedeli),
 pişirme+yemek buffları, davranış ünvanları (ayrıntı PROGRESS "Kalanlar").
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &

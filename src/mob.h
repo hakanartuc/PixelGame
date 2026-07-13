@@ -9,8 +9,8 @@
 #include "item.h"   // LootEntry (tür başına loot tablosu)
 
 
-#define MAX_MOBS 48        // dünya geneli aynı anda max mob (bölge kampları toplamı + pay)
-#define MAX_MOB_TYPES 16   // tür tablosu kapasitesi (tile'lardaki MAX_TILE_TYPES gibi)
+#define MAX_MOBS 64        // dünya geneli aynı anda max mob (yuva tavanları + reis/totem + pay)
+#define MAX_MOB_TYPES 24   // tür tablosu kapasitesi (E1: 18 tür — reis+totem eklendi)
 #define MAX_SPAWN_ZONES 32 // bölge kamplarından kurulabilecek max spawn bölgesi
 
 // Dünyada var olan, hareket eden, hasar alabilen her şeyin ortak çekirdeği.
@@ -85,6 +85,7 @@ typedef struct {
     float drawScale;         // çizim ölçeği (0 = varsayılan 2.0 — boss büyük çizilir)
     Uint8 tintR, tintG, tintB; // tür rengi (0,0,0 = boyama yok — boss koyu/mor)
     bool isBoss;             // boss: leash yok, faz mantığı main'de, tepe HP barı
+    bool isStructure;        // yapı-mob (ork totemi): kımıldamaz, saldırmaz, kaçmaz
     float hitPoisonDps;      // vuruşu oyuncuyu zehirler: sn başına hasar (0 = yok)
     float hitPoisonTime;     // zehir süresi (sn)
 
@@ -127,6 +128,7 @@ typedef struct {
     MobState lastState;        // geçiş tespiti: önceki durum
     int lastFacing;       // geçiş tespiti: önceki yön
     bool dying;           // ölüm animasyonu sürüyor mu (çiziliyor ama AI/hedef dışı)
+    bool scatter;         // yuva çöktü: kaçış + süre sonunda sessiz despawn (ekoloji)
 } Mob;
 
 
@@ -138,6 +140,10 @@ typedef struct {
     int maxCount;        // bölgede kaç mob olmalı
     float respawnTimer;  // eksik varsa geri sayım
 } SpawnZone;
+
+// Ekoloji özel türleri (MOB_TYPES sonuna eklendi — save indeks güvenliği)
+#define MOB_GOBLIN_CHIEF 16   // Goblin Reisi: ölünce kamp çöker
+#define MOB_ORC_TOTEM    17   // Ork Savaş Totemi: yapı — yıkılınca kamp çöker
 
 extern const MobType MOB_TYPES[];
 extern const int MOB_TYPE_COUNT;

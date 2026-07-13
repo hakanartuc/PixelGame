@@ -117,6 +117,19 @@ static void entry_text(const JournalEntry *e, char *out, size_t cap)
         body = "Eski Geçit'e ilk kez adım attım. Taşlar soğuk değil; "
                "bekliyor gibiler. Mühür içeride hiç susmadı.";
         break;
+    case JE_NEST_CLEANSE:
+        body = (e->param == 0)
+             ? "Goblin reisini devirdim; kamp gözümün önünde dağıldı. Reissiz "
+               "goblin, çobansanız sürü gibi — arkalarına bakmadan kaçtılar."
+             : (e->param == 1)
+             ? "Orkların savaş totemini yıktım. Totem devrilince bağırışları "
+               "öfkeden değil korkudandı. Bu vadiye bir daha yerleşemezler."
+             : (e->param == 2)
+             ? "Slime gölcüğünü meşaleyle kuruttum. Toprak günlerdir ilk kez "
+               "nefes aldı sanki."
+             : "Lanetli mezarı mühürledim. Elimi taşa koyduğumda göğsümdeki "
+               "işaret aynı ritimde attı — sanki ikisi aynı dili konuşuyor.";
+        break;
     case JE_DAY_NOTE: {
         body = "Günler geçiyor.";
         for (size_t i = 0; i < sizeof(DAY_NOTES) / sizeof(DAY_NOTES[0]); i++)

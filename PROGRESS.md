@@ -338,6 +338,30 @@ Güncelleme: 2026-07-11
   haber vermeliyim" / "Sözümü tuttum." kişisel + "+100 Gold"/"+Çekiç" sistemik
 - Eski quest_log_render kaldırıldı (quest.c)
 
+### Faz E1 — MOB EKOLOJİSİ ÇEKİRDEĞİ (KO slot spawn'ı söküldü; save v20)
+- **YUVA/POPÜLASYON** (ecology.c, 26 saha: eski kamplar + aile başına boş göç
+  sahaları): ölen mob GERİ GELMEZ; her şafak yuva +1 doğum (tavana kadar,
+  yuva noktasından — göz önünde belirme yok); sürekli respawn dünyada KAPALI;
+  popülasyon save v20'de kalıcı; ölüm WIPE'ı artık MAX'a değil MEVCUT nüfusa döner
+- **AİLEYE GÖRE YIKIM** (kullanıcı: tekdüze olmasın):
+  · GOBLİN: **Goblin Reisi** [MOB 16] (2.8×, kızıl, 260 HP) — ölünce kamp ÇÖKER,
+    kalanlar kaçışır (Mob.scatter: kaç + sessiz despawn)
+  · ORK: **Savaş Totemi** [MOB 17] (yapı-mob: isStructure, 300 HP, kımıldamaz;
+    nests.png hücre 0) — vurunca kamp savunmaya koşar (grup aggro), yıkılınca çöker
+  · SLİME: renkli sızıntı gölcüğü (zemin görseli, family tint) — hepsi ölüyken
+    [E] kurutma (MEŞALE gerekir)
+  · İSKELET: lanetli mezar görseli — hepsi ölüyken [E] MÜHÜRLEME (taş kalıcı
+    mühürlü görünüme döner; camgöbeği motif = intro mühür dili); mühür GÖÇ ÜRETMEZ
+  · HAYVAN: sürü modeli — tükenirse çayır boşalır, sürü göçer
+- **GÖÇ**: çöken yuvanın ailesi 5-15 gün sonra BOŞ alternatif sahaya koloni kurar
+  (pop 2'den başlar); iki saha da yok edilirse aile o dünyada TÜKENİR (bedel)
+- **MÜHÜR İSTİSNASI**: zindan ekolojiye dahil değil — giriş başına tazelenme sürer
+- Her temizlik günlüğe birinci ağız düşer (JE_NEST_CLEANSE ×4 metin)
+- Kapasiteler: MAX_MOB_TYPES 16→24, MAX_MOBS 48→64 (taşma bug'ı — reis görünmüyordu)
+- Bilinen E1 sadeleştirmeleri: koloni dünya YENİDEN KURULUNCA görünür (zindan
+  gidiş-dönüş/ölüm/yükleme tetikler); slime bölünme çocukları ebeveyn zone'unu
+  paylaşır (pop 0'da klamplenir — ritüel yine tüm ölüleri ister)
+
 ## 🔜 Kalanlar (öncelik sırası — 2026-07-11 kullanıcı seçimi)
 0. **ANLATI HATTI (aktif — STORY.md + LORE_SECRET.md + STORY_CARDS.md kanon):**
    · Faz A: vinyet/sahne motoru (pixel diorama + typewriter + dokunma beat'leri +
@@ -355,27 +379,17 @@ Güncelleme: 2026-07-11
    · Dünya Olayları sistemi (yaşayan dünya: olay tablosu + haber ağı + atmosfer saati
      + NPC yayları) + dinlenme/rüya mekaniği (kamp ateşi → rüya vinyeti)
    · Kural: her anlatı fazında İKİ hat yazılır (Tanık + Sömüren — tam ayrı kötü yol)
-1. **MOB EKOLOJİSİ REWORK (kullanıcı kararı 2026-07-13 — KO slot mantığı gidiyor):**
-   Mevcut: KO tarzı spawn bölgeleri — moblar slotta boş bekler, günlük dolar (online
-   grind kalıntısı). Hedef: moblar YAŞASIN, dünya anlatıya uysun. Detay taslağı
-   (faz başında tasarım anketi yapılacak):
-   · **YUVA/POPÜLASYON modeli**: slot yerine YUVA (goblin kampının çadırı, in, kovan) —
-     sınırlı popülasyon oradan beslenir; öldürdükçe azalır, yuva durursa GÜNLER içinde
-     yavaş yeniden ürer (anında respawn YOK); yuva yok edilirse bölge TEMİZLENİR
-     (kalıcı sonuç — oyuncu eylemi dünyayı değiştirir)
-   · **Yeni yuva kurulumu = Dünya Olayı**: temizlenen bölgeye zamanla başka sürü göçer
-     ("goblinler kuzey yamacına yerleşmiş" — haber ağı/pano duyurur; backlog'daki
-     Dünya Olayları sistemiyle birleşir)
-   · **RUTİNLER** (NPC schedule deseni moblara): devriye, yemek arama, su içme,
-     gece/gündüz davranışı (goblin gece yol keser, gündüz kampta uyuklar; yaban
-     hayvanı şafakta otlar, öğlen gölgede), yuvaya dönüş — "slotta bekleyen mob" ölür
-   · **GÖZ ÖNÜNDE SPAWN YASAK**: doğum yalnız yuvada/ekran dışında; dünyaya
-     "gelirler", belirmezler
-   · **Av dengesi**: hayvan popülasyonu sınırlı → et/deri ekonomisi gerçek kıtlıkla
-     buluşur (aşırı avlanan bölgede av azalır — trade-off felsefesiyle uyumlu)
-   · Açık tasarım soruları (fazda sorulacak): kontrat panosunun dinamik hedef bulması;
-     boss haftalık dirilişi bu modelde ne olur; temizlik kalıcılığının sınırı
-     (tüm dünya boşaltılabilir mi?); zindan mobları (mühür alanı = istisna kuralı?)
+1. **MOB EKOLOJİSİ — Faz E2 (E1 TAMAM 2026-07-13, bkz. Faz E1 bölümü):**
+   · **RUTİNLER** (kullanıcı onaylı 4'lü): gece/gündüz döngüsü (goblin gece aktif,
+     gündüz kampta uyuklar — uyuyan fark etmez, sneak sinerjisi) + devriye rotaları
+     (kamp çevresi 2-3 nokta) + su/yem noktası ziyareti (hayvan pusu fırsatı)
+     [yuva savunması E1'de geldi]
+   · **HABER AĞI**: göç kolonileri pano/NPC ağzından duyurulur ("goblinler kuzey
+     yamacına yerleşmiş") — Dünya Olayları sisteminin ilk parçası
+   · **DİNAMİK KONTRATLAR**: pano hedefleri yaşayan popülasyondan; nüfusu olmayan
+     türden kontrat çıkmaz
+   · E1 sadeleştirme kapanışları: koloninin dünyadayken de belirmesi (şafakta
+     zone ekleme); slime çocuklarının pop sayımı
 2. **Mob fazları** (devamı): Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda; iskelet "mezardan kalkma" spawn animasyonu
 3. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
 4. **Onaylı yeni mekanikler** (2026-07-11 — uygun fazlarda gelir):

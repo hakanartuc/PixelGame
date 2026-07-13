@@ -29,6 +29,7 @@
 #include "shop.h"
 #include "quest.h"
 #include "journal.h"
+#include "ecology.h"
 #include "gametime.h"
 #include "decor.h"
 #include "audio.h"
@@ -292,6 +293,35 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
                 item_make(&ITEM_TYPES[ITEM_ARROW], back, 0);
     }
     target->arrowsHit = 0;
+
+    // EKOLOJİ (E1): popülasyon düşer; reis/totem öldüyse yuva çöker
+    if (map_current() == MAP_WORLD)
+    {
+        bool isChief = (target->type == &MOB_TYPES[MOB_GOBLIN_CHIEF] ||
+                        target->type == &MOB_TYPES[MOB_ORC_TOTEM]);
+        if (ecology_on_mob_death(target->zoneId, isChief, gametime_day()))
+        {
+            // Yuva çöktü: aynı sahanın kalanları kaçışır (savaşı bırakır)
+            int cs = ecology_site_of_zone(target->zoneId);
+            for (int j = 0; j < mobCount; j++)
+            {
+                if (!mobs[j].e.alive || &mobs[j] == target) continue;
+                if (mobs[j].type->isStructure) continue;
+                if (ecology_site_of_zone(mobs[j].zoneId) != cs) continue;
+                mobs[j].scatter = true;
+                mobs[j].fleeTimer = 2.5f;
+                mobs[j].aggro = false;
+                mobs[j].alertFlash = 0.6f;
+            }
+            journal_add(JE_NEST_CLEANSE,
+                        target->type == &MOB_TYPES[MOB_GOBLIN_CHIEF] ? 0 : 1);
+            SDL_Color amber = { 255, 200, 120, 255 };
+            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                 target->e.rect.x + target->e.rect.w / 2.0f,
+                                 target->e.rect.y - 40.0f,
+                                 "Yuva çöktü — kamp dağılıyor!", amber);
+        }
+    }
 
     contract_on_kill(target->type);   // pano kes-kontratları da sayar (Faz 6)
 
@@ -716,6 +746,7 @@ int main(int argc, char *argv[])
     #define BOARD_RANGE 90.0f
     R2DTexture *boardTex = load_texture(renderer, "assets/decor/notice_board.png");
     R2DTexture *bookTex  = load_texture(renderer, "assets/ui/Book_UI.png");   // Yolculuk günlüğü
+    R2DTexture *nestsTex = load_texture(renderer, "assets/decor/nests.png");   // yuva görselleri (E1)
     bool boardOpen = false;
 
     // Büyü VFX sprite'ları (Faz 22): mermi küreleri + arcane patlama + alev
@@ -902,8 +933,9 @@ int main(int argc, char *argv[])
     // Spawn bölgeleri BÖLGE tanımlarından kurulur (region.c) — kamplar veride,
     // main sadece düzleştirir. Yeni kamp eklemek = region.c'ye bir satır.
     SpawnZone spawnZones[MAX_SPAWN_ZONES];
-    int spawnZoneCount = build_spawn_zones(spawnZones, MAP_WORLD);
-    spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId); // ← başlangıçta doldur
+    ecology_reset();   // taban yuvalar dolu (yeni oyun/yükleme bunu ezer)
+    int spawnZoneCount = ecology_populate(spawnZones, MAX_SPAWN_ZONES,
+                                          mobs, MAX_MOBS, &nextMobId);
 
     // Tile texture'ları: TILE_TYPES tablosundaki path'lerden yükle.
     // texturePath == NULL olanlar (örn. taş) texture'sız kalır → render'da renk basılır.
@@ -947,6 +979,7 @@ int main(int argc, char *argv[])
     int nearPortal = -1;
     int nearestChest = -1;   // menzildeki kapalı sandık ([E] ile açılır)
     int nearestEcho = -1;    // menzildeki OKUNMAMIŞ yankı noktası ([E] ile yaşanır)
+    int nearestRitual = -1;  // menzildeki ritüel yuvası (gölcük kurut / mezar mühürle)
     int activeEcho = -1;     // şu an yaşanan yankı (seçim yapılınca done işaretlenir)
     bool arenaClosed = false;   // boss arena kapısı (tile duvarı) indi mi
     #define T_BOSS_X (22.0f * TILE_SIZE)
@@ -1563,6 +1596,37 @@ int main(int argc, char *argv[])
                     }
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
+                         dialogNpc < 0 && nearestRitual >= 0)
+                {
+                    // Ritüel: gölcük kurutma (meşale ister) / mezar mühürleme
+                    const NestSiteDef *rs = ecology_site(nearestRitual);
+                    bool isPool = rs->kind == NEST_POOL;
+                    if (isPool && inventory_count(&inventory, &ITEM_TYPES[ITEM_TORCH]) <= 0)
+                    {
+                        SDL_Color red = { 255, 140, 100, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f,
+                                             "Meşale gerekiyor", red);
+                    }
+                    else
+                    {
+                        ecology_do_ritual(nearestRitual, gametime_day());
+                        journal_add(JE_NEST_CLEANSE, isPool ? 2 : 3);
+                        audio_play(SFX_PERK);
+                        fx_burst(&weaponFx, rs->x, rs->y, 22, 110.0f,
+                                 isPool ? 255 : 140, isPool ? 170 : 220,
+                                 isPool ? 60 : 235);
+                        SDL_Color icy = { 150, 220, 255, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f,
+                                             isPool ? "Gölcük kurudu."
+                                                    : "Mezar mühürlendi.", icy);
+                        nearestRitual = -1;
+                    }
+                }
+                else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
                          dialogNpc < 0 && nearPortal >= 0)
                 {
                     // Geçit kullan (kapı/merdiven) — asıl geçiş update başında yapılır
@@ -1926,8 +1990,8 @@ int main(int argc, char *argv[])
                         load_game(save_slot_path(activeSlot), &player,
                                   &inventory, &equipment, &hotbar, questStatus))
                     {
-                        if (map_current() != mapBeforeLoad)
-                            mapReloadNeeded = true;
+                        mapReloadNeeded = true;   // ekoloji popülasyonu haritayı
+                        (void)mapBeforeLoad;      // her yüklemede yeniden kurar
                         tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);   // seçimler değişti
                         skill_set_xp_mult(perkFx.xpGainMult);
                         hotbar_purge_closed(&hotbar, perkFx.abilityOpen);
@@ -2020,8 +2084,8 @@ int main(int argc, char *argv[])
                                           &inventory, &equipment, &hotbar, questStatus))
                             {
                                 // (F9 yükleme-sonrası dizisiyle aynı — desenkron etme!)
-                                if (map_current() != mapBeforeMenuLoad)
-                                    mapReloadNeeded = true;
+                                mapReloadNeeded = true;   // dünya ekolojiden kurulur
+                                (void)mapBeforeMenuLoad;
                                 tree_compute_effects(player.treeTaken,
                                                      player.fateTaken, &perkFx);
                                 skill_set_xp_mult(perkFx.xpGainMult);
@@ -2102,6 +2166,7 @@ int main(int argc, char *argv[])
                             catchOpen = false;
                             journal_reset();
                             journal_add(JE_WAKE, 0);   // günlüğün ilk satırı
+                            ecology_reset();
                             map_set_current(MAP_WORLD);
                             mapReloadNeeded = true;   // geçiş bloğu kamp/sandık/tuzağı kurar
                             currentRegion = -2;
@@ -2840,9 +2905,11 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    // Dünyada öldün: kamplar tamamen tazelenir (tam can, konum, sükunet)
+                    // Dünyada öldün: kamplar MEVCUT popülasyonla tazelenir
+                    // (tam can + konum; ölüler ekolojide zaten düşüldü)
                     for (int i = 0; i < MAX_MOBS; i++) mobs[i] = (Mob){0};
-                    spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId);
+                    spawnZoneCount = ecology_populate(spawnZones, MAX_SPAWN_ZONES,
+                                                      mobs, MAX_MOBS, &nextMobId);
                 }
                 for (int i = 0; i < MAX_MOB_PROJS; i++) mobProjs[i].active = false;
             }
@@ -2884,8 +2951,16 @@ int main(int argc, char *argv[])
                 fx_init(&weaponFx);   // partiküller haritayla gitsin
 
                 // 3) Yeni haritanın kampları + sandıkları + tuzak durumu
-                spawnZoneCount = build_spawn_zones(spawnZones, to);
-                spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId);
+                if (to == MAP_WORLD)
+                    spawnZoneCount = ecology_populate(spawnZones, MAX_SPAWN_ZONES,
+                                                      mobs, MAX_MOBS, &nextMobId);
+                else
+                {
+                    // MÜHÜR İSTİSNASI: zindan ekolojiye dahil değil — ölüler
+                    // "bitmez", her girişte eski usul tazelenir
+                    spawnZoneCount = build_spawn_zones(spawnZones, to);
+                    spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId);
+                }
                 place_dungeon_chests(loots, to, gametime_day());
                 trap_reset();
                 lockpick_cancel();
@@ -2977,6 +3052,13 @@ int main(int argc, char *argv[])
                     if (d < best) { best = d; nearestEcho = i; }
                 }
             }
+
+            // Menzildeki ritüel yuvası (E1): gölcük/mezar — tüm mobları ölüyken
+            nearestRitual = (map_current() == MAP_WORLD)
+                          ? ecology_ritual_near(player.rect.x + player.rect.w / 2.0f,
+                                                player.rect.y + player.rect.h / 2.0f,
+                                                mobs, MAX_MOBS)
+                          : -1;
 
             // --- BOSS: faz mantığı + arena kapısı (yalnız K2) ---
             if (map_current() == MAP_DUNGEON_F2)
@@ -4258,8 +4340,9 @@ int main(int argc, char *argv[])
                 journal_day_tick(today);    // günlük atmosfer satırları (seyrek)
                 resource_daily_respawn();   // doğa tazelenir (cevher/bitki/ağaç)
                 contract_new_day(today);    // pano yenilenir (yarım kontratlar düşer)
-                spawn_zones_fill(spawnZones, spawnZoneCount, mobs, MAX_MOBS,
-                                 &nextMobId);   // av sürüleri tazelenir (eksik dolar)
+                ecology_dawn(today, spawnZones, spawnZoneCount, mobs, MAX_MOBS,
+                             &nextMobId, map_current() == MAP_WORLD);
+                                             // yuva başına +1 (tavana kadar) + göçler
 
                 // Otomatik kayıt (Faz B1): her şafak auto slotuna yazılır
                 if (save_game(save_slot_path(SAVE_SLOT_AUTO), &player,
@@ -4944,7 +5027,8 @@ int main(int argc, char *argv[])
                                    perkFx.sneakSpeedRelief)
                                 : 1.0f)
                              * (player.speedBuffTimer > 0.0f ? player.speedBuffMult : 1.0f);
-            spawn_zones_update(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId,
+            if (map_current() != MAP_WORLD)   // dünya: ekoloji; zindan: eski akış
+                spawn_zones_update(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId,
                                dt * nightSpawnMul);
 
             float px = player.rect.x + player.rect.w / 2.0f;
@@ -5365,6 +5449,38 @@ int main(int argc, char *argv[])
             }
         }
 
+        // Yuvalar (E1): gölcük + mezar zemin görselleri (yalnız dünya)
+        if (nestsTex != NULL && map_current() == MAP_WORLD)
+            for (int ni = 0; ni < NEST_SITE_COUNT; ni++)
+            {
+                const NestSiteDef *ns = &NEST_SITES[ni];
+                const NestState *nst = ecology_state(ni);
+                if (!nst->colonized) continue;
+                if (ns->kind == NEST_POOL)
+                {
+                    if (nst->destroyed) continue;   // kurumuş gölcük görünmez
+                    SDL_FRect nsrc = { 144, 0, 48, 48 };
+                    SDL_FRect ndst = world_to_screen(ns->x - 36.0f, ns->y - 30.0f,
+                                                     72.0f, 72.0f, &camera);
+                    if (ns->family == FAM_SLIME_B)
+                        r2d_texture_set_color_mod(nestsTex, 110, 160, 255);
+                    else
+                        r2d_texture_set_color_mod(nestsTex, 130, 235, 110);
+                    r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                    r2d_draw_texture(renderer, nestsTex, &nsrc, &ndst);
+                    r2d_texture_set_color_mod(nestsTex, 255, 255, 255);
+                }
+                else if (ns->kind == NEST_GRAVE)
+                {
+                    // Lanetli (hücre 1) → mühürlü (hücre 2, kalıcı görünür)
+                    SDL_FRect nsrc = { nst->destroyed ? 96.0f : 48.0f, 0, 48, 48 };
+                    SDL_FRect ndst = world_to_screen(ns->x - 36.0f, ns->y - 58.0f,
+                                                     72.0f, 72.0f, &camera);
+                    r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                    r2d_draw_texture(renderer, nestsTex, &nsrc, &ndst);
+                }
+            }
+
         // Toprak Dikenleri: zemin patlaması (moblardan/oyuncudan ÖNCE — yerden fışkırır)
         if (spikesTex != NULL)
             for (int q = 0; q < MAX_SPIKE_FX; q++)
@@ -5572,6 +5688,20 @@ int main(int argc, char *argv[])
             draw_text(renderer, gameFont, lbl,
                       (nc->rect.x + nc->rect.w / 2.0f - camera.x) * camera.zoom - tw / 2.0f,
                       (nc->rect.y - 34.0f - camera.y) * camera.zoom, hint);
+        }
+
+        // Ritüel yuvası ipucu (E1): gölcük kurut / mezar mühürle
+        if (nearestRitual >= 0 && gameFont != NULL && !scene_active())
+        {
+            const NestSiteDef *rs = ecology_site(nearestRitual);
+            const char *rlbl = (rs->kind == NEST_POOL) ? "[E] Gölcüğü kurut"
+                                                       : "[E] Mezarı mühürle";
+            SDL_Color rhint = { 150, 220, 255, 255 };
+            int tw = 0, th = 0;
+            TTF_GetStringSize(gameFont, rlbl, 0, &tw, &th);
+            draw_text(renderer, gameFont, rlbl,
+                      (rs->x - camera.x) * camera.zoom - tw / 2.0f,
+                      (rs->y - 70.0f - camera.y) * camera.zoom, rhint);
         }
 
         // Anlatı noktaları: yazıt taşları (decor) + yankıların mor soluğu
@@ -6067,6 +6197,7 @@ int main(int argc, char *argv[])
     if (orbBlueTex) r2d_texture_destroy(NULL, orbBlueTex);
     if (arcaneTex)  r2d_texture_destroy(NULL, arcaneTex);
     if (bookTex)    r2d_texture_destroy(NULL, bookTex);
+    if (nestsTex)   r2d_texture_destroy(NULL, nestsTex);
     if (shieldTex)  r2d_texture_destroy(NULL, shieldTex);
     if (spikesTex)  r2d_texture_destroy(NULL, spikesTex);
     if (flameTex)   r2d_texture_destroy(NULL, flameTex);
