@@ -322,6 +322,22 @@ Güncelleme: 2026-07-11
 - **SAHNE TUŞ KİLİDİ** (kullanıcı: immersion): vinyet açıkken TÜM panel/oyun tuşları
   yutulur — yalnız 1-8 (seçim), E/Space (typewriter hızı), ESC (menü) çalışır
 
+### Faz B2 — YOLCULUK GÜNLÜĞÜ (J = kitap; birinci ağız + bildirim dili; save v19)
+- **KİTAP PANELİ** (journal.c, Book_UI parşömen 4×): J artık liste değil kitap açar;
+  iki yer imi şeritli sekme, [Tab] sekme / [←→] yaprak / [J] kapat; metin sayfalara
+  kendiliğinden akar (TTF_GetStringSizeWrapped ölçümüyle sütun taşması)
+- **GÖREVLER sekmesi**: üstlenilen işler BİRİNCİ AĞIZ (QuestDef.journal alanı) +
+  durum satırı "( 3/5 )" / "Sözü yerine getirdim" / "Tamamlandı" (soluk mürekkep)
+- **GÜNLÜK sekmesi** (kronolojik, "Gün N —" damgalı): uyanış (JE_WAKE, yeni oyunun
+  ilk satırı) · görev alma/bitirme · YANKILAR (Tanık/Sömüren tonu seçime göre —
+  sayı asla yazılmaz, sadece his) · yazıt ilk okuma · zindana ilk adım · boss ·
+  ölümler · GÜN DÖNÜMÜ atmosfer satırları (3/7/14/21/30 — seyrek, spam değil)
+- **KAYIT MODELİ**: girişler KOD+PARAM+GÜN (JournalEntry, JOURNAL_MAX 96) —
+  metin render'da türetilir (dil değişse eski save doğru okunur); save v19
+- **BİLDİRİM DİLİ** (ikisi bir arada): "Üstlendim: X" / "Söz yerine geldi —
+  haber vermeliyim" / "Sözümü tuttum." kişisel + "+100 Gold"/"+Çekiç" sistemik
+- Eski quest_log_render kaldırıldı (quest.c)
+
 ## 🔜 Kalanlar (öncelik sırası — 2026-07-11 kullanıcı seçimi)
 0. **ANLATI HATTI (aktif — STORY.md + LORE_SECRET.md + STORY_CARDS.md kanon):**
    · Faz A: vinyet/sahne motoru (pixel diorama + typewriter + dokunma beat'leri +
@@ -339,7 +355,28 @@ Güncelleme: 2026-07-11
    · Dünya Olayları sistemi (yaşayan dünya: olay tablosu + haber ağı + atmosfer saati
      + NPC yayları) + dinlenme/rüya mekaniği (kamp ateşi → rüya vinyeti)
    · Kural: her anlatı fazında İKİ hat yazılır (Tanık + Sömüren — tam ayrı kötü yol)
-1. **Mob fazları** (devamı): Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda; iskelet "mezardan kalkma" spawn animasyonu
+1. **MOB EKOLOJİSİ REWORK (kullanıcı kararı 2026-07-13 — KO slot mantığı gidiyor):**
+   Mevcut: KO tarzı spawn bölgeleri — moblar slotta boş bekler, günlük dolar (online
+   grind kalıntısı). Hedef: moblar YAŞASIN, dünya anlatıya uysun. Detay taslağı
+   (faz başında tasarım anketi yapılacak):
+   · **YUVA/POPÜLASYON modeli**: slot yerine YUVA (goblin kampının çadırı, in, kovan) —
+     sınırlı popülasyon oradan beslenir; öldürdükçe azalır, yuva durursa GÜNLER içinde
+     yavaş yeniden ürer (anında respawn YOK); yuva yok edilirse bölge TEMİZLENİR
+     (kalıcı sonuç — oyuncu eylemi dünyayı değiştirir)
+   · **Yeni yuva kurulumu = Dünya Olayı**: temizlenen bölgeye zamanla başka sürü göçer
+     ("goblinler kuzey yamacına yerleşmiş" — haber ağı/pano duyurur; backlog'daki
+     Dünya Olayları sistemiyle birleşir)
+   · **RUTİNLER** (NPC schedule deseni moblara): devriye, yemek arama, su içme,
+     gece/gündüz davranışı (goblin gece yol keser, gündüz kampta uyuklar; yaban
+     hayvanı şafakta otlar, öğlen gölgede), yuvaya dönüş — "slotta bekleyen mob" ölür
+   · **GÖZ ÖNÜNDE SPAWN YASAK**: doğum yalnız yuvada/ekran dışında; dünyaya
+     "gelirler", belirmezler
+   · **Av dengesi**: hayvan popülasyonu sınırlı → et/deri ekonomisi gerçek kıtlıkla
+     buluşur (aşırı avlanan bölgede av azalır — trade-off felsefesiyle uyumlu)
+   · Açık tasarım soruları (fazda sorulacak): kontrat panosunun dinamik hedef bulması;
+     boss haftalık dirilişi bu modelde ne olur; temizlik kalıcılığının sınırı
+     (tüm dünya boşaltılabilir mi?); zindan mobları (mühür alanı = istisna kuralı?)
+2. **Mob fazları** (devamı): Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda; iskelet "mezardan kalkma" spawn animasyonu
 3. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
 4. **Onaylı yeni mekanikler** (2026-07-11 — uygun fazlarda gelir):
    · **Element sinerjileri**: yanan moba Buz Novası = termal şok patlaması, zehirli moba

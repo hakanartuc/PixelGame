@@ -40,7 +40,7 @@ Cute_Fantasy paketleri (`/Users/hakanartuc/Cute Fantasy` — NPC, ev, düşman, 
 - **main.c** — tüm bağlantı/orkestrasyon burada (~5000 satır; ileride bölünebilir).
 
 ## Tuşlar
-WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/istasyon/topla · I envanter · K skill/ağaç · J görevler
+WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/istasyon/topla · I envanter · K skill/ağaç · J Yolculuk günlüğü (Tab sekme, ←→ yaprak)
 · M minimap · C eğilme · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 AKTİF slota kaydet/yükle · ESC katmanlı kapatma/menü
 (K = skill listesi + ağaç paneli; ok mühimmatı sağ tıkla seçilir)
 (F efekt önizleme KALDIRILDI 2026-07-10 — rünün instance efektini eziyordu)
@@ -69,15 +69,16 @@ vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü
   `fx: kaba += 1` biçimiyle işler, req ile okunur).
 
 ## Sıradaki iş
-**FAZ B1 TAMAM** (2026-07-13, save v18): başlık ekranı + ana menü + 20+1 slot +
-Sessiz Gün açılış vinyeti (gen_intro.py) + köye varış (muhafız otomatik karşılama →
-kişilik sayaçları; Kemal'de Eski Geçit iması) + gezgin çıkını + sahne tuş kilidi +
-yankı panellerine piksel araba (pakette cart sprite'ı yok — gen_diorama.py çizer).
-Sıradaki: **Faz B2 — "Yolculuk" günlüğü** (J quest log'u birinci ağız günlüğe dönüşür,
-Book_UI.png Cute Fantasy'de hazır) + bildirim dili taraması. Sonrası: Faz C sahne
-araçları / mob fazları / biyomlar (PROGRESS "Kalanlar").
+**FAZ B1+B2 TAMAM** (2026-07-13, save v18-19): başlık ekranı + ana menü + 20+1 slot +
+Sessiz Gün açılışı + köye varış (kişilik sayaçları; Kemal'de Eski Geçit iması) +
+gezgin çıkını + sahne tuş kilidi + **Yolculuk günlüğü** (J = Book_UI kitabı, iki sekme:
+Görevler birinci ağız + kronolojik Günlük; girişler kod+param olarak save v19'da;
+bildirim dili kişisel+sistemik ikili).
+Sıradaki adaylar: **MOB EKOLOJİSİ REWORK** (PROGRESS Kalanlar #1 — KO slot spawn'ı
+gidiyor: yuva/popülasyon modeli, rutinler, göz önünde spawn yasak, kalıcı temizlik;
+faz başında tasarım anketi) ya da **Faz C sahne araçları** / biyomlar.
 Backlog onaylı 4 mekanik: element sinerjileri, summon hattı (mana rezerve bedeli),
-pişirme+yemek buffları, davranış ünvanları (ayrıntı PROGRESS "Kalanlar" #4).
+pişirme+yemek buffları, davranış ünvanları (ayrıntı PROGRESS "Kalanlar").
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
 mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13) + BÜYÜ SİSTEMİ
 (22: 6 büyü + Asa + INT + zırh ağırlığı + mana iksiri; ayrıntı PROGRESS Faz 22).
