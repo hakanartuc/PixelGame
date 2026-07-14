@@ -76,11 +76,11 @@ mezar/sürü), göç kolonileri + panoda söylentiler, RUTİNLER (goblin gececi 
 başına iner), dinamik kontratlar. Zindan = mühür istisnası.
 Öncesi B1+B2 (save v18-19): ana menü + 20+1 slot + Sessiz Gün açılışı +
 Yolculuk günlüğü (J, iki sekme, birinci ağız).
-Sıradaki adaylar: **Faz C sahne araçları** (letterbox/kamera pan/NPC yürütme) /
-**mob fazları + biyomlar** (Bombschroom, çöl-volkan-mantar) / **Dünya Olayları
-genişlemesi**. Kullanıcıya sorulacak.
-Backlog onaylı 4 mekanik: element sinerjileri, summon hattı (mana rezerve bedeli),
-pişirme+yemek buffları, davranış ünvanları (ayrıntı PROGRESS "Kalanlar").
+ROADMAP ONAYLI (2026-07-14, PROGRESS "ROADMAP" bölümü): YAKIN cila → hikaye
+kartları D1 + sahne araçları → karakter yaratma-lite; ORTA ikinci yerleşim+biyom →
+4 onaylı mekanik → Dünya Olayları; UZAK Perde 2 → kalan sistemler → yayın.
+Sıradaki: **CİLA PAKETİ** (tooltips, drag&drop, ikonlar, ses çeşitliliği —
+faz başında kapsam anketi).
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
 mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13) + BÜYÜ SİSTEMİ
 (22: 6 büyü + Asa + INT + zırh ağırlığı + mana iksiri; ayrıntı PROGRESS Faz 22).

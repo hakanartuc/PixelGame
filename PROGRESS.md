@@ -383,46 +383,53 @@ Güncelleme: 2026-07-11
   (ecology_note_spawn — gölcük ritüeli çocuk canlıyken açılmaz)
 - Save v21: NestState.colonizedDay (söylenti süresi)
 
-## 🔜 Kalanlar (öncelik sırası — 2026-07-11 kullanıcı seçimi)
-0. **ANLATI HATTI (aktif — STORY.md + LORE_SECRET.md + STORY_CARDS.md kanon):**
-   · Faz A: vinyet/sahne motoru (pixel diorama + typewriter + dokunma beat'leri +
-     duyusal direktifler: müzik kısma/kalp atışı ritmi) + diyalog portresi/isim plakası
-     + [Yankı]/[Sömür] etiketleri — İLK YANKI PROTOTİPİ (iki hat: Tanık/Sömüren)
-     → KOD TAMAM (test bekliyor): sinematik tam ekran vinyet + crossfade, yankı +
-     yazıt (ECHO_ANI/ECHO_YAZIT), save v17, diyalog portre+typewriter
-   · HİKAYE MİMARİSİ kilitli (2026-07-12): karma düğüm ana hat + 5 saga + 10 kısa
-     öykü (kartlar: STORY_CARDS.md — hepsi onaylı; işaretsiz finale bağları)
-   · Faz B1 TAMAM (2026-07-13, save v18): başlık ekranı + ana menü + slot sistemi +
-     Sessiz Gün açılışı + köye varış + gezgin çıkını (ayrıntı: Faz B1 bölümü)
-   · Faz B2 TAMAM (2026-07-13, save v19): Yolculuk günlüğü (J = kitap, iki sekme)
-     + bildirim dili (ayrıntı: Faz B2 bölümü)
-   · Faz C: in-engine sahne araçları (letterbox, kamera pan, NPC yürütme, bark sistemi)
-   · Dünya Olayları sistemi (yaşayan dünya: olay tablosu + haber ağı + atmosfer saati
-     + NPC yayları) + dinlenme/rüya mekaniği (kamp ateşi → rüya vinyeti)
-   · Kural: her anlatı fazında İKİ hat yazılır (Tanık + Sömüren — tam ayrı kötü yol)
-1. **MOB EKOLOJİSİ TAMAM (E1+E2, 2026-07-13/14 — bkz. Faz E1/E2 bölümleri).**
-   Kalan ekoloji fikirleri (ileriye): NPC ağzından söylenti diyaloğu (şimdilik
-   yalnız pano), iskelet için yeni mezar dünya olayı, mob "arama" davranışı
-2. **Mob fazları** (devamı): Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda; iskelet "mezardan kalkma" spawn animasyonu
-3. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
-4. **Onaylı yeni mekanikler** (2026-07-11 — uygun fazlarda gelir):
-   · **Element sinerjileri**: yanan moba Buz Novası = termal şok patlaması, zehirli moba
-     Yıldırım = zehir patlar (DoT kanalları ayrı — altyapı hazır)
-   · **Summon hattı (Conjuration)**: yılan (DoT) + kaplumbağa (tank) — sprite'lar hazır
-     (`~/Downloads/snake_right.png, turtleshell_right.png`); bedel: max mananın %25'i rezerve
-   · **Pişirme + yemek buffları**: kamp ateşinde pişir → kısa süreli buff'lar (av döngüsü)
-   · **Davranış ünvanları**: oyun stilinden ünvan + küçük pasif ("Slime Kasabı" %3 slime
-     hasarı vb.) — "kimlik davranıştan doğar" felsefesinin görünür hali
-5. **Büyü dalgası 2**: magic_pack kalanları (tornado/firelion/icetacle/lightningclaw/snakebite)
-6. **Two-Handed hattı**: spear ilk iki elli silah + ağacı (asset hazır:
-   `~/Downloads/lpc_male_item_animations_2026-07-11T13-46-16`); Block/kalkan aynı aileden
-7. **Pickpocket**: mini ağaç + yankesicilik mekaniği (suç sistemine bağlanır)
-8. **Ertelenen küçükler**: hotbar/ağaç ikonları (magic_icons.png elimizde — şu an metin kısaltması),
-   item tooltip'leri, drag&drop, harita editörü akışı (Tiled tileset tanımı),
-   CREDITS lisans teyitleri, F10 debug kaldırma, Vulkan/SPIR-V shader yolu, mobil build (SDL_GPU→Vulkan/Metal),
-   ikinci yerleşim/muhafız (bölgesel bounty altyapısı hazır), mob "arama" davranışı (şüphe sonrası devriye),
-   speech zar kilidinin save'e yazılması, yay walk/idle görseli (asset gelince),
-   iskelet "mezardan kalkma" spawn animasyonu (sheet satırları hazır)
+## 🔜 ROADMAP (2026-07-14 — RPG-ruhu analiziyle onaylandı)
+
+Analiz özeti: sistem omurgası güçlü (build kimliği, ekonomi, suç/itibar, ekoloji,
+ahlak ekseni); üç büyük boşluk → (1) hikaye kartları oyunda değil, (2) seçimler
+birikmiyor değil ama OKUNMUYOR (kişilik/itibar/mühür diyaloglara dönmeli),
+(3) dünya tek yerleşimli, POI/yankı yoğunluğu düşük. Öncelik: önce his + rol,
+sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür").
+
+### YAKIN — "oyun gibi hissettir" (his + rol)
+1. **CİLA PAKETİ (SIRADAKİ FAZ)**: item tooltip'leri, envanter drag&drop,
+   hotbar/ağaç ikonları (magic_icons.png elimizde), ses/müzik çeşitliliği;
+   küçük UX borçları (speech zar kilidi save'i vb. buradan seçilir)
+2. **HİKAYE KARTLARI DALGA 1** + **Faz C sahne araçları** (birlikte):
+   2 kısa + 1 saga oyuna iner — ÇOK YOLLU görev yapısı (speech/sneak/savaş/rüşvet),
+   kişilik+itibar+mühür sayaçlarının diyaloglarda OKUNMASI (`req: kaba >= 3`),
+   4-5 yeni yankı noktası; letterbox/kamera pan/NPC yürütme/bark
+3. **KARAKTER YARATMA-LİTE**: isim + görünüm seçenekleri + 3 "geçmiş"
+   (küçük stat/eşya farkı); slot kartlarında isim
+
+### ORTA — "dünyayı büyüt"
+4. **İKİNCİ YERLEŞİM + İLK YENİ BİYOM** (çöl ya da mantar): yeni NPC'ler +
+   bölgesel ekonomi (fiyat farkları → ticaret), yeni ekoloji aileleri
+   (Bombschroom/Mummy vb. buraya), POI + yankı serpiştirme, kartlar 2. dalga;
+   mob fazları devamı bu şemsiyede (Shroomling → Mummy/Cowling/Flying Skull;
+   kırmızı/sarı/pembe slime; iskelet "mezardan kalkma" animasyonu)
+5. **ONAYLI 4 MEKANİK** (2026-07-11) uygun yerlere serpilir:
+   · Element sinerjileri (yanana buz = termal şok; zehirliye yıldırım = patlama)
+   · Summon hattı (yılan DoT + kaplumbağa tank; bedel: max mananın %25'i rezerve;
+     sprite'lar: `~/Downloads/snake_right.png, turtleshell_right.png`)
+   · Pişirme + yemek buffları (kamp ateşi + av döngüsü)
+   · Davranış ünvanları ("Slime Kasabı" — kimlik davranıştan doğar vitrini)
+6. **DÜNYA OLAYLARI tam sistemi**: olay tablosu (baskın/kervan/gezgin tüccar),
+   haber ağının NPC diyaloğuna inmesi, dinlenme/rüya vinyeti (kamp ateşi);
+   ekoloji ekleri (iskelet için yeni mezar olayı, mob "arama" davranışı)
+
+### UZAK — "derinleştir ve kapat"
+7. **ANA HAT PERDE 2**: Lord sonrası fısıltının çağrısı + ikinci büyük zindan/boss
+   (boss scroll/taş dropları burada anlam kazanır)
+8. **Kalan sistemler**: Two-Handed hattı (spear — asset:
+   `~/Downloads/lpc_male_item_animations_2026-07-11T13-46-16`; Block/kalkan aynı aile),
+   Pickpocket (mini ağaç + suç bağı), Büyü dalgası 2 (magic_pack kalanları:
+   tornado/firelion/icetacle/lightningclaw/snakebite), kalan saga'lar + finale bağları
+9. **YAYIN HAZIRLIĞI**: F10 söküm, CREDITS lisans teyitleri, Vulkan/SPIR-V,
+   mobil build (SDL_GPU→Metal/Vulkan), harita editörü akışı
+
+Ertelenen küçükler (uygun faza serpilir): yay walk/idle görseli (asset gelince),
+Combat'a aktif savunma sorusu (dodge/block — Two-Handed/Block fazında tartışılır).
 
 ## Karar defteri (değişmez)
 - Sınıf yok; kimlik davranıştan: use-based skill + perk (3-seç-1) + bölge/hizip itibarı (global karma YOK)
