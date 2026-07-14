@@ -753,6 +753,7 @@ int main(int argc, char *argv[])
     R2DTexture *bookTex  = load_texture(renderer, "assets/ui/Book_UI.png");   // Yolculuk günlüğü
     R2DTexture *nestsTex = load_texture(renderer, "assets/decor/nests.png");   // yuva görselleri (E1)
     R2DTexture *abilityIconTex = load_texture(renderer, "assets/icons/abilities.png");  // beceri ikonları (Cila)
+    R2DTexture *lanternTex = load_texture(renderer, "assets/decor/lantern.png");  // K9 kandili (D1a)
     bool boardOpen = false;
 
     // Büyü VFX sprite'ları (Faz 22): mermi küreleri + arcane patlama + alev
@@ -788,6 +789,12 @@ int main(int argc, char *argv[])
     int guardIdx = -1;
     for (int i = 0; i < NPC_COUNT; i++)
         if (NPCS[i].isGuard) { guardIdx = i; break; }
+    int fatmaIdx = -1;   // K9 Kandil (D1a)
+    for (int i = 0; i < NPC_COUNT; i++)
+        if (SDL_strcmp(NPCS[i].name, "Fatma") == 0) { fatmaIdx = i; break; }
+    #define ECHO_K9 2                            // ECHOES[2] = Kerem (F2)
+    #define KANDIL_X (144.0f * TILE_SIZE)        // geçit kemeri önü
+    #define KANDIL_Y (8.5f * TILE_SIZE)
     int guardRegion = 0;
     if (guardIdx >= 0)
     {
@@ -998,6 +1005,14 @@ int main(int argc, char *argv[])
     worldmap_init(renderer);  // geçit görselleri
     trap_init(renderer);      // diken/plaka/arbalet sprite'ları (sandık günleri worldmap'te)
     scene_set_renderer(renderer);   // vinyet sahneleri görsel yükleyebilsin
+
+    // Cine modu (D1a): letterbox bantları + kamera hedefe süzülür; süre bitince
+    // oyuncuya döner. Sahne araçlarının in-engine yarısı (vinyet tam ekranın aksine
+    // dünya görünür kalır). cineTimer > 0 iken oyuncu girdisi kilitli (main gate'ler).
+    bool cineActive = false;
+    float cineX = 0.0f, cineY = 0.0f;
+    float cineTimer = 0.0f;
+    float cineBand = 0.0f;   // 0..1 bant animasyonu
 
     // Mühür dalgası (zindan): periyodik toplu diriliş — sabit gerçek-zaman aralığı
     #define SEAL_WAVE_SECONDS 120.0f
@@ -1431,6 +1446,31 @@ int main(int argc, char *argv[])
                                 inventoryOpen = true;   // satış için çanta da açık
                                 dialogNpc = -1;
                             }
+                            else if (strncmp(target, "k9:", 3) == 0)
+                            {
+                                // K9 Kandil kararı (D1a): bayrak + günlük + sahne
+                                int k9c = SDL_atoi(target + 3);
+                                player.storyFlags[SF_K9_KANDIL] = (Uint8)k9c;
+                                journal_add(JE_K9_CHOICE, k9c);
+                                dialogNpc = -1;
+                                if (k9c == 1)
+                                {
+                                    // Tapınak: kamera kandile süzülür, ateş büyür
+                                    cineActive = true;
+                                    cineX = KANDIL_X;
+                                    cineY = KANDIL_Y;
+                                    cineTimer = 3.0f;
+                                    audio_play(SFX_PERK);
+                                    npc_bark(fatmaIdx, "Nöbet artık bende.", 4.0f);
+                                }
+                                else if (k9c == 2)
+                                {
+                                    npc_bark(fatmaIdx, "Artık eve gidebilirim.", 4.0f);
+                                    audio_play(SFX_UI);
+                                }
+                                else
+                                    npc_bark(fatmaIdx, "Kandil bekler. Ben de.", 4.0f);
+                            }
                             else if (strncmp(target, "accept:", 7) == 0)
                             {
                                 // Dip itibarda güven yok — yeni görev verilmez
@@ -1616,6 +1656,7 @@ int main(int argc, char *argv[])
                          dialogNpc < 0 && nearestEcho >= 0)
                 {
                     // Yankıya dokun: dünya bir nefeslik durur, sahne süzülür
+                    scene_set_speech(player.skills[SKILL_SPEECH].level);
                     if (scene_start(ECHOES[nearestEcho].scenePath))
                     {
                         activeEcho = nearestEcho;
@@ -1735,6 +1776,16 @@ int main(int argc, char *argv[])
                         {
                             entry = "karsilama";
                             player.guardGreeted = true;   // bir kez yaşanır
+                        }
+                        else if (nearestNpc == fatmaIdx)
+                        {
+                            // K9 Kandil: yankı görüldüyse karar diyaloğu; karar
+                            // verildiyse kalıcı kapanış düğümü (flag'e göre)
+                            Uint8 k9 = player.storyFlags[SF_K9_KANDIL];
+                            if (k9 == 1)      entry = "son1";
+                            else if (k9 == 2) entry = "son2";
+                            else if (k9 == 3) entry = "son3";
+                            else if (echo_done(ECHO_K9)) entry = "bilgi";
                         }
                         else if (NPCS[nearestNpc].questId != NULL)
                         {
@@ -4318,7 +4369,10 @@ int main(int argc, char *argv[])
                 // (DEF ekipmanı equipment_total_defense içinde toplanır)
             }
 
-            player_update(&player, keys, attackPressed, dt, &weaponFx); // oyuncuyu güncelle
+            // Cine sırasında oyuncu çakılı: boş tuş tablosu (dünya akmaya devam eder)
+            static const bool cineNoKeys[SDL_SCANCODE_COUNT] = { false };
+            player_update(&player, cineActive ? cineNoKeys : keys,
+                          cineActive ? false : attackPressed, dt, &weaponFx);
 
             // Ok bırakışı: çekmenin release karesinde 1 ok tüket + güdümlü ok doğur.
             // Hedef çekme sırasında öldüyse ok çıkmaz (ok yanmaz).
@@ -4461,6 +4515,7 @@ int main(int argc, char *argv[])
             fx_update(&weaponFx, dt);
 
             gametime_update(dt);                      // dünya saati
+            npc_set_talking(dialogNpc);               // konuşan NPC yerinde durur
             if (map_current() == MAP_WORLD)
                 npc_update(dt, gametime_hours());     // NPC rutinleri (yürü/eve gir)
 
@@ -5522,8 +5577,17 @@ int main(int argc, char *argv[])
 
             floattext_update_all(floatTexts, MAX_FLOAT_TEXTS, dt);
 
-            camera_update(&camera, player.rect.x + player.rect.w / 2.0f,
-                          player.rect.y + player.rect.h / 2.0f, winW, winH); // kamerayı güncelle - karakteri takip et
+            if (cineActive)
+            {
+                cineTimer -= dt;
+                if (cineTimer <= 0.0f) cineActive = false;
+            }
+            cineBand += ((cineActive ? 1.0f : 0.0f) - cineBand) * SDL_min(1.0f, dt * 5.0f);
+            camera_update(&camera, cineActive ? cineX
+                                              : player.rect.x + player.rect.w / 2.0f,
+                          cineActive ? cineY
+                                     : player.rect.y + player.rect.h / 2.0f,
+                          winW, winH);   // kamera: cine hedefi ya da oyuncu
 
             // Sarsıntı: kalan süreyle sönümlenen rastgele kamera itmesi
             if (shakeTime > 0.0f)
@@ -5668,6 +5732,23 @@ int main(int argc, char *argv[])
                     r2d_draw_texture(renderer, nestsTex, &nsrc, &ndst);
                 }
             }
+
+        // K9 kandili (D1a): geçit kapısında — duruma göre görünüm
+        if (lanternTex != NULL && map_current() == MAP_WORLD)
+        {
+            Uint8 k9v = player.storyFlags[SF_K9_KANDIL];
+            float ksc = (k9v == 1) ? 3.4f : 2.2f;   // tapınak ateşi daha büyük
+            SDL_FRect ksrc = { 0, 0, 16, 16 };
+            SDL_FRect kdst = world_to_screen(KANDIL_X - 8.0f * ksc,
+                                             KANDIL_Y - 14.0f * ksc,
+                                             16.0f * ksc, 16.0f * ksc, &camera);
+            if (k9v == 2)       r2d_texture_set_color_mod(lanternTex, 95, 95, 105);
+            else if (k9v == 1)  r2d_texture_set_color_mod(lanternTex, 160, 210, 255);
+            else                r2d_texture_set_color_mod(lanternTex, 255, 255, 255);
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_draw_texture(renderer, lanternTex, &ksrc, &kdst);
+            r2d_texture_set_color_mod(lanternTex, 255, 255, 255);
+        }
 
         // Toprak Dikenleri: zemin patlaması (moblardan/oyuncudan ÖNCE — yerden fışkırır)
         if (spikesTex != NULL)
@@ -5973,6 +6054,19 @@ int main(int argc, char *argv[])
                                        player.rect.x + player.rect.w / 2.0f,
                                        player.rect.y + player.rect.h / 2.0f,
                                        hasTorch, player.weaponFx);
+            if (!inDungeon)
+            {
+                // K9 kandili (D1a): duruma göre ışık — yalan(2) = sönmüş
+                Uint8 k9L = player.storyFlags[SF_K9_KANDIL];
+                if (k9L == 1)      // tapınak ateşi: büyük, mavi-beyaz
+                    lightN = light_append_point(lights, lightN, R2D_MAX_LIGHTS,
+                                &camera, winW, winH, KANDIL_X, KANDIL_Y,
+                                300.0f, 0.55f, 0.75f, 1.0f, 0.75f, 0.10f);
+                else if (k9L != 2) // normal kandil: küçük, sıcak
+                    lightN = light_append_point(lights, lightN, R2D_MAX_LIGHTS,
+                                &camera, winW, winH, KANDIL_X, KANDIL_Y,
+                                140.0f, 1.0f, 0.62f, 0.26f, 0.55f, 0.10f);
+            }
             if (inDungeon)
             {
                 // Zindan duvar meşaleleri
@@ -6311,6 +6405,16 @@ int main(int argc, char *argv[])
             draw_text(renderer, gameFont, line, pX + 24.0f, pY + 122.0f, bribeCol);
         }
 
+        // Letterbox bantları (D1a — cine modu): üst/alt siyah şerit
+        if (cineBand > 0.01f)
+        {
+            float bandH = 56.0f * cineBand;
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_set_color(renderer, 0, 0, 0, 255);
+            r2d_fill_rect(renderer, &(SDL_FRect){ 0, 0, (float)winW, bandH });
+            r2d_fill_rect(renderer, &(SDL_FRect){ 0, winH - bandH, (float)winW, bandH });
+        }
+
         // Sürükleme hayaleti (Cila): taşınan item imleci izler
         if (dragInvSlot >= 0 || dragEquipSlot != EQUIP_NONE)
         {
@@ -6457,6 +6561,7 @@ int main(int argc, char *argv[])
     if (bookTex)    r2d_texture_destroy(NULL, bookTex);
     if (nestsTex)   r2d_texture_destroy(NULL, nestsTex);
     if (abilityIconTex) r2d_texture_destroy(NULL, abilityIconTex);
+    if (lanternTex) r2d_texture_destroy(NULL, lanternTex);
     if (shieldTex)  r2d_texture_destroy(NULL, shieldTex);
     if (spikesTex)  r2d_texture_destroy(NULL, spikesTex);
     if (flameTex)   r2d_texture_destroy(NULL, flameTex);

@@ -1,0 +1,42 @@
+# Fatma — K9 Kandil (D1a). Giriş düğümü koddan seçilir:
+# yankı yaşanmadıysa start · yankı yaşandı + karar yoksa bilgi ·
+# karar verildiyse son1/son2/son3 (storyFlags[SF_K9_KANDIL]).
+
+[start]
+text: Oğlumu bekliyorum. Kerem... yıllar önce Eski Geçit'e indi, bir daha çıkmadı. Kandili her akşam yakarım — karanlıkta yolunu bulsun diye.
+opt: İçeriye ben iniyorum. Gözüm açık olur. -> umut
+opt: Başınız sağ olsun. -> end
+
+[umut]
+text: Sağ ol yolcu. Bir şey görürsen... ne görürsen gör, bana getir. Bilmemek, bilmekten daha ağır. Öyle sanıyorum en azından.
+opt: (Başınla onayla.) -> end
+
+[bilgi]
+text: İçeriden geliyorsun. Yüzün... içeride bir şey gördün, değil mi? Kerem'i gördün.
+opt: Gerçeği söyle: bir şeye inanırken ölmüş. -> gercek
+opt: "Hızlı olmuş. Acı çekmemiş." -> yalan
+opt: (Sus, gözlerini kaçırma.) -> sus
+
+[gercek]
+text: ...Kaçarken değil demek. Kapıyı tutanlardan olmak istemiş. Benim oğlum. Benim inatçı oğlum. O zaman bu kandil yetmez, yolcu. Nöbet gerek. Nöbeti ben tutarım.
+opt: (Elini omzuna koy.) -> k9:1
+
+[yalan]
+text: Hızlı... acı çekmeden... Yalan söylüyorsan bile sağ ol. Bir ananın taşıyabileceği kadarını verdin. Kandile artık gerek yok. Eve gidiyorum.
+opt: (Bırak gitsin.) -> k9:2
+
+[sus]
+text: ...Anladım. Bazı şeyler dile sığmaz. Bir gün anlatırsın belki. O güne kadar kandil bekler. Ben de.
+opt: (Sessizce ayrıl.) -> k9:3
+
+[son1]
+text: Ateş büyüdükçe içim ısınıyor, yolcu. Oğlum kapıyı içeriden tutuyor, ben dışarıdan. Aile işi.
+opt: Nöbetin kolay gelsin. -> end
+
+[son2]
+text: Ev sessiz. Ama huzurlu sessiz — eskisi gibi bekleyen sessiz değil. Sağ ol.
+opt: İyi günler, Fatma ana. -> end
+
+[son3]
+text: Kandil bekliyor. Ben de. Acele etme — bazı sözler vakit ister.
+opt: (Başınla selamla.) -> end

@@ -130,6 +130,19 @@ static void entry_text(const JournalEntry *e, char *out, size_t cap)
              : "Lanetli mezarı mühürledim. Elimi taşa koyduğumda göğsümdeki "
                "işaret aynı ritimde attı — sanki ikisi aynı dili konuşuyor.";
         break;
+    case JE_K9_CHOICE:
+        body = (e->param == 1)
+             ? "Fatma'ya oğlunun gerçeğini söyledim: Kerem kaçarken değil, bir "
+               "şeye inanırken ölmüş — kapıyı tutanlardan olmak istemiş. Kandil "
+               "artık kandil değil; geçidin kapısında bir tapınak ateşi yanıyor "
+               "ve nöbet onun."
+             : (e->param == 2)
+             ? "Fatma'ya 'hızlı oldu, acı çekmedi' dedim. Yalandı. Kandili "
+               "söndürdü, evine döndü. Bazen merhamet gerçekten ağır basar — "
+               "öyle diyorum kendime."
+             : "Fatma'nın gözlerine bakıp sustum. Kandil yanmaya devam ediyor. "
+               "Ben de her geçişimde ona bakıyorum.";
+        break;
     case JE_DAY_NOTE: {
         body = "Günler geçiyor.";
         for (size_t i = 0; i < sizeof(DAY_NOTES) / sizeof(DAY_NOTES[0]); i++)

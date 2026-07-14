@@ -57,6 +57,17 @@ const NpcDef NPCS[] = {
           { .hour = 0.0f, .x = T(11), .y = T(9), .indoors = false },   // nöbet noktası (meydan)
       }, .stopCount = 1,
       .frameSize = 48, .drawScale = 2.0f, .maxHealth = 120.0f, .isGuard = true },
+
+    // K9 Kandil (D1a): oğlunu Eski Geçit'te kaybeden ana — gündüz köyde,
+    // akşam geçit kapısına yürür (kandilin başında bekler)
+    { .name = "Fatma",
+      .sheetPath = "assets/characters/npcs/Bartender_Katy.png",
+      .dialogFile = "assets/dialogs/fatma.txt",
+      .isVendor = false, .questId = NULL,
+      .schedule = {
+          { .hour = 8.0f,  .x = T(13), .y = T(11), .indoors = false },  // gündüz meydan kıyısı
+          { .hour = 17.0f, .x = T(142.5f), .y = T(9), .indoors = false }, // akşam geçit kapısı
+      }, .stopCount = 2 },
 };
 const int NPC_COUNT = (int)(sizeof(NPCS) / sizeof(NPCS[0]));
 
@@ -78,6 +89,10 @@ typedef struct {
     float health;     // suç sistemi: NPC'ler ölebilir
     bool alive;       // ölüm KALICI (save'e yazılır); ölü = hidden gibi davranır
     float hitFlash;   // vuruş kızarması (sn, geri sayar)
+    char bark[96];    // baş üstü balon metni (D1a — boş = yok)
+    float barkTimer;  // kalan balon süresi
+    bool scriptWalk;  // sahne yürütmesi aktif (rutini ezer)
+    float scriptX, scriptY;
 } NpcState;
 static NpcState npcState[8];   // NPC_COUNT tavanı (dizi statik kalsın diye bolca)
 
@@ -103,6 +118,9 @@ static const NpcStop *current_stop(const NpcDef *def, float hours)
 }
 
 static bool npcActive = true;   // dünyada mıyız (zindanda NPC işlemez)
+static int talkingIdx = -1;     // diyalogdaki NPC — hareketi durur
+
+void npc_set_talking(int i) { talkingIdx = i; }
 
 void npc_set_active(bool active) { npcActive = active; }
 
@@ -119,6 +137,35 @@ void npc_update(float dt, float hours)
             st->y = s0->y;
             st->hidden = s0->indoors;
             st->initialized = true;
+        }
+
+        if (st->barkTimer > 0.0f) {
+            st->barkTimer -= dt;
+            if (st->barkTimer <= 0.0f) st->bark[0] = '\0';
+        }
+
+        // Oyuncuyla konuşuyor: olduğu yerde durur (rutin/sahne yürüyüşü bekler)
+        if (i == talkingIdx) {
+            st->walking = false;
+            continue;
+        }
+
+        // Sahne yürütmesi (D1a): rutini ezer — hedefe varana kadar yürü, dur
+        if (st->scriptWalk) {
+            float sdx = st->scriptX - st->x;
+            float sdy = st->scriptY - st->y;
+            float sdist = SDL_sqrtf(sdx * sdx + sdy * sdy);
+            st->hidden = false;
+            if (sdist > 4.0f) {
+                st->walking = true;
+                float step = NPC_WALK_SPEED * dt;
+                if (step > sdist) step = sdist;
+                st->x += sdx / sdist * step;
+                st->y += sdy / sdist * step;
+            } else {
+                st->walking = false;   // vardı — npc_walk_done true döner, bekler
+            }
+            continue;
         }
 
         if (NPCS[i].isGuard) continue;   // muhafızı guard.c beyni yürütür
@@ -141,6 +188,36 @@ void npc_update(float dt, float hours)
             st->hidden = target->indoors;   // kapıya vardıysa içeri girer
         }
     }
+}
+
+void npc_bark(int i, const char *text, float seconds)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= 8) return;
+    SDL_strlcpy(npcState[i].bark, text, sizeof(npcState[i].bark));
+    npcState[i].barkTimer = seconds;
+}
+
+void npc_walk_to(int i, float x, float y)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= 8) return;
+    npcState[i].scriptWalk = true;
+    npcState[i].scriptX = x;
+    npcState[i].scriptY = y;
+}
+
+bool npc_walk_done(int i)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= 8) return true;
+    if (!npcState[i].scriptWalk) return true;
+    float dx = npcState[i].scriptX - npcState[i].x;
+    float dy = npcState[i].scriptY - npcState[i].y;
+    return dx * dx + dy * dy < 6.0f * 6.0f;
+}
+
+void npc_walk_cancel(int i)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= 8) return;
+    npcState[i].scriptWalk = false;
 }
 
 bool npc_visible_pos(int i, float *x, float *y)
@@ -277,6 +354,22 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
                 SDL_Color hint = { 255, 230, 80, 255 };
                 draw_text(renderer, font, "[E] Konuş",
                           dst.x + dst.w / 2.0f - 40.0f, dst.y - 40.0f, hint);
+            }
+
+            // Bark balonu (D1a): ismin üstünde, son yarım saniyede solar
+            if (npcState[i].bark[0] != '\0' && npcState[i].barkTimer > 0.0f) {
+                int bw = 0, bh = 0;
+                TTF_GetStringSize(font, npcState[i].bark, 0, &bw, &bh);
+                float bx = dst.x + dst.w / 2.0f - bw / 2.0f;
+                float by = dst.y - 46.0f - (i == nearestIdx ? 20.0f : 0.0f);
+                float a = npcState[i].barkTimer < 0.5f
+                        ? npcState[i].barkTimer / 0.5f : 1.0f;
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                r2d_set_color(renderer, 16, 14, 22, (Uint8)(220 * a));
+                r2d_fill_rect(renderer, &(SDL_FRect){ bx - 8.0f, by - 5.0f,
+                                                      bw + 16.0f, bh + 10.0f });
+                SDL_Color bc = { 235, 230, 245, (Uint8)(255 * a) };
+                draw_text(renderer, font, npcState[i].bark, bx, by, bc);
             }
         }
     }

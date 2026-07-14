@@ -175,6 +175,9 @@ const EchoDef ECHOES[] = {
     // Köy yolu kıyısı: eski dikilitaş — çevresel anlatı (tekrar okunabilir)
     { ECHO_YAZIT, MAP_WORLD, T(11), T(14), "assets/scenes/yazit_koy.txt",
       "assets/decor/obelisk.png", 1.6f },
+    // K9 Kandil (D1a): F2 nöbetçi odası — Kerem'in sonu (bir kez yaşanır)
+    { ECHO_ANI, MAP_DUNGEON_F2, T(20), T(6), "assets/scenes/echo_kerem.txt",
+      NULL, 0.0f },
 };
 const int ECHO_COUNT = (int)(sizeof(ECHOES) / sizeof(ECHOES[0]));
 

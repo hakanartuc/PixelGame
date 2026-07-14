@@ -88,6 +88,25 @@ int light_collect(R2DLight *out, int cap, const Camera *cam, int sw, int sh, boo
 }
 
 // Kamp ateşi: meşale direğinden büyük, sert titreşimli sıcak ışık
+int light_append_point(R2DLight *out, int n, int cap, const Camera *cam,
+                       int sw, int sh, float x, float y, float radius,
+                       float r, float g, float b, float intensity, float flicker)
+{
+    if (n >= cap) return n;
+    float zoom = cam->zoom;
+    float sx = (x - cam->x) * zoom;
+    float sy = (y - cam->y) * zoom;
+    float sr = radius * zoom;
+    if (sx + sr < 0 || sx - sr > (float)sw ||
+        sy + sr < 0 || sy - sr > (float)sh)
+        return n;
+    float t = (float)SDL_GetTicks() / 1000.0f;
+    int phase = n + LIGHT_COUNT + 7;
+    out[n++] = (R2DLight){ sx, sy, sr, r, g, b,
+                           intensity * flicker_mul(flicker, t, phase) };
+    return n;
+}
+
 int light_append_campfire(R2DLight *out, int n, int cap, const Camera *cam,
                           int sw, int sh, float x, float y)
 {

@@ -23,6 +23,7 @@ typedef enum {
     JE_DUNGEON_FIRST,   // param = MapId (ilk giriş)
     JE_DAY_NOTE,        // param = gün (atmosfer satırı — journal_day_tick)
     JE_NEST_CLEANSE,    // param = 0 reis / 1 totem / 2 gölcük / 3 mezar (ekoloji E1)
+    JE_K9_CHOICE,       // K9 Kandil: param = 1 gerçek / 2 yalan / 3 sus (D1a)
 } JournalEvent;
 
 typedef struct {

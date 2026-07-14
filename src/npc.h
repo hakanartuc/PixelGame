@@ -57,6 +57,19 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
 // İçerideki (indoors) NPC seçilmez — gece dükkan da böyle kapanır.
 int npc_nearest_in_range(float px, float py);
 
+// Diyalogdaki NPC (her kare main basar; -1 = yok): konuşan NPC rutinini
+// DURDURUR — oyuncuyla konuşurken yürüyüp gitmesin (doğallık düzeltmesi)
+void npc_set_talking(int i);
+
+// --- Sahne araçları (D1a) ---
+// Bark: NPC başının üstünde kısa konuşma balonu (süreli; yenisi eskisini ezer)
+void npc_bark(int i, const char *text, float seconds);
+// Yürütme scripti: rutini geçersiz kıl, noktaya yürü (varınca bitir).
+// Dönen (npc_walk_done): hedefe vardı mı — sahne akışı bekleyebilsin.
+void npc_walk_to(int i, float x, float y);
+bool npc_walk_done(int i);
+void npc_walk_cancel(int i);   // rutine geri dön
+
 // NPC'nin anlık konumu (minimap vb. için). İçerideyse/ölüyse false (görünmez).
 bool npc_visible_pos(int i, float *x, float *y);
 

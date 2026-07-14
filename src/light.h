@@ -29,4 +29,9 @@ int light_collect(R2DLight *out, int cap, const Camera *cam, int sw, int sh, boo
 int light_append_campfire(R2DLight *out, int n, int cap, const Camera *cam,
                           int sw, int sh, float x, float y);
 
+// Genel nokta ışığı (D1a — kandil/tapınak gibi durum bağımlı kaynaklar)
+int light_append_point(R2DLight *out, int n, int cap, const Camera *cam,
+                       int sw, int sh, float x, float y, float radius,
+                       float r, float g, float b, float intensity, float flicker);
+
 #endif

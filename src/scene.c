@@ -10,6 +10,9 @@ typedef struct {
     char text[64];
     char target[32];   // panel id ya da "end"
     SceneFx fx;
+    int rollSkill;     // 0 = zar yok; 1 = speech (D1a — vinyette zar)
+    int rollThr;       // eşik (dialog zarıyla aynı formül: geçtiyse %100)
+    char rollFail[32]; // başarısızlıkta gidilecek panel
 } SceneOpt;
 
 typedef struct {
@@ -141,6 +144,19 @@ static bool scene_load(const char *path)
             memcpy(o->text, body, tlen);
             snprintf(o->target, sizeof(o->target), "%s", skip_ws(arrow + 2));
         }
+        else if (strncmp(s, "roll:", 5) == 0) {
+            // "roll: speech 20 -> fail_id" — son opt'a Speech zarı bağlar (D1a)
+            ScenePanel *pp = &panels[panelCount - 1];
+            if (pp->optCount > 0) {
+                SceneOpt *o = &pp->opts[pp->optCount - 1];
+                int thr = 0; char fid[32] = "end";
+                if (SDL_sscanf(s + 5, " speech %d -> %31s", &thr, fid) == 2) {
+                    o->rollSkill = 1;
+                    o->rollThr = thr;
+                    SDL_strlcpy(o->rollFail, fid, sizeof(o->rollFail));
+                }
+            }
+        }
         else if (strncmp(s, "fx:", 3) == 0) {
             if (p->optCount == 0) goto fail;
             SceneOpt *o = &p->opts[p->optCount - 1];
@@ -262,6 +278,9 @@ int scene_option_count(void)
     return (cur >= 0) ? panels[cur].optCount : 0;
 }
 
+static int scnSpeech = 0;   // oyuncunun Speech seviyesi (main her sahne öncesi basar)
+void scene_set_speech(int level) { scnSpeech = level; }
+
 bool scene_choose(int idx, SceneFx *out)
 {
     if (!scene_options_ready()) return false;
@@ -270,6 +289,17 @@ bool scene_choose(int idx, SceneFx *out)
     *out = panels[cur].opts[idx].fx;
     const char *target = panels[cur].opts[idx].target;
     audio_play(SFX_UI);
+
+    // Vinyet zarı (D1a): diyalog zarıyla aynı eğri — eşik altı %70'e kadar şans
+    const SceneOpt *co = &panels[cur].opts[idx];
+    if (co->rollSkill == 1) {
+        int pct = (scnSpeech >= co->rollThr) ? 100
+                : (int)((float)scnSpeech / (float)co->rollThr * 70.0f);
+        if ((int)(SDL_rand(100)) >= pct) {
+            *out = (SceneFx){0};           // başarısız seçim etki taşımaz
+            target = co->rollFail;         // zar düştü — fail dalı
+        }
+    }
 
     if (strcmp(target, "end") == 0) {
         state = SC_FADEOUT;
@@ -351,8 +381,12 @@ void scene_render(R2D *renderer, TTF_Font *font, int winW, int winH)
     if (scene_options_ready()) {
         SDL_Color optCol = { 175, 205, 255, a };
         for (int i = 0; i < p->optCount; i++) {
-            char buf[80];
-            snprintf(buf, sizeof(buf), "%d) %s", i + 1, p->opts[i].text);
+            char buf[96];
+            if (p->opts[i].rollSkill == 1)
+                snprintf(buf, sizeof(buf), "%d) %s [Speech %d]",
+                         i + 1, p->opts[i].text, p->opts[i].rollThr);
+            else
+                snprintf(buf, sizeof(buf), "%d) %s", i + 1, p->opts[i].text);
             draw_text(renderer, font, buf, px, ty, optCol);
             ty += 24.0f;
         }

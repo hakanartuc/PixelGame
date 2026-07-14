@@ -1,0 +1,30 @@
+# K9 Kandil (D1a): F2 nöbetçi odası — Kerem'in sonu.
+# İki hat: Tanık (dinle) — Sömüren (çek). Fatma diyaloğu yankı SONRASI açılır.
+
+[giris]
+image: assets/scenes/echo_kerem.png
+duck: 0.15
+sfx: heartbeat
+text: Nöbetçi odası. Köşede küçük bir çıkın: kuru ekmek, bir sapan, tahta bir çakı — bir çocuğun hazinesi. Kemiklerin en ufağının göğsünde mor bir soluk titriyor.
+text: Mühür ısınıyor. Bu soluk ötekilerden farklı — daha... genç.
+opt: Elini mühre koy, dinle. -> yanki
+opt: Soluğu kendine çek. -> somur
+opt: Geri çekil. -> end
+
+[yanki]
+image: assets/scenes/echo_kerem_memory.png
+duck: 0.08
+sfx: whisper
+text: Bir çocuk, karanlıkta merdiven iniyor — korkudan değil, karar vermiş gibi. Yukarıda annesinin kandili; aşağıda taş salonda dizilmiş nöbetçiler ve o derin, taş gibi yemin: "Kapı tutulur."
+text: Kerem yemini üç gece dinlemiş. Dördüncü gece saflara yürümüş — "ben de tutarım" demek için. Küçük gövdesi taş salona uymamış; ama son düşüncesi kaçmak değil: kapıyı tutanların arasında durabilmek.
+text: Fısıltı, ona, neredeyse şefkatle: "...henüz değil."
+opt: (Elini çek.) -> end
+fx: witness
+
+[somur]
+image: assets/scenes/echo_kerem_drain.png
+duck: 0.08
+text: Soluğu çekiyorsun. Genç güç, taze — mühür açlıkla içiyor. Çocuğun son kararı, cesareti, o küçük "ben de tutarım"ı... artık senin.
+text: Kemiklerin üstündeki çıkın bir anda çok daha küçük görünüyor. Yukarıda bir kandil yanıyor ve sen artık nedenini eskisi kadar iyi hatırlamıyorsun.
+opt: (Arkana bakma.) -> end
+fx: consume

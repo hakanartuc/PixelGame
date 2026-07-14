@@ -409,6 +409,27 @@ Güncelleme: 2026-07-11
   sarsıntı; oyuncuya 280px'ten yakın doğum yok; girişte sayaç sıfırlanır;
   BOSS dalga dışı (haftalık diriliş — farm yok)
 
+### Faz D1a — SAHNE ARAÇLARI + K9 KANDİL (ilk hikaye kartı oyunda; save v22)
+- **SAHNE ARAÇLARI (Faz C — 4'ü de geldi):**
+  · BARK: npc_bark(i, metin, sn) — baş üstü balon, son 0.5sn solar
+  · CINE MODU: letterbox bantları + kamera hedefe süzülür (cineX/Y/Timer);
+    oyuncu girdisi kilitli (boş tuş tablosu), dünya akmaya devam eder
+  · NPC YÜRÜTME: npc_walk_to/walk_done/walk_cancel — rutini ezer (S3 için hazır)
+  · VİNYET ZARI: sahne dosyasında `roll: speech 20 -> fail_id` (opt'a bağlanır);
+    [Speech N] etiketi; diyalog zarı eğrisi; scene_set_speech köprüsü
+- **K9 KANDİL** (STORY_CARDS K9 — en düşük maliyetli 🜁):
+  · Fatma NPC (Bartender_Katy): gündüz meydan, 17:00'de geçit kapısına yürür
+  · Kandil objesi (lantern.png + light_append_point) geçit kemeri önünde
+  · Kerem yankısı: F2 nöbetçi odası T(20,6) — ECHOES[2]; Tanık (çocuğun kararı) /
+    Sömüren ("kandilin nedenini eskisi kadar iyi hatırlamıyorsun") — 3 panel (gen_k9.py)
+  · Karar (yankı sonrası Fatma diyaloğu, `k9:N` hedefleri): GERÇEK → tapınak ateşi
+    (büyük mavi ışık + kandile cine + bark) / YALAN → kandil söner / SUS → yanar;
+    kalıcı (storyFlags[SF_K9_KANDIL], save v22) + günlüğe 3 ayrı metin (JE_K9_CHOICE)
+    + Fatma'nın kapanış diyaloğu seçime göre (son1/2/3)
+- **DOĞALLIK FİXİ** (kullanıcı tespiti): konuşulan NPC artık DURUR —
+  npc_set_talking(dialogNpc) her kare senkron; diyalog bitince rutine döner
+- Altyapı: player.storyFlags[16] (kart durum kodları — save v22), light_append_point
+
 ## 🔜 ROADMAP (2026-07-14 — RPG-ruhu analiziyle onaylandı)
 
 Analiz özeti: sistem omurgası güçlü (build kimliği, ekonomi, suç/itibar, ekoloji,
@@ -420,10 +441,14 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 ### YAKIN — "oyun gibi hissettir" (his + rol)
 1. ~~CİLA PAKETİ~~ TAMAM (2026-07-14 — bkz. Faz CİLA bölümü); kalan küçük
    UX borcu: speech zar kilidi save'i (uygun faza serpilir)
-2. **HİKAYE KARTLARI DALGA 1** + **Faz C sahne araçları** (birlikte):
-   2 kısa + 1 saga oyuna iner — ÇOK YOLLU görev yapısı (speech/sneak/savaş/rüşvet),
-   kişilik+itibar+mühür sayaçlarının diyaloglarda OKUNMASI (`req: kaba >= 3`),
-   4-5 yeni yankı noktası; letterbox/kamera pan/NPC yürütme/bark
+2. **HİKAYE KARTLARI DALGA 1** (K9+K2+S3 seçildi 2026-07-14; kart başına commit):
+   ~~D1a: sahne araçları + K9 Kandil~~ TAMAM (bkz. Faz D1a bölümü)
+   → D1b (SIRADAKİ): K2 Son Müşteri — han + Nazife (echo_cart kervancısının karısı;
+     süt kokusu kanıtı; Sömüren tükettiyse kanıt YOK — ilk somut bedel; iki sıra da
+     çalışır: handan önce yankı / yankıdan önce han)
+   → D1c: S3 Sayan Adam — Eşikçi konağı mini haritası, sayı-diyalog bulmacası,
+     Nuh'la konağa birlikte yürüyüş (npc_walk), ana hatta iz (kâtip mührü)
+   + bu dalgada: kişilik+itibar sayaçlarının diyaloglarda OKUNMASI (`req: kaba >= 3`)
 3. **KARAKTER YARATMA-LİTE**: isim + görünüm seçenekleri + 3 "geçmiş"
    (küçük stat/eşya farkı); slot kartlarında isim
 

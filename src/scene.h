@@ -37,6 +37,7 @@ typedef struct {
 void scene_set_renderer(R2D *r);
 
 bool scene_start(const char *path);   // yükle + fade-in (false = dosya/format hatası)
+void scene_set_speech(int level);     // vinyet zarı için Speech seviyesi (D1a)
 bool scene_active(void);
 
 // accelHeld: Space/E basılı — typewriter ×4 (metin ASLA atlanmaz)

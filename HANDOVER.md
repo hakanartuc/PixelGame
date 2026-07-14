@@ -84,8 +84,11 @@ drag&drop (sol tık; sağ tık yolları duruyor) + beceri ikonları (hotbar+ağa
 3 yeni müzik (zindan/gece/menü) + ambiyans katmanı + SFX perde varyasyonu +
 ses ayarları (settings.cfg) + MÜHÜR DALGASI (zindan respawn'ı: 120sn'de toplu
 diriliş, uyarılı; boss haftalık kuralda — spawn_zones_update söküldü).
-Sıradaki (roadmap YAKIN #2): **HİKAYE KARTLARI DALGA 1 + Faz C sahne araçları**
-(çok yollu görevler, seçimlerin diyaloglarda okunması, yeni yankılar).
+**D1a TAMAM (2026-07-14, save v22)**: sahne araçları (bark/cine/NPC yürütme/vinyet
+zarı) + K9 Kandil (Fatma + Kerem yankısı F2 + üç kalıcı karar: tapınak/söner/yanar;
+storyFlags[16]) + konuşulan NPC durur (npc_set_talking).
+Sıradaki: **D1b — K2 Son Müşteri** (han + Nazife; echo_cart bağlantısı; Sömüren'in
+ilk somut bedeli). Sonra D1c — S3 Sayan Adam (Eşikçi konağı mini harita).
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
 mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13) + BÜYÜ SİSTEMİ
 (22: 6 büyü + Asa + INT + zırh ağırlığı + mana iksiri; ayrıntı PROGRESS Faz 22).

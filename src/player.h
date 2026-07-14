@@ -166,7 +166,16 @@ typedef struct Player {
     int persKibar;   // kibar/yardımsever cevaplar
     int persKetum;   // ketum/mesafeli cevaplar
     bool guardGreeted;   // köye varış karşılaması yaşandı (bir kez)
+
+    // Hikaye kartı bayrakları (D1a, save v22) — kart başına küçük durum kodu.
+    // 0 = dokunulmadı; anlamlar kart başına (SF_* indeksleri aşağıda).
+    Uint8 storyFlags[16];
 } Player;
+
+// storyFlags indeksleri (kartlar geldikçe eklenir — sıra SABİT, save'e girer)
+enum {
+    SF_K9_KANDIL = 0,   // 0 yok · 1 gerçek (tapınak) · 2 yalan (söner) · 3 sus
+};
 
 
 
