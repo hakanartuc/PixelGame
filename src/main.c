@@ -3766,6 +3766,26 @@ int main(int argc, char *argv[])
                                                                 sd->damageScale,
                                                                 nb->type->defense, &perkFx);
                                 nb->e.health -= sh.damage;
+
+                                // TERMAL ŞOK (M1): yanan hedefte nova — kalan yanma
+                                // ANINDA patlar +%60 (yanma söner; buhar FX)
+                                if (nb->burnTime > 0.0f)
+                                {
+                                    float shock = nb->burnDps * nb->burnTime * 1.6f;
+                                    nb->e.health -= shock;
+                                    nb->burnTime = 0.0f;
+                                    fx_burst(&weaponFx,
+                                             nb->e.rect.x + nb->e.rect.w / 2.0f,
+                                             nb->e.rect.y + nb->e.rect.h / 2.0f,
+                                             14, 130.0f, 220, 245, 255);
+                                    SDL_Color steam = { 200, 240, 255, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                        nb->e.rect.x + nb->e.rect.w / 2.0f,
+                                        nb->e.rect.y - 34.0f, "Termal Şok!", steam);
+                                    floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                        nb->e.rect.x + nb->e.rect.w / 2.0f - 14.0f,
+                                        nb->e.rect.y - 16.0f, (int)shock, true);
+                                }
                                 nb->e.hitFlash = 0.15f;
                                 nb->slowMult = 0.5f;
                                 nb->slowTimer = 4.0f;
@@ -3795,6 +3815,35 @@ int main(int argc, char *argv[])
                                                                 sd->damageScale,
                                                                 lt->type->defense, &perkFx);
                                 lt->e.health -= sh.damage;
+
+                                // ZEHİR PATLAMASI (M1): zehirli hedefe yıldırım —
+                                // kalan zehir ANINDA + 90px çevreye %50'si (yeşil bulut)
+                                if (lt->poisonTime > 0.0f)
+                                {
+                                    float burst = lt->poisonDps * lt->poisonTime;
+                                    lt->e.health -= burst;
+                                    lt->poisonTime = 0.0f;
+                                    fx_burst(&weaponFx, tx, ty, 18, 110.0f, 120, 235, 90);
+                                    SDL_Color pgreen = { 140, 245, 110, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                        tx, lt->e.rect.y - 34.0f, "Zehir Patlaması!", pgreen);
+                                    floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                        tx - 14.0f, lt->e.rect.y - 16.0f, (int)burst, true);
+                                    for (int m3 = 0; m3 < mobCount; m3++)
+                                    {
+                                        Mob *pb = &mobs[m3];
+                                        if (!pb->e.alive || pb == lt) continue;
+                                        float pdx = (pb->e.rect.x + pb->e.rect.w / 2.0f) - tx;
+                                        float pdy = (pb->e.rect.y + pb->e.rect.h / 2.0f) - ty;
+                                        if (pdx * pdx + pdy * pdy > 90.0f * 90.0f) continue;
+                                        pb->e.health -= burst * 0.5f;
+                                        pb->e.hitFlash = 0.15f;
+                                        pb->aggro = true;
+                                        if (pb->e.health <= 0.0f)
+                                            mob_die(pb, mobs, MAX_MOBS, &nextMobId, loots,
+                                                    questStatus, floatTexts, &player);
+                                    }
+                                }
                                 lt->e.hitFlash = 0.2f;
                                 lt->aggro = true;
                                 mob_alert_camp(mobs, mobCount, lt);
@@ -4771,6 +4820,14 @@ int main(int argc, char *argv[])
                             target->poisonTime = 4.0f;   // süre tazelenir
                         }
 
+                        // Alev Rünü (M1): vuruş yakma da basar — %20/3sn.
+                        // Melee-ateş build'i Termal Şok sinerjisine böyle girer
+                        if (player.weaponFx == WEAPON_FX_FLAME)
+                        {
+                            target->burnDps = hit.damage * 0.20f / 3.0f;
+                            target->burnTime = 3.0f;
+                        }
+
                         // Vurulan mob + kamp arkadaşları alarma geçer (grup aggro)
                         target->aggro = true;
                         mob_alert_camp(mobs, mobCount, target);
@@ -5031,6 +5088,12 @@ int main(int argc, char *argv[])
                 if (hit.crit)
                     fx_burst(&weaponFx, tx, ty, 12, 90.0f, 255, 240, 120);
 
+                // Alev rünü ok ucuna da işler (M1): yakma %20/3sn
+                if (player.weaponFx == WEAPON_FX_FLAME)
+                {
+                    at->burnDps = hit.damage * 0.20f / 3.0f;
+                    at->burnTime = 3.0f;
+                }
                 // Zehir rünü/kaplaması ok ucuna da işler — kanamayla üst üste biner
                 if (player.weaponFx == WEAPON_FX_POISON)
                 {

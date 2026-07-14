@@ -90,8 +90,11 @@ storyFlags[16]) + konuşulan NPC durur (npc_set_talking).
 **D1b TAMAM (2026-07-14)**: K2 Son Müşteri — han (köy GD) + Nazife + gece sofrası;
 araba yankısı hattı kalıcı (SF_K2_CART); Tanık = süt kokusu kanıtıyla üç ton,
 Sömüren = kanıtsız (ilk somut bedel, sofra sonsuza dek kurulur).
-Sıradaki: **D1c — S3 Sayan Adam** (Eşikçi konağı mini haritası, sayı-diyalog
-bulmacası, Nuh + Zehra, npc_walk ile konağa birlikte yürüyüş, ana hatta iz).
+**PİVOT (2026-07-14)**: hat MEKANİK-ÖNCELİKLİ (hikaye = mekanik test aracı).
+**M1 TAMAM**: element sinerjileri (Termal Şok ×1.6 / Zehir Patlaması +çevre %50 /
+Alev Rünü %20 yakma basar — hibritler sinerjide).
+Sıradaki: **M2 — Pişirme + yemek buffları** (kamp ateşi + av döngüsü; faz başında
+tarif/buff anketi) → M3 davranış ünvanları → summon → D1c (S3) sonra.
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
 mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13) + BÜYÜ SİSTEMİ
 (22: 6 büyü + Asa + INT + zırh ağırlığı + mana iksiri; ayrıntı PROGRESS Faz 22).

@@ -445,6 +445,18 @@ Güncelleme: 2026-07-11
 - Karar kalıcı (SF_K2_NAZIFE) + JE_K2_CHOICE 3 metin + kapanış diyalogları
 - Kişilik fx'leri ilk kez kart diyaloğunda (kibar/ketum — okunma D1c'de genişler)
 
+### Faz M1 — ELEMENT SİNERJİLERİ (mekanik-öncelikli hat #1)
+- **TERMAL ŞOK**: yanan hedefe Buz Novası → kalan yanma ANINDA ×1.6 patlar,
+  yanma söner (buhar FX + "Termal Şok!" + krit-stili sayı) — DoT'u erken
+  bozdurma bedeli tempo seçimi oldu
+- **ZEHİR PATLAMASI**: zehirli hedefe Yıldırım → kalan zehir ANINDA + 90px
+  çevreye %50'si (yeşil bulut) — kalabalıkta zincir potansiyeli
+- **ALEV RÜNÜ YAKIYOR** (kullanıcı onayı): melee + ok vuruşu %20/3sn yakma
+  basar — hibrit build'ler (alev kılıç → Nova) sinerjiye girer; rün seçimi
+  gerçek trade-off: Pembe %8 anında / Alev %20 DoT+şok / Zehir %25 DoT+patlama
+- NOT (2026-07-14 kullanıcı kararı): hat MEKANİK-ÖNCELİKLİ — hikaye mekaniği
+  taşıyan/test ettiren araç; D1c (S3) beklemede, "okunma" her faza serpiştirilir
+
 ## 🔜 ROADMAP (2026-07-14 — RPG-ruhu analiziyle onaylandı)
 
 Analiz özeti: sistem omurgası güçlü (build kimliği, ekonomi, suç/itibar, ekoloji,
@@ -471,8 +483,9 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
    (Bombschroom/Mummy vb. buraya), POI + yankı serpiştirme, kartlar 2. dalga;
    mob fazları devamı bu şemsiyede (Shroomling → Mummy/Cowling/Flying Skull;
    kırmızı/sarı/pembe slime; iskelet "mezardan kalkma" animasyonu)
-5. **ONAYLI 4 MEKANİK** (2026-07-11) uygun yerlere serpilir:
-   · Element sinerjileri (yanana buz = termal şok; zehirliye yıldırım = patlama)
+5. **ONAYLI 4 MEKANİK** (2026-07-11) — MEKANİK-ÖNCELİKLİ hat (2026-07-14 pivotu:
+   sıra öne çekildi; savaş+yaşam üçlüsü: M1 sinerji ✓ → M2 pişirme → M3 ünvanlar):
+   · ~~Element sinerjileri~~ TAMAM (bkz. Faz M1)
    · Summon hattı (yılan DoT + kaplumbağa tank; bedel: max mananın %25'i rezerve;
      sprite'lar: `~/Downloads/snake_right.png, turtleshell_right.png`)
    · Pişirme + yemek buffları (kamp ateşi + av döngüsü)
