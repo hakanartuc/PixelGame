@@ -1,6 +1,6 @@
 # HANDOVER — Pixe Game
 
-Güncelleme: 2026-07-13 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
+Güncelleme: 2026-07-14 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
 
 ## Çalışma kuralları
 - **Asistan kodu yazar** (2026-07-09'dan beri), faz faz ilerler; her faz sonunda durur, Hakan test eder, onayla commit atılır.
@@ -26,14 +26,14 @@ Cute_Fantasy paketleri (`/Users/hakanartuc/Cute Fantasy` — NPC, ev, düşman, 
   (`r2d_target_begin/end` — kendi cmdbuf'uyla anında submit; batch'e `forceNewDraw` sınırı koyar),
   kare-içi texture yıkımı ertelenir. SDL kırpma davranışı taklit edilir (taşan src → clip).
   Duman testi: `./build/r2d_test`.
-- **Oyun sistemleri:** tilemap (Tiled CSV, 200×150, culling) · region (bölge+mood+kamplar) · decor (evler, taban collision)
+- **Oyun sistemleri:** tilemap (Tiled CSV, 200×150, culling) · region (bölge+mood) · ecology (yuva/popülasyon/göç — E1-E2) · decor (evler, taban collision)
   · player (LPC katmanlı, oversize slash) · mob (leash/grup-aggro/tile çarpışma/kanama alanları) · npc (rutinli, saat bazlı)
   · dialog (txt format: `[dugum] / text: / opt: -> hedef|end|shop|accept:ID|complete:ID`) · quest (KILL) · shop (al/sat)
   · item/inventory/equipment (instance +plus/rün/stat, zırh sınıfı, 40 slot) · skill (use-based, XP=hasar, 15 skill)
   · ability+hotbar (1-8, KO auto-attack; aktifler ağaçtan açılır) · skilltree (16 puanlı düğüm ağacı,
   PerkEffects tek nokta — eski perk.c Faz 21'de SÖKÜLDÜ) · combat (Combat A + combat_spell_hit)
   · gametime (10dk=24s, mood müziği) · audio (SFX) + music (4 prosedürel parça, mood crossfade)
-  · minimap (fog, target pass) · save (v13, alan-alan binary; skills/masks blokları append-toleranslı)
+  · minimap (fog, target pass) · save (v21, alan-alan binary; skills/masks blokları append-toleranslı)
   · craft (istasyonlar/tarifler/sunak) · resource (toplama düğümleri) · region (bölgesel bounty/itibar)
   · contract (pano: 9 kontrat, 3 kademe, günlük rotasyon) · light (gece ışık kaynakları + kamp ateşi)
   · ui_theme (9-grid paneller) · font (ttf→GPU upload).
@@ -69,14 +69,16 @@ vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü
   `fx: kaba += 1` biçimiyle işler, req ile okunur).
 
 ## Sıradaki iş
-**FAZ E1 TAMAM** (2026-07-13, save v20): MOB EKOLOJİSİ çekirdeği — KO slot spawn'ı
-dünyadan söküldü (ecology.c): yuva/popülasyon (şafakta +1, ölen geri gelmez),
-aileye göre yıkım (Goblin Reisi / Ork Savaş Totemi / gölcük kurutma / mezar
-mühürleme / sürü göçü), 5-15 günde alternatif sahaya koloni, zindan = mühür
-istisnası. Öncesi B1+B2 (save v18-19): ana menü + 20+1 slot + Sessiz Gün açılışı +
+**MOB EKOLOJİSİ TAMAM (E1+E2, save v20-21)**: KO slot spawn'ı dünyadan söküldü
+(ecology.c) — yuva/popülasyon (şafakta +1), aileye göre yıkım (Reis/Totem/gölcük/
+mezar/sürü), göç kolonileri + panoda söylentiler, RUTİNLER (goblin gececi uyuklar
+"z" + uyuyana sinsi vuruş; ork nöbetli devriye; hayvan gece uyur + öğlen su
+başına iner), dinamik kontratlar. Zindan = mühür istisnası.
+Öncesi B1+B2 (save v18-19): ana menü + 20+1 slot + Sessiz Gün açılışı +
 Yolculuk günlüğü (J, iki sekme, birinci ağız).
-Sıradaki: **Faz E2** — mob rutinleri (gece/gündüz + devriye + su noktası) +
-haber ağı (göç duyuruları) + dinamik kontratlar (PROGRESS Kalanlar #1).
+Sıradaki adaylar: **Faz C sahne araçları** (letterbox/kamera pan/NPC yürütme) /
+**mob fazları + biyomlar** (Bombschroom, çöl-volkan-mantar) / **Dünya Olayları
+genişlemesi**. Kullanıcıya sorulacak.
 Backlog onaylı 4 mekanik: element sinerjileri, summon hattı (mana rezerve bedeli),
 pişirme+yemek buffları, davranış ünvanları (ayrıntı PROGRESS "Kalanlar").
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &

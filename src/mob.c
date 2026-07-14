@@ -5,6 +5,7 @@
 #include "tilemap.h"
 #include "decor.h"
 #include "mob.h"
+#include "gametime.h"   // E2: gece/gündüz ritmi
 
 // Önerilen kaydırmayı tile/dekor çarpışmasına göre uygula.
 // Eksen ayrı denenir → duvar boyunca kayma (oyuncu hareketiyle aynı desen).
@@ -116,6 +117,7 @@ const MobType MOB_TYPES[] = {
     {
         .name = "Goblin Maceman",
         .texturePath = "assets/characters/mobs/Goblin_Maceman.png",
+        .nocturnal = true,   // E2: gece aktif, gündüz kampta uyuklar
         .level = 1,
         .maxHealth = 100.0f,
         .speed = 200.0f,
@@ -598,6 +600,7 @@ const MobType MOB_TYPES[] = {
     {
         .name = "Goblin Reisi",
         .texturePath = "assets/characters/mobs/Goblin_Maceman.png",
+        .nocturnal = true,   // kampıyla aynı ritim
         .level = 4,
         .maxHealth = 260.0f,
         .speed = 190.0f,
@@ -765,6 +768,15 @@ void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Ca
             r2d_fill_rect(renderer, &bg);
             r2d_set_color(renderer, 255, 210, 60, 255);
             r2d_fill_rect(renderer, &fill);
+        } else if (m->sleeping) {
+            // Uyku "z"si (E2): baş üstünde yavaşça soluyan küçük Z (font gerekmez)
+            float t = (float)((SDL_GetTicks() / 100) % 20) / 20.0f;
+            Uint8 a = (Uint8)(120 + 100 * (t < 0.5f ? t * 2.0f : (1.0f - t) * 2.0f));
+            r2d_set_color(renderer, 200, 220, 255, a);
+            float zx = headX + 6 * zoom, zy = headY - 12 * zoom;
+            r2d_fill_rect(renderer, &(SDL_FRect){ zx, zy,            5*zoom, 1.4f*zoom });
+            r2d_fill_rect(renderer, &(SDL_FRect){ zx, zy + 4.6f*zoom, 5*zoom, 1.4f*zoom });
+            r2d_line(renderer, zx + 4.4f*zoom, zy + 1.4f*zoom, zx + 0.6f*zoom, zy + 4.6f*zoom);
         }
     }
 
@@ -822,7 +834,11 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
     float dy = targetY - (m->e.rect.y + m->e.rect.h/2.0f);
     float dist = SDL_sqrtf(dx*dx + dy*dy);
 
+    // Gece/gündüz ritmi (E2): gececi gündüz uyuklar — algı çöker, devriye durur.
+    // (Uyuyana vuruş sinsi sayılır — main. Aggro olan uyanıktır.)
+    m->sleeping = m->type->nocturnal && !gametime_is_night() && !m->aggro;
     float detectRange = m->type->detectRange * detectMul;   // gece daha uzağı görür
+    if (m->sleeping) detectRange *= 0.35f;
     float attackRange = m->type->attackRange;
 
     // --- PASİF AV (Faz 6): asla saldırmaz; vuruş/kamp alarmı = ürküp KAÇAR ---
@@ -868,6 +884,8 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
             m->alertFlash = 0.6f;    // baş üstü "!" — ürktü
             m->suspicion = 0.0f;
         }
+        m->sleeping = gametime_is_night() && m->fleeTimer <= 0.0f;   // hayvan gece uyur
+        float hrs = gametime_hours();
         if (m->fleeTimer > 0.0f && dist > 0.0f) {
             m->fleeTimer -= dt;
             m->state = MOB_CHASE;    // koşu clip'i (kaçış — düz hat, zigzag yok)
@@ -879,8 +897,26 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
                 m->e.facing = (ny < 0) ? 1 : 0;
             }
             mob_move(m, nx * m->e.speed * slowK * dt, ny * m->e.speed * slowK * dt);
+        } else if (!m->sleeping && m->waterX != 0.0f && hrs >= 10.0f && hrs < 14.0f) {
+            // Su ziyareti (E2): öğlen su kenarına iner — avcıya pusu fırsatı
+            float wdx = m->waterX - (m->e.rect.x + m->e.rect.w / 2.0f);
+            float wdy = m->waterY - (m->e.rect.y + m->e.rect.h / 2.0f);
+            float wd = SDL_sqrtf(wdx * wdx + wdy * wdy);
+            if (wd > 14.0f) {
+                m->state = MOB_CHASE;   // yürüyüş (yarı hız — telaşsız)
+                if (SDL_fabsf(wdx) > SDL_fabsf(wdy)) {
+                    m->e.facing = 2;
+                    m->e.facingLeft = (wdx < 0);
+                } else {
+                    m->e.facing = (wdy < 0) ? 1 : 0;
+                }
+                mob_move(m, wdx / wd * m->e.speed * 0.45f * slowK * dt,
+                            wdy / wd * m->e.speed * 0.45f * slowK * dt);
+            } else {
+                m->state = MOB_IDLE;    // su başında dinlenir
+            }
         } else {
-            m->state = MOB_IDLE;     // otlamaya döner
+            m->state = MOB_IDLE;     // otlamaya döner (gece: uyku — kımıldamaz)
         }
         if (m->alertFlash > 0.0f) m->alertFlash -= dt;
 
@@ -1024,6 +1060,36 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
                 // Oyuncuya doğru + ayrışma (tile/dekor çarpışmalı)
                 mob_move(m, (nx * m->e.speed * slowK + sepX * SEPARATION_FORCE) * dt,
                             (ny * m->e.speed * slowK + sepY * SEPARATION_FORCE) * dt);
+            }
+        }
+        else if (!m->sleeping && m->suspicion < 0.25f && m->zoneId >= 0 &&
+                 (m->type->nocturnal ||          // gececi: aktif saatinde hep devriyede
+                  !gametime_is_night() ||        // gündüzcü olmayan (ork): gündüz herkes
+                  (m->id % 2 == 0)))             // gece yalnız nöbetçi yarısı (E2)
+        {
+            // Devriye (E2): yuva çevresinde nokta nokta tur — "slotta bekleme" ölür
+            m->patrolTimer -= dt;
+            if (m->patrolTimer <= 0.0f) {
+                m->patrolAngle += 1.8f + randf() * 1.6f;     // sıradaki nokta
+                m->patrolTimer = 3.5f + randf() * 4.0f;
+            }
+            float ptx = m->homeX + SDL_cosf(m->patrolAngle) * 70.0f;
+            float pty = m->homeY + SDL_sinf(m->patrolAngle) * 70.0f;
+            float pdx = ptx - (m->e.rect.x + m->e.rect.w / 2.0f);
+            float pdy = pty - (m->e.rect.y + m->e.rect.h / 2.0f);
+            float pd = SDL_sqrtf(pdx * pdx + pdy * pdy);
+            if (pd > 12.0f) {
+                m->state = MOB_CHASE;   // yürüyüş clip'i (yarı hız — devriye telaşsız)
+                if (SDL_fabsf(pdx) > SDL_fabsf(pdy)) {
+                    m->e.facing = 2;
+                    m->e.facingLeft = (pdx < 0);
+                } else {
+                    m->e.facing = (pdy < 0) ? 1 : 0;
+                }
+                mob_move(m, pdx / pd * m->e.speed * 0.4f * slowK * dt,
+                            pdy / pd * m->e.speed * 0.4f * slowK * dt);
+            } else {
+                m->state = MOB_IDLE;    // noktada soluklan
             }
         }
         else {

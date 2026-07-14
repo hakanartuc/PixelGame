@@ -361,6 +361,27 @@ Güncelleme: 2026-07-11
 - Bilinen E1 sadeleştirmeleri: koloni dünya YENİDEN KURULUNCA görünür (zindan
   gidiş-dönüş/ölüm/yükleme tetikler); slime bölünme çocukları ebeveyn zone'unu
   paylaşır (pop 0'da klamplenir — ritüel yine tüm ölüleri ister)
+  → İKİSİ DE E2'DE KAPANDI (aşağıda)
+
+### Faz E2 — MOB RUTİNLERİ & HABER AĞI (moblar yaşıyor; save v21)
+- **GECE/GÜNDÜZ RİTMİ** (kullanıcı seçimi): goblin+reis GECECİ — gündüz kampta
+  uyuklar (baş üstü soluyan "z", algı ×0.35); hayvanlar GECE uyur (otlamaz);
+  orklar NÖBETLİ — uyumaz, gece yalnız yarısı devriyede (id çiftliği)
+- **UYUYANA SİNSİ VURUŞ** (kullanıcı seçimi): uyuyan moba melee/ok vuruşu
+  eğilmeden de sinsi sayılır — mevcut backstabMult + Sneak XP (gece baskını build'i)
+- **DEVRİYE**: kamp mobu boştayken yuva çevresinde nokta nokta tur (yarı hız,
+  patrolAngle/Timer); şüphe/alarm devriyeyi keser — "slotta bekleme" öldü
+- **SU NOKTASI**: ova sürüleri (koyun/domuz) öğlen 10-14 göl kenarına iner
+  (NestSiteDef.waterX/Y → mob'a atanır) — avcıya tahmin edilebilir pusu penceresi
+- **HABER AĞI**: koloniler panoda "~ Söylentiler ~" bölümünde 7 gün duyurulur
+  ("Goblinler Yeşil Ova taraflarına yerleşmiş" — ecology_recent_colonies +
+  region_at); yoksa "Ortalık sakin... şimdilik."
+- **DİNAMİK KONTRAT** (kullanıcı seçimi): nüfusu tükenen türün kes-kontratı
+  çıkmaz — aynı kademeden geçerli ilan geçer; hiç yoksa "Bugün ilan yok"
+- E1 kapanışları: koloni DÜNYADAYKEN de şafakta belirir (ecology_dawn zone
+  kaydı + anında spawn); slime bölünme çocukları ebeveyn yuvasına sayılır
+  (ecology_note_spawn — gölcük ritüeli çocuk canlıyken açılmaz)
+- Save v21: NestState.colonizedDay (söylenti süresi)
 
 ## 🔜 Kalanlar (öncelik sırası — 2026-07-11 kullanıcı seçimi)
 0. **ANLATI HATTI (aktif — STORY.md + LORE_SECRET.md + STORY_CARDS.md kanon):**
@@ -373,23 +394,15 @@ Güncelleme: 2026-07-11
      öykü (kartlar: STORY_CARDS.md — hepsi onaylı; işaretsiz finale bağları)
    · Faz B1 TAMAM (2026-07-13, save v18): başlık ekranı + ana menü + slot sistemi +
      Sessiz Gün açılışı + köye varış + gezgin çıkını (ayrıntı: Faz B1 bölümü)
-   · Faz B2 (SIRADAKİ): quest log → "Yolculuk" günlüğü (birinci ağız + Book_UI —
-     `Cute Fantasy/Cute_Fantasy_UI/UI/Book_UI.png` hazır, kopyalanmadı) + bildirim dili
+   · Faz B2 TAMAM (2026-07-13, save v19): Yolculuk günlüğü (J = kitap, iki sekme)
+     + bildirim dili (ayrıntı: Faz B2 bölümü)
    · Faz C: in-engine sahne araçları (letterbox, kamera pan, NPC yürütme, bark sistemi)
    · Dünya Olayları sistemi (yaşayan dünya: olay tablosu + haber ağı + atmosfer saati
      + NPC yayları) + dinlenme/rüya mekaniği (kamp ateşi → rüya vinyeti)
    · Kural: her anlatı fazında İKİ hat yazılır (Tanık + Sömüren — tam ayrı kötü yol)
-1. **MOB EKOLOJİSİ — Faz E2 (E1 TAMAM 2026-07-13, bkz. Faz E1 bölümü):**
-   · **RUTİNLER** (kullanıcı onaylı 4'lü): gece/gündüz döngüsü (goblin gece aktif,
-     gündüz kampta uyuklar — uyuyan fark etmez, sneak sinerjisi) + devriye rotaları
-     (kamp çevresi 2-3 nokta) + su/yem noktası ziyareti (hayvan pusu fırsatı)
-     [yuva savunması E1'de geldi]
-   · **HABER AĞI**: göç kolonileri pano/NPC ağzından duyurulur ("goblinler kuzey
-     yamacına yerleşmiş") — Dünya Olayları sisteminin ilk parçası
-   · **DİNAMİK KONTRATLAR**: pano hedefleri yaşayan popülasyondan; nüfusu olmayan
-     türden kontrat çıkmaz
-   · E1 sadeleştirme kapanışları: koloninin dünyadayken de belirmesi (şafakta
-     zone ekleme); slime çocuklarının pop sayımı
+1. **MOB EKOLOJİSİ TAMAM (E1+E2, 2026-07-13/14 — bkz. Faz E1/E2 bölümleri).**
+   Kalan ekoloji fikirleri (ileriye): NPC ağzından söylenti diyaloğu (şimdilik
+   yalnız pano), iskelet için yeni mezar dünya olayı, mob "arama" davranışı
 2. **Mob fazları** (devamı): Shroomling/Bombschroom → Mummy/Cowling/Flying Skull (yeni biyomlarla); slime Kırmızı/Sarı/Pembe yeni biyomlarda; iskelet "mezardan kalkma" spawn animasyonu
 3. **Yeni biyomlar**: çöl / volkan / mantar diyarı (tiles+NPC+düşman hazır pakette)
 4. **Onaylı yeni mekanikler** (2026-07-11 — uygun fazlarda gelir):

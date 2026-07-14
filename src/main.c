@@ -245,13 +245,16 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
             float oy = (float)(k / 2) * 22.0f - 8.0f;
             int cid = mob_spawn(mobs, mobCount, nextMobId,
                                 &MOB_TYPES[target->type->splitChild],
-                                target->e.rect.x + ox, target->e.rect.y + oy, -1);
+                                target->e.rect.x + ox, target->e.rect.y + oy,
+                                target->zoneId);   // yuvaya sayılır (E2)
             Mob *child = mob_find_by_id(mobs, mobCount, cid);
             if (child != NULL)
             {
                 child->aggro = true;         // parçalar kızgın doğar
                 child->suspicion = 1.0f;
                 child->alertFlash = 0.5f;
+                if (map_current() == MAP_WORLD)
+                    ecology_note_spawn(target->zoneId, 1);   // pop muhasebesi doğru kalır
             }
         }
     }
@@ -4340,8 +4343,9 @@ int main(int argc, char *argv[])
                 journal_day_tick(today);    // günlük atmosfer satırları (seyrek)
                 resource_daily_respawn();   // doğa tazelenir (cevher/bitki/ağaç)
                 contract_new_day(today);    // pano yenilenir (yarım kontratlar düşer)
-                ecology_dawn(today, spawnZones, spawnZoneCount, mobs, MAX_MOBS,
-                             &nextMobId, map_current() == MAP_WORLD);
+                ecology_dawn(today, spawnZones, MAX_SPAWN_ZONES, &spawnZoneCount,
+                             mobs, MAX_MOBS, &nextMobId,
+                             map_current() == MAP_WORLD);
                                              // yuva başına +1 (tavana kadar) + göçler
 
                 // Otomatik kayıt (Faz B1): her şafak auto slotuna yazılır
@@ -4485,8 +4489,8 @@ int main(int argc, char *argv[])
                                                           target->e.health / target->e.maxHealth,
                                                           &perkFx);
 
-                        // Sinsi vuruş: eğilmiş + hedef fark etmemiş → ×2 hasar + Sneak XP
-                        if (player.sneaking && !target->aggro)
+                        // Sinsi vuruş: eğilmiş + fark etmemiş — YA DA hedef uyuyor (E2)
+                        if ((player.sneaking || target->sleeping) && !target->aggro)
                         {
                             hit.damage *= perkFx.backstabMult;   // taban 2.0 + ağaç düğümleri
                             SDL_Color purple = { 200, 140, 255, 255 };
@@ -4788,7 +4792,7 @@ int main(int argc, char *argv[])
                                                   at->e.health / at->e.maxHealth,
                                                   &perkFx);
 
-                if (player.sneaking && !at->aggro)
+                if ((player.sneaking || at->sleeping) && !at->aggro)
                 {
                     hit.damage *= perkFx.backstabMult;   // taban 2.0 + ağaç düğümleri
                     SDL_Color purple = { 200, 140, 255, 255 };

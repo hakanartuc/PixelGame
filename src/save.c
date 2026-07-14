@@ -19,12 +19,13 @@
 #include "ecology.h"    // yuva durumları (v20)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 20u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+#define SAVE_VERSION 21u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
                           // v12: ilan panosu (gün + slot durum/ilerleme);
                           // v13: skill ağacı maskeleri (perkChoice'un yerini aldı);
                           // v18: özet bloğu (slot kartları) + kişilik sayaçları;
                           // v19: Yolculuk günlüğü girişleri;
-                          // v20: mob ekolojisi (yuva durumları)
+                          // v20: mob ekolojisi (yuva durumları);
+                          // v21: yuva colonizedDay (haber ağı)
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -236,7 +237,8 @@ bool save_game(const char *path, const Player *p,
         ok = w32(f, ns->colonized ? 1 : 0) && w32(f, ns->destroyed ? 1 : 0)
           && w32(f, ns->chiefAlive ? 1 : 0)
           && w32(f, ns->pop[0]) && w32(f, ns->pop[1]) && w32(f, ns->pop[2])
-          && w32(f, ns->destroyedDay) && w32(f, ns->migrateDay);
+          && w32(f, ns->destroyedDay) && w32(f, ns->migrateDay)
+          && w32(f, ns->colonizedDay);
     }
 
     fclose(f);
@@ -446,13 +448,13 @@ bool load_game(const char *path, Player *p,
     // Mob ekolojisi (v20) — geçici; başarıda uygulanır
     Sint32 nNest = 0;
     Sint32 nsCol[64], nsDes[64], nsChf[64], nsP0[64], nsP1[64], nsP2[64],
-           nsDay[64], nsMig[64];
+           nsDay[64], nsMig[64], nsColD[64];
     ok = ok && r32(f, &nNest);
     if (ok && (nNest < 0 || nNest > 64)) ok = false;
     for (int i = 0; ok && i < nNest; i++)
         ok = r32(f, &nsCol[i]) && r32(f, &nsDes[i]) && r32(f, &nsChf[i])
           && r32(f, &nsP0[i]) && r32(f, &nsP1[i]) && r32(f, &nsP2[i])
-          && r32(f, &nsDay[i]) && r32(f, &nsMig[i]);
+          && r32(f, &nsDay[i]) && r32(f, &nsMig[i]) && r32(f, &nsColD[i]);
 
     fclose(f);
     if (!ok) {
@@ -488,6 +490,7 @@ bool load_game(const char *path, Player *p,
         ns->pop[2] = (Sint16)nsP2[i];
         ns->destroyedDay = (Sint16)nsDay[i];
         ns->migrateDay = (Sint16)nsMig[i];
+        ns->colonizedDay = (Sint16)nsColD[i];
     }
     if (exploredBytes > 0)
         minimap_unpack_explored(exploredBuf, exploredBytes);

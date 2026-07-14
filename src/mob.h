@@ -76,6 +76,7 @@ typedef struct {
 
     // Av paketi (Faz 6)
     bool passive;            // pasif av: asla saldırmaz, vurulunca kaçar
+    bool nocturnal;          // gececi (goblin): gündüz kampta uyuklar (E2)
     bool dailyRespawn;       // spawn zone anında değil GÜN dönünce doldurur (av kaynağı)
 
     // Slime paketi (Faz 7)
@@ -129,6 +130,10 @@ typedef struct {
     int lastFacing;       // geçiş tespiti: önceki yön
     bool dying;           // ölüm animasyonu sürüyor mu (çiziliyor ama AI/hedef dışı)
     bool scatter;         // yuva çöktü: kaçış + süre sonunda sessiz despawn (ekoloji)
+    bool sleeping;        // şu an uyuyor (E2: ritimden türetilir — sinsi vuruş sayılır)
+    float patrolAngle;    // devriye: yuva çevresi hedef açısı
+    float patrolTimer;    // sıradaki devriye noktasına geçiş sayacı
+    float waterX, waterY; // hayvan su noktası (0 = yok; öğlen iner)
 } Mob;
 
 

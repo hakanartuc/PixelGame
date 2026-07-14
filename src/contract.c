@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include "contract.h"
+#include "ecology.h"   // dinamik ilan: nüfussuz türe kontrat yok (E2)
+#include "region.h"    // söylenti: koloninin bölge adı
 #include "item.h"
 #include "font.h"
 #include "ui_theme.h"
@@ -57,13 +59,18 @@ int contract_today(int slot)
 {
     if (slot < 0 || slot >= CONTRACT_ACTIVE || curDay < 0) return -1;
     int within = (curDay + slot) % CONTRACT_PER_TIER;   // slot kaydırması: aynı gün
-    int found = 0;                                      // farklı desenler dönsün
+
+    // GEÇERLİ ilanlar: kes-kontratının hedef türü dünyada yaşıyor olmalı (E2).
+    // within geçerliler arasında sayılır; hiç geçerli yoksa slot boş kalır.
+    int valid[CONTRACT_COUNT], nValid = 0;
     for (int i = 0; i < CONTRACT_COUNT; i++) {
         if (CONTRACTS[i].tier != slot) continue;        // slot = kademe
-        if (found == within) return i;
-        found++;
+        if (CONTRACTS[i].targetMob != NULL &&
+            ecology_type_pop(CONTRACTS[i].targetMob) <= 0) continue;
+        valid[nValid++] = i;
     }
-    return -1;
+    if (nValid == 0) return -1;   // "Bugün ilan yok"
+    return valid[within % nValid];
 }
 
 ContractState contract_state(int slot)
@@ -126,7 +133,7 @@ void contract_save_set(int day, const int *st, const int *prog)
 void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
                            float rep, float panelX, float panelY)
 {
-    float panelH = CONTRACT_ACTIVE * CT_ROW_H + CT_PAD * 2 + 56.0f;
+    float panelH = CONTRACT_ACTIVE * CT_ROW_H + CT_PAD * 2 + 56.0f + 64.0f;   // +söylentiler
     ui_panel(renderer, panelX, panelY, CT_W, panelH);
     if (font == NULL) return;
 
@@ -144,7 +151,12 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
     for (int s = 0; s < CONTRACT_ACTIVE; s++) {
         SDL_FRect row = { panelX + 8.0f, rowY, CT_W - 16.0f, CT_ROW_H - 6.0f };
         int ci = contract_today(s);
-        if (ci < 0) { rowY += CT_ROW_H; continue; }
+        if (ci < 0) {
+            ui_cell_gray(renderer, row.x, row.y, row.w, row.h);
+            draw_text(renderer, font, "Bugün ilan yok", row.x + 10.0f, rowY + 12.0f, dim);
+            rowY += CT_ROW_H;
+            continue;
+        }
         const ContractDef *c = &CONTRACTS[ci];
         bool locked = rep < CONTRACT_TIER_REP[c->tier];
 
@@ -195,10 +207,32 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
         rowY += CT_ROW_H;
     }
 
+    // SÖYLENTİLER (E2 haber ağı): son 7 günün kolonileri panoya düşer
+    {
+        SDL_Color rumor = { 230, 200, 150, 255 };
+        draw_text(renderer, font, "~ Söylentiler ~", panelX + CT_PAD,
+                  rowY + 4.0f, gold);
+        int sites[3];
+        int n = ecology_recent_colonies(curDay, sites, 3);
+        if (n == 0)
+            draw_text(renderer, font, "Ortalık sakin... şimdilik.",
+                      panelX + CT_PAD, rowY + 24.0f, dim);
+        for (int r = 0; r < n; r++) {
+            const NestSiteDef *ns = ecology_site(sites[r]);
+            int reg = region_at(ns->x, ns->y);
+            char line[112];
+            snprintf(line, sizeof(line), "%s %s taraflarına yerleşmiş.",
+                     ecology_family_name(ns->family),
+                     reg >= 0 ? REGIONS[reg].name : "bilinmez");
+            draw_text(renderer, font, line, panelX + CT_PAD,
+                      rowY + 24.0f + r * 20.0f, rumor);
+        }
+    }
+    rowY += 64.0f;
+
     SDL_Color hint = { 170, 200, 255, 255 };
     draw_text(renderer, font, "Kabul + teslim: satıra tıkla   ESC: kapat",
               panelX + CT_PAD, rowY + 6.0f, hint);
-    (void)gold;
 }
 
 int contract_panel_slot_at(float x, float y, float panelX, float panelY)

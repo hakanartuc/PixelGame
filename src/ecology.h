@@ -34,6 +34,7 @@ typedef struct {
     int family;              // göç eşleşmesi için aile etiketi (FAM_*)
     bool startColonized;     // taban saha mı (true) alternatif saha mı (false)
     struct { const MobType *type; int max; } entries[NEST_MAX_ENTRIES];
+    float waterX, waterY;    // sürü su noktası (0 = yok; hayvan öğlen iner — E2)
 } NestSiteDef;
 
 // Aile etiketleri (göç: yıkılan ailenin YENİ sahası bu etiketle aranır)
@@ -47,6 +48,7 @@ typedef struct {
     Sint16 pop[NEST_MAX_ENTRIES];   // giriş başına canlı popülasyon
     Sint16 destroyedDay; // göç sayacı için
     Sint16 migrateDay;   // planlanan koloni günü (0 = plan yok)
+    Sint16 colonizedDay; // koloni kurulduğu gün (0 = taban; haber ağı 7 gün duyurur)
 } NestState;
 
 extern const NestSiteDef NEST_SITES[];
@@ -59,10 +61,20 @@ void ecology_reset(void);   // yeni oyun: taban sahalar dolu, alternatifler boş
 int ecology_populate(SpawnZone *zones, int maxZones,
                      Mob *mobs, int maxMobs, int *nextMobId);
 
-// Şafak: her canlı yuva +1 üretir (tavana kadar; mobs'a doğrudan spawn eder —
-// yalnız dünya haritasındayken çağır) + planlı göçleri işler.
-void ecology_dawn(int day, SpawnZone *zones, int zoneCount,
+// Şafak: her canlı yuva +1 üretir (tavana kadar) + planlı göçleri işler.
+// Koloni kurulursa zone tablosuna YENİ zone da ekler (dünyadayken görünür).
+void ecology_dawn(int day, SpawnZone *zones, int maxZones, int *zoneCount,
                   Mob *mobs, int maxMobs, int *nextMobId, bool onWorldMap);
+
+// Dış spawn muhasebesi (slime bölünmesi): yuva popülasyonuna +n
+void ecology_note_spawn(int zoneId, int n);
+
+// Bu türün dünya geneli canlı popülasyonu (dinamik kontrat filtresi)
+int ecology_type_pop(const MobType *t);
+
+// Haber ağı (E2): son 7 günde kurulan koloniler — saha indekslerini doldurur
+int ecology_recent_colonies(int day, int *outSites, int cap);
+const char *ecology_family_name(int family);   // "Goblinler", "Orklar"...
 
 // Mob ölümü: popülasyon düşer. isChief=reis/totem öldü → yuva çöker; dönen
 // true = yuva bu ölümle ÇÖKTÜ (main kalanları kaçırtır + bildirim).
