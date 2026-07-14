@@ -17,13 +17,13 @@ const MapDef MAPS[MAP_COUNT] = {
     [MAP_DUNGEON_F1] = {
         .name = "Eski Gecit — Kat 1",
         .csvPath = "assets/maps/dungeon_f1.csv",
-        .mood = MOOD_DANGER,
+        .mood = MOOD_DUNGEON,
         .ambient = 0.35f,       // her saatte loş — meşaleler taşır
     },
     [MAP_DUNGEON_F2] = {
         .name = "Eski Gecit — Derinlik",
         .csvPath = "assets/maps/dungeon_f2.csv",
-        .mood = MOOD_DANGER,
+        .mood = MOOD_DUNGEON,
         .ambient = 0.28f,       // daha karanlık (boss katı)
     },
 };

@@ -17,6 +17,21 @@
 
 // Dolu slota YENI OYUN onayi icin bekleyen slot (ekran gecisiyle tasinir)
 static int pendingSlot = -1;
+static float shownMusicVol = 1.0f, shownSfxVol = 1.0f;   // ayarlar ekrani degerleri
+
+void menu_set_volumes(float musicVol, float sfxVol)
+{
+    shownMusicVol = musicVol;
+    shownSfxVol = sfxVol;
+}
+
+// Kaydirici yerlesimi (cizim + tiklama ayni kaynak)
+static SDL_FRect slider_rect(int i, int winW, int winH)
+{
+    SDL_FRect r = { (winW - 360.0f) / 2.0f,
+                    winH / 2.0f - 60.0f + i * 90.0f, 360.0f, 14.0f };
+    return r;
+}
 
 // i. butonun dikdortgenini hesaplar (ekran ortasi, dikey istif).
 // count: o ekrandaki toplam buton sayisi (dikey ortalamak icin).
@@ -161,16 +176,40 @@ void menu_render(R2D *renderer, TTF_Font *font,
 
     // 2) Ekrana gore icerik
     if (screen == MENU_MAIN) {
-        draw_button(renderer, font, menu_button_rect(0, 5, winW, winH), "Devam Et");
-        draw_button(renderer, font, menu_button_rect(1, 5, winW, winH), "Kaydet");
-        draw_button(renderer, font, menu_button_rect(2, 5, winW, winH), "Yükle");
-        draw_button(renderer, font, menu_button_rect(3, 5, winW, winH), "Ana Menüye Dön");
-        draw_button(renderer, font, menu_button_rect(4, 5, winW, winH), "Oyundan Çık");
+        draw_button(renderer, font, menu_button_rect(0, 6, winW, winH), "Devam Et");
+        draw_button(renderer, font, menu_button_rect(1, 6, winW, winH), "Kaydet");
+        draw_button(renderer, font, menu_button_rect(2, 6, winW, winH), "Yükle");
+        draw_button(renderer, font, menu_button_rect(3, 6, winW, winH), "Ayarlar");
+        draw_button(renderer, font, menu_button_rect(4, 6, winW, winH), "Ana Menüye Dön");
+        draw_button(renderer, font, menu_button_rect(5, 6, winW, winH), "Oyundan Çık");
     }
     else if (screen == MENU_ROOT) {
-        draw_button(renderer, font, menu_button_rect(0, 3, winW, winH), "Yeni Oyun");
-        draw_button(renderer, font, menu_button_rect(1, 3, winW, winH), "Yükle");
-        draw_button(renderer, font, menu_button_rect(2, 3, winW, winH), "Çıkış");
+        draw_button(renderer, font, menu_button_rect(0, 4, winW, winH), "Yeni Oyun");
+        draw_button(renderer, font, menu_button_rect(1, 4, winW, winH), "Yükle");
+        draw_button(renderer, font, menu_button_rect(2, 4, winW, winH), "Ayarlar");
+        draw_button(renderer, font, menu_button_rect(3, 4, winW, winH), "Çıkış");
+    }
+    else if (screen == MENU_SETTINGS) {
+        draw_screen_title(renderer, font, "Ayarlar", winH / 2.0f - 130.0f, winW);
+        const char *labels[2] = { "Müzik", "Ses Efektleri" };
+        float vals[2] = { shownMusicVol, shownSfxVol };
+        for (int i = 0; i < 2; i++) {
+            SDL_FRect r = slider_rect(i, winW, winH);
+            SDL_Color white = { 255, 255, 255, 255 };
+            char lb[48];
+            SDL_snprintf(lb, sizeof(lb), "%s: %%%d", labels[i],
+                         (int)(vals[i] * 100.0f + 0.5f));
+            draw_text(renderer, font, lb, r.x, r.y - 26.0f, white);
+            r2d_set_color(renderer, 40, 38, 48, 255);
+            r2d_fill_rect(renderer, &r);
+            r2d_set_color(renderer, 210, 170, 90, 255);
+            SDL_FRect fill = { r.x, r.y, r.w * vals[i], r.h };
+            r2d_fill_rect(renderer, &fill);
+            r2d_set_color(renderer, 235, 225, 205, 255);
+            SDL_FRect knob = { r.x + r.w * vals[i] - 4.0f, r.y - 4.0f, 8.0f, r.h + 8.0f };
+            r2d_fill_rect(renderer, &knob);
+        }
+        draw_button(renderer, font, slot_back_rect(winW, winH), "Geri");
     }
     else if (screen == MENU_CONFIRM_QUIT || screen == MENU_CONFIRM_MAINMENU ||
              screen == MENU_CONFIRM_OVERWRITE) {
@@ -200,39 +239,66 @@ static bool hit(SDL_FRect r, float mx, float my)
 
 MenuAction menu_handle_click(MenuScreen *screen, float mx, float my,
                              int winW, int winH,
-                             const SaveSummary *sums, int *outSlot)
+                             const SaveSummary *sums, int *outSlot,
+                             float *musicVol, float *sfxVol)
 {
     if (*screen == MENU_MAIN) {
-        if (hit(menu_button_rect(0, 5, winW, winH), mx, my))
+        if (hit(menu_button_rect(0, 6, winW, winH), mx, my))
             return MENU_ACTION_RESUME;
-        if (hit(menu_button_rect(1, 5, winW, winH), mx, my)) {
+        if (hit(menu_button_rect(1, 6, winW, winH), mx, my)) {
             *screen = MENU_SLOTS_SAVE;
             return MENU_ACTION_NONE;
         }
-        if (hit(menu_button_rect(2, 5, winW, winH), mx, my)) {
+        if (hit(menu_button_rect(2, 6, winW, winH), mx, my)) {
             *screen = MENU_SLOTS_LOAD;
             return MENU_ACTION_NONE;
         }
-        if (hit(menu_button_rect(3, 5, winW, winH), mx, my)) {
+        if (hit(menu_button_rect(3, 6, winW, winH), mx, my)) {
+            *screen = MENU_SETTINGS;
+            return MENU_ACTION_NONE;
+        }
+        if (hit(menu_button_rect(4, 6, winW, winH), mx, my)) {
             *screen = MENU_CONFIRM_MAINMENU;
             return MENU_ACTION_NONE;
         }
-        if (hit(menu_button_rect(4, 5, winW, winH), mx, my)) {
+        if (hit(menu_button_rect(5, 6, winW, winH), mx, my)) {
             *screen = MENU_CONFIRM_QUIT;
             return MENU_ACTION_NONE;
         }
     }
     else if (*screen == MENU_ROOT) {
-        if (hit(menu_button_rect(0, 3, winW, winH), mx, my)) {
+        if (hit(menu_button_rect(0, 4, winW, winH), mx, my)) {
             *screen = MENU_SLOTS_NEW;
             return MENU_ACTION_NONE;
         }
-        if (hit(menu_button_rect(1, 3, winW, winH), mx, my)) {
+        if (hit(menu_button_rect(1, 4, winW, winH), mx, my)) {
             *screen = MENU_SLOTS_LOAD;
             return MENU_ACTION_NONE;
         }
-        if (hit(menu_button_rect(2, 3, winW, winH), mx, my))
+        if (hit(menu_button_rect(2, 4, winW, winH), mx, my)) {
+            *screen = MENU_SETTINGS;
+            return MENU_ACTION_NONE;
+        }
+        if (hit(menu_button_rect(3, 4, winW, winH), mx, my))
             return MENU_ACTION_QUIT;
+    }
+    else if (*screen == MENU_SETTINGS) {
+        // Kaydırıcılar: bar üstüne (dikeyde biraz toleranslı) tıkla = değer
+        for (int i = 0; i < 2; i++) {
+            SDL_FRect r = slider_rect(i, winW, winH);
+            SDL_FRect wide = { r.x - 6, r.y - 12, r.w + 12, r.h + 24 };
+            if (!hit(wide, mx, my)) continue;
+            float v = (mx - r.x) / r.w;
+            if (v < 0.0f) v = 0.0f;
+            if (v > 1.0f) v = 1.0f;
+            if (i == 0) { *musicVol = v; shownMusicVol = v; }
+            else        { *sfxVol = v;  shownSfxVol = v; }
+            return MENU_ACTION_VOLUME;
+        }
+        if (hit(slot_back_rect(winW, winH), mx, my)) {
+            *screen = MENU_ROOT;   // ESC kökenliyse main MAIN'e çevirir
+            return MENU_ACTION_NONE;
+        }
     }
     else if (*screen == MENU_CONFIRM_QUIT) {
         if (hit(menu_button_rect(0, 2, winW, winH), mx, my))

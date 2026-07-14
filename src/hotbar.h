@@ -43,8 +43,13 @@ bool hotbar_assign_item(Hotbar *hb, const ItemType *type);
 
 // Bar çizimi: alt-orta, tuş numarası + kısaltma/ikon + cooldown perdesi + adet.
 // abilityCd: ability başına, itemCd: item TÜRÜ başına kalan bekleme (Player'dan).
+// Ekran noktasındaki hotbar hücresi (-1 = yok) — render ile aynı yerleşim
+int hotbar_slot_at(float x, float y, int winW, int winH);
+
+// abilityIconTex: beceri ikon atlası (AbilityId × 32px; NULL = kısaltma metni)
 void hotbar_render(const Hotbar *hb, R2D *renderer,
                    R2DTexture *itemIconTex, const ItemTextures *itemTex,
+                   R2DTexture *abilityIconTex,
                    TTF_Font *font, const float *abilityCd, const float *itemCd,
                    const Inventory *inv, int winW, int winH);
 

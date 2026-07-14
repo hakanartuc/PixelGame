@@ -30,6 +30,8 @@
 #include "quest.h"
 #include "journal.h"
 #include "ecology.h"
+#include "tooltip.h"
+#include "ambience.h"
 #include "gametime.h"
 #include "decor.h"
 #include "audio.h"
@@ -750,6 +752,7 @@ int main(int argc, char *argv[])
     R2DTexture *boardTex = load_texture(renderer, "assets/decor/notice_board.png");
     R2DTexture *bookTex  = load_texture(renderer, "assets/ui/Book_UI.png");   // Yolculuk günlüğü
     R2DTexture *nestsTex = load_texture(renderer, "assets/decor/nests.png");   // yuva görselleri (E1)
+    R2DTexture *abilityIconTex = load_texture(renderer, "assets/icons/abilities.png");  // beceri ikonları (Cila)
     bool boardOpen = false;
 
     // Büyü VFX sprite'ları (Faz 22): mermi küreleri + arcane patlama + alev
@@ -795,6 +798,7 @@ int main(int argc, char *argv[])
     contract_new_day(lastSeenDay);      // panonun ilk günü (load bunu ezebilir)
     ui_theme_init(renderer);   // panel/hücre/buton sprite'ları
     audio_init();      // başarısızsa oyun sessiz devam eder
+    ambience_init();   // ortam sesi katmanı (Cila) — yoksa sessiz devam
     music_init();      // arka plan müziği (mood'a göre, crossfade)
 
     // Ölüm akışı: timer > 0 iken dünya donar, ekran kararır; bitince köyde diril
@@ -954,6 +958,9 @@ int main(int argc, char *argv[])
 
     bool inventoryOpen = false;
     bool skillsOpen = false;
+    // Sürükleme (Cila): sol tık basılı taşıma — kaynak envanter YA DA ekipman
+    int dragInvSlot = -1;              // -1 = envanterden sürüklenmiyor
+    EquipSlot dragEquipSlot = EQUIP_NONE;
     GameState gameState = GAME_TITLE;      // açılış: başlık ekranı → ana menü (Faz B1)
     MenuScreen menuScreen = MENU_ROOT;
 
@@ -963,6 +970,22 @@ int main(int argc, char *argv[])
     for (int i = 0; i <= SAVE_SLOT_COUNT; i++)
         save_read_summary(save_slot_path(i), &slotSums[i]);
     float titlePulse = 0.0f;   // "bir tuşa bas" nefes animasyonu
+
+    // Ses ayarları (Cila): settings.cfg'den yüklenir, kaydırıcıyla kaydedilir
+    float musicVol = 1.0f, sfxVol = 1.0f;
+    {
+        FILE *cf = fopen("settings.cfg", "r");
+        if (cf != NULL)
+        {
+            if (fscanf(cf, "music=%f sfx=%f", &musicVol, &sfxVol) != 2)
+            { musicVol = 1.0f; sfxVol = 1.0f; }
+            fclose(cf);
+        }
+        music_set_volume(musicVol);
+        ambience_set_volume(musicVol);
+        audio_set_volume(sfxVol);
+        menu_set_volumes(musicVol, sfxVol);
+    }
     audio_play(SFX_WHISPER);   // başlık ekranı: fısıltı temayı ilk saniyede kurar
 
     // 4) Oyun döngüsü
@@ -975,6 +998,11 @@ int main(int argc, char *argv[])
     worldmap_init(renderer);  // geçit görselleri
     trap_init(renderer);      // diken/plaka/arbalet sprite'ları (sandık günleri worldmap'te)
     scene_set_renderer(renderer);   // vinyet sahneleri görsel yükleyebilsin
+
+    // Mühür dalgası (zindan): periyodik toplu diriliş — sabit gerçek-zaman aralığı
+    #define SEAL_WAVE_SECONDS 120.0f
+    float sealWaveTimer = SEAL_WAVE_SECONDS;
+    bool sealWaveWarned = false;
 
     // Harita geçişi: E ile geçit (pendingPortal) ya da yükleme sonrası (mapReload)
     int pendingPortal = -1;
@@ -2010,6 +2038,65 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+            else if (event.type == SDL_EVENT_MOUSE_BUTTON_UP &&
+                     event.button.button == SDL_BUTTON_LEFT &&
+                     (dragInvSlot >= 0 || dragEquipSlot != EQUIP_NONE))
+            {
+                // --- SÜRÜKLEMEYİ BIRAK (Cila): hedefe göre taşı/kuşan/çıkar/ata ---
+                int dwW, dwH;
+                SDL_GetWindowSize(window, &dwW, &dwH);
+                float ux = (float)event.button.x, uy = (float)event.button.y;
+                int dpx = (dwW - 400) / 2, dpy = 20;
+                int tInv = inventoryOpen
+                         ? inventory_slot_at(ux, uy, (float)dpx, (float)(dpy + 340)) : -1;
+                EquipSlot tEq = inventoryOpen
+                              ? equipment_slot_at(ux, uy, dpx, dpy) : EQUIP_NONE;
+                int tHb = hotbar_slot_at(ux, uy, dwW, dwH);
+
+                if (dragInvSlot >= 0)
+                {
+                    ItemStack *src = &inventory.slots[dragInvSlot];
+                    if (src->type != NULL)
+                    {
+                        if (tInv >= 0 && tInv != dragInvSlot)
+                        {
+                            // Envanter içi: yer değiştir (düzenleme)
+                            ItemStack tmp = inventory.slots[tInv];
+                            inventory.slots[tInv] = *src;
+                            *src = tmp;
+                            audio_play(SFX_UI);
+                        }
+                        else if (tEq != EQUIP_NONE && src->type->equipable)
+                        {
+                            equip_from_inventory(&equipment, &inventory, dragInvSlot);
+                            audio_play(SFX_UI);
+                        }
+                        else if (tHb >= 0 &&
+                                 (src->type->consumable || src->type->trapItem))
+                        {
+                            hotbar_assign_item(&hotbar, src->type);
+                            audio_play(SFX_UI);
+                        }
+                    }
+                }
+                else if (dragEquipSlot != EQUIP_NONE)
+                {
+                    // Ekipmandan envantere (panelin herhangi bir yerine bırak = çıkar)
+                    if (tInv >= 0 || (ux >= dpx && ux <= dpx + 400 && uy >= dpy + 340))
+                    {
+                        unequip_slot(&equipment, &inventory, dragEquipSlot);
+                        audio_play(SFX_UI);
+                    }
+                }
+                dragInvSlot = -1;
+                dragEquipSlot = EQUIP_NONE;
+            }
+            else if (event.type == SDL_EVENT_MOUSE_BUTTON_UP &&
+                     event.button.button == SDL_BUTTON_LEFT)
+            {
+                dragInvSlot = -1;               // güvenlik: askıda sürükleme kalmasın
+                dragEquipSlot = EQUIP_NONE;
+            }
             else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
             {
                 // BAŞLIK EKRANI: tıklama da "bir tuş" sayılır
@@ -2036,14 +2123,27 @@ int main(int argc, char *argv[])
                         MenuAction act = menu_handle_click(&menuScreen,
                                                            (float)event.button.x,
                                                            (float)event.button.y,
-                                                           mw, mh, slotSums, &actSlot);
+                                                           mw, mh, slotSums, &actSlot,
+                                                           &musicVol, &sfxVol);
                         // ESC kökenli Yükle ekranından "Geri" ROOT verir — MAIN'e çevir
                         if (fromPause && menuScreen == MENU_ROOT)
                             menuScreen = MENU_MAIN;
                         if (act != MENU_ACTION_NONE)
                             audio_play(SFX_UI);
 
-                        if (act == MENU_ACTION_RESUME)
+                        if (act == MENU_ACTION_VOLUME)
+                        {
+                            music_set_volume(musicVol);
+                            ambience_set_volume(musicVol);
+                            audio_set_volume(sfxVol);
+                            FILE *cf = fopen("settings.cfg", "w");
+                            if (cf != NULL)
+                            {
+                                fprintf(cf, "music=%.2f sfx=%.2f\n", musicVol, sfxVol);
+                                fclose(cf);
+                            }
+                        }
+                        else if (act == MENU_ACTION_RESUME)
                             gameState = GAME_PLAYING;
                         else if (act == MENU_ACTION_QUIT)
                             running = false;
@@ -2193,6 +2293,34 @@ int main(int argc, char *argv[])
                     float worldY = event.button.y / camera.zoom + camera.y;
 
                     bool handled = false;
+
+                    // -2) Envanter açıkken SOL basış = sürükleme başlangıcı (Cila)
+                    if (inventoryOpen)
+                    {
+                        int dwW, dwH;
+                        SDL_GetWindowSize(window, &dwW, &dwH);
+                        int dpx = (dwW - 400) / 2, dpy = 20;
+                        int dsl = inventory_slot_at((float)event.button.x,
+                                                    (float)event.button.y,
+                                                    (float)dpx, (float)(dpy + 340));
+                        if (dsl >= 0 && inventory.slots[dsl].type != NULL)
+                        {
+                            dragInvSlot = dsl;
+                            handled = true;
+                        }
+                        else
+                        {
+                            EquipSlot des = equipment_slot_at((float)event.button.x,
+                                                              (float)event.button.y,
+                                                              dpx, dpy);
+                            if (des != EQUIP_NONE &&
+                                equipment.slots[des].type != NULL)
+                            {
+                                dragEquipSlot = des;
+                                handled = true;
+                            }
+                        }
+                    }
 
                     // -1) Skill ağacı paneli açıksa: düğüm seç / ikinci tıkta AL / respec
                     if (treeOpenSkill >= 0)
@@ -3000,6 +3128,8 @@ int main(int argc, char *argv[])
                     splashTimer = 3.0f;
                 }
                 currentRegion = -2;   // dünyaya dönüşte bölge splash'i yeniden tetiklensin
+                sealWaveTimer = SEAL_WAVE_SECONDS;   // zindan girişinde dalga sıfırdan sayar
+                sealWaveWarned = false;
                 bool wasPortal = pendingPortal >= 0;
                 pendingPortal = -1;
                 mapReloadNeeded = false;
@@ -5015,8 +5145,8 @@ int main(int argc, char *argv[])
                 }
             }
 
-            // Gece tehlikesi: spawn 2x hızlı (dt şişirilir), algı menzili 1.5x
-            float nightSpawnMul = gametime_is_night() ? 2.0f : 1.0f;
+            // Gece tehlikesi: algı menzili 1.5x (spawn çarpanı KALKTI —
+            // dünya ekolojik, zindan mühür dalgasıyla dolar)
             float detectMul = (gametime_is_night() ? 1.5f * perkFx.nightDetectMult : 1.0f)
                             * perkFx.detectOnPlayerMult;   // Hayalet/Hortlak düğümleri
 
@@ -5031,9 +5161,54 @@ int main(int argc, char *argv[])
                                    perkFx.sneakSpeedRelief)
                                 : 1.0f)
                              * (player.speedBuffTimer > 0.0f ? player.speedBuffMult : 1.0f);
-            if (map_current() != MAP_WORLD)   // dünya: ekoloji; zindan: eski akış
-                spawn_zones_update(spawnZones, spawnZoneCount, mobs, MAX_MOBS, &nextMobId,
-                               dt * nightSpawnMul);
+            // --- MÜHÜR DALGASI (Cila düzeltmesi): zindanda anlık respawn YOK —
+            // periyodik toplu diriliş. Uyarı önce gelir ("Mühür titriyor...");
+            // dalga eksik zone'ları doldurur ama OYUNCUNUN DİBİNDE doğurmaz
+            // (yakın odalar bir sonraki dalgayı bekler). BOSS dalgaya dahil
+            // değil — haftalık diriliş kuralı ayrı işler (farm yok).
+            if (map_is_dungeon(map_current()))
+            {
+                sealWaveTimer -= dt;
+                if (!sealWaveWarned && sealWaveTimer <= 3.0f)
+                {
+                    sealWaveWarned = true;
+                    audio_play(SFX_WHISPER);
+                    shakeTime = shakeDur = 0.4f;
+                    shakeAmp = 3.0f;
+                    SDL_Color seal = { 170, 140, 235, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 26.0f,
+                                         "Mühür titriyor...", seal);
+                }
+                if (sealWaveTimer <= 0.0f)
+                {
+                    sealWaveTimer = SEAL_WAVE_SECONDS;
+                    sealWaveWarned = false;
+                    float wpx = player.rect.x + player.rect.w / 2.0f;
+                    float wpy = player.rect.y + player.rect.h / 2.0f;
+                    for (int z = 0; z < spawnZoneCount; z++)
+                    {
+                        SpawnZone *sz = &spawnZones[z];
+                        float zdx = sz->x - wpx, zdy = sz->y - wpy;
+                        if (zdx * zdx + zdy * zdy < 280.0f * 280.0f)
+                            continue;   // oyuncunun gözü önünde dikilmek yok
+                        int aliveZ = 0;
+                        for (int m2 = 0; m2 < MAX_MOBS; m2++)
+                            if (mobs[m2].zoneId == z &&
+                                (mobs[m2].e.alive || mobs[m2].dying))
+                                aliveZ++;
+                        for (int k = aliveZ; k < sz->maxCount; k++)
+                        {
+                            float ang = randf() * 6.2832f;
+                            float rr = randf() * sz->radius;
+                            mob_spawn(mobs, MAX_MOBS, &nextMobId, sz->type,
+                                      sz->x + SDL_cosf(ang) * rr,
+                                      sz->y + SDL_sinf(ang) * rr, z);
+                        }
+                    }
+                }
+            }
 
             float px = player.rect.x + player.rect.w / 2.0f;
             float py = player.rect.y + player.rect.h / 2.0f;
@@ -5315,6 +5490,7 @@ int main(int argc, char *argv[])
             for (int i = 0; i < mobCount && !inCombat; i++)
             {
                 if (!mobs[i].e.alive) continue;
+                if (!mobs[i].aggro) continue;   // devriye/su ziyareti CHASE clip'i kullanır — savaş değil
                 if (mobs[i].state != MOB_CHASE && mobs[i].state != MOB_ATTACK) continue;
                 float mdx = (mobs[i].e.rect.x + mobs[i].e.rect.w / 2.0f) - px;
                 float mdy = (mobs[i].e.rect.y + mobs[i].e.rect.h / 2.0f) - py;
@@ -5336,9 +5512,11 @@ int main(int argc, char *argv[])
                 int mreg = region_at(px, py);
                 mood = (mreg >= 0) ? REGIONS[mreg].mood : MOOD_WILD;
                 if (mood == MOOD_WILD && gametime_is_night())
-                    mood = MOOD_DANGER;   // gece açık arazi güvenli değil
+                    mood = MOOD_NIGHT;   // gece açık arazi: koyu pad (Cila)
             }
             music_set_mood(mood);
+            ambience_set(map_current() != MAP_WORLD ? AMB_DUNGEON
+                        : gametime_is_night() ? AMB_NIGHT : AMB_DAY);
 
             loot_update_all(loots, MAX_LOOT, dt);
 
@@ -5397,7 +5575,13 @@ int main(int argc, char *argv[])
                 splashTimer -= dt;
         }
 
+        if (gameState == GAME_TITLE || gameState == GAME_MENU)
+        {
+            music_set_mood(MOOD_MENU);   // başlık/ana menü: mühür nabzı (Cila)
+            ambience_set(AMB_NONE);
+        }
         music_update(dt);   // fade + loop besleme (menüde/ölümde de akar)
+        ambience_update(dt);
 
         // Kare başlat (clear rengi gri); swapchain yoksa bu kare çizilmez
         if (!r2d_begin_frame(renderer, 155, 155, 155))
@@ -5903,7 +6087,7 @@ int main(int argc, char *argv[])
         }
 
         // Hotbar (alt-orta): skill CD'leri + pot adetleri
-        hotbar_render(&hotbar, renderer, itemIconTex, &itemTex, gameFont,
+        hotbar_render(&hotbar, renderer, itemIconTex, &itemTex, abilityIconTex, gameFont,
                       player.abilityCd, player.itemCd, &inventory, winW, winH);
 
         // Yay kuşanılıyken aktif ok sayacı (hotbar'ın üstünde) — tür adıyla
@@ -6016,7 +6200,7 @@ int main(int argc, char *argv[])
 
                 tree_panel_render(ts, tsTaken, tsLevel,
                                   treeSelNode, respecCost,
-                                  renderer, gameFont,
+                                  renderer, gameFont, abilityIconTex,
                                   40.0f + SKILL_PANEL_W + 10.0f, 40.0f);
             }
         }
@@ -6127,6 +6311,76 @@ int main(int argc, char *argv[])
             draw_text(renderer, gameFont, line, pX + 24.0f, pY + 122.0f, bribeCol);
         }
 
+        // Sürükleme hayaleti (Cila): taşınan item imleci izler
+        if (dragInvSlot >= 0 || dragEquipSlot != EQUIP_NONE)
+        {
+            const ItemStack *ds = (dragInvSlot >= 0)
+                                ? &inventory.slots[dragInvSlot]
+                                : &equipment.slots[dragEquipSlot];
+            if (ds->type != NULL)
+            {
+                float gmx = 0.0f, gmy = 0.0f;
+                SDL_GetMouseState(&gmx, &gmy);
+                R2DTexture *gicon = item_icon_tex(&itemTex, ds->type);
+                if (gicon != NULL)
+                {
+                    SDL_FRect gsrc = ds->type->iconSrc;
+                    SDL_FRect gdst = { gmx - 20.0f, gmy - 20.0f, 40.0f, 40.0f };
+                    r2d_texture_set_alpha_mod(gicon, 190);
+                    r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                    r2d_draw_texture(renderer, gicon, &gsrc, &gdst);
+                    r2d_texture_set_alpha_mod(gicon, 255);
+                }
+            }
+        }
+
+        // Tooltip (Cila): imlecin altındaki hücrenin tam detayı — envanter/
+        // ekipman/dükkan; ekipman karşılaştırması aynı slottaki kuşanılıyla
+        if (gameState == GAME_PLAYING && !scene_active())
+        {
+            float tmx = 0.0f, tmy = 0.0f;
+            SDL_GetMouseState(&tmx, &tmy);
+            const ItemStack *tip = NULL, *tipEq = NULL;
+
+            if (inventoryOpen)
+            {
+                int tpx = (winW - 400) / 2, tpy = 20;
+                int sl = inventory_slot_at(tmx, tmy, (float)tpx, (float)(tpy + 340));
+                if (sl >= 0 && inventory.slots[sl].type != NULL)
+                {
+                    tip = &inventory.slots[sl];
+                    const ItemType *tt = tip->type;
+                    if (tt->equipable && tt->equipSlot >= 0 &&
+                        tt->equipSlot < EQUIP_SLOT_COUNT &&
+                        equipment.slots[tt->equipSlot].type != NULL)
+                        tipEq = &equipment.slots[tt->equipSlot];
+                }
+                if (tip == NULL)
+                {
+                    EquipSlot es = equipment_slot_at(tmx, tmy, tpx, tpy);
+                    if (es >= 0 && es < EQUIP_SLOT_COUNT &&
+                        equipment.slots[es].type != NULL)
+                        tip = &equipment.slots[es];
+                }
+            }
+            if (tip == NULL && shopOpen)
+            {
+                int se = shop_entry_at(tmx, tmy, 40.0f, 40.0f);
+                if (se >= 0 && se < SHOP_STOCK_COUNT)
+                {
+                    static ItemStack shopTip;   // stok taze instance gibi gösterilir
+                    shopTip = item_make(SHOP_STOCK[se].type, 1, 0);
+                    tip = &shopTip;
+                    if (shopTip.type->equipable && shopTip.type->equipSlot >= 0 &&
+                        shopTip.type->equipSlot < EQUIP_SLOT_COUNT &&
+                        equipment.slots[shopTip.type->equipSlot].type != NULL)
+                        tipEq = &equipment.slots[shopTip.type->equipSlot];
+                }
+            }
+            if (tip != NULL)
+                tooltip_render(renderer, gameFont, tip, tipEq, tmx, tmy, winW, winH);
+        }
+
         if (gameState == GAME_PAUSED || gameState == GAME_MENU)
             menu_render(renderer, gameFont, menuScreen, winW, winH, slotSums);
         else if (gameState == GAME_TITLE)
@@ -6202,6 +6456,7 @@ int main(int argc, char *argv[])
     if (arcaneTex)  r2d_texture_destroy(NULL, arcaneTex);
     if (bookTex)    r2d_texture_destroy(NULL, bookTex);
     if (nestsTex)   r2d_texture_destroy(NULL, nestsTex);
+    if (abilityIconTex) r2d_texture_destroy(NULL, abilityIconTex);
     if (shieldTex)  r2d_texture_destroy(NULL, shieldTex);
     if (spikesTex)  r2d_texture_destroy(NULL, spikesTex);
     if (flameTex)   r2d_texture_destroy(NULL, flameTex);
@@ -6214,6 +6469,7 @@ int main(int argc, char *argv[])
     minimap_quit();
     ui_theme_quit();
     music_quit();
+    ambience_quit();
     audio_quit();
     item_textures_free(&itemTex);
     font_close(gameFont);

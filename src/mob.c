@@ -20,7 +20,6 @@ static void mob_move(Mob *m, float dx, float dy)
         m->e.rect.y += dy;
 }
 
-#define RESPAWN_DELAY 3.0f   // mob ölünce kaç saniye sonra yenisi doğar
 #define SEPARATION_RADIUS 70.0f   // bu mesafeden yakın mob'lar iter
 #define SEPARATION_FORCE 250.0f   // itme gücü
 
@@ -1257,40 +1256,6 @@ void mob_alert_camp(Mob *mobs, int mobCount, const Mob *victim)
     }
 }
 
-void spawn_zones_update(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId, float dt)
-{
-    for (int i = 0; i < zoneCount; i++) {
-        SpawnZone *z = &zones[i];
-
-        // Günlük yenilenen türler (av hayvanları) burada DOLMAZ —
-        // gün dönünce main spawn_zones_fill çağırır (kaynak düğümü gibi)
-        if (z->type->dailyRespawn)
-            continue;
-
-        // Bu bölgeye ait canlı (ya da ölüm animasyonu oynayan) mob say
-        int aliveCount = 0;
-        for (int j = 0; j < maxMobs; j++) {
-            if (mobs[j].zoneId == i && (mobs[j].e.alive || mobs[j].dying))
-                aliveCount++;
-        }
-
-        // Bölge dolu mu?
-        if (aliveCount >= z->maxCount) {
-            z->respawnTimer = RESPAWN_DELAY;   // dolu → sayacı tam tut
-            continue;
-        }
-
-        // Eksik mob var → respawn sayacını azalt
-        z->respawnTimer -= dt;
-        if (z->respawnTimer <= 0.0f) {
-            // Bölge içinde rastgele konum (merkez ± yarıçap)
-           float sx, sy;
-            zone_random_pos(z, &sx, &sy);
-            mob_spawn(mobs, maxMobs, nextMobId, z->type, sx, sy, i);
-            z->respawnTimer = RESPAWN_DELAY;
-        }
-    }
-}
 
 // Oyun başında: tüm bölgeleri maxCount kadar mob'la doldur (respawn beklemeden).
 void spawn_zones_fill(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId)

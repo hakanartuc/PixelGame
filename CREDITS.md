@@ -66,6 +66,12 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
 - TODO: her paketin indirildiği sayfa + yazar + lisans teyidi
   (mobil dağıtım öncesi şart — magic_pack LPC uyumlu görünüyor).
 
+### Büyü ikonları (hotbar/ağaç beceri ikonları)
+- Dosya: `assets/icons/abilities.png` (magic_icons.png hücrelerinden türetildi,
+  kılıç/yay glifleri prosedürel — `scripts/gen_ability_icons.py`)
+- Kaynak: `~/Downloads/magic_icons.png`
+- TODO: paketin indirildiği sayfa + yazar + lisans teyidi.
+
 ## Font
 - **Public Pixel** (`assets/fonts/PublicPixel-rv0pA.ttf`) — GGBotNet,
   CC0 / public domain. https://ggbot.itch.io/public-pixel-font

@@ -166,7 +166,6 @@ int mob_find_nearest(Mob *mobs, int mobCount, float px, float py);
 Mob *mob_find_by_id(Mob *mobs, int mobCount, int id);
 void target_hp_bar_render(R2D *renderer, const Mob *target, int winW, TTF_Font *font);
 int mob_spawn(Mob *mobs, int maxMobs, int *nextMobId, const MobType *type, float x, float y, int zoneId);
-void spawn_zones_update(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId, float dt);
 void spawn_zones_fill(SpawnZone *zones, int zoneCount, Mob *mobs, int maxMobs, int *nextMobId);
 
 #endif

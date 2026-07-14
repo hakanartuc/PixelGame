@@ -73,8 +73,22 @@ static int inv_total_count(const Inventory *inv, const ItemType *type)
     return total;
 }
 
+int hotbar_slot_at(float x, float y, int winW, int winH)
+{
+    float barW = HOTBAR_SLOTS * CELL + (HOTBAR_SLOTS - 1) * GAP;
+    float x0 = (winW - barW) / 2.0f;
+    float y0 = winH - CELL - 12.0f;
+    if (y < y0 || y >= y0 + CELL) return -1;
+    for (int i = 0; i < HOTBAR_SLOTS; i++) {
+        float cx = x0 + i * (CELL + GAP);
+        if (x >= cx && x < cx + CELL) return i;
+    }
+    return -1;
+}
+
 void hotbar_render(const Hotbar *hb, R2D *renderer,
                    R2DTexture *itemIconTex, const ItemTextures *itemTex,
+                   R2DTexture *abilityIconTex,
                    TTF_Font *font, const float *abilityCd, const float *itemCd,
                    const Inventory *inv, int winW, int winH)
 {
@@ -96,6 +110,13 @@ void hotbar_render(const Hotbar *hb, R2D *renderer,
         if (s->kind == HOTBAR_SKILL) {
             const AbilityDef *a = &ABILITIES[s->abilityId];
 
+            // İkon atlası (Cila): AbilityId hücresi; yoksa kısaltma metni
+            if (abilityIconTex != NULL) {
+                SDL_FRect isrc = { (float)(s->abilityId * 32), 0, 32, 32 };
+                SDL_FRect idst = { cx + 4.0f, y0 + 4.0f, CELL - 8.0f, CELL - 8.0f };
+                r2d_draw_texture(renderer, abilityIconTex, &isrc, &idst);
+            }
+            else
             // Kısaltma (ikon gelene kadar) — ten zeminde koyu metin
             if (font != NULL) {
                 draw_text(renderer, font, a->abbrev, cx + 10.0f, y0 + 16.0f, UI_TEXT_DARK);

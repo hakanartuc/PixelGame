@@ -62,12 +62,12 @@ int contract_today(int slot)
 
     // GEÇERLİ ilanlar: kes-kontratının hedef türü dünyada yaşıyor olmalı (E2).
     // within geçerliler arasında sayılır; hiç geçerli yoksa slot boş kalır.
-    int valid[CONTRACT_COUNT], nValid = 0;
+    int valid[16], nValid = 0;   // CONTRACT_COUNT const int — sabit tavan (VLA olmasın)
     for (int i = 0; i < CONTRACT_COUNT; i++) {
         if (CONTRACTS[i].tier != slot) continue;        // slot = kademe
         if (CONTRACTS[i].targetMob != NULL &&
             ecology_type_pop(CONTRACTS[i].targetMob) <= 0) continue;
-        valid[nValid++] = i;
+        if (nValid < 16) valid[nValid++] = i;
     }
     if (nValid == 0) return -1;   // "Bugün ilan yok"
     return valid[within % nValid];

@@ -9,6 +9,9 @@ static const char *TRACK_FILES[MOOD_COUNT] = {
     [MOOD_WILD]   = "wild",
     [MOOD_DANGER] = "danger",
     [MOOD_COMBAT] = "combat",
+    [MOOD_DUNGEON] = "dungeon",
+    [MOOD_NIGHT]   = "night",
+    [MOOD_MENU]    = "menu",
 };
 
 static Uint8 *trkBuf[MOOD_COUNT];
@@ -19,6 +22,7 @@ static MusicMood target = MOOD_TOWN;
 static bool musicReady = false;
 static float duckTarget = 1.0f;   // anlatı kısması hedefi
 static float duckNow = 1.0f;      // yumuşak yaklaşan mevcut değer
+static float userVol = 1.0f;      // kullanıcı müzik seviyesi (ayarlar)
 
 bool music_init(void)
 {
@@ -86,7 +90,7 @@ void music_update(float dt)
         float want = (i == (int)target) ? 1.0f : 0.0f;
         if (trkGain[i] < want) { trkGain[i] += step; if (trkGain[i] > want) trkGain[i] = want; }
         if (trkGain[i] > want) { trkGain[i] -= step; if (trkGain[i] < want) trkGain[i] = want; }
-        SDL_SetAudioStreamGain(trkStream[i], trkGain[i] * MUSIC_VOLUME * duckNow);
+        SDL_SetAudioStreamGain(trkStream[i], trkGain[i] * MUSIC_VOLUME * duckNow * userVol);
 
         // Duyulur parçanın kuyruğu azaldıysa baştan ekle (kesintisiz loop)
         if (trkGain[i] > 0.001f &&
@@ -94,6 +98,13 @@ void music_update(float dt)
             SDL_PutAudioStreamData(trkStream[i], trkBuf[i], (int)trkLen[i]);
         }
     }
+}
+
+void music_set_volume(float v01)
+{
+    if (v01 < 0.0f) v01 = 0.0f;
+    if (v01 > 1.0f) v01 = 1.0f;
+    userVol = v01;
 }
 
 void music_quit(void)

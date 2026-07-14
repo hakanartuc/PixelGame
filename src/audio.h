@@ -31,6 +31,7 @@ bool audio_init(void);
 
 // Efekti çal (init başarısızsa sessizce hiçbir şey yapmaz).
 void audio_play(SfxId id);
+void audio_set_volume(float v01);   // kullanıcı SFX seviyesi (0..1, ayarlar)
 
 void audio_quit(void);
 

@@ -24,6 +24,7 @@ static Uint8 *sfxBuf[SFX_COUNT];
 static Uint32 sfxLen[SFX_COUNT];
 static SDL_AudioStream *sfxStream[SFX_COUNT];
 static bool audioReady = false;
+static float sfxVol = 1.0f;   // kullanıcı SFX seviyesi (ayarlar)
 
 bool audio_init(void)
 {
@@ -61,9 +62,24 @@ void audio_play(SfxId id)
     if (!audioReady || id < 0 || id >= SFX_COUNT) return;
     if (sfxStream[id] == NULL || sfxBuf[id] == NULL) return;
 
+    // Varyasyon (Cila): savaş sesleri her seferinde birebir aynı çalmasın —
+    // küçük perde oynaması (%±8) kulağın "kayıt tekrarı" algısını kırar
+    bool vary = (id == SFX_HIT || id == SFX_CRIT || id == SFX_DODGE ||
+                 id == SFX_REFLECT || id == SFX_LOOT);
+    float ratio = vary ? 0.92f + 0.16f * ((float)SDL_rand(1000) / 1000.0f) : 1.0f;
+    SDL_SetAudioStreamFrequencyRatio(sfxStream[id], ratio);
+    SDL_SetAudioStreamGain(sfxStream[id], sfxVol);
+
     // Retrigger: çalmakta olanı kes, baştan başlat
     SDL_ClearAudioStream(sfxStream[id]);
     SDL_PutAudioStreamData(sfxStream[id], sfxBuf[id], (int)sfxLen[id]);
+}
+
+void audio_set_volume(float v01)
+{
+    if (v01 < 0.0f) v01 = 0.0f;
+    if (v01 > 1.0f) v01 = 1.0f;
+    sfxVol = v01;
 }
 
 void audio_quit(void)

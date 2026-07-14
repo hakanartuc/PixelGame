@@ -17,6 +17,9 @@ typedef enum {
     MOOD_WILD,
     MOOD_DANGER,
     MOOD_COMBAT,
+    MOOD_DUNGEON,   // zindan katları — derin dron (Cila)
+    MOOD_NIGHT,     // açık arazi gecesi — koyu pad (DANGER'dan ayrıştı)
+    MOOD_MENU,      // başlık + ana menü — mühür nabzı
     MOOD_COUNT,
 } MusicMood;
 
@@ -32,6 +35,7 @@ void music_set_duck(float duck01);
 
 // Her kare: fade ilerlet + biten kuyrukları besle (loop). Menüde de çağrılır.
 void music_update(float dt);
+void music_set_volume(float v01);   // kullanıcı müzik seviyesi (0..1, ayarlar)
 
 void music_quit(void);
 

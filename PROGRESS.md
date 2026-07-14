@@ -383,6 +383,32 @@ Güncelleme: 2026-07-11
   (ecology_note_spawn — gölcük ritüeli çocuk canlıyken açılmaz)
 - Save v21: NestState.colonizedDay (söylenti süresi)
 
+### Faz CİLA — his + kullanılabilirlik paketi (roadmap YAKIN #1)
+- **TOOLTIP** (tooltip.c): envanter/ekipman/dükkan hücresinde tam detay —
+  ad(+plus), tür, hasar/defans (instance), rün/stat, tüketim etkileri, değer;
+  KUŞANILIYLA KARŞILAŞTIRMA (yeşil ^/kırmızı v fark satırı); ekran içinde çevrilir
+- **DRAG&DROP** (sol tık — sağ tık yolları duruyor): çanta içi taşı/takas,
+  çantadan ekipmana kuşan, ekipmandan çantaya çıkar, tüketilebilir/tuzağı
+  hotbar'a sürükle; yarı saydam ikon imleci izler
+- **İKONLAR** (assets/icons/abilities.png ← gen_ability_icons.py): hotbar SKILL
+  slotları + ağaç AKTİF düğümleri — büyüler magic_icons.png'den (64→32
+  piksel-korumalı), kılıç/yay prosedürel glif
+- **MÜZİK ×3** (gen_music.py artık repoda): MOOD_DUNGEON (dron+çan; zindan
+  haritaları DANGER'dan ayrıldı), MOOD_NIGHT (gece açık arazi), MOOD_MENU
+  (52bpm mühür nabzı — başlık ekranı teması)
+- **AMBİYANS** (ambience.c + gen_ambience.py): gündüz kuş/rüzgar, gece cırcır,
+  zindan uğultu/damla — müziğin altında, 2sn crossfade, menüde susar
+- **SFX VARYASYON**: vuruş/krit/kaçınma/yansıtma/loot ±%8 perde oynaması
+  (SDL_SetAudioStreamFrequencyRatio)
+- **AYARLAR**: ESC + ana menüde Müzik/SFX kaydırıcıları → settings.cfg (kalıcı)
+- **FIX (E2 regresyonu)**: savaş müziği MOB_CHASE'e bakıyordu — devriye/su
+  ziyareti tetikliyordu; artık yalnız AGGRO moblar
+- **MÜHÜR DALGASI** (kullanıcı tespiti: zindanda 3sn'de respawn): sürekli
+  respawn + gece ×2 SÖKÜLDÜ (spawn_zones_update silindi) → her 120sn
+  (SEAL_WAVE_SECONDS) toplu diriliş; 3sn önce "Mühür titriyor..." + fısıltı +
+  sarsıntı; oyuncuya 280px'ten yakın doğum yok; girişte sayaç sıfırlanır;
+  BOSS dalga dışı (haftalık diriliş — farm yok)
+
 ## 🔜 ROADMAP (2026-07-14 — RPG-ruhu analiziyle onaylandı)
 
 Analiz özeti: sistem omurgası güçlü (build kimliği, ekonomi, suç/itibar, ekoloji,
@@ -392,9 +418,8 @@ birikmiyor değil ama OKUNMUYOR (kişilik/itibar/mühür diyaloglara dönmeli),
 sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür").
 
 ### YAKIN — "oyun gibi hissettir" (his + rol)
-1. **CİLA PAKETİ (SIRADAKİ FAZ)**: item tooltip'leri, envanter drag&drop,
-   hotbar/ağaç ikonları (magic_icons.png elimizde), ses/müzik çeşitliliği;
-   küçük UX borçları (speech zar kilidi save'i vb. buradan seçilir)
+1. ~~CİLA PAKETİ~~ TAMAM (2026-07-14 — bkz. Faz CİLA bölümü); kalan küçük
+   UX borcu: speech zar kilidi save'i (uygun faza serpilir)
 2. **HİKAYE KARTLARI DALGA 1** + **Faz C sahne araçları** (birlikte):
    2 kısa + 1 saga oyuna iner — ÇOK YOLLU görev yapısı (speech/sneak/savaş/rüşvet),
    kişilik+itibar+mühür sayaçlarının diyaloglarda OKUNMASI (`req: kaba >= 3`),

@@ -836,7 +836,8 @@ static const char *tree_title(int treeId)
 
 void tree_panel_render(int treeId, Uint32 taken, int level,
                        int selNode, int respecCost,
-                       R2D *renderer, TTF_Font *font, float px, float py)
+                       R2D *renderer, TTF_Font *font,
+                       R2DTexture *abilityIconTex, float px, float py)
 {
     const SkillTreeDef *t = tree_get(treeId);
     if (t == NULL) return;
@@ -895,6 +896,15 @@ void tree_panel_render(int treeId, Uint32 taken, int level,
 
         if (isTaken)      ui_cell_hi(renderer, r.x, r.y, r.w, r.h);
         else              ui_cell_gray(renderer, r.x, r.y, r.w, r.h);
+
+        // AKTİF düğüm: beceri ikonu kutunun içinde (Cila)
+        if (n->cls == NODE_ACTIVE && abilityIconTex != NULL &&
+            n->grantAbility >= 0)
+        {
+            SDL_FRect isrc = { (float)(n->grantAbility * 32), 0, 32, 32 };
+            SDL_FRect idst = { r.x + 2.0f, r.y + 2.0f, r.w - 4.0f, r.h - 4.0f };
+            r2d_draw_texture(renderer, abilityIconTex, &isrc, &idst);
+        }
 
         // Sınıf çerçevesi: keystone mor, AKTİF mavi, dikkat çekici altın
         if (n->cls == NODE_KEYSTONE)     r2d_set_color(renderer, 200, 150, 255, 255);

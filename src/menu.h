@@ -23,6 +23,7 @@ typedef enum {
     MENU_SLOTS_SAVE,        // kaydet icin slot secimi
     MENU_SLOTS_LOAD,        // yukle icin slot secimi (+ otomatik kayit)
     MENU_CONFIRM_OVERWRITE, // dolu slota YENI OYUN yazma onayi
+    MENU_SETTINGS,          // ses ayarlari (muzik/SFX kaydiricilari)
 } MenuScreen;
 
 // Menu tiklamasinin sonucu. Slotlu aksiyonlarda slot outSlot'a yazilir.
@@ -34,6 +35,7 @@ typedef enum {
     MENU_ACTION_SAVE_SLOT,  // secilen slota kaydet
     MENU_ACTION_LOAD_SLOT,  // secilen slottan yukle
     MENU_ACTION_TO_MAINMENU,// ana menuye don (onaylandi)
+    MENU_ACTION_VOLUME,     // kaydirici oynadi — main uygular + kaydeder
 } MenuAction;
 
 // Menu cizimi. sums: SAVE_SLOT_COUNT+1 ozet (son eleman otomatik kayit) —
@@ -44,8 +46,14 @@ void menu_render(R2D *renderer, TTF_Font *font,
 
 // Tiklama testi. screen'i degistirebilir (ekran gecisleri menu icinde cozulur).
 // Slotlu aksiyon donerse secilen slot *outSlot'a yazilir.
+// musicVol/sfxVol: ayarlar ekrani kaydiricilarinin degerleri (0..1) — menu
+// dogrudan gunceller, MENU_ACTION_VOLUME donunce main uygular + kaydeder.
 MenuAction menu_handle_click(MenuScreen *screen, float mx, float my,
                              int winW, int winH,
-                             const SaveSummary *sums, int *outSlot);
+                             const SaveSummary *sums, int *outSlot,
+                             float *musicVol, float *sfxVol);
+
+// Ayarlar ekrani cizimi icin mevcut degerler (menu_render oncesi cagir)
+void menu_set_volumes(float musicVol, float sfxVol);
 
 #endif

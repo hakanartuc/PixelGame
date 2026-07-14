@@ -36,7 +36,7 @@ Cute_Fantasy paketleri (`/Users/hakanartuc/Cute Fantasy` — NPC, ev, düşman, 
   · minimap (fog, target pass) · save (v21, alan-alan binary; skills/masks blokları append-toleranslı)
   · craft (istasyonlar/tarifler/sunak) · resource (toplama düğümleri) · region (bölgesel bounty/itibar)
   · contract (pano: 9 kontrat, 3 kademe, günlük rotasyon) · light (gece ışık kaynakları + kamp ateşi)
-  · ui_theme (9-grid paneller) · font (ttf→GPU upload).
+  · ui_theme (9-grid paneller) · font (ttf→GPU upload) · tooltip · ambience · journal.
 - **main.c** — tüm bağlantı/orkestrasyon burada (~5000 satır; ileride bölünebilir).
 
 ## Tuşlar
@@ -79,8 +79,13 @@ Yolculuk günlüğü (J, iki sekme, birinci ağız).
 ROADMAP ONAYLI (2026-07-14, PROGRESS "ROADMAP" bölümü): YAKIN cila → hikaye
 kartları D1 + sahne araçları → karakter yaratma-lite; ORTA ikinci yerleşim+biyom →
 4 onaylı mekanik → Dünya Olayları; UZAK Perde 2 → kalan sistemler → yayın.
-Sıradaki: **CİLA PAKETİ** (tooltips, drag&drop, ikonlar, ses çeşitliliği —
-faz başında kapsam anketi).
+**CİLA PAKETİ TAMAM (2026-07-14)**: tooltip (kuşanılıyla karşılaştırmalı) +
+drag&drop (sol tık; sağ tık yolları duruyor) + beceri ikonları (hotbar+ağaç) +
+3 yeni müzik (zindan/gece/menü) + ambiyans katmanı + SFX perde varyasyonu +
+ses ayarları (settings.cfg) + MÜHÜR DALGASI (zindan respawn'ı: 120sn'de toplu
+diriliş, uyarılı; boss haftalık kuralda — spawn_zones_update söküldü).
+Sıradaki (roadmap YAKIN #2): **HİKAYE KARTLARI DALGA 1 + Faz C sahne araçları**
+(çok yollu görevler, seçimlerin diyaloglarda okunması, yeni yankılar).
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
 mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13) + BÜYÜ SİSTEMİ
 (22: 6 büyü + Asa + INT + zırh ağırlığı + mana iksiri; ayrıntı PROGRESS Faz 22).

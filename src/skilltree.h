@@ -65,9 +65,11 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
 // --- Panel: düğüm-kenar haritası (çizim ve tıklama AYNI yerleşim) ---
 // level: skill seviyesi (Kader için TOPLAM seviye). selNode: seçili düğüm (-1).
 // respecCost: >=0 ise sunak yakınında — "Sıfırla" satırı çizilir.
+// abilityIconTex: AKTİF düğümlerde küçük beceri ikonu (NULL = yalnız çerçeve)
 void tree_panel_render(int treeId, Uint32 taken, int level,
                        int selNode, int respecCost,
-                       R2D *renderer, TTF_Font *font, float px, float py);
+                       R2D *renderer, TTF_Font *font,
+                       R2DTexture *abilityIconTex, float px, float py);
 // Tıklanan düğüm indeksi; TREE_CLICK_RESPEC = sıfırla satırı; -1 = boşluk
 #define TREE_CLICK_RESPEC (-2)
 int tree_panel_node_at(int treeId, float x, float y, float px, float py);
