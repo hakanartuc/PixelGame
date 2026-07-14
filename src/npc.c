@@ -68,6 +68,16 @@ const NpcDef NPCS[] = {
           { .hour = 8.0f,  .x = T(13), .y = T(11), .indoors = false },  // gündüz meydan kıyısı
           { .hour = 17.0f, .x = T(142.5f), .y = T(9), .indoors = false }, // akşam geçit kapısı
       }, .stopCount = 2 },
+
+    // K2 Son Müşteri (D1b): hancı — kervancının karısı; gece sofra kurar
+    { .name = "Nazife",
+      .sheetPath = "assets/characters/npcs/Chef_Chloe.png",
+      .dialogFile = "assets/dialogs/nazife.txt",
+      .isVendor = false, .questId = NULL,
+      .schedule = {
+          { .hour = 7.0f,  .x = T(18),   .y = T(12.6f), .indoors = false }, // han kapısı
+          { .hour = 19.0f, .x = T(19.2f), .y = T(13),    .indoors = false }, // sofra başı
+      }, .stopCount = 2 },
 };
 const int NPC_COUNT = (int)(sizeof(NPCS) / sizeof(NPCS[0]));
 

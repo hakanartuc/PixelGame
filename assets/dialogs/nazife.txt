@@ -1,0 +1,52 @@
+# Nazife — K2 Son Müşteri (D1b). Giriş düğümü koddan seçilir:
+# araba yankısı yaşanmadıysa start · Tanık hattıyla yaşandıysa bilgi ·
+# Sömüren hattıyla yaşandıysa bilgi_bos · karar sonrası son1/son2/bos_tekrar.
+
+[start]
+text: Hoş geldin yolcu. Oturacaksan otur ama şu masaya değil — o kurulu. Kocam bal küpleriyle doğu yoluna çıktı... epey oldu. Dönünce aç olur.
+opt: Doğu yolunu bilirim. Gözüm açık olur. -> umut
+opt: (Masaya bakma, geç.) -> end
+
+[umut]
+text: Herkes "epey oldu" diyor, sen demedin. Sağ ol. Bir şey görürsen... ne görürsen gör, gel söyle. Sofra bekler, ben beklerim.
+opt: (Başınla onayla.) -> end
+
+[bilgi]
+text: Yüzün doğu yolundan gelenlerin yüzü. Bir şey gördün. Söyle — sofraya bakma, bana bak ve söyle.
+opt: "Son düşüncesi ocakta unutulmuş süt kokusuydu." -> tanima
+fx: kibar += 1
+opt: "Öldü. Arabası devrildi. Hızlı olmuş." -> duz
+fx: ketum += 1
+opt: (Sus. "Bir şey görmedim.") -> sakla
+
+[tanima]
+text: ...Sütü hep unuturdu. Kırk yılda bir ocağa koyar, kırk yılda bir de unutur. Kimse bilmez bunu. O zaman gerçekten oydu ve gerçekten... Tamam. Tamam, yolcu. Otur — bu gece son kez kuruyorum, ikimize.
+opt: (Sofraya otur.) -> k2:1
+
+[duz]
+text: Kuru söz. Ama söz — beklemekten iyidir. Kaç gecedir kurduğum sofra bir yalanmış, bileyim bari. Sağ ol... galiba.
+opt: (Başını öne eğ.) -> k2:2
+
+[sakla]
+text: Görmedin demek. ...Yüzler yalan söylemez yolcu, ama ben sormayı bırakmam. Sofra bekler.
+opt: (Ayrıl.) -> end
+
+[bilgi_bos]
+text: Doğu yolundan geliyorsun ve yüzünde bir şey var. Gördün, değil mi? Söyle!
+opt: "Bir araba gördüm. Devrikti. Ama..." -> bos_kanit
+
+[bos_kanit]
+text: Ama ne? Kokusunu söyle. Elini. Son sözünü. Bir şey söyle ki bileyim gerçekten o olduğunu... Bilmiyorsun. Gördün ama İÇİNDE değil. Bana boşluk getirdin yolcu. Boşluğum zaten var.
+opt: (Söyleyecek sözün yok. Ayrıl.) -> k2:4
+
+[bos_tekrar]
+text: Hâlâ hatırlamıyor musun? ...Sofra kurulu. Kocam dönünce aç olur.
+opt: (Ayrıl.) -> end
+
+[son1]
+text: Sofrayı kaldırdım. İlk gece zordu — ellerim masaya gidip durdu. Ama artık uyuyorum. Süt de kaynatıyorum arada... unutmadan.
+opt: İyi geceler, Nazife. -> end
+
+[son2]
+text: Han yine han. Müşteri gelir, gider. Beklemek bitti ya — gerisi yaşanır.
+opt: (Selamla.) -> end

@@ -9,6 +9,8 @@ const DecorDef DECORS[] = {
       .x = T(14), .y = T(6),  .scale = 1.6f, .solidBase = true },   // Kemal'in evi
     { .texPath = "assets/buildings/House_3_Limestone_Base_Black.png",
       .x = T(6),  .y = T(10), .scale = 1.6f, .solidBase = true },   // Osman'ın evi
+    { .texPath = "assets/buildings/House_1_Limestone_Base_Red.png",
+      .x = T(17), .y = T(10), .scale = 1.6f, .solidBase = true },   // HAN (K2 — köy GD köşesi)
 
     // Ağaçlar: köy çevresi + goblin kampına giden yol (siper/LoS oyunu için)
     { .texPath = "assets/decor/oak_big.png",    .x = T(18), .y = T(8),  .scale = 1.6f, .solidBase = true },

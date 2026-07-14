@@ -430,6 +430,21 @@ Güncelleme: 2026-07-11
   npc_set_talking(dialogNpc) her kare senkron; diyalog bitince rutine döner
 - Altyapı: player.storyFlags[16] (kart durum kodları — save v22), light_append_point
 
+### Faz D1b — K2 SON MÜŞTERİ (Sömüren'in ilk somut bedeli)
+- **HAN** (köy GD köşesi T17,10 — House_1 red) + **Nazife** (Chef_Chloe): gündüz
+  kapıda, 19:00'dan sonra sofra başında
+- **SOFRA**: gece kurulur (gen_k2.py masa sprite'ı + mum ışığı) — Nazife gerçeği
+  öğrenene kadar HER gece; öğrenince kalkar (görsel + ışık gider)
+- **İKİ SIRA DA ÇALIŞIR**: araba yankısı hattı artık kalıcı (SF_K2_CART, seçim
+  anında yazılır) — handan önce yankı / yankıdan önce han
+- **TANIK hattı**: nasıl söylediğin her şey — YUMUŞAK (süt kokusu kanıtı: "Sütü
+  hep unuturdu... o zaman gerçekten oydu", kibar+1) / DÜZ (ketum+1) / SUS
+  (kalıcı değil, dönüp söyleyebilirsin)
+- **SÖMÜREN hattı**: kanıt YOK — "Kokusunu söyle. Elini. Son sözünü. ...
+  Bilmiyorsun." Sofra sonsuza dek kurulur; günlüğe itiraf ("bu benim yüzümden")
+- Karar kalıcı (SF_K2_NAZIFE) + JE_K2_CHOICE 3 metin + kapanış diyalogları
+- Kişilik fx'leri ilk kez kart diyaloğunda (kibar/ketum — okunma D1c'de genişler)
+
 ## 🔜 ROADMAP (2026-07-14 — RPG-ruhu analiziyle onaylandı)
 
 Analiz özeti: sistem omurgası güçlü (build kimliği, ekonomi, suç/itibar, ekoloji,
@@ -443,9 +458,7 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
    UX borcu: speech zar kilidi save'i (uygun faza serpilir)
 2. **HİKAYE KARTLARI DALGA 1** (K9+K2+S3 seçildi 2026-07-14; kart başına commit):
    ~~D1a: sahne araçları + K9 Kandil~~ TAMAM (bkz. Faz D1a bölümü)
-   → D1b (SIRADAKİ): K2 Son Müşteri — han + Nazife (echo_cart kervancısının karısı;
-     süt kokusu kanıtı; Sömüren tükettiyse kanıt YOK — ilk somut bedel; iki sıra da
-     çalışır: handan önce yankı / yankıdan önce han)
+   ~~D1b: K2 Son Müşteri~~ TAMAM (bkz. Faz D1b bölümü)
    → D1c: S3 Sayan Adam — Eşikçi konağı mini haritası, sayı-diyalog bulmacası,
      Nuh'la konağa birlikte yürüyüş (npc_walk), ana hatta iz (kâtip mührü)
    + bu dalgada: kişilik+itibar sayaçlarının diyaloglarda OKUNMASI (`req: kaba >= 3`)

@@ -175,6 +175,8 @@ typedef struct Player {
 // storyFlags indeksleri (kartlar geldikçe eklenir — sıra SABİT, save'e girer)
 enum {
     SF_K9_KANDIL = 0,   // 0 yok · 1 gerçek (tapınak) · 2 yalan (söner) · 3 sus
+    SF_K2_CART   = 1,   // devrik araba hattı: 0 yaşanmadı · 1 Tanık · 2 Sömüren
+    SF_K2_NAZIFE = 2,   // 0 yok · 1 yumuşak söyledi · 2 düz söyledi · 4 anlatamadı
 };
 
 

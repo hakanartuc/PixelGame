@@ -754,6 +754,7 @@ int main(int argc, char *argv[])
     R2DTexture *nestsTex = load_texture(renderer, "assets/decor/nests.png");   // yuva görselleri (E1)
     R2DTexture *abilityIconTex = load_texture(renderer, "assets/icons/abilities.png");  // beceri ikonları (Cila)
     R2DTexture *lanternTex = load_texture(renderer, "assets/decor/lantern.png");  // K9 kandili (D1a)
+    R2DTexture *sofraTex = load_texture(renderer, "assets/decor/sofra.png");  // K2 sofrası (D1b)
     bool boardOpen = false;
 
     // Büyü VFX sprite'ları (Faz 22): mermi küreleri + arcane patlama + alev
@@ -792,6 +793,11 @@ int main(int argc, char *argv[])
     int fatmaIdx = -1;   // K9 Kandil (D1a)
     for (int i = 0; i < NPC_COUNT; i++)
         if (SDL_strcmp(NPCS[i].name, "Fatma") == 0) { fatmaIdx = i; break; }
+    int nazifeIdx = -1;  // K2 Son Müşteri (D1b)
+    for (int i = 0; i < NPC_COUNT; i++)
+        if (SDL_strcmp(NPCS[i].name, "Nazife") == 0) { nazifeIdx = i; break; }
+    #define SOFRA_X (19.4f * TILE_SIZE)   // han önü (köy GD) — gece kurulur
+    #define SOFRA_Y (13.1f * TILE_SIZE)
     #define ECHO_K9 2                            // ECHOES[2] = Kerem (F2)
     #define KANDIL_X (144.0f * TILE_SIZE)        // geçit kemeri önü
     #define KANDIL_Y (8.5f * TILE_SIZE)
@@ -1360,6 +1366,9 @@ int main(int argc, char *argv[])
                                 echo_set_done(activeEcho, true);   // anı bir kez yaşanır
                                 journal_add(sfx.witness > 0 ? JE_ECHO_WITNESS
                                                             : JE_ECHO_CONSUME, activeEcho);
+                                if (activeEcho == 0)   // K2: hangi hattı seçtin (kalıcı)
+                                    player.storyFlags[SF_K2_CART] =
+                                        sfx.witness > 0 ? 1 : 2;
                             }
                             if (sfx.gold > 0)
                                 player.gold += sfx.gold;
@@ -1470,6 +1479,21 @@ int main(int argc, char *argv[])
                                 }
                                 else
                                     npc_bark(fatmaIdx, "Kandil bekler. Ben de.", 4.0f);
+                            }
+                            else if (strncmp(target, "k2:", 3) == 0)
+                            {
+                                // K2 Son Müşteri kararı (D1b)
+                                int k2c = SDL_atoi(target + 3);
+                                player.storyFlags[SF_K2_NAZIFE] = (Uint8)k2c;
+                                journal_add(JE_K2_CHOICE, k2c);
+                                dialogNpc = -1;
+                                if (k2c == 1)
+                                    npc_bark(nazifeIdx, "Sütü hep unuturdu...", 4.0f);
+                                else if (k2c == 2)
+                                    npc_bark(nazifeIdx, "Beklemek bitti.", 4.0f);
+                                else
+                                    npc_bark(nazifeIdx, "Sofra bekler.", 4.0f);
+                                audio_play(SFX_UI);
                             }
                             else if (strncmp(target, "accept:", 7) == 0)
                             {
@@ -1786,6 +1810,18 @@ int main(int argc, char *argv[])
                             else if (k9 == 2) entry = "son2";
                             else if (k9 == 3) entry = "son3";
                             else if (echo_done(ECHO_K9)) entry = "bilgi";
+                        }
+                        else if (nearestNpc == nazifeIdx)
+                        {
+                            // K2 Son Müşteri: araba yankısının HATTI belirleyici —
+                            // Tanık kanıt taşır, Sömüren taşıyamaz (ilk somut bedel)
+                            Uint8 k2 = player.storyFlags[SF_K2_NAZIFE];
+                            Uint8 cart = player.storyFlags[SF_K2_CART];
+                            if (k2 == 1)      entry = "son1";
+                            else if (k2 == 2) entry = "son2";
+                            else if (k2 == 4) entry = "bos_tekrar";
+                            else if (cart == 1) entry = "bilgi";
+                            else if (cart == 2) entry = "bilgi_bos";
                         }
                         else if (NPCS[nearestNpc].questId != NULL)
                         {
@@ -5750,6 +5786,19 @@ int main(int argc, char *argv[])
             r2d_texture_set_color_mod(lanternTex, 255, 255, 255);
         }
 
+        // K2 sofrası (D1b): Nazife bilene kadar her gece kurulur
+        if (sofraTex != NULL && map_current() == MAP_WORLD &&
+            gametime_is_night() &&
+            player.storyFlags[SF_K2_NAZIFE] != 1 &&
+            player.storyFlags[SF_K2_NAZIFE] != 2)
+        {
+            SDL_FRect ssrc = { 0, 0, 40, 44 };
+            SDL_FRect sdst = world_to_screen(SOFRA_X - 30.0f, SOFRA_Y - 40.0f,
+                                             60.0f, 66.0f, &camera);
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_draw_texture(renderer, sofraTex, &ssrc, &sdst);
+        }
+
         // Toprak Dikenleri: zemin patlaması (moblardan/oyuncudan ÖNCE — yerden fışkırır)
         if (spikesTex != NULL)
             for (int q = 0; q < MAX_SPIKE_FX; q++)
@@ -6066,6 +6115,13 @@ int main(int argc, char *argv[])
                     lightN = light_append_point(lights, lightN, R2D_MAX_LIGHTS,
                                 &camera, winW, winH, KANDIL_X, KANDIL_Y,
                                 140.0f, 1.0f, 0.62f, 0.26f, 0.55f, 0.10f);
+
+                // K2 sofra mumu (D1b): sofra kuruluysa küçük titrek ışık
+                if (player.storyFlags[SF_K2_NAZIFE] != 1 &&
+                    player.storyFlags[SF_K2_NAZIFE] != 2)
+                    lightN = light_append_point(lights, lightN, R2D_MAX_LIGHTS,
+                                &camera, winW, winH, SOFRA_X, SOFRA_Y - 30.0f,
+                                90.0f, 1.0f, 0.65f, 0.30f, 0.45f, 0.12f);
             }
             if (inDungeon)
             {
@@ -6562,6 +6618,7 @@ int main(int argc, char *argv[])
     if (nestsTex)   r2d_texture_destroy(NULL, nestsTex);
     if (abilityIconTex) r2d_texture_destroy(NULL, abilityIconTex);
     if (lanternTex) r2d_texture_destroy(NULL, lanternTex);
+    if (sofraTex) r2d_texture_destroy(NULL, sofraTex);
     if (shieldTex)  r2d_texture_destroy(NULL, shieldTex);
     if (spikesTex)  r2d_texture_destroy(NULL, spikesTex);
     if (flameTex)   r2d_texture_destroy(NULL, flameTex);

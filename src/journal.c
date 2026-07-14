@@ -143,6 +143,20 @@ static void entry_text(const JournalEntry *e, char *out, size_t cap)
              : "Fatma'nın gözlerine bakıp sustum. Kandil yanmaya devam ediyor. "
                "Ben de her geçişimde ona bakıyorum.";
         break;
+    case JE_K2_CHOICE:
+        body = (e->param == 1)
+             ? "Nazife'ye kocasını anlattım — sütü hep unuttuğunu söyleyince "
+               "yüzü değişti: 'O zaman gerçekten oydu.' Sofra o gece kalktı. "
+               "Bir insanın yasını bir koku bitirdi."
+             : (e->param == 2)
+             ? "Nazife'ye kocasının öldüğünü söyledim. Kuru, düz, kestirme. "
+               "Kadın 'Kuru söz. Ama söz.' dedi. Sofra kalktı; ben hâlâ daha "
+               "iyi söyleyebilir miydim diye düşünüyorum."
+             : "Nazife'ye anlatmaya çalıştım ve anlatamadım. Arabayı gördüm — "
+               "ama kokusu, eli, son sözü... hiçbiri bende değil artık. "
+               "Aldığım şeyin içinde onun sonu da vardı. Sofra kurulmaya "
+               "devam ediyor ve bu benim yüzümden.";
+        break;
     case JE_DAY_NOTE: {
         body = "Günler geçiyor.";
         for (size_t i = 0; i < sizeof(DAY_NOTES) / sizeof(DAY_NOTES[0]); i++)

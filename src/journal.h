@@ -24,6 +24,7 @@ typedef enum {
     JE_DAY_NOTE,        // param = gün (atmosfer satırı — journal_day_tick)
     JE_NEST_CLEANSE,    // param = 0 reis / 1 totem / 2 gölcük / 3 mezar (ekoloji E1)
     JE_K9_CHOICE,       // K9 Kandil: param = 1 gerçek / 2 yalan / 3 sus (D1a)
+    JE_K2_CHOICE,       // K2 Son Müşteri: 1 yumuşak / 2 düz / 4 anlatamadı (D1b)
 } JournalEvent;
 
 typedef struct {
