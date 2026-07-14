@@ -150,6 +150,25 @@ const RecipeDef RECIPES[] = {
       .in1Item = ITEM_INGOT_IRON, .in1Count = 1, .in2Item = -1,
       .outItem = ITEM_LOCKPICK, .outCount = 3, .work = 4.0f, .xp = 5.0f,
       .minSkill = 5 },
+    // --- M2 Buff yemekleri: kamp ateşinde ve kazanda (Pişmiş Et deseni) ---
+    { .station = STATION_CAMPFIRE, .name = "Avcı Yahnisi",
+      .in1Item = ITEM_MEAT, .in1Count = 2, .in2Item = ITEM_HERB_RED, .in2Count = 1,
+      .outItem = ITEM_STEW, .outCount = 1, .work = 4.0f, .xp = 6.0f },
+    { .station = STATION_ALCH, .name = "Avcı Yahnisi",
+      .in1Item = ITEM_MEAT, .in1Count = 2, .in2Item = ITEM_HERB_RED, .in2Count = 1,
+      .outItem = ITEM_STEW, .outCount = 1, .work = 4.0f, .xp = 6.0f },
+    { .station = STATION_CAMPFIRE, .name = "Ot Çorbası",
+      .in1Item = ITEM_HERB_BLUE, .in1Count = 2, .in2Item = ITEM_MEAT, .in2Count = 1,
+      .outItem = ITEM_SOUP, .outCount = 1, .work = 4.0f, .xp = 6.0f },
+    { .station = STATION_ALCH, .name = "Ot Çorbası",
+      .in1Item = ITEM_HERB_BLUE, .in1Count = 2, .in2Item = ITEM_MEAT, .in2Count = 1,
+      .outItem = ITEM_SOUP, .outCount = 1, .work = 4.0f, .xp = 6.0f },
+    { .station = STATION_CAMPFIRE, .name = "Gezgin Kavurması",
+      .in1Item = ITEM_MEAT, .in1Count = 2, .in2Item = ITEM_HERB_BLUE, .in2Count = 1,
+      .outItem = ITEM_KAVURMA, .outCount = 1, .work = 5.0f, .xp = 8.0f },
+    { .station = STATION_ALCH, .name = "Gezgin Kavurması",
+      .in1Item = ITEM_MEAT, .in1Count = 2, .in2Item = ITEM_HERB_BLUE, .in2Count = 1,
+      .outItem = ITEM_KAVURMA, .outCount = 1, .work = 5.0f, .xp = 8.0f },
 };
 const int RECIPE_COUNT = (int)(sizeof(RECIPES) / sizeof(RECIPES[0]));
 

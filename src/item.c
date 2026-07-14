@@ -216,6 +216,8 @@ const ItemType ITEM_TYPES[] = {
       .iconSrc = { 16, 80, 16, 16 } },
     { .name = "Et", .iconIndex = 0, .maxStack = 99, .value = 8,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .consumable = true, .useCooldown = 4.0f,   // M2: çiğ yenir — riskli
+      .healAmount = 6.0f, .rawRisk = 0.25f,      // %25: 8sn hafif zehir
       .iconSpritePath = "assets/icons/items/food.png",
       .iconSrc = { 0, 16, 16, 16 } },
     { .name = "Pişmiş Et", .iconIndex = 0, .maxStack = 20, .value = 20,
@@ -320,6 +322,25 @@ const ItemType ITEM_TYPES[] = {
       .equipSpritePathBack = "assets/equipment/weapon/long_sword_009.png",
       .equipZ = 140, .equipZBack = 9, .equipIdleRow = 8, .slashOversize = true,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },
+    // --- M2 Buff yemekleri: kamp ateşi/kazanda pişer; TEK "Tok" buffu ---
+    { .name = "Avcı Yahnisi", .iconIndex = 0, .maxStack = 10, .value = 45,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .consumable = true, .useCooldown = 6.0f,
+      .foodBuffType = FB_DMG, .foodBuffPower = 0.08f, .foodBuffDur = 180.0f,
+      .iconSpritePath = "assets/icons/items/food.png",
+      .iconSrc = { 32, 16, 16, 16 } },
+    { .name = "Ot Çorbası", .iconIndex = 0, .maxStack = 10, .value = 40,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .consumable = true, .useCooldown = 6.0f,
+      .foodBuffType = FB_MANA_REGEN, .foodBuffPower = 1.5f, .foodBuffDur = 180.0f,
+      .iconSpritePath = "assets/icons/items/food.png",
+      .iconSrc = { 48, 16, 16, 16 } },
+    { .name = "Gezgin Kavurması", .iconIndex = 0, .maxStack = 10, .value = 50,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .consumable = true, .useCooldown = 6.0f,
+      .foodBuffType = FB_STA_SPEED, .foodBuffPower = 1.6f, .foodBuffDur = 180.0f,
+      .iconSpritePath = "assets/icons/items/food.png",
+      .iconSrc = { 64, 16, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

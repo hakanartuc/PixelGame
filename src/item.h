@@ -90,6 +90,12 @@ typedef struct {
     float foodRegen;             // saniyede yenilenen can (>0 = yemek)
     float foodDuration;          // yenilenme süresi (sn)
 
+    // --- Buff yemekleri (M2): tek "Tok" buffu — yenisi eskisini ezer ---
+    int   foodBuffType;          // FoodBuff (0 = yok)
+    float foodBuffPower;         // türe göre anlam (çarpan ya da oran)
+    float foodBuffDur;           // buff süresi (sn)
+    float rawRisk;               // çiğ yeme zehir riski 0..1 (çiğ et 0.25)
+
     bool trapItem;               // Yapışkan Tuzağı: hotbar kullanımı yere tuzak kurar (Faz 7)
 
     float ammoDmgMult;           // ok kademesi hasar çarpanı (>0 = mühimmat; Faz 8)
@@ -130,6 +136,14 @@ typedef struct {
 // Doğru başlatılmış instance üret (fx = türün efekti, stat slotları boş).
 // (ItemStack){t,c,p} YAZMA — fx sıfırlanır, rün/efekt kaybolur.
 ItemStack item_make(const ItemType *type, int count, int plusLevel);
+
+// Buff yemekleri (M2) — foodBuffType değerleri
+typedef enum {
+    FB_NONE = 0,
+    FB_DMG,        // tüm hasar +power (0.08 = +%8) — Avcı Yahnisi
+    FB_MANA_REGEN, // mana rejeni ×power — Ot Çorbası
+    FB_STA_SPEED,  // stamina rejeni ×power + hız +%5 — Gezgin Kavurması
+} FoodBuff;
 
 #define ITEM_MAX_PLUS 8
 #define ITEM_PLUS_SCALE 0.10f   // her plus: +%10 hasar/defans
@@ -219,6 +233,9 @@ typedef enum {
     ITEM_POTION_MANA,     // Mana İksiri (+40 mana)
     ITEM_LOCKPICK,        // Maymuncuk (kilit minigame'i — kırılınca gider)
     ITEM_SWORD_LORD,      // Lord'un Kılıcı (boss benzersizi: can çalma)
+    ITEM_STEW,            // Avcı Yahnisi (M2: 180sn hasar +%8)
+    ITEM_SOUP,            // Ot Çorbası (M2: 180sn mana rejeni ×1.5)
+    ITEM_KAVURMA,         // Gezgin Kavurması (M2: 180sn stamina ×1.6 + hız +%5)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

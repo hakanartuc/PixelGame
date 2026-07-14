@@ -66,6 +66,8 @@ HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
     bool isBow = armed && weapon->type->weaponType == WEAPON_BOW;
     int dmgStat = isBow ? p->dexterity : p->strength;
     float strScale = 1.0f + (float)(dmgStat - STAT_BASE) * STR_DAMAGE_PER_POINT;
+    if (p->foodBuffType == FB_DMG)               // M2: Avcı Yahnisi — tüm hasar
+        strScale *= 1.0f + p->foodBuffPower;
 
     // Skill bonusu — silahın geliştirdiği skill'in seviyesinden
     float skillScale = 1.0f;
@@ -125,6 +127,8 @@ HitResult combat_spell_hit(const struct Player *p, const ItemStack *weapon,
 
     // INT ölçeği (taban 10 = çarpansız) — büyücünün STR'ı
     float intScale = 1.0f + (float)(p->intelligence - STAT_BASE) * STR_DAMAGE_PER_POINT;
+    if (p->foodBuffType == FB_DMG)               // M2: Avcı Yahnisi — büyü de dahil
+        intScale *= 1.0f + p->foodBuffPower;
 
     // Yıkım seviyesi
     float skillScale = 1.0f +

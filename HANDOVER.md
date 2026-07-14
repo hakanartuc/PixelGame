@@ -93,8 +93,9 @@ Sömüren = kanıtsız (ilk somut bedel, sofra sonsuza dek kurulur).
 **PİVOT (2026-07-14)**: hat MEKANİK-ÖNCELİKLİ (hikaye = mekanik test aracı).
 **M1 TAMAM**: element sinerjileri (Termal Şok ×1.6 / Zehir Patlaması +çevre %50 /
 Alev Rünü %20 yakma basar — hibritler sinerjide).
-Sıradaki: **M2 — Pişirme + yemek buffları** (kamp ateşi + av döngüsü; faz başında
-tarif/buff anketi) → M3 davranış ünvanları → summon → D1c (S3) sonra.
+**M2 TAMAM**: pişirme (3 buff yemeği, tek Tok buffu, çiğ et riski, HUD sayacı).
+Sıradaki: **M3 — Davranış ünvanları** (faz başında ünvan listesi + eşik + pasif
+anketi) → summon → D1c (S3) sonra.
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
 mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13) + BÜYÜ SİSTEMİ
 (22: 6 büyü + Asa + INT + zırh ağırlığı + mana iksiri; ayrıntı PROGRESS Faz 22).

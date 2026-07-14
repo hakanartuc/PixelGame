@@ -2070,6 +2070,10 @@ int main(int argc, char *argv[])
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_STAFF], 1, 0);
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_STONE_INT], 6, 0);
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_POTION_MANA], 5, 0);
+                    // M2 yemek test seti
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_STEW], 3, 0);
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_SOUP], 3, 0);
+                    inventory_add(&inventory, &ITEM_TYPES[ITEM_KAVURMA], 3, 0);
                     player.health  = player.maxHealth;
                     player.mana    = player.maxMana;
                     player.stamina = player.maxStamina;
@@ -3611,6 +3615,31 @@ int main(int argc, char *argv[])
                                                  player.rect.x + player.rect.w / 2.0f,
                                                  player.rect.y - 10.0f, "Karnın doydu", green);
                         }
+                        if (hs->itemType->foodBuffType != FB_NONE)
+                        {
+                            // Tok buffu (M2): TEK aktif — yenisi eskisini ezer
+                            player.foodBuffType = hs->itemType->foodBuffType;
+                            player.foodBuffPower = hs->itemType->foodBuffPower;
+                            player.foodBuffTimer = hs->itemType->foodBuffDur;
+                            player.foodBuffName = hs->itemType->name;
+                            SDL_Color warm = { 255, 200, 120, 255 };
+                            snprintf(buf, sizeof(buf), "Tok: %s", hs->itemType->name);
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 26.0f, buf, warm);
+                        }
+                        if (hs->itemType->rawRisk > 0.0f &&
+                            randf() < hs->itemType->rawRisk)
+                        {
+                            // Çiğ yeme bedeli (M2): hafif zehirlenme
+                            player.poisonDps = 1.5f;
+                            player.poisonTimer = 8.0f;
+                            SDL_Color pgreen = { 120, 230, 90, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 42.0f,
+                                                 "Miden bulanıyor...", pgreen);
+                        }
                         if (hs->itemType->trapItem)
                         {
                             // Yapışkan Tuzağı: ayak önüne kur (dolu ise en eskisi ezilir)
@@ -4543,9 +4572,26 @@ int main(int argc, char *argv[])
             }
 
             // Havuz yenilenmesi — Kader düğümleri hızlandırır
-            player.mana += 2.0f * perkFx.manaRegenMult * armorManaMult * dt;
+            if (player.foodBuffTimer > 0.0f)
+            {
+                player.foodBuffTimer -= dt;
+                if (player.foodBuffTimer <= 0.0f)
+                {
+                    player.foodBuffType = FB_NONE;
+                    SDL_Color dim = { 170, 170, 190, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 10.0f, "Acıktın", dim);
+                }
+            }
+            float foodManaMul = (player.foodBuffType == FB_MANA_REGEN)
+                              ? player.foodBuffPower : 1.0f;
+            player.mana += 2.0f * perkFx.manaRegenMult * armorManaMult
+                         * foodManaMul * dt;
             if (player.mana > player.maxMana) player.mana = player.maxMana;
-            player.stamina += 15.0f * perkFx.stamRegenMult * dt;
+            float foodStaMul = (player.foodBuffType == FB_STA_SPEED)
+                             ? player.foodBuffPower : 1.0f;
+            player.stamina += 15.0f * perkFx.stamRegenMult * foodStaMul * dt;
             if (player.stamina > player.maxStamina) player.stamina = player.maxStamina;
             if (perkFx.hpRegenPerSec > 0.0f)   // Yaşam Gücü: pasif can
             {
@@ -5306,7 +5352,8 @@ int main(int argc, char *argv[])
 
             // Hız çarpanı: perk (Çevik/Rüzgar/Uyumlu) × gece (Gölge Adımı) × eğilme.
             // player_update tile hızıyla çarpar (doğrudan speed yazmak eziliyordu — bug'dı)
-            player.speedMult = (1.0f - armorSpeedPenalty)   // zırh ağırlığı (STR telafili)
+            player.speedMult = (player.foodBuffType == FB_STA_SPEED ? 1.05f : 1.0f)
+                             * (1.0f - armorSpeedPenalty)   // zırh ağırlığı (STR telafili)
                              * perkFx.speedMult
                              * (gametime_is_night() ? perkFx.nightSpeedMult : 1.0f)
                              * (player.sneaking
@@ -6216,6 +6263,17 @@ int main(int argc, char *argv[])
             r2d_draw_texture(renderer, vignetteTex, NULL, &full);
             r2d_texture_set_color_mod(vignetteTex, 255, 255, 255);
             r2d_texture_set_alpha_mod(vignetteTex, 255);
+        }
+
+        // Tok buffu göstergesi (M2): sol üst barların altında
+        if (player.foodBuffTimer > 0.0f && player.foodBuffName != NULL &&
+            gameFont != NULL && gameState == GAME_PLAYING)
+        {
+            char tokBuf[64];
+            snprintf(tokBuf, sizeof(tokBuf), "Tok: %s (%ds)",
+                     player.foodBuffName, (int)player.foodBuffTimer + 1);
+            SDL_Color warm = { 255, 205, 130, 230 };
+            draw_text(renderer, gameFont, tokBuf, 16.0f, 96.0f, warm);
         }
 
         // Hedef HP bar (seçili mob varsa)

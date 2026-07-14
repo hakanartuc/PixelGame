@@ -457,6 +457,20 @@ Güncelleme: 2026-07-11
 - NOT (2026-07-14 kullanıcı kararı): hat MEKANİK-ÖNCELİKLİ — hikaye mekaniği
   taşıyan/test ettiren araç; D1c (S3) beklemede, "okunma" her faza serpiştirilir
 
+### Faz M2 — PİŞİRME + YEMEK BUFFLARI (av döngüsü kapandı)
+- **3 BUFF YEMEĞİ** (kamp ateşi + kazan; baştan bilinir): Avcı Yahnisi
+  (2 Et+1 Kızılot → 180sn TÜM hasar +%8 — melee/ok/büyü), Ot Çorbası
+  (2 Ayotu+1 Et → mana rejeni ×1.5), Gezgin Kavurması (2 Et+1 Ayotu →
+  stamina ×1.6 + hız +%5)
+- **TEK "TOK" BUFFU**: yenisi eskisini ezer; HUD sayacı ("Tok: X (Ns)") +
+  "Acıktın" bildirimi; süreli buff save'e girmez (iksir deseni)
+- **ÇİĞ ET YENİR** (kullanıcı onayı): +6 can ama %25 zehirlenme (8sn) —
+  ItemType.rawRisk alanı (bedelli kötü seçenek)
+- FoodBuff enum + ItemType foodBuff* alanları; FB_DMG combat_player_hit +
+  combat_spell_hit'te; rejenler main'de; tooltip Tok/çiğ satırları; F10 seti
+- Av döngüsü: avla → kamp kur → pişir → buff'la yola devam (ekoloji av
+  kıtlığıyla et stratejik kaynak)
+
 ## 🔜 ROADMAP (2026-07-14 — RPG-ruhu analiziyle onaylandı)
 
 Analiz özeti: sistem omurgası güçlü (build kimliği, ekonomi, suç/itibar, ekoloji,
@@ -486,6 +500,7 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 5. **ONAYLI 4 MEKANİK** (2026-07-11) — MEKANİK-ÖNCELİKLİ hat (2026-07-14 pivotu:
    sıra öne çekildi; savaş+yaşam üçlüsü: M1 sinerji ✓ → M2 pişirme → M3 ünvanlar):
    · ~~Element sinerjileri~~ TAMAM (bkz. Faz M1)
+   · ~~Pişirme + yemek buffları~~ TAMAM (bkz. Faz M2)
    · Summon hattı (yılan DoT + kaplumbağa tank; bedel: max mananın %25'i rezerve;
      sprite'lar: `~/Downloads/snake_right.png, turtleshell_right.png`)
    · Pişirme + yemek buffları (kamp ateşi + av döngüsü)

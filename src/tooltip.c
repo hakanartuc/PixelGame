@@ -118,6 +118,18 @@ void tooltip_render(R2D *renderer, TTF_Font *font,
     if (t->foodRegen > 0.0f)
         tt_add(lines, &n, TT_GREEN, "Yenir: %.0f sn boyunca +%.0f can/sn",
                t->foodDuration, t->foodRegen);
+    if (t->foodBuffType == FB_DMG)
+        tt_add(lines, &n, TT_GOLD, "Tok (%.0f sn): hasar +%%%.0f",
+               t->foodBuffDur, t->foodBuffPower * 100.0f);
+    else if (t->foodBuffType == FB_MANA_REGEN)
+        tt_add(lines, &n, TT_CYAN, "Tok (%.0f sn): mana rejeni x%.1f",
+               t->foodBuffDur, t->foodBuffPower);
+    else if (t->foodBuffType == FB_STA_SPEED)
+        tt_add(lines, &n, TT_GREEN, "Tok (%.0f sn): stamina x%.1f + hız +%%5",
+               t->foodBuffDur, t->foodBuffPower);
+    if (t->rawRisk > 0.0f)
+        tt_add(lines, &n, TT_RED, "Çiğ: %%%.0f zehirlenme riski",
+               t->rawRisk * 100.0f);
     if (t->scrollXp > 0.0f) tt_add(lines, &n, TT_CYAN, "Okunur: +%.0f XP", t->scrollXp);
     if (t->useCooldown > 0.0f)
         tt_add(lines, &n, TT_DIM, "Bekleme: %.0f sn", t->useCooldown);

@@ -102,6 +102,9 @@ typedef struct Player {
     WeaponFxType coatFx;                   // silah kaplaması (Zehir Yağı)
     float coatTimer;
     float foodRegenRate, foodTimer;        // yemek: sn başına can, kalan süre (Faz 6)
+    int   foodBuffType;                    // M2 "Tok" buffu (FoodBuff; tek aktif)
+    float foodBuffPower, foodBuffTimer;
+    const char *foodBuffName;              // HUD satırı için (ItemType.name)
     float poisonDps, poisonTimer;          // mavi slime zehri: sn hasarı + süre (Faz 7)
     float flameArmorTimer;                 // Alev Zırhı: yakın saldırgana hasar (Faz 22)
     float manaShieldTimer;                 // Büyü Kalkanı: hasar manadan emilir (×1.2)
