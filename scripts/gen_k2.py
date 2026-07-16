@@ -126,7 +126,7 @@ class Canvas:
                     self.px[o+c] = v if v > 0 else 0
 
 
-TAB = load_png('/Users/hakanartuc/Cute Fantasy/Cute_Fantasy/Buildings/House_Decor/Tables.png')
+TAB = load_png('/Users/hakan/Assets/2D Pixel-Art/Cute_Fantasy/Buildings/House_Decor/Tables.png')
 
 W, H = 40, 44
 px = bytearray(W*H*4)
@@ -152,3 +152,70 @@ c.px[(2*W+19)*4:(2*W+19)*4+4] = bytes([255,160,60,255])
 
 save_png('assets/decor/sofra.png', W, H, c.px)
 print("OK assets/decor/sofra.png")
+
+
+# =============================================================
+# D1b-ek: kapanis vinyeti panelleri (k2:1 — son sofra + ocakta sut)
+# =============================================================
+W, H = 208, 117
+
+# --- [sofra]: han içi, gece — iki kişilik sofra, mum, biri hiç oturmamış -----
+c = Canvas(W, H, rgb=(22, 17, 13))
+# ahşap zemin: yatay tahtalar
+for ty in range(0, H, 10):
+    v = 34 + ((ty*7) % 7)
+    c.rect(0, ty, W, 10, (v, v*3//4, v//2))
+    c.rect(0, ty, W, 1, (16, 12, 9), 140)
+c.rect(0, 0, W, 30, (12, 9, 7))                      # arka duvar gölgesi
+c.rect(24, 8, 30, 22, (30, 24, 18))                  # pencere (gece — koyu mavi cam)
+c.rect(26, 10, 26, 18, (18, 22, 34))
+c.rect(38, 10, 2, 18, (30, 24, 18))                  # pencere kayıtı
+# masa: geniş blok + ayaklar
+c.rect(60, 58, 92, 8, (96, 68, 40))                  # tabla üstü
+c.rect(60, 66, 92, 26, (74, 52, 31))                 # tabla gövde/gölge
+c.rect(64, 92, 6, 14, (52, 36, 22))                  # ayaklar
+c.rect(142, 92, 6, 14, (52, 36, 22))
+# iki kase: biri dolu (yakın), biri bos ve bekleyen (uzak)
+c.rect(76, 52, 16, 7, (150, 140, 125))               # yakın kase
+c.rect(78, 50, 12, 3, (196, 188, 170))               # buhar/iç
+c.rect(120, 52, 16, 7, (150, 140, 125))              # bekleyen kase (boş)
+c.rect(122, 53, 12, 3, (60, 48, 36))                 # boş iç — karanlık
+# mum: masa ortası, sıcak öz
+c.rect(105, 42, 4, 12, (210, 200, 180))
+c.rect(106, 39, 2, 4, (255, 210, 120))
+c.glow(106, 40, 30, (255, 190, 110), 150)            # mum ışığı
+c.glow(106, 40, 70, (200, 130, 70), 45)              # odaya taşan sıcaklık
+# iki iskemle: biri masaya cekik, digeri BOŞ ve düzgün (hic oturulmamis)
+c.rect(70, 84, 20, 5, (60, 42, 26))
+c.rect(118, 84, 20, 5, (66, 47, 29))
+c.vignette(150)
+save_png('assets/scenes/k2_sofra.png', W, H, c.px)
+print("OK assets/scenes/k2_sofra.png")
+
+# --- [sut]: ocak yakın planı — ateş, süt kabı, buhar (ritüel artık onun) ------
+c = Canvas(W, H, rgb=(16, 12, 10))
+for ty in range(0, H, 10):
+    v = 28 + ((ty*7) % 7)
+    c.rect(0, ty, W, 10, (v, v*3//4, v//2))
+    c.rect(0, ty, W, 1, (13, 10, 8), 140)
+# ocak: taş kemer + ic bosluk
+c.rect(64, 28, 80, 60, (58, 54, 52))                 # taş gövde
+c.rect(76, 40, 56, 48, (24, 16, 12))                 # ocak ağzı
+for i, (bx, bw) in enumerate([(66,10),(80,12),(96,14),(114,12),(130,12)]):
+    c.rect(bx, 28 + (i%2)*3, bw, 6, (70, 65, 62))    # kaba taş dokusu
+# ateş: küçük, sakin (yas ateşi değil — ev ateşi)
+c.rect(94, 74, 20, 8, (120, 60, 20))
+c.glow(104, 74, 22, (255, 150, 60), 190)
+c.glow(104, 70, 44, (230, 120, 50), 70)
+# sac ayak + süt kabı
+c.rect(92, 62, 24, 3, (40, 38, 36))                  # ızgara
+c.rect(96, 50, 16, 12, (170, 172, 178))              # metal kap
+c.rect(98, 48, 12, 2, (235, 232, 222))               # süt yüzeyi
+# buhar: yükselen soluk şeritler
+for i in range(26):
+    a = int(46 * (1.0 - i/26))
+    c.rect(100 + (i//5)%3, 46 - i, 5, 1, (220, 220, 215), a)
+c.glow(104, 40, 26, (200, 200, 195), 30)
+c.vignette(160)
+save_png('assets/scenes/k2_sut.png', W, H, c.px)
+print("OK assets/scenes/k2_sut.png")

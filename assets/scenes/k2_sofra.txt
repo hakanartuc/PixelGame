@@ -1,0 +1,20 @@
+# K2 Son Müşteri — kapanış vinyeti (yalnız k2:1: süt kanıtıyla söylenen gerçek).
+# Diyalogdaki "bu gece son kez kuruyorum, ikimize" çizgisinden devam eder;
+# ertesi günden itibaren sofra dünyadan kalkar (SF_K2_NAZIFE == 1).
+# fx YOK — karar diyalogda verildi, burası yalnız yaşanır.
+
+[sofra]
+image: assets/scenes/k2_sofra.png
+duck: 0.15
+text: Sofra o gece son kez kuruldu — ilk kez de ikisi de kimin için olduğunu bilerek. İki kase, ikisi de dolu. Mum, dokuz aydır ilk defa sonuna kadar yandı.
+text: Nazife yemek boyunca kocasını anlattı: dokuz yıllık atını, kırk yılda bir koyduğu sütü, "akşama dönerim" deyişini. Ağlamadı. Anlatan insan ağlamaz; anlatamayan ağlar.
+opt: (Dinle. Sonuna kadar dinle.) -> sut
+
+[sut]
+image: assets/scenes/k2_sut.png
+sfx: heartbeat
+duck: 0.1
+text: Kalkarken ocağa bir kap süt koydu — dikkatle, taşırmadan. "Hep unuturdu," dedi, sırtı sana dönük. "Koca adam. Bundan sonra ben hatırlarım."
+text: Süt ısındı, buharı yükseldi. Han o gece boştu ama ilk kez terk edilmiş kokmuyordu.
+text: Ve fısıltı — her yankının dibinde bekleyen o ses — bu kez hiçbir şey demedi.
+opt: (Sofradan sessizce ayrıl.) -> end

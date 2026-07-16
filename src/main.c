@@ -1662,7 +1662,12 @@ int main(int argc, char *argv[])
                                 journal_add(JE_K2_CHOICE, k2c);
                                 dialogNpc = -1;
                                 if (k2c == 1)
+                                {
+                                    // Son sofra vinyeti (D1b-ek): "ikimize" gecesi —
+                                    // bark sahne bitince görünür (dünya donuk)
+                                    scene_start("assets/scenes/k2_sofra.txt");
                                     npc_bark(nazifeIdx, "Sütü hep unuturdu...", 4.0f);
+                                }
                                 else if (k2c == 2)
                                     npc_bark(nazifeIdx, "Beklemek bitti.", 4.0f);
                                 else
