@@ -99,6 +99,8 @@ int ecology_site_of_zone(int zoneId)
     return (zoneId >= 0 && zoneId < MAX_SPAWN_ZONES) ? zoneSite[zoneId] : -1;
 }
 
+static int birthBonus = 0;   // WE_BOUNTY: bir sonraki şafakta hayvan sürülerine ekstra doğum
+
 // Yuva noktası çevresine doğum (yuvadan "çıkar" — göz önünde belirme yok gibi
 // hissettiren dar yarıçap)
 static void nest_spawn(const NestSiteDef *s, const MobType *t,
@@ -194,24 +196,32 @@ void ecology_dawn(int day, SpawnZone *zones, int maxZones, int *zoneCount,
 
         if (!st->colonized || st->destroyed) continue;
 
-        // Şafak üremesi: yuva başına +1 (eksik olan İLK girişe)
-        for (int e = 0; e < NEST_MAX_ENTRIES; e++) {
-            if (s->entries[e].type == NULL) continue;
-            if (st->pop[e] >= s->entries[e].max) continue;
-            st->pop[e]++;
-            if (onWorldMap) {
-                // Bu sahanın zone'unu bul → moba dünyada da can ver
-                for (int z = 0; z < *zoneCount; z++)
-                    if (zoneSite[z] == i && zoneEntry[z] == e) {
-                        nest_spawn(s, s->entries[e].type,
-                                   mobs, maxMobs, nextMobId, z);
-                        break;
-                    }
+        // Şafak üremesi: yuva başına +1 (eksik olan İLK girişe).
+        // Bereket (WE_BOUNTY): hayvan sürüleri o şafak +2 EKSTRA doğurur.
+        bool animal = s->family >= FAM_SHEEP;
+        int births = 1 + ((animal && birthBonus > 0) ? birthBonus : 0);
+        for (int b = 0; b < births; b++) {
+            for (int e = 0; e < NEST_MAX_ENTRIES; e++) {
+                if (s->entries[e].type == NULL) continue;
+                if (st->pop[e] >= s->entries[e].max) continue;
+                st->pop[e]++;
+                if (onWorldMap) {
+                    // Bu sahanın zone'unu bul → moba dünyada da can ver
+                    for (int z = 0; z < *zoneCount; z++)
+                        if (zoneSite[z] == i && zoneEntry[z] == e) {
+                            nest_spawn(s, s->entries[e].type,
+                                       mobs, maxMobs, nextMobId, z);
+                            break;
+                        }
+                }
+                break;   // doğum başına tek giriş
             }
-            break;   // yuva başına GÜNDE 1
         }
     }
+    birthBonus = 0;   // bereket tek şafaklık — kullanıldı, sıfırla
 }
+
+void ecology_birth_bonus(int n) { birthBonus = n; }
 
 void ecology_note_spawn(int zoneId, int n)
 {

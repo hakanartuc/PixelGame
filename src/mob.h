@@ -135,6 +135,8 @@ typedef struct {
     float patrolAngle;    // devriye: yuva çevresi hedef açısı
     float patrolTimer;    // sıradaki devriye noktasına geçiş sayacı
     float waterX, waterY; // hayvan su noktası (0 = yok; öğlen iner)
+    bool raider;          // gece baskını mobu (WE_RAID): öldüren itibar kazanır,
+                          // şafakta sağ kalanlar sessizce çekilir (despawn)
 } Mob;
 
 

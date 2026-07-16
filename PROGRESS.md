@@ -547,6 +547,30 @@ birikmiyor değil ama OKUNMUYOR (kişilik/itibar/mühür diyaloglara dönmeli),
 (3) dünya tek yerleşimli, POI/yankı yoğunluğu düşük. Öncelik: önce his + rol,
 sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür").
 
+### Faz WE — DÜNYA OLAYLARI ÇEKİRDEĞİ (save v25)
+- **worldevent.c**: her şafak %35 zar → günün olayı (aynısı üst üste gelmez);
+  durum save v25'te (aktif olay + başlangıç günü + son olay). 4 olay:
+  - **Goblin Baskını (WE_RAID)**: gece inince köyün doğu kenarına 2-3 goblin
+    (zoneId -1 — ekolojiye sayılmaz, `Mob.raider`). Öldüren köy itibarı +2
+    ("Köyü savundun!"); şafakta sağ kalanlar sessizce çekilir (leş/loot yok).
+  - **Gezgin Kervan (WE_CARAVAN)**: 2 gün meydanda Kervancı Selim
+    (Desert_Trader_1; `npc_force_hidden` API — rutin görünürlüğü ezilir).
+    ÖZEL STOK (`CARAVAN_STOCK`): Bilgelik/Kuvvet Taşı, Soluk/Zehirli Öz, Ok,
+    Mana İksiri — hepsi %15 pahalı (pazarlıksız kervan). shop.c aktif-stok
+    düzenine geçti (render + tıklama + tooltip stok parametreli).
+  - **Bereket (WE_BOUNTY)**: o şafak hayvan sürüleri +2 ekstra doğum
+    (`ecology_birth_bonus` — tek şafaklık, hayvan aileleri FAM_SHEEP+).
+  - **Mühür Sancısı (WE_SEAL)**: gece yankı parıltıları gözle görülür büyür
+    (×1.8) + aralıklı fısıltı SFX'i (40-75 sn).
+- **Duyuru ağı**: olay sabahı görünür bir köylü haberi bağırır (bark) + pano
+  Söylentiler bölümüne olay satırı düşer (worldevent_rumor, en üst sıra).
+- **Dinlenme [R]**: gece kamp ateşi başında `[R] Dinlen` → sabah 07:00'a atla
+  (gametime_set — day-rollover DOĞAL tetiklenir: olay zarı/ekoloji/otokayıt).
+  HP+STA tam, mana en az %50 (uyku doldurmaz, yarılar). %25 şansla RÜYA
+  vinyeti: 3 havuz (ruya_muhur / ruya_cukur / ruya_fisilti — mühür/çukur/
+  fısıltı imaları, cevap yok). Paneller `scripts/gen_dreams.py` (prosedürel).
+- Kervan görünürlüğü yükleme/yeni oyunda senkronize (worldevent_reset + save).
+
 ### YAKIN — "oyun gibi hissettir" (his + rol)
 1. ~~CİLA PAKETİ~~ TAMAM (2026-07-14 — bkz. Faz CİLA bölümü); kalan küçük
    UX borcu: speech zar kilidi save'i (uygun faza serpilir)
@@ -574,9 +598,9 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
      sprite'lar: `~/Downloads/snake_right.png, turtleshell_right.png`)
    · Pişirme + yemek buffları (kamp ateşi + av döngüsü)
    · Davranış ünvanları ("Slime Kasabı" — kimlik davranıştan doğar vitrini)
-6. **DÜNYA OLAYLARI tam sistemi**: olay tablosu (baskın/kervan/gezgin tüccar),
-   haber ağının NPC diyaloğuna inmesi, dinlenme/rüya vinyeti (kamp ateşi);
-   ekoloji ekleri (iskelet için yeni mezar olayı, mob "arama" davranışı)
+6. **DÜNYA OLAYLARI tam sistemi**: ~~çekirdek (4 olay + dinlenme/rüya + kervan)~~
+   TAMAM (bkz. Faz WE) — kalan: haber ağının NPC diyaloğuna inmesi, ekoloji
+   ekleri (iskelet için yeni mezar olayı, mob "arama" davranışı)
 
 ### UZAK — "derinleştir ve kapat"
 7. **ANA HAT PERDE 2**: Lord sonrası fısıltının çağrısı + ikinci büyük zindan/boss

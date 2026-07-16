@@ -69,6 +69,10 @@ void ecology_dawn(int day, SpawnZone *zones, int maxZones, int *zoneCount,
 // Dış spawn muhasebesi (slime bölünmesi): yuva popülasyonuna +n
 void ecology_note_spawn(int zoneId, int n);
 
+// Bereket olayı (WE_BOUNTY): bir SONRAKİ ecology_dawn'da hayvan sürüleri
+// +n ekstra doğum yapar (tek şafaklık — dawn sonunda sıfırlanır).
+void ecology_birth_bonus(int n);
+
 // Bu türün dünya geneli canlı popülasyonu (dinamik kontrat filtresi)
 int ecology_type_pop(const MobType *t);
 

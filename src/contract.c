@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "contract.h"
+#include "worldevent.h"
 #include "ecology.h"   // dinamik ilan: nüfussuz türe kontrat yok (E2)
 #include "region.h"    // söylenti: koloninin bölge adı
 #include "item.h"
@@ -212,9 +213,16 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
         SDL_Color rumor = { 230, 200, 150, 255 };
         draw_text(renderer, font, "~ Söylentiler ~", panelX + CT_PAD,
                   rowY + 4.0f, gold);
+        // Günün olayı en üste düşer (Dünya Olayı — worldevent)
+        int rrow = 0;
+        if (worldevent_current() != WE_NONE) {
+            draw_text(renderer, font, worldevent_rumor(worldevent_current()),
+                      panelX + CT_PAD, rowY + 24.0f, rumor);
+            rrow = 1;
+        }
         int sites[3];
-        int n = ecology_recent_colonies(curDay, sites, 3);
-        if (n == 0)
+        int n = ecology_recent_colonies(curDay, sites, 3 - rrow);
+        if (n == 0 && rrow == 0)
             draw_text(renderer, font, "Ortalık sakin... şimdilik.",
                       panelX + CT_PAD, rowY + 24.0f, dim);
         for (int r = 0; r < n; r++) {
@@ -225,7 +233,7 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
                      ecology_family_name(ns->family),
                      reg >= 0 ? REGIONS[reg].name : "bilinmez");
             draw_text(renderer, font, line, panelX + CT_PAD,
-                      rowY + 24.0f + r * 20.0f, rumor);
+                      rowY + 24.0f + (r + rrow) * 20.0f, rumor);
         }
     }
     rowY += 64.0f;

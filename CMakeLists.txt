@@ -45,6 +45,7 @@ add_executable(game
     src/ambience.c
     src/title.c
     src/ally.c
+    src/worldevent.c
     src/gametime.c
     src/decor.c
     src/audio.c

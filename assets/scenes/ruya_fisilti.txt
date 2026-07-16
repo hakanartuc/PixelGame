@@ -1,0 +1,10 @@
+# Rüya 3 (Dünya Olayları): Fısıltı — sisin içinde ağızsız sesler.
+# İma: Sömüren hattının fısıltısı rüyaya taşar; "henüz değil" motifi.
+
+[giris]
+image: assets/scenes/ruya_fisilti.png
+duck: 0.2
+sfx: whisper
+text: Sis. İçinde ışıklar var — mor, yumuşak, ağızsız. Konuşuyorlar ama kelime yok; sadece niyet: birisi bir şey İSTİYOR ve istediği şey sende.
+text: En yakın ışık yaklaşıyor. Dokunacakken duruyor. Bildiğin iki kelime, sisin her yerinden aynı anda: "...henüz değil."
+opt: (Uyan.) -> end

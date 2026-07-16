@@ -1,0 +1,9 @@
+# Rüya 2 (Dünya Olayları): Çukur — dibi olmayan yarık, aşağıdan gelen ışık.
+# İma: yerin altında bir şey var; geçit/zindan katmanlarına gönderme.
+
+[giris]
+image: assets/scenes/ruya_cukur.png
+duck: 0.18
+text: Bir yarığın kenarındasın. Dibi yok — ama karanlık boş değil: aşağıdan soğuk, yeşil bir ışık sızıyor ve ışık... yukarı BAKIYOR gibi.
+text: Bir taş atıyorsun. Ses gelmiyor. Onun yerine, çok derinden, taşın SANA geri fırlatıldığını duyuyorsun. Avucunu açıyorsun; taş orada. Islak.
+opt: (Geri çekil — uyan.) -> end

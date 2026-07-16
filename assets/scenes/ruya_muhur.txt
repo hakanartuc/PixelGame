@@ -1,0 +1,9 @@
+# Rüya 1 (Dünya Olayları): Mühür — göğsündeki damga rüyada ISINIR.
+# İma: mühür canlı, bir şeyi sayıyor/bekliyor. Cevap yok, sadece his.
+
+[giris]
+image: assets/scenes/ruya_muhur.png
+duck: 0.15
+text: Rüyanda göğsün ışık sızdırıyor. Mühür — gündüz sessiz duran o damga — burada NABIZ gibi atıyor. Bir... iki... Sayıyor. Neyi saydığını bilmiyorsun; ama aralıklar kısalıyor.
+text: Uyanmadan hemen önce, damganın sıcaklığı bir soruya dönüşüyor: dokuz atım dolunca ne olur?
+opt: (Uyan.) -> end

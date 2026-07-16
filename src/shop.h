@@ -17,13 +17,20 @@ typedef struct {
 extern const ShopEntry SHOP_STOCK[];
 extern const int SHOP_STOCK_COUNT;
 
+// Kervan özel stoğu (Dünya Olayı: WE_CARAVAN) — nadir mal, %15 pahalı
+extern const ShopEntry CARAVAN_STOCK[];
+extern const int CARAVAN_STOCK_COUNT;
+
 // Dükkan paneli: stok listesi (ikon + ad + fiyat) + oyuncu altını.
 // buyMult: itibar fiyat çarpanı (rep_buy_mult) — gösterim satın almayla aynı.
+// stock/stockCount: aktif stok (NULL = SHOP_STOCK) — kervan özel stoğu (WE)
 void shop_render(R2D *renderer, TTF_Font *font,
                  R2DTexture *itemIconTex, const ItemTextures *itemTex,
-                 int playerGold, float buyMult, float panelX, float panelY);
+                 int playerGold, float buyMult, float panelX, float panelY,
+                 const ShopEntry *stock, int stockCount);
 
 // Tıklanan stok satırı (-1 = yok). shop_render ile aynı yerleşim.
-int shop_entry_at(float x, float y, float panelX, float panelY);
+// stockCount: aktif stok boyu (<=0 = SHOP_STOCK_COUNT)
+int shop_entry_at(float x, float y, float panelX, float panelY, int stockCount);
 
 #endif

@@ -57,6 +57,9 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
 // İçerideki (indoors) NPC seçilmez — gece dükkan da böyle kapanır.
 int npc_nearest_in_range(float px, float py);
 
+// Olay NPC'si (kervan): dünyada görünürlüğü main açar/kapar (rutinden bağımsız)
+void npc_force_hidden(int i, bool hidden);
+
 // Diyalogdaki NPC (her kare main basar; -1 = yok): konuşan NPC rutinini
 // DURDURUR — oyuncuyla konuşurken yürüyüp gitmesin (doğallık düzeltmesi)
 void npc_set_talking(int i);

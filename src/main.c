@@ -30,6 +30,7 @@
 #include "quest.h"
 #include "journal.h"
 #include "ecology.h"
+#include "worldevent.h"
 #include "tooltip.h"
 #include "ambience.h"
 #include "title.h"
@@ -367,6 +368,18 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
         }
         if (gametime_is_night())
             title_notify(title_stat_add(player, TS_NIGHT_KILLS, 1), player, floatTexts);
+    }
+
+    // BASKIN (Dünya Olayı): köyü savunan itibar kazanır — herkes görür
+    if (target->raider)
+    {
+        int vRegion = region_of(13.5f * TILE_SIZE, 7.0f * TILE_SIZE);   // köy meydanı
+        rep_add(&player->reputation[vRegion], 2.0f);
+        SDL_Color green = { 120, 255, 120, 255 };
+        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                             target->e.rect.x + target->e.rect.w / 2.0f,
+                             target->e.rect.y - 40.0f,
+                             "Köyü savundun! (+itibar)", green);
     }
 
     contract_on_kill(target->type);   // pano kes-kontratları da sayar (Faz 6)
@@ -845,6 +858,9 @@ int main(int argc, char *argv[])
     int nazifeIdx = -1;  // K2 Son Müşteri (D1b)
     for (int i = 0; i < NPC_COUNT; i++)
         if (SDL_strcmp(NPCS[i].name, "Nazife") == 0) { nazifeIdx = i; break; }
+    int kervanIdx = -1;  // Dünya Olayı: gezgin kervan tüccarı (WE_CARAVAN)
+    for (int i = 0; i < NPC_COUNT; i++)
+        if (SDL_strcmp(NPCS[i].name, "Kervancı Selim") == 0) { kervanIdx = i; break; }
     int nuhIdx = -1, zehraIdx = -1;   // S3 Sayan Adam (D1c)
     for (int i = 0; i < NPC_COUNT; i++)
     {
@@ -867,6 +883,8 @@ int main(int argc, char *argv[])
     }
     int lastSeenDay = gametime_day();   // günlük itibar toparlanması için gün takibi
     contract_new_day(lastSeenDay);      // panonun ilk günü (load bunu ezebilir)
+    bool wasNightWE = gametime_is_night();   // Dünya Olayı: gece kenarı tespiti (baskın)
+    float sealWhisperTimer = 20.0f;          // mühür sancısı: aralıklı fısıltı sayacı
     ui_theme_init(renderer);   // panel/hücre/buton sprite'ları
     audio_init();      // başarısızsa oyun sessiz devam eder
     ambience_init();   // ortam sesi katmanı (Cila) — yoksa sessiz devam
@@ -900,6 +918,7 @@ int main(int argc, char *argv[])
     int dlgBurnDay[8][DIALOG_MAX_NODES][DIALOG_MAX_OPTS] = {0};
     int dialogNode = -1;   // aktif diyalog düğümü
     bool shopOpen = false;
+    bool shopCaravan = false;   // açık dükkan kervan mı? (özel stok + %15 pahalı)
     int nearestNpc = -1;   // E prompt'u için (her kare güncellenir)
     int nearestRes = -1;   // E menzilindeki toplanabilir kaynak düğümü
     int gatherRes = -1;    // aktif toplama süreci (-1 = yok): savurma döngüsü çalışır
@@ -1012,6 +1031,7 @@ int main(int argc, char *argv[])
     // main sadece düzleştirir. Yeni kamp eklemek = region.c'ye bir satır.
     SpawnZone spawnZones[MAX_SPAWN_ZONES];
     ecology_reset();   // taban yuvalar dolu (yeni oyun/yükleme bunu ezer)
+    if (kervanIdx >= 0) npc_force_hidden(kervanIdx, true);   // kervan sadece olay günlerinde
     int spawnZoneCount = ecology_populate(spawnZones, MAX_SPAWN_ZONES,
                                           mobs, MAX_MOBS, &nextMobId);
 
@@ -1573,6 +1593,7 @@ int main(int argc, char *argv[])
                             else if (strcmp(target, "shop") == 0)
                             {
                                 shopOpen = true;
+                                shopCaravan = (dialogNpc == kervanIdx);
                                 inventoryOpen = true;   // satış için çanta da açık
                                 dialogNpc = -1;
                             }
@@ -2201,6 +2222,53 @@ int main(int argc, char *argv[])
                     if (questLogOpen) { journalTab = 0; journalPage = 0; }
                     audio_play(SFX_UI);
                 }
+                else if (event.key.key == SDLK_R && gameState == GAME_PLAYING &&
+                         !scene_active() && dialogNpc < 0 &&
+                         map_current() == MAP_WORLD && nearestStation >= 0 &&
+                         STATIONS[nearestStation].type == STATION_CAMPFIRE &&
+                         !gametime_is_night())
+                {
+                    // Ateş başında ama henüz gece değil (gece 21:00'de başlar;
+                    // ekran 19:00'dan itibaren kararır — sessiz kalma, söyle)
+                    SDL_Color dim = { 200, 200, 210, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 24.0f,
+                                         "Uyumak için erken — gece (21:00) yeniden gel.", dim);
+                }
+                else if (event.key.key == SDLK_R && gameState == GAME_PLAYING &&
+                         !scene_active() && dialogNpc < 0 &&
+                         map_current() == MAP_WORLD && nearestStation >= 0 &&
+                         STATIONS[nearestStation].type == STATION_CAMPFIRE &&
+                         gametime_is_night())
+                {
+                    // DİNLENME (Dünya Olayları): ateş başında sabahı bekle.
+                    // gametime_set sonrası day-rollover DOĞAL tetiklenir —
+                    // olay zarı, ekoloji, otomatik kayıt hepsi sabah işler.
+                    int wakeDay = gametime_day() +
+                                  (gametime_hours() >= 7.0f ? 1 : 0);
+                    gametime_set(wakeDay, 7.0f);
+                    player.health = player.maxHealth;
+                    player.stamina = player.maxStamina;
+                    if (player.mana < player.maxMana * 0.5f)
+                        player.mana = player.maxMana * 0.5f;   // uyku manayı yarılar, doldurmaz
+                    player.autoAttack = false;
+                    SDL_Color mor = { 200, 180, 255, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 24.0f,
+                                         "Sabah oldu.", mor);
+                    audio_play(SFX_UI);
+                    if (randf() < 0.25f)   // rüya: 3 havuzdan biri (imalar, cevap yok)
+                    {
+                        static const char *DREAMS[3] = {
+                            "assets/scenes/ruya_muhur.txt",
+                            "assets/scenes/ruya_cukur.txt",
+                            "assets/scenes/ruya_fisilti.txt",
+                        };
+                        scene_start(DREAMS[(int)(randf() * 2.99f)]);
+                    }
+                }
                 else if (questLogOpen && gameState == GAME_PLAYING &&
                          (event.key.key == SDLK_TAB ||
                           event.key.key == SDLK_LEFT ||
@@ -2344,6 +2412,10 @@ int main(int argc, char *argv[])
                         catchOpen = false;
                         lastSeenDay = gametime_day();   // günlük blok tetiklenmesin
                                                         // (pano durumu save'den geldi)
+                        wasNightWE = gametime_is_night();   // gece kenarı yeniden tetiklenmesin
+                        if (kervanIdx >= 0)
+                            npc_force_hidden(kervanIdx,
+                                             worldevent_current() != WE_CARAVAN);
                         SDL_Color white = { 255, 255, 255, 255 };
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
@@ -2514,6 +2586,8 @@ int main(int argc, char *argv[])
                             journal_reset();
                             journal_add(JE_WAKE, 0);   // günlüğün ilk satırı
                             ecology_reset();
+                            worldevent_reset();
+                            if (kervanIdx >= 0) npc_force_hidden(kervanIdx, true);
                             ally_reset(allies);
                             allyWasActive[0] = allyWasActive[1] = false;
                             map_set_current(MAP_WORLD);
@@ -2660,6 +2734,10 @@ int main(int argc, char *argv[])
                                 if (guardIdx >= 0) guard_init(guardIdx);
                                 catchOpen = false;
                                 lastSeenDay = gametime_day();
+                                wasNightWE = gametime_is_night();
+                                if (kervanIdx >= 0)
+                                    npc_force_hidden(kervanIdx,
+                                                     worldevent_current() != WE_CARAVAN);
                                 deathTimer = 0.0f;
                                 // otomatik kayıttan yüklemede aktif slot seçilmemiş olur
                                 activeSlot = (actSlot < SAVE_SLOT_COUNT) ? actSlot : -1;
@@ -2852,15 +2930,19 @@ int main(int argc, char *argv[])
                     if (shopOpen)
                     {
                         int entry = shop_entry_at((float)event.button.x, (float)event.button.y,
-                                                  40.0f, 40.0f);
+                                                  40.0f, 40.0f,
+                                                  shopCaravan ? CARAVAN_STOCK_COUNT : 0);
                         if (entry >= 0)
                         {
-                            const ItemType *it = SHOP_STOCK[entry].type;
+                            const ItemType *it = shopCaravan ? CARAVAN_STOCK[entry].type
+                                                             : SHOP_STOCK[entry].type;
                             // Fiyat itibara göre: dip itibarda ×1.5, saygın müşteriye ×0.9
+                            // Kervan pazarlıksız: her şey %15 pahalı (nadir mal bedeli)
                             int shopRegion = region_of(player.rect.x, player.rect.y);
                             int buyPrice = (int)(it->value *
                                                  rep_buy_mult(player.reputation[shopRegion]) *
-                                                 perkFx.shopBuyMult);
+                                                 perkFx.shopBuyMult *
+                                                 (shopCaravan ? 1.15f : 1.0f));
                             if (player.gold >= buyPrice &&
                                 inventory_add(&inventory, it, 1, 0))
                             {
@@ -5064,6 +5146,37 @@ int main(int argc, char *argv[])
                 journal_day_tick(today);    // günlük atmosfer satırları (seyrek)
                 resource_daily_respawn();   // doğa tazelenir (cevher/bitki/ağaç)
                 contract_new_day(today);    // pano yenilenir (yarım kontratlar düşer)
+
+                // DÜNYA OLAYI (şafak zarı): günün olayı belirlenir + köy duyurusu
+                WorldEvent newEv = worldevent_dawn(today);
+                for (int m = 0; m < MAX_MOBS; m++)   // baskından sağ kalanlar çekilir
+                    if (mobs[m].e.alive && mobs[m].raider)
+                    {
+                        mobs[m].e.alive = false;
+                        mobs[m].dying = false;   // sessiz despawn — leş/loot yok
+                    }
+                if (newEv == WE_BOUNTY)
+                    ecology_birth_bonus(2);      // bugünkü ecology_dawn'a işler
+                if (kervanIdx >= 0)              // kervan yalnız kendi günlerinde meydanda
+                    npc_force_hidden(kervanIdx, worldevent_current() != WE_CARAVAN);
+                if (newEv != WE_NONE)
+                {
+                    // Görünür bir köylü günün haberini bağırır (muhafız/kervancı hariç)
+                    const char *evBark =
+                        newEv == WE_RAID    ? "Sınırda goblin izi var — gece kapını sürgüle!"
+                      : newEv == WE_CARAVAN ? "Kervan gelmiş! Meydanda tezgah açmış."
+                      : newEv == WE_BOUNTY  ? "Otlaklar dolup taşıyor — bereketli gün!"
+                      :                       "Taşlar gece parlıyormuş... hayra alamet değil.";
+                    for (int ni = 0; ni < NPC_COUNT; ni++)
+                    {
+                        float bx, by;
+                        if (ni == guardIdx || ni == kervanIdx) continue;
+                        if (!npc_visible_pos(ni, &bx, &by)) continue;
+                        npc_bark(ni, evBark, 6.0f);
+                        break;
+                    }
+                }
+
                 ecology_dawn(today, spawnZones, MAX_SPAWN_ZONES, &spawnZoneCount,
                              mobs, MAX_MOBS, &nextMobId,
                              map_current() == MAP_WORLD);
@@ -5090,6 +5203,50 @@ int main(int argc, char *argv[])
                             if (player.reputation[r] > 0.0f)
                                 player.reputation[r] = 0.0f;   // toparlanma 0'ı aşmaz
                         }
+            }
+
+            // DÜNYA OLAYI (kare bazlı): baskın gece kenarında başlar; mühür
+            // sancısı gecesi yankılar arada fısıldar (görsel büyüme render'da)
+            {
+                bool nightNow = gametime_is_night();
+                if (nightNow && !wasNightWE && map_current() == MAP_WORLD &&
+                    worldevent_current() == WE_RAID)
+                {
+                    int nRaid = 2 + (randf() < 0.5f ? 1 : 0);   // 2-3 goblin
+                    for (int r = 0; r < nRaid; r++)
+                    {
+                        // Köyün doğu kenarı — meydana yürüme mesafesi
+                        float rx = (19.0f + (float)r * 1.5f) * TILE_SIZE;
+                        float ry = (4.0f + (float)r * 2.5f) * TILE_SIZE;
+                        int rid = mob_spawn(mobs, MAX_MOBS, &nextMobId,
+                                            &MOB_TYPES[0], rx, ry, -1);
+                        Mob *rm = mob_find_by_id(mobs, MAX_MOBS, rid);
+                        if (rm != NULL)
+                        {
+                            rm->raider = true;
+                            rm->aggro = true;      // baskıncı doğuştan kızgın
+                            rm->suspicion = 1.0f;
+                            rm->alertFlash = 1.0f;
+                        }
+                    }
+                    SDL_Color red = { 255, 120, 100, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 40.0f,
+                                         "Baskın! Köy kenarında goblinler!", red);
+                    audio_play(SFX_UI);
+                }
+                wasNightWE = nightNow;
+
+                if (nightNow && worldevent_current() == WE_SEAL)
+                {
+                    sealWhisperTimer -= dt;
+                    if (sealWhisperTimer <= 0.0f)
+                    {
+                        audio_play(SFX_WHISPER);
+                        sealWhisperTimer = 40.0f + randf() * 35.0f;
+                    }
+                }
             }
 
             // --- MUHAFIZ: bounty takibi / yakalama / düşmanlık (guard.c beyni) ---
@@ -6299,6 +6456,20 @@ int main(int argc, char *argv[])
                                (dialogNpc < 0 && nearestNpc < 0 && !craftOpen) ? nearestStation : -1,
                                (craftOpen && (craftRecipe >= 0 || plusForge || enchAction > 0))
                                    ? craftStation : -1);
+
+            // Dinlenme ipucu: gece, ateş başında (E ipucunun bir üstü)
+            if (gameFont != NULL && dialogNpc < 0 && nearestNpc < 0 && !craftOpen &&
+                nearestStation >= 0 &&
+                STATIONS[nearestStation].type == STATION_CAMPFIRE &&
+                gametime_is_night())
+            {
+                const StationDef *rs = &STATIONS[nearestStation];
+                SDL_Color rc = { 170, 220, 255, 255 };
+                draw_text(renderer, gameFont, "[R] Dinlen",
+                          (rs->x - camera.x) * camera.zoom - 40.0f,
+                          (rs->y - rs->src.h * rs->scale - camera.y) * camera.zoom
+                              - 44.0f, rc);
+            }
         }
 
         // İlan panosu (dünya objesi): taban-orta hizalı, yaklaşınca [E] ipucu
@@ -6632,10 +6803,13 @@ int main(int argc, char *argv[])
 
             if (ECHOES[i].kind == ECHO_ANI && glowTex != NULL)
             {
-                // Mor soluk: nabız gibi titrer — ölünün son anı burada asılı
+                // Mor soluk: nabız gibi titrer — ölünün son anı burada asılı.
+                // Mühür sancısı gecesi (WE_SEAL) soluk gözle görülür BÜYÜR.
                 float tsec = (float)((double)SDL_GetTicks() / 1000.0);
                 float pulse = 0.62f + 0.38f * SDL_sinf(tsec * 2.4f);
-                float size = (34.0f + 10.0f * pulse) * camera.zoom;
+                float sanci = (worldevent_current() == WE_SEAL &&
+                               gametime_is_night()) ? 1.8f : 1.0f;
+                float size = (34.0f + 10.0f * pulse) * sanci * camera.zoom;
                 SDL_FRect gdst = { (ECHOES[i].x - camera.x) * camera.zoom - size / 2.0f,
                                    (ECHOES[i].y - camera.y) * camera.zoom - size / 2.0f,
                                    size, size };
@@ -6978,8 +7152,11 @@ int main(int argc, char *argv[])
 
         if (shopOpen)
             shop_render(renderer, gameFont, itemIconTex, &itemTex, player.gold,
-                        rep_buy_mult(player.reputation[region_of(player.rect.x, player.rect.y)]),
-                        40.0f, 40.0f);
+                        rep_buy_mult(player.reputation[region_of(player.rect.x, player.rect.y)])
+                            * (shopCaravan ? 1.15f : 1.0f),
+                        40.0f, 40.0f,
+                        shopCaravan ? CARAVAN_STOCK : NULL,
+                        shopCaravan ? CARAVAN_STOCK_COUNT : 0);
 
         // Craft paneli + aktif sürecin ilerleme barı
         if (craftOpen && craftStation >= 0)
@@ -7146,11 +7323,14 @@ int main(int argc, char *argv[])
             }
             if (tip == NULL && shopOpen)
             {
-                int se = shop_entry_at(tmx, tmy, 40.0f, 40.0f);
-                if (se >= 0 && se < SHOP_STOCK_COUNT)
+                int se = shop_entry_at(tmx, tmy, 40.0f, 40.0f,
+                                       shopCaravan ? CARAVAN_STOCK_COUNT : 0);
+                if (se >= 0 &&
+                    se < (shopCaravan ? CARAVAN_STOCK_COUNT : SHOP_STOCK_COUNT))
                 {
                     static ItemStack shopTip;   // stok taze instance gibi gösterilir
-                    shopTip = item_make(SHOP_STOCK[se].type, 1, 0);
+                    shopTip = item_make((shopCaravan ? CARAVAN_STOCK : SHOP_STOCK)[se].type,
+                                        1, 0);
                     tip = &shopTip;
                     if (shopTip.type->equipable && shopTip.type->equipSlot >= 0 &&
                         shopTip.type->equipSlot < EQUIP_SLOT_COUNT &&

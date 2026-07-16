@@ -105,8 +105,13 @@ yankısı (Sömüren'de fısıltı sinyali), kayıt odası vinyeti (devral = Kay
 **KARAKTER YARATMA-LİTE TAMAM (save v24)**: "Kim olacaksın?" ekranı — isim
 (text input; slot kartı başlığı), 3 ten tonu (LPC tint), 4 geçmiş (bedelli:
 Gezgin/Asker/Avcı/Çırak). **ROADMAP YAKIN KADEMESİ KAPANDI.**
-Sıradaki (ORTA): **ikinci yerleşim + ilk biyom** (S1 Değirmenin Borcu ile) ya da
-**Dünya Olayları çekirdeği**. Kullanıcıya sorulacak.
+**DÜNYA OLAYLARI ÇEKİRDEĞİ TAMAM (save v25)**: her şafak %35 zar → 4 olay
+(Goblin Baskını gece 2-3 raider goblin + itibar / Gezgin Kervan 2 gün, Kervancı
+Selim + CARAVAN_STOCK %15 pahalı / Bereket sürülere +2 doğum / Mühür Sancısı
+gece yankı ×1.8 + fısıltı). Duyuru: köylü bark + pano söylentisi. Dinlenme [R]
+gece ateş başında → 07:00 (rollover doğal), HP/STA tam + mana %50, %25 rüya
+vinyeti (3 havuz, gen_dreams.py). Harita genişlemeleri (ikinci yerleşim/biyom)
+kullanıcı kararıyla "gerçek harita tasarımı gelince" ertelendi.
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
 mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13) + BÜYÜ SİSTEMİ
 (22: 6 büyü + Asa + INT + zırh ağırlığı + mana iksiri; ayrıntı PROGRESS Faz 22).

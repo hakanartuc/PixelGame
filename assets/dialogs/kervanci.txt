@@ -1,0 +1,11 @@
+# Kervancı Selim — Dünya Olayı: Gezgin Kervan (2 gün kalır, özel stok)
+[start]
+text: Uzak yoldan geliyorum, uzak yola gideceğim. Malım az, nadir ve pahalı — kervan hayatı böyle, kusura bakma. Bak beğen, yolcu.
+opt: Malını göster. -> shop
+opt: Nereden geliyorsun? -> yol
+opt: İyi yolculuklar. -> end
+
+[yol]
+text: Güneyden. Kumun ve taşın arasından. Yolda tuhaf şeyler gördüm — taşlar eskisi gibi durmuyor artık, biliyor musun? Neyse. Alışveriş?
+opt: Göster bakalım. -> shop
+opt: Belki sonra. -> end

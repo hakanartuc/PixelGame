@@ -27,11 +27,25 @@ const ShopEntry SHOP_STOCK[] = {
 };
 const int SHOP_STOCK_COUNT = (int)(sizeof(SHOP_STOCK) / sizeof(SHOP_STOCK[0]));
 
+// Kervan özel stoğu (Dünya Olayı — WE_CARAVAN): köyde bulunmayan nadir mallar.
+// Fiyat çarpanı (%15 pahalı) çağrı yerinde buyMult'a eklenir — kervancı pazarlıksız.
+const ShopEntry CARAVAN_STOCK[] = {
+    { &ITEM_TYPES[ITEM_STONE_INT] },      // Bilgelik Taşı — büyücüler için tek alternatif kaynak
+    { &ITEM_TYPES[ITEM_STONE_STR] },
+    { &ITEM_TYPES[ITEM_ESSENCE_PALE] },   // rün hammaddesi — avlanmadan alma yolu
+    { &ITEM_TYPES[ITEM_ESSENCE_TOXIC] },
+    { &ITEM_TYPES[ITEM_ARROW] },
+    { &ITEM_TYPES[ITEM_POTION_MANA] },
+};
+const int CARAVAN_STOCK_COUNT = (int)(sizeof(CARAVAN_STOCK) / sizeof(CARAVAN_STOCK[0]));
+
 void shop_render(R2D *renderer, TTF_Font *font,
                  R2DTexture *itemIconTex, const ItemTextures *itemTex,
-                 int playerGold, float buyMult, float panelX, float panelY)
+                 int playerGold, float buyMult, float panelX, float panelY,
+                 const ShopEntry *stock, int stockCount)
 {
-    float panelH = SHOP_STOCK_COUNT * SHOP_ROW_H + SHOP_PAD * 2 + 56.0f;
+    if (stock == NULL) { stock = SHOP_STOCK; stockCount = SHOP_STOCK_COUNT; }
+    float panelH = stockCount * SHOP_ROW_H + SHOP_PAD * 2 + 56.0f;
 
     ui_panel(renderer, panelX, panelY, SHOP_W, panelH);
 
@@ -44,8 +58,8 @@ void shop_render(R2D *renderer, TTF_Font *font,
     draw_text(renderer, font, "Dükkan", panelX + SHOP_PAD, panelY + 8.0f, white);
 
     float rowY = panelY + SHOP_PAD + 30.0f;
-    for (int i = 0; i < SHOP_STOCK_COUNT; i++) {
-        const ItemType *it = SHOP_STOCK[i].type;
+    for (int i = 0; i < stockCount; i++) {
+        const ItemType *it = stock[i].type;
 
         // Satır zemini (tema hücresi)
         SDL_FRect row = { panelX + 8.0f, rowY, SHOP_W - 16.0f, SHOP_ROW_H - 6.0f };
@@ -77,10 +91,11 @@ void shop_render(R2D *renderer, TTF_Font *font,
     draw_text(renderer, font, "Sat: envanterde sağ tık", panelX + SHOP_PAD, rowY + 4.0f, hint);
 }
 
-int shop_entry_at(float x, float y, float panelX, float panelY)
+int shop_entry_at(float x, float y, float panelX, float panelY, int stockCount)
 {
+    if (stockCount <= 0) stockCount = SHOP_STOCK_COUNT;
     float rowY = panelY + SHOP_PAD + 30.0f;
-    for (int i = 0; i < SHOP_STOCK_COUNT; i++) {
+    for (int i = 0; i < stockCount; i++) {
         SDL_FRect row = { panelX + 8.0f, rowY, SHOP_W - 16.0f, SHOP_ROW_H - 6.0f };
         if (x >= row.x && x < row.x + row.w && y >= row.y && y < row.y + row.h)
             return i;

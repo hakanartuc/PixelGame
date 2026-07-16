@@ -100,6 +100,16 @@ const NpcDef NPCS[] = {
           { .hour = 20.0f, .x = T(14), .y = T(6.2f), .indoors = true },   // gece içeri
       }, .stopCount = 2,
       .frameSize = 32, .drawScale = 2.8f },
+
+    // Dünya Olayı: Gezgin Kervan tüccarı — yalnız kervan günlerinde görünür
+    { .name = "Kervancı Selim",
+      .sheetPath = "assets/characters/npcs/Desert_Trader_1.png",
+      .dialogFile = "assets/dialogs/kervanci.txt",
+      .isVendor = true, .questId = NULL,
+      .schedule = {
+          { .hour = 0.0f, .x = T(9), .y = T(11), .indoors = false },  // meydan güneyi
+      }, .stopCount = 1,
+      .frameSize = 32, .drawScale = 2.8f },
 };
 const int NPC_COUNT = (int)(sizeof(NPCS) / sizeof(NPCS[0]));
 
@@ -125,6 +135,7 @@ typedef struct {
     float barkTimer;  // kalan balon süresi
     bool scriptWalk;  // sahne yürütmesi aktif (rutini ezer)
     float scriptX, scriptY;
+    bool forceHidden; // olay NPC'si (kervan): main görünürlüğü yönetir
 } NpcState;
 static NpcState npcState[12];  // NPC_COUNT tavanı (dizi statik kalsın diye bolca)
 
@@ -154,6 +165,13 @@ static int talkingIdx = -1;     // diyalogdaki NPC — hareketi durur
 
 void npc_set_talking(int i) { talkingIdx = i; }
 
+void npc_force_hidden(int i, bool hidden)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= 12) return;
+    npcState[i].forceHidden = hidden;
+    if (hidden) npcState[i].hidden = true;
+}
+
 void npc_set_active(bool active) { npcActive = active; }
 
 void npc_update(float dt, float hours)
@@ -167,7 +185,7 @@ void npc_update(float dt, float hours)
             const NpcStop *s0 = current_stop(&NPCS[i], hours);
             st->x = s0->x;
             st->y = s0->y;
-            st->hidden = s0->indoors;
+            st->hidden = s0->indoors || st->forceHidden;
             st->initialized = true;
         }
 
@@ -209,7 +227,7 @@ void npc_update(float dt, float hours)
 
         if (dist > 4.0f) {
             // Hedefe yürü — yürüyene kadar dışarıda görünür
-            st->hidden = false;
+            st->hidden = st->forceHidden;
             st->walking = true;
             float step = NPC_WALK_SPEED * dt;
             if (step > dist) step = dist;
@@ -217,7 +235,7 @@ void npc_update(float dt, float hours)
             st->y += dy / dist * step;
         } else {
             st->walking = false;
-            st->hidden = target->indoors;   // kapıya vardıysa içeri girer
+            st->hidden = target->indoors || st->forceHidden;
         }
     }
 }
