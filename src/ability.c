@@ -81,4 +81,15 @@ const AbilityDef ABILITIES[ABILITY_COUNT] = {
         .damageScale = 20.0f,   // büyü taban hasarı
         .cooldown = 10.0f, .mana = 22.0f,
     },
+    // M4 Conjuration: çağırma büyüleri (köklü cast; rezerve main'de işler)
+    [ABILITY_SUMMON_SNAKE] = {
+        .name = "Öz Yılanı", .abbrev = "YIL",
+        .skill = SKILL_CONJURATION, .unlockLevel = 1,
+        .damageScale = 0.0f, .cooldown = 10.0f, .mana = 30.0f,
+    },
+    [ABILITY_SUMMON_TURTLE] = {
+        .name = "Öz Kabuğu", .abbrev = "KAB",
+        .skill = SKILL_CONJURATION, .unlockLevel = 1,
+        .damageScale = 0.0f, .cooldown = 10.0f, .mana = 30.0f,
+    },
 };

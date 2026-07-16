@@ -70,6 +70,7 @@ const char *skill_name(SkillType t)
         case SKILL_WOODCUTTING:  return "Woodcutting";
         case SKILL_DESTRUCTION:  return "Destruction";
         case SKILL_STAFF:        return "Staff";
+        case SKILL_CONJURATION:  return "Conjuration";
         default:                 return "?";
     }
 }

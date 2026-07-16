@@ -44,6 +44,7 @@ add_executable(game
     src/tooltip.c
     src/ambience.c
     src/title.c
+    src/ally.c
     src/gametime.c
     src/decor.c
     src/audio.c

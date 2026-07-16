@@ -241,6 +241,34 @@ static const TreeNode T_DESTRUCTION[] = {
     N_ACT("Toprak Dikenleri","AKTİF: çevrende diken patlaması + yavaş (22 mana)", 12, 6, 4, ABILITY_SPIKES),
 };
 
+// --- CONJURATION: "Öz Bağı" — dost varlıklar (M4; Öz Yılanı doğuştan açık)
+static const TreeNode T_CONJURATION[] = {
+    N_ROOT("İlk Bağ",       "Dost hasarı +%5"),
+    N_MIN("Keskin Diş",     "Dost hasarı +%5",                  0, 1, 1),
+    N_MIN("Zehirli Öz",     "Yılan zehiri +%25",                1, 1, 2),
+    N_NOT("Yılan Dansı",    "Dost hasarı +%12",                 2, 1, 3),
+    N_MIN("Aç Öz",          "Dost hasarı +%5",                  3, 1, 4),
+    N_NOT("Av Ortağı",      "Dost hasarı +%15",                 4, 1, 5),
+
+    N_MIN("Kalın Kabuk",    "Dost HP +%15",                     0, 3, 1),
+    N_MIN("Sert Öz",        "Dost HP +%15",                     6, 3, 2),
+    N_NOT("Yaşayan Duvar",  "Dost HP +%30",                     7, 3, 3),
+    N_MIN("Derin Bağ",      "Rezerve -%3 (mana)",               8, 3, 4),
+    N_NOT("Kadim Bağ",      "Rezerve -%5 daha",                 9, 3, 5),
+
+    N_MIN("Öz Akışı",       "Büyü mana maliyeti -%5",           0, 5, 1),
+    N_MIN("Paylaşılan Güç", "Dost hasarı +%5",                 11, 5, 2),
+    N_NOT("Uyum",           "Dost HP +%20",                    12, 5, 3),
+    N_MIN("Çağrı Ustası",   "Çağırma maliyeti -%20",           13, 5, 4),
+    N_NOT("Öz Hakimi",      "Dost hasarı +%10 + HP +%10",      14, 5, 5),
+
+    N_KEY("SÜRÜ EFENDİSİ",  "İKİ dost birden — rezerve %60'a çıkar",     5, 10, 2),
+    N_KEY("KURBAN BAĞI",    "Dost hasarı +%40 — dost ölünce 15 HASAR YERSİN", 10, 15, 4),
+
+    // Öz Yılanı AĞAÇTA DEĞİL: doğuştan açık (bootstrap — Ateş Topu kuralı)
+    N_ACT("Öz Kabuğu",      "AKTİF: tank dost — yakın mobları üstüne çeker (30 mana)", 6, 4, 2, ABILITY_SUMMON_TURTLE),
+};
+
 // --- STAFF: "Asa Yolu" — tam büyücünün silah ağacı (asa kuşanılıyken parlar)
 static const TreeNode T_STAFFTREE[] = {
     N_ROOT("Asa Tutuşu",    "Asa melee hasarı +%5"),
@@ -385,6 +413,7 @@ static const SkillTreeDef TREES[] = {
     TREE_DEF(SKILL_ENCHANTING,   T_ENCHANTING),
     TREE_DEF(SKILL_DESTRUCTION,  T_DESTRUCTION),
     TREE_DEF(SKILL_STAFF,        T_STAFFTREE),
+    TREE_DEF(SKILL_CONJURATION,  T_CONJURATION),
     TREE_DEF(TREE_FATE,          T_FATE),
 };
 static const int TREE_COUNT = (int)(sizeof(TREES) / sizeof(TREES[0]));
@@ -473,12 +502,15 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         .xpGainMult = 1.0f, .goldFindMult = 1.0f,
         .spellDmgMult = 1.0f, .manaCostMult = 1.0f, .castSpeedMult = 1.0f,
         .staffDmgMult = 1.0f,
+        .summonDmgMult = 1.0f, .summonHpMult = 1.0f, .summonReserve = 0.25f,
+        .snakePoisonMult = 1.0f, .summonCostMult = 1.0f,
         .lockZoneMult = 1.0f, .lockCursorMult = 1.0f, .lockNoiseMult = 1.0f,
     };
 
     // Temel kıvılcım: Ateş Topu HERKESTE açık (büyünün 'normal vuruşu' —
     // Yıkım XP'sinin başlangıç kaynağı; gerçek büyüler ağaçtan satın alınır)
     fx->abilityOpen[ABILITY_FIREBOLT] = true;
+    fx->abilityOpen[ABILITY_SUMMON_SNAKE] = true;   // M4 bootstrap (Ateş Topu kuralı)
 
     // Aktif düğümler: hangi beceriler açık (tüm ağaçlarda grantAbility taraması)
     for (int t = 0; t < TREE_COUNT; t++)
@@ -782,6 +814,29 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         if (ON(T, 16)) { fx->staffSpellBonus += 0.25f; fx->staffDmgMult *= 0.70f; } // BAŞ BÜYÜCÜ
         if (ON(T, 17)) { fx->maxManaBonus += 25.0f; fx->manaRegenMult *= 1.25f;
                          fx->maxStaminaBonus -= 20.0f; }                            // SIR TAŞIYICI
+    }
+
+    // --- Conjuration (Öz Bağı — M4) ---
+    {
+        const int T = SKILL_CONJURATION;
+        if (ON(T, 0))  fx->summonDmgMult *= 1.05f;
+        if (ON(T, 1))  fx->summonDmgMult *= 1.05f;
+        if (ON(T, 2))  fx->snakePoisonMult *= 1.25f;
+        if (ON(T, 3))  fx->summonDmgMult *= 1.12f;
+        if (ON(T, 4))  fx->summonDmgMult *= 1.05f;
+        if (ON(T, 5))  fx->summonDmgMult *= 1.15f;
+        if (ON(T, 6))  fx->summonHpMult *= 1.15f;
+        if (ON(T, 7))  fx->summonHpMult *= 1.15f;
+        if (ON(T, 8))  fx->summonHpMult *= 1.30f;
+        if (ON(T, 9))  fx->summonReserve -= 0.03f;
+        if (ON(T, 10)) fx->summonReserve -= 0.05f;
+        if (ON(T, 11)) fx->manaCostMult *= 0.95f;
+        if (ON(T, 12)) fx->summonDmgMult *= 1.05f;
+        if (ON(T, 13)) fx->summonHpMult *= 1.20f;
+        if (ON(T, 14)) fx->summonCostMult *= 0.80f;
+        if (ON(T, 15)) { fx->summonDmgMult *= 1.10f; fx->summonHpMult *= 1.10f; }
+        if (ON(T, 16)) { fx->twoSummons = true; fx->summonReserve = 0.60f; }   // SÜRÜ EFENDİSİ
+        if (ON(T, 17)) { fx->summonDmgMult *= 1.40f; fx->summonDeathHurt = true; } // KURBAN BAĞI
     }
 
     // --- Kader Ağacı (karakter-geneli) ---

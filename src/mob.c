@@ -801,6 +801,7 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
     // Buz Oku yavaşlatması: süre boyunca hareket hızı çarpanı düşük
     float slowK = (m->slowTimer > 0.0f) ? m->slowMult : 1.0f;
     if (m->slowTimer > 0.0f) m->slowTimer -= dt;
+    if (m->tauntTimer > 0.0f) m->tauntTimer -= dt;   // M4: kabuk taunt'u söner
 
     // Ölüm animasyonu oynuyorsa: sadece onu ilerlet, AI çalışmaz
     if (m->dying) {

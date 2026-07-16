@@ -405,9 +405,16 @@ void health_bar_render(const Player *p, R2D *renderer)
     SDL_FRect mBg = { barX, barY + barH + 4.0f, barW, 8.0f };
     r2d_set_color(renderer, 20, 25, 55, 255);
     r2d_fill_rect(renderer, &mBg);
-    SDL_FRect mFill = { mBg.x, mBg.y, barW * mRatio, mBg.h };
+    // M4: dost rezervi — barın sonu KİLİTLİ bölme (mor); dolum kalan bölgeye
+    float usableW = barW * (1.0f - p->manaReservedFrac);
+    SDL_FRect mFill = { mBg.x, mBg.y, usableW * mRatio, mBg.h };
     r2d_set_color(renderer, 70, 120, 255, 255);
     r2d_fill_rect(renderer, &mFill);
+    if (p->manaReservedFrac > 0.0f) {
+        SDL_FRect mLock = { mBg.x + usableW, mBg.y, barW - usableW, mBg.h };
+        r2d_set_color(renderer, 110, 70, 160, 255);   // öz bağının rengi
+        r2d_fill_rect(renderer, &mLock);
+    }
 
     SDL_FRect sBg = { barX, mBg.y + 12.0f, barW, 8.0f };
     r2d_set_color(renderer, 50, 45, 15, 255);

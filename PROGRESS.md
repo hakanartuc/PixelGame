@@ -486,6 +486,22 @@ Güncelleme: 2026-07-11
 - Save v23: titleStats[12] + carriedTitle; F10 sayaçları eşik altına çeker
   (2-3 eylemle ünvan düşer — hızlı test)
 
+### Faz M4 — SUMMON HATTI: CONJURATION ("Öz Bağı"; onaylı mekanikler kapandı)
+- **17. SKILL + TAM AĞAÇ**: Conjuration — XP dostların verdiği hasardan (use-based);
+  save bump GEREKMEDİ (skill/ağaç blokları sayı-toleranslı)
+- **ÖZ YILANI** (bootstrap — Ateş Topu kuralı): 30 mana + %25 REZERVE; hızlı,
+  zehir basar (60HP / 6dmg + %25 zehir 4sn); **ÖZ KABUĞU** (ağaçtan AKTİF):
+  tank 220HP, 2sn'de taunt nabzı — moblar hedefini kabuğa çevirir ve ONU döver
+- Dostlar EFEKT-varlık (yeşil öz; snake/turtleshell 128px belirme+hamle sheet'leri —
+  yürüyen pet değil, süzülen büyü); ally.c: takip/hedef seçimi (yalnız SENİN
+  aggro'n — sadık, sneak bozmaz)/ışınlanma/can şeridi
+- **KURALLAR**: tek dost (yenisi gönderir), hotbar'a tekrar bas = geri çağır
+  (rezerv çözülür), ölünce 10sn CD; REZERV bar'da MOR KİLİTLİ bölme (kullanıcı
+  tespiti: oransal bar rezervi gizliyordu — görsel bölme eklendi)
+- **KEYSTONE'lar**: SÜRÜ EFENDİSİ (iki dost, rezerv dost başına %30) /
+  KURBAN BAĞI (dost hasarı +%40, dost ölünce SEN 15 hasar — "Bağ koptu!")
+- Ünvan çarpanları dost hasarına da işler; ikon atlası 15 hücre; F10 Conjuration
+
 ## 🔜 ROADMAP (2026-07-14 — RPG-ruhu analiziyle onaylandı)
 
 Analiz özeti: sistem omurgası güçlü (build kimliği, ekonomi, suç/itibar, ekoloji,
@@ -517,6 +533,7 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
    · ~~Element sinerjileri~~ TAMAM (bkz. Faz M1)
    · ~~Pişirme + yemek buffları~~ TAMAM (bkz. Faz M2)
    · ~~Davranış ünvanları~~ TAMAM (bkz. Faz M3) — savaş+yaşam üçlüsü KAPANDI
+   · ~~Summon hattı~~ TAMAM (bkz. Faz M4) — ONAYLI 4 MEKANİK TAMAMLANDI
    · Summon hattı (yılan DoT + kaplumbağa tank; bedel: max mananın %25'i rezerve;
      sprite'lar: `~/Downloads/snake_right.png, turtleshell_right.png`)
    · Pişirme + yemek buffları (kamp ateşi + av döngüsü)

@@ -33,6 +33,7 @@
 #include "tooltip.h"
 #include "ambience.h"
 #include "title.h"
+#include "ally.h"
 #include "gametime.h"
 #include "decor.h"
 #include "audio.h"
@@ -800,6 +801,8 @@ int main(int argc, char *argv[])
     R2DTexture *abilityIconTex = load_texture(renderer, "assets/icons/abilities.png");  // beceri ikonları (Cila)
     R2DTexture *lanternTex = load_texture(renderer, "assets/decor/lantern.png");  // K9 kandili (D1a)
     R2DTexture *sofraTex = load_texture(renderer, "assets/decor/sofra.png");  // K2 sofrası (D1b)
+    R2DTexture *snakeTex  = load_texture(renderer, "assets/characters/allies/snake.png");   // M4
+    R2DTexture *turtleTex = load_texture(renderer, "assets/characters/allies/turtle.png");
     bool boardOpen = false;
 
     // Büyü VFX sprite'ları (Faz 22): mermi küreleri + arcane patlama + alev
@@ -1056,6 +1059,11 @@ int main(int argc, char *argv[])
     worldmap_init(renderer);  // geçit görselleri
     trap_init(renderer);      // diken/plaka/arbalet sprite'ları (sandık günleri worldmap'te)
     scene_set_renderer(renderer);   // vinyet sahneleri görsel yükleyebilsin
+
+    // Conjuration dostları (M4)
+    Ally allies[ALLY_MAX];
+    ally_reset(allies);
+    bool allyWasActive[ALLY_MAX] = { false, false };
 
     // Cine modu (D1a): letterbox bantları + kamera hedefe süzülür; süre bitince
     // oyuncuya döner. Sahne araçlarının in-engine yarısı (vinyet tam ekranın aksine
@@ -2071,14 +2079,15 @@ int main(int argc, char *argv[])
                     // Yayın öncesi kaldırılacak — commit'e girer ama işaretli.
                     // Eğri dik: seviye 25 ≈ 125k, 100 ≈ 4M XP → basış başına 1M
                     // (1 basış ~lv57, 2 ~lv75, 4 = tüm eşikler açık)
-                    SkillType dbg[15] = { SKILL_ONE_HANDED, SKILL_LIGHT_ARMOR,
+                    SkillType dbg[16] = { SKILL_ONE_HANDED, SKILL_LIGHT_ARMOR,
                                           SKILL_MEDIUM_ARMOR, SKILL_HEAVY_ARMOR,
                                           SKILL_SMITHING, SKILL_ALCHEMY, SKILL_MINING,
                                           SKILL_HERBALISM, SKILL_WOODCUTTING,
                                           SKILL_ENCHANTING, SKILL_ARCHERY,
                                           SKILL_SNEAK, SKILL_SPEECH,
-                                          SKILL_DESTRUCTION, SKILL_STAFF };   // ağaç testi
-                    for (int d = 0; d < 15; d++)
+                                          SKILL_DESTRUCTION, SKILL_STAFF,
+                                          SKILL_CONJURATION };   // ağaç testi
+                    for (int d = 0; d < 16; d++)
                         if (skill_add_xp(player.skills, dbg[d], 1000000.0f))
                             on_skill_levelup(&player, dbg[d], &hotbar, floatTexts);
 
@@ -2421,6 +2430,8 @@ int main(int argc, char *argv[])
                             journal_reset();
                             journal_add(JE_WAKE, 0);   // günlüğün ilk satırı
                             ecology_reset();
+                            ally_reset(allies);
+                            allyWasActive[0] = allyWasActive[1] = false;
                             map_set_current(MAP_WORLD);
                             mapReloadNeeded = true;   // geçiş bloğu kamp/sandık/tuzağı kurar
                             currentRegion = -2;
@@ -3511,13 +3522,31 @@ int main(int argc, char *argv[])
                     // GO/BO/GS/YA/AO yay) — yanlış silahla CD boşa yanmasın
                     const AbilityDef *ad = &ABILITIES[hs->abilityId];
                     bool needBow = (ad->skill == SKILL_ARCHERY);
-                    bool isSpell = (ad->skill == SKILL_DESTRUCTION);
+                    bool isSpell = (ad->skill == SKILL_DESTRUCTION ||
+                                    ad->skill == SKILL_CONJURATION);
+                    bool isSummon = (hs->abilityId == ABILITY_SUMMON_SNAKE ||
+                                     hs->abilityId == ABILITY_SUMMON_TURTLE);
+                    AllyKind sumKind = (hs->abilityId == ABILITY_SUMMON_TURTLE)
+                                     ? ALLY_TURTLE : ALLY_SNAKE;
+                    if (isSummon && ally_active(allies, sumKind))
+                    {
+                        // Geri çağır: rezerve çözülür (maliyetsiz, anında)
+                        ally_dismiss(allies, sumKind);
+                        audio_play(SFX_UI);
+                        SDL_Color dim2 = { 170, 200, 190, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f,
+                                             "Dost öze döndü", dim2);
+                        isSpell = false;   // cast akışına girme
+                    }
                     SDL_Color red = { 255, 120, 100, 255 };
 
                     if (isSpell)
                     {
                         // BÜYÜ: silahtan bağımsız (battlemage özgürlüğü) — mana + hedef
-                        float cost = ad->mana * perkFx.manaCostMult;
+                        float cost = ad->mana * perkFx.manaCostMult
+                                   * (isSummon ? perkFx.summonCostMult : 1.0f);
                         bool needTarget = (hs->abilityId == ABILITY_FIREBOLT ||
                                            hs->abilityId == ABILITY_LIGHTNING);
                         Mob *spTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
@@ -3832,7 +3861,10 @@ int main(int argc, char *argv[])
                     if (castTimer >= SPELL_CAST_TIME * perkFx.castSpeedMult)
                     {
                         const AbilityDef *sd = &ABILITIES[castSpell];
-                        float cost = sd->mana * perkFx.manaCostMult;
+                        float cost = sd->mana * perkFx.manaCostMult
+                                   * ((castSpell == ABILITY_SUMMON_SNAKE ||
+                                       castSpell == ABILITY_SUMMON_TURTLE)
+                                      ? perkFx.summonCostMult : 1.0f);
                         const ItemStack *wpn = &equipment.slots[EQUIP_WEAPON];
                         float pcx = player.rect.x + player.rect.w / 2.0f;
                         float pcy = player.rect.y + player.rect.h / 2.0f;
@@ -4049,6 +4081,28 @@ int main(int argc, char *argv[])
                                     mob_die(nb, mobs, MAX_MOBS, &nextMobId, loots,
                                             questStatus, floatTexts, &player);
                             }
+                        }
+
+                        else if (castSpell == ABILITY_SUMMON_SNAKE ||
+                                 castSpell == ABILITY_SUMMON_TURTLE)
+                        {
+                            // M4: dost çağırma — tek dost kuralı (keystone hariç)
+                            AllyKind k = (castSpell == ABILITY_SUMMON_TURTLE)
+                                       ? ALLY_TURTLE : ALLY_SNAKE;
+                            AllyKind other = (k == ALLY_SNAKE) ? ALLY_TURTLE
+                                                               : ALLY_SNAKE;
+                            if (!perkFx.twoSummons && ally_active(allies, other))
+                                ally_dismiss(allies, other);   // yenisi eskisini gönderir
+                            ally_summon(allies, k, pcx, pcy,
+                                        player.skills[SKILL_CONJURATION].level,
+                                        perkFx.summonHpMult);
+                            fx_burst(&weaponFx, pcx, pcy, 20, 100.0f, 120, 235, 110);
+                            audio_play(SFX_PERK);
+                            SDL_Color grn = { 140, 240, 130, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 pcx, player.rect.y - 10.0f,
+                                                 k == ALLY_SNAKE ? "Öz Yılanı!"
+                                                                 : "Öz Kabuğu!", grn);
                         }
 
                         castSpell = -1;
@@ -4565,6 +4619,16 @@ int main(int argc, char *argv[])
 
                 player.maxMana    = 50.0f  + (float)gearStat[STAT_MP]
                                   + perkFx.maxManaBonus;
+                // M4 rezerve: dost yaşarken max mananın bir kısmı BAĞLI kalır
+                {
+                    float reserve = perkFx.summonReserve
+                                  * (float)ally_count(allies);
+                    if (reserve > 0.9f) reserve = 0.9f;
+                    player.manaReservedFrac = reserve;   // bar kilitli bölme çizer
+                    player.maxMana *= (1.0f - reserve);
+                    if (player.mana > player.maxMana)
+                        player.mana = player.maxMana;
+                }
                 player.maxStamina = 100.0f + (float)gearStat[STAT_STA]
                                   + perkFx.maxStaminaBonus;
                 // (DEF ekipmanı equipment_total_defense içinde toplanır)
@@ -5532,7 +5596,14 @@ int main(int argc, char *argv[])
                                    sneak_detect_mul(player.sneaking,
                                                     player.skills[SKILL_SNEAK].level,
                                                     inConceal, px, py, &mobs[i]);
-                mob_update(&mobs[i], mobs, mobCount, px, py, dt, detectMul * stealthMul);
+                // M4 taunt: kabuk çekiyorsa mob hedefi kabuk olur
+                float mtx = px, mty = py;
+                if (mobs[i].tauntTimer > 0.0f && ally_active(allies, ALLY_TURTLE))
+                {
+                    mtx = allies[ALLY_TURTLE].x;
+                    mty = allies[ALLY_TURTLE].y;
+                }
+                mob_update(&mobs[i], mobs, mobCount, mtx, mty, dt, detectMul * stealthMul);
 
                 // Eğilmiş + fark edilmemiş + algı sınırına yakın → risk var, XP akar
                 if (player.sneaking && mobs[i].e.alive && !mobs[i].aggro)
@@ -5617,6 +5688,15 @@ int main(int argc, char *argv[])
                             break;
                         }
                     }
+                }
+                else if (mobs[i].attackTriggered &&
+                         mobs[i].tauntTimer > 0.0f &&
+                         ally_active(allies, ALLY_TURTLE))
+                {
+                    // M4: taunt'lu mob KABUĞU döver (oyuncu yerine)
+                    allies[ALLY_TURTLE].hp -= mobs[i].type->damage;
+                    fx_burst(&weaponFx, allies[ALLY_TURTLE].x,
+                             allies[ALLY_TURTLE].y, 6, 60.0f, 120, 235, 110);
                 }
                 else if (mobs[i].attackTriggered)
                 {
@@ -5850,6 +5930,62 @@ int main(int argc, char *argv[])
             if (flashTime > 0.0f)
                 flashTime -= dt;
 
+            // --- M4: dostların güncellenmesi + vuruşları (tek noktadan) ---
+            {
+                AllyHit hits[ALLY_MAX];
+                ally_update(allies, dt, px, py, mobs, MAX_MOBS,
+                            player.skills[SKILL_CONJURATION].level,
+                            perkFx.summonDmgMult, hits);
+                for (int ai = 0; ai < ALLY_MAX; ai++)
+                {
+                    if (hits[ai].targetMobId == 0) continue;
+                    Mob *tm = mob_find_by_id(mobs, MAX_MOBS, hits[ai].targetMobId);
+                    if (tm == NULL || !tm->e.alive) continue;
+                    float ad = hits[ai].damage
+                             * title_damage_mult(&player, tm->type,
+                                                 gametime_is_night());
+                    tm->e.health -= ad;
+                    tm->e.hitFlash = 0.12f;
+                    if (hits[ai].poison)
+                    {
+                        tm->poisonDps = ad * 0.25f * perkFx.snakePoisonMult / 4.0f;
+                        tm->poisonTime = 4.0f;
+                    }
+                    floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                    tm->e.rect.x + tm->e.rect.w / 2.0f + 8.0f,
+                                    tm->e.rect.y - 6.0f, (int)ad, false);
+                    float axp = combat_xp_for_hit(ad, tm->type->level,
+                                    player.skills[SKILL_CONJURATION].level);
+                    if (skill_add_xp(player.skills, SKILL_CONJURATION, axp))
+                        on_skill_levelup(&player, SKILL_CONJURATION,
+                                         &hotbar, floatTexts);
+                    if (tm->e.health <= 0.0f)
+                        mob_die(tm, mobs, MAX_MOBS, &nextMobId, loots,
+                                questStatus, floatTexts, &player);
+                }
+
+                // Dost ölümü: CD basılır + KURBAN BAĞI bedeli
+                for (int ai = 0; ai < ALLY_MAX; ai++)
+                {
+                    bool now = allies[ai].active;
+                    if (allyWasActive[ai] && !now)
+                    {
+                        int abId = (ai == ALLY_TURTLE) ? ABILITY_SUMMON_TURTLE
+                                                       : ABILITY_SUMMON_SNAKE;
+                        player.abilityCd[abId] = ABILITIES[abId].cooldown;
+                        if (perkFx.summonDeathHurt)
+                        {
+                            player.health -= 15.0f;   // KURBAN BAĞI: bağ koptu
+                            SDL_Color red2 = { 255, 90, 80, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 px, player.rect.y - 26.0f,
+                                                 "Bağ koptu!", red2);
+                        }
+                    }
+                    allyWasActive[ai] = now;
+                }
+            }
+
             // E prompt'u için menzildeki en yakın NPC
             nearestNpc = npc_nearest_in_range(px, py);
             nearestRes = resource_nearest_available(px, py);
@@ -6035,6 +6171,8 @@ int main(int argc, char *argv[])
         
         for (int i = 0; i < mobCount; i++)
             mob_render(&mobs[i], renderer, mob_textures, &camera, player.targetMobId);
+
+        ally_render(allies, renderer, snakeTex, turtleTex, &camera);   // M4 dostlar
 
         npc_render_all(renderer, npc_textures, &camera, gameFont, nearestNpc);
 
@@ -6851,6 +6989,8 @@ int main(int argc, char *argv[])
     if (abilityIconTex) r2d_texture_destroy(NULL, abilityIconTex);
     if (lanternTex) r2d_texture_destroy(NULL, lanternTex);
     if (sofraTex) r2d_texture_destroy(NULL, sofraTex);
+    if (snakeTex) r2d_texture_destroy(NULL, snakeTex);
+    if (turtleTex) r2d_texture_destroy(NULL, turtleTex);
     if (shieldTex)  r2d_texture_destroy(NULL, shieldTex);
     if (spikesTex)  r2d_texture_destroy(NULL, spikesTex);
     if (flameTex)   r2d_texture_destroy(NULL, flameTex);

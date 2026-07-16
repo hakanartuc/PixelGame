@@ -51,7 +51,7 @@ def save_png(path, W, H, img):
     png += chunk(b'IEND', b'')
     open(path, 'wb').write(png)
 
-N = 13; CELL = 32
+N = 15; CELL = 32
 W, H = N * CELL, CELL
 px = bytearray(W * H * 4)
 
@@ -150,5 +150,27 @@ half_blit(320, 64, 11)
 # 12 SPIKES — toprak dikenleri (192,224)
 half_blit(192, 224, 12)
 
+SNAKE = load_png('assets/characters/allies/snake.png')
+TURTLE = load_png('assets/characters/allies/turtle.png')
+
+def quarter_blit(src, sx, sy, cell):
+    # 128px kareyi 4x4 ortalamayla 32'ye indir
+    SW, SH, im = src
+    for y in range(32):
+        for x in range(32):
+            r = g = b = a = 0
+            for dy in range(4):
+                for dx in range(4):
+                    o = ((sy + y*4 + dy)*SW + (sx + x*4 + dx))*4
+                    r += im[o]; g += im[o+1]; b += im[o+2]; a += im[o+3]
+            put(cell*CELL + x, y, (r//16, g//16, b//16), a//16)
+
+# 13 SUMMON_SNAKE — idle baş karesi (satır 2, kare 9)
+frame(13, (46, 78, 40))
+quarter_blit(SNAKE, 128, 256, 13)
+# 14 SUMMON_TURTLE — kabuk karesi (satır 2, kare 9)
+frame(14, (46, 78, 40))
+quarter_blit(TURTLE, 128, 256, 14)
+
 save_png('assets/icons/abilities.png', W, H, px)
-print("OK assets/icons/abilities.png (13 hücre 32x32)")
+print("OK assets/icons/abilities.png (15 hücre 32x32)")

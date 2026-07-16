@@ -23,6 +23,8 @@ typedef enum {
     ABILITY_FLAME_ARMOR,    // Alev Zırhı: 15sn yakın saldırgana hasar yansıtma
     ABILITY_MAGIC_SHIELD,   // Büyü Kalkanı: 12sn hasar HP yerine MANADAN emilir (×1.2)
     ABILITY_SPIKES,         // Toprak Dikenleri: çevrende diken patlaması + yavaşlatma
+    ABILITY_SUMMON_SNAKE,   // Öz Yılanı çağır (M4 — bootstrap: herkese açık)
+    ABILITY_SUMMON_TURTLE,  // Öz Kabuğu çağır (M4 — ağaçtan)
     ABILITY_COUNT,
 } AbilityId;
 

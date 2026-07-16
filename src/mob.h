@@ -131,6 +131,7 @@ typedef struct {
     bool dying;           // ölüm animasyonu sürüyor mu (çiziliyor ama AI/hedef dışı)
     bool scatter;         // yuva çöktü: kaçış + süre sonunda sessiz despawn (ekoloji)
     bool sleeping;        // şu an uyuyor (E2: ritimden türetilir — sinsi vuruş sayılır)
+    float tauntTimer;     // Öz Kabuğu taunt'u (M4): >0 iken hedefi kabuk (main geçirir)
     float patrolAngle;    // devriye: yuva çevresi hedef açısı
     float patrolTimer;    // sıradaki devriye noktasına geçiş sayacı
     float waterX, waterY; // hayvan su noktası (0 = yok; öğlen iner)

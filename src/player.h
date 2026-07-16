@@ -95,6 +95,7 @@ typedef struct Player {
     // Mana + Stamina havuzları: tüketen sistemler (büyü/dodge) gelecekte —
     // barlar şimdiden HUD'da (stat basma da bu havuzları büyütecek, Faz 4)
     float mana, maxMana;
+    float manaReservedFrac;   // M4: dost rezervi (0..1) — bar kilitli bölme çizer
     float stamina, maxStamina;
 
     // Süreli tüketilebilir etkileri (Faz 3)

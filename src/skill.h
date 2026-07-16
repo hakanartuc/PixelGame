@@ -30,7 +30,8 @@ typedef enum {
     SKILL_WOODCUTTING,    // oduculuk (toplama — odun)
     // Faz 22 — büyü (SONA eklendi: save skill bloğu sayı-toleranslı)
     SKILL_DESTRUCTION,    // yıkım büyüleri (büyü hasarıyla XP)
-    SKILL_STAFF,          // asa (asa vuruşu + tam-büyücü silah ağacı)
+    SKILL_STAFF,
+    SKILL_CONJURATION,   // dostların verdiği hasarla gelişir (M4)          // asa (asa vuruşu + tam-büyücü silah ağacı)
     SKILL_COUNT,
     SKILL_NONE = -1,      // skill'e bağlı olmayan eylem (örn. silahsız vuruş)
 } SkillType;

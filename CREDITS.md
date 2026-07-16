@@ -66,6 +66,12 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
 - TODO: her paketin indirildiği sayfa + yazar + lisans teyidi
   (mobil dağıtım öncesi şart — magic_pack LPC uyumlu görünüyor).
 
+### Conjuration dost sprite'ları (M4)
+- Dosyalar: `assets/characters/allies/snake.png, turtle.png`
+  (128px belirme/hamle efekt sheet'leri — magic_pack ailesi)
+- Kaynak: `~/Downloads/snake_right.png, turtleshell_right.png`
+- TODO: paket sayfası + yazar + lisans teyidi.
+
 ### Büyü ikonları (hotbar/ağaç beceri ikonları)
 - Dosya: `assets/icons/abilities.png` (magic_icons.png hücrelerinden türetildi,
   kılıç/yay glifleri prosedürel — `scripts/gen_ability_icons.py`)

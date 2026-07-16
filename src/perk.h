@@ -75,6 +75,15 @@ typedef struct {
     float bribeCostMult;      // muhafız rüşveti çarpanı
 
     // Aktif beceriler (AKTİF düğümler açar — hotbar bunlara göre dolar)
+    // Conjuration (M4)
+    float summonDmgMult;    // dost hasarı çarpanı (taban 1)
+    float summonHpMult;     // dost HP çarpanı (taban 1)
+    float summonReserve;    // rezerve oranı (taban 0.25; düğümler düşürür)
+    float snakePoisonMult;  // yılan zehiri çarpanı (taban 1)
+    float summonCostMult;   // çağırma mana maliyeti çarpanı (taban 1)
+    bool  twoSummons;       // SÜRÜ EFENDİSİ: iki dost (rezerve 0.60)
+    bool  summonDeathHurt;  // KURBAN BAĞI: dost ölünce 15 hasar yersin
+
     bool abilityOpen[ABILITY_COUNT];
 
     // Meslek mini ağaçları (Faz 21b)
