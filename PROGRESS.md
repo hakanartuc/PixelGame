@@ -471,6 +471,21 @@ Güncelleme: 2026-07-11
 - Av döngüsü: avla → kamp kur → pişir → buff'la yola devam (ekoloji av
   kıtlığıyla et stratejik kaynak)
 
+### Faz M3 — DAVRANIŞ ÜNVANLARI ("kimlik davranıştan doğar" vitrini; save v23)
+- **10 ÜNVAN** (title.c): Slime Kasabı/Goblin Belası/Ork Kıran (aile +%5),
+  Gölge (sinsi +0.1), Gece Kuşu (gece +%3), Yuva Yıkıcı (reis/totem +%10),
+  Usta Avcı (av çift ürün %10 — ikinci kasa), Nişancı (yay +%3),
+  Kadeh (iksir +%5), Aşçı (Tok süresi +%20)
+- **HEPSİ PASİF + 1 TAŞINAN** (kullanıcı seçimi): açık ünvanların pasifi kalıcı;
+  taşınan ünvanın pasifi ×2 + HUD'da isim ("- Gölge -"); kitapta tıkla = taşı/bırak
+- **KİTABA 3. SEKME**: J → Tab döngüsü Görevler→Günlük→Ünvanlar; açıklar altın
+  (taşınan kızıl), kilitliler ilerleme sayaçlı (87/100); journal_title_at hit testi
+- Sayaç kancaları: aile kesimi (reis→goblin, totem→ork sayılır), gece kesimi,
+  sinsi vuruş (melee+ok), yuva çöküşü/ritüeli, atılan ok, içilen iksir,
+  pişirilen yemek; kazanımda bildirim + SFX + JE_TITLE günlük satırı
+- Save v23: titleStats[12] + carriedTitle; F10 sayaçları eşik altına çeker
+  (2-3 eylemle ünvan düşer — hızlı test)
+
 ## 🔜 ROADMAP (2026-07-14 — RPG-ruhu analiziyle onaylandı)
 
 Analiz özeti: sistem omurgası güçlü (build kimliği, ekonomi, suç/itibar, ekoloji,
@@ -501,6 +516,7 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
    sıra öne çekildi; savaş+yaşam üçlüsü: M1 sinerji ✓ → M2 pişirme → M3 ünvanlar):
    · ~~Element sinerjileri~~ TAMAM (bkz. Faz M1)
    · ~~Pişirme + yemek buffları~~ TAMAM (bkz. Faz M2)
+   · ~~Davranış ünvanları~~ TAMAM (bkz. Faz M3) — savaş+yaşam üçlüsü KAPANDI
    · Summon hattı (yılan DoT + kaplumbağa tank; bedel: max mananın %25'i rezerve;
      sprite'lar: `~/Downloads/snake_right.png, turtleshell_right.png`)
    · Pişirme + yemek buffları (kamp ateşi + av döngüsü)

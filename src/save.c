@@ -19,14 +19,15 @@
 #include "ecology.h"    // yuva durumları (v20)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 22u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+#define SAVE_VERSION 23u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
                           // v12: ilan panosu (gün + slot durum/ilerleme);
                           // v13: skill ağacı maskeleri (perkChoice'un yerini aldı);
                           // v18: özet bloğu (slot kartları) + kişilik sayaçları;
                           // v19: Yolculuk günlüğü girişleri;
                           // v20: mob ekolojisi (yuva durumları);
                           // v21: yuva colonizedDay (haber ağı);
-                          // v22: hikaye kartı bayrakları (storyFlags)
+                          // v22: hikaye kartı bayrakları (storyFlags);
+                          // v23: davranış ünvanları (titleStats + carriedTitle)
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -234,6 +235,11 @@ bool save_game(const char *path, const Player *p,
     // Hikaye kartı bayrakları (v22)
     for (int i = 0; ok && i < 16; i++)
         ok = w32(f, p->storyFlags[i]);
+
+    // Davranış ünvanları (v23)
+    for (int i = 0; ok && i < 12; i++)
+        ok = w32(f, p->titleStats[i]);
+    ok = ok && w32(f, p->carriedTitle);
 
     // Mob ekolojisi (v20): saha başına yuva durumu
     ok = ok && w32(f, NEST_SITE_COUNT);
@@ -455,6 +461,15 @@ bool load_game(const char *path, Player *p,
         Sint32 sf = 0;
         ok = r32(f, &sf);
         tmpP.storyFlags[i] = (Uint8)sf;
+    }
+
+    // Davranış ünvanları (v23)
+    for (int i = 0; ok && i < 12; i++)
+        ok = r32(f, &tmpP.titleStats[i]);
+    {
+        Sint32 ct = -1;
+        ok = ok && r32(f, &ct);
+        tmpP.carriedTitle = (Sint8)ct;
     }
 
     // Mob ekolojisi (v20) — geçici; başarıda uygulanır

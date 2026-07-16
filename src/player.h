@@ -173,6 +173,13 @@ typedef struct Player {
     // Hikaye kartı bayrakları (D1a, save v22) — kart başına küçük durum kodu.
     // 0 = dokunulmadı; anlamlar kart başına (SF_* indeksleri aşağıda).
     Uint8 storyFlags[16];
+
+    // Davranış ünvanları (M3, save v23): gizli sayaçlar + taşınan ünvan.
+    // Sayaçlar UI'da yalnız ilerleme çubuğu olarak görünür (ahlak sayaçları gibi
+    // çıplak sayı sergilenmez — ilerleme his verir, sayı büyü bozar... ama
+    // eşik ilerlemesi ünvan panelinde N/M gösterilir: hedefli birikim).
+    Sint32 titleStats[12];
+    Sint8 carriedTitle;   // -1 = yok; seçili ünvanın pasifi ×2 + isimde görünür
 } Player;
 
 // storyFlags indeksleri (kartlar geldikçe eklenir — sıra SABİT, save'e girer)

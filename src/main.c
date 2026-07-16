@@ -32,6 +32,7 @@
 #include "ecology.h"
 #include "tooltip.h"
 #include "ambience.h"
+#include "title.h"
 #include "gametime.h"
 #include "decor.h"
 #include "audio.h"
@@ -228,9 +229,23 @@ static int build_spawn_zones(SpawnZone *zones, MapId map)
 // Mob ölümü — saldırıdan da kanamadan da aynı yol: animasyon + loot + görev.
 // (İki yerden çağrılır; kopya kod desenkron olmasın diye tek fonksiyon)
 // Bölünen türlerde (slime) yavrular BURADA doğar — kızgın doğarlar (aggro).
+// Ünvan kazanımı bildirimi (M3): float + ses + günlük (idx -1 = yok)
+static void title_notify(int idx, Player *p, FloatText *floatTexts)
+{
+    if (idx < 0) return;
+    journal_add(JE_TITLE, idx);
+    audio_play(SFX_LEVELUP);
+    char buf[64];
+    snprintf(buf, sizeof(buf), "ÜNVAN: %s!", TITLES[idx].name);
+    SDL_Color gold = { 255, 210, 60, 255 };
+    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                         p->rect.x + p->rect.w / 2.0f,
+                         p->rect.y - 40.0f, buf, gold);
+}
+
 static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
                     Loot *loots, QuestStatus *questStatus,
-                    FloatText *floatTexts, const Player *player)
+                    FloatText *floatTexts, Player *player)
 {
     target->e.alive = false;
     target->dying = true;
@@ -320,12 +335,36 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
             }
             journal_add(JE_NEST_CLEANSE,
                         target->type == &MOB_TYPES[MOB_GOBLIN_CHIEF] ? 0 : 1);
+            title_notify(title_stat_add(player, TS_NESTS, 1), player, floatTexts);
             SDL_Color amber = { 255, 200, 120, 255 };
             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                  target->e.rect.x + target->e.rect.w / 2.0f,
                                  target->e.rect.y - 40.0f,
                                  "Yuva çöktü — kamp dağılıyor!", amber);
         }
+    }
+
+    // Ünvan sayaçları (M3): aile + gece kesimi
+    {
+        int midx = (int)(target->type - MOB_TYPES);
+        if (midx >= 6 && midx <= 11)
+            title_notify(title_stat_add(player, TS_KILL_SLIME, 1), player, floatTexts);
+        else if (midx == 0 || midx == MOB_GOBLIN_CHIEF)
+            title_notify(title_stat_add(player, TS_KILL_GOBLIN, 1), player, floatTexts);
+        else if (midx == 1)
+            title_notify(title_stat_add(player, TS_KILL_ORC, 1), player, floatTexts);
+        else if (midx >= 2 && midx <= 5)
+        {
+            title_notify(title_stat_add(player, TS_KILL_ANIMAL, 1), player, floatTexts);
+            // Usta Avcı: av çift ürün şansı — ikinci kasa düşer
+            if (li >= 0 && randf() < title_double_loot_chance(player))
+                loot_spawn(loots, MAX_LOOT,
+                           target->e.rect.x + 20.0f, target->e.rect.y,
+                           target->type->lootTable, target->type->lootTableCount,
+                           target->type->goldMin, target->type->goldMax);
+        }
+        if (gametime_is_night())
+            title_notify(title_stat_add(player, TS_NIGHT_KILLS, 1), player, floatTexts);
     }
 
     contract_on_kill(target->type);   // pano kes-kontratları da sayar (Faz 6)
@@ -563,6 +602,11 @@ static void craft_finish_recipe(int ri, Player *player, Inventory *inv,
                              player->rect.y - 10.0f, "Malzeme eksik!", red);
         return;
     }
+    // Aşçı sayacı (M3): yemek pişirildi
+    if (r->outItem == ITEM_MEAT_COOKED || r->outItem == ITEM_STEW ||
+        r->outItem == ITEM_SOUP || r->outItem == ITEM_KAVURMA)
+        title_notify(title_stat_add(player, TS_COOKED, 1), player, floatTexts);
+
     if (!inventory_add(inv, &ITEM_TYPES[r->outItem], r->outCount, 0))
     {
         // Çanta dolu: tüketilen malzemeyi geri koy (üretim gerçekleşmedi)
@@ -709,6 +753,7 @@ int main(int argc, char *argv[])
     };
     skills_init(player.skills);
     player.pendingAbility = -1;   // -1 = normal vuruş (0 geçerli ability olurdu)
+    player.carriedTitle = -1;     // ünvan taşınmıyor (M3)
 
     // Skill ağaçları (Faz 21): hiç düğüm alınmamış başlar; etkiler nötr hesaplanır
     for (int s = 0; s < SKILL_COUNT; s++)
@@ -1709,6 +1754,8 @@ int main(int argc, char *argv[])
                     {
                         ecology_do_ritual(nearestRitual, gametime_day());
                         journal_add(JE_NEST_CLEANSE, isPool ? 2 : 3);
+                        title_notify(title_stat_add(&player, TS_NESTS, 1),
+                                     &player, floatTexts);
                         audio_play(SFX_PERK);
                         fx_burst(&weaponFx, rs->x, rs->y, 22, 110.0f,
                                  isPool ? 255 : 140, isPool ? 170 : 220,
@@ -2001,7 +2048,7 @@ int main(int argc, char *argv[])
                     // Günlük gezinme: Tab sekme, oklar yaprak (render klampler)
                     if (event.key.key == SDLK_TAB)
                     {
-                        journalTab = 1 - journalTab;
+                        journalTab = (journalTab + 1) % 3;   // Görevler→Günlük→Ünvanlar
                         // Günlük sekmesi son yaprağa açılır (en taze yaşanmışlık)
                         journalPage = (journalTab == 1) ? 9999 : 0;
                     }
@@ -2080,6 +2127,19 @@ int main(int argc, char *argv[])
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_ARROW_BONE], 20, 0);
                     inventory_add(&inventory, &ITEM_TYPES[ITEM_ARROW_IRON], 20, 0);
                     player.gold += 500;
+                    // Ünvan testi (M3): sayaçlar eşiğin hemen altına — birkaç
+                    // eylemle ünvan düşsün (bildirim/panel/pasif akışı görülür)
+                    player.titleStats[TS_KILL_SLIME]  = 98;
+                    player.titleStats[TS_KILL_GOBLIN] = 98;
+                    player.titleStats[TS_KILL_ORC]    = 73;
+                    player.titleStats[TS_SNEAK_HITS]  = 48;
+                    player.titleStats[TS_NIGHT_KILLS] = 98;
+                    player.titleStats[TS_NESTS]       = 4;
+                    player.titleStats[TS_KILL_ANIMAL] = 98;
+                    player.titleStats[TS_ARROWS]      = 297;
+                    player.titleStats[TS_POTIONS]     = 48;
+                    player.titleStats[TS_COOKED]      = 23;
+
                     // Ağaç testi: her ağaca 99 serbest puan (tüm düğümler alınabilsin)
                     tree_set_debug_points(99);
                     SDL_Log("DEBUG F10: +1M XP (savas+meslek) + craft malzeme seti + 500g + 99 agac puani");
@@ -2384,6 +2444,23 @@ int main(int argc, char *argv[])
                     float worldY = event.button.y / camera.zoom + camera.y;
 
                     bool handled = false;
+
+                    // -3) Günlük Ünvanlar sekmesi: satıra tıkla = taşı/bırak (M3)
+                    if (questLogOpen && journalTab == 2)
+                    {
+                        int dwW2, dwH2;
+                        SDL_GetWindowSize(window, &dwW2, &dwH2);
+                        int trow = journal_title_at((float)event.button.x,
+                                                    (float)event.button.y,
+                                                    dwW2, dwH2);
+                        if (trow >= 0 && title_unlocked(&player, trow))
+                        {
+                            player.carriedTitle =
+                                (player.carriedTitle == trow) ? -1 : (Sint8)trow;
+                            audio_play(SFX_UI);
+                        }
+                        handled = true;
+                    }
 
                     // -2) Envanter açıkken SOL basış = sürükleme başlangıcı (Cila)
                     if (inventoryOpen)
@@ -3563,9 +3640,14 @@ int main(int argc, char *argv[])
                         char buf[FLOAT_TEXT_LEN];
                         SDL_Color green = { 120, 255, 120, 255 };
 
+                        if (heals || manas)
+                            title_notify(title_stat_add(&player, TS_POTIONS, 1),
+                                         &player, floatTexts);
                         if (heals)
                         {
-                            player.health += hs->itemType->healAmount * perkFx.potionEffMult;
+                            player.health += hs->itemType->healAmount
+                                           * perkFx.potionEffMult
+                                           * title_potion_mult(&player);
                             if (player.health > player.maxHealth)
                                 player.health = player.maxHealth;
                             snprintf(buf, sizeof(buf), "+%d HP",
@@ -3620,7 +3702,8 @@ int main(int argc, char *argv[])
                             // Tok buffu (M2): TEK aktif — yenisi eskisini ezer
                             player.foodBuffType = hs->itemType->foodBuffType;
                             player.foodBuffPower = hs->itemType->foodBuffPower;
-                            player.foodBuffTimer = hs->itemType->foodBuffDur;
+                            player.foodBuffTimer = hs->itemType->foodBuffDur
+                                                  * title_food_dur_mult(&player);
                             player.foodBuffName = hs->itemType->name;
                             SDL_Color warm = { 255, 200, 120, 255 };
                             snprintf(buf, sizeof(buf), "Tok: %s", hs->itemType->name);
@@ -3794,6 +3877,8 @@ int main(int argc, char *argv[])
                                 HitResult sh = combat_spell_hit(&player, wpn,
                                                                 sd->damageScale,
                                                                 nb->type->defense, &perkFx);
+                                sh.damage *= title_damage_mult(&player, nb->type,
+                                                               gametime_is_night());
                                 nb->e.health -= sh.damage;
 
                                 // TERMAL ŞOK (M1): yanan hedefte nova — kalan yanma
@@ -3843,6 +3928,8 @@ int main(int argc, char *argv[])
                                 HitResult sh = combat_spell_hit(&player, wpn,
                                                                 sd->damageScale,
                                                                 lt->type->defense, &perkFx);
+                                sh.damage *= title_damage_mult(&player, lt->type,
+                                                               gametime_is_night());
                                 lt->e.health -= sh.damage;
 
                                 // ZEHİR PATLAMASI (M1): zehirli hedefe yıldırım —
@@ -4507,6 +4594,8 @@ int main(int argc, char *argv[])
                     for (int a = 0; a < MAX_ARROWS; a++)
                     {
                         if (arrows[a].active) continue;
+                        title_notify(title_stat_add(&player, TS_ARROWS, 1),
+                                     &player, floatTexts);
                         arrows[a] = (ArrowShot){
                             .active = true,
                             .x = player.rect.x + player.rect.w / 2.0f,
@@ -4552,6 +4641,8 @@ int main(int argc, char *argv[])
                         for (int a = 0; a < MAX_ARROWS; a++)
                         {
                             if (arrows[a].active) continue;
+                            title_notify(title_stat_add(&player, TS_ARROWS, 1),
+                                         &player, floatTexts);
                             arrows[a] = (ArrowShot){
                                 .active = true,
                                 .x = player.rect.x + player.rect.w / 2.0f,
@@ -4805,10 +4896,16 @@ int main(int argc, char *argv[])
                                                           target->e.health / target->e.maxHealth,
                                                           &perkFx);
 
+                        hit.damage *= title_damage_mult(&player, target->type,
+                                                        gametime_is_night());   // M3
+
                         // Sinsi vuruş: eğilmiş + fark etmemiş — YA DA hedef uyuyor (E2)
                         if ((player.sneaking || target->sleeping) && !target->aggro)
                         {
-                            hit.damage *= perkFx.backstabMult;   // taban 2.0 + ağaç düğümleri
+                            hit.damage *= perkFx.backstabMult
+                                        + title_backstab_bonus(&player);   // Gölge (M3)
+                            title_notify(title_stat_add(&player, TS_SNEAK_HITS, 1),
+                                         &player, floatTexts);
                             SDL_Color purple = { 200, 140, 255, 255 };
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  target->e.rect.x + target->e.rect.w / 2.0f,
@@ -5116,9 +5213,15 @@ int main(int argc, char *argv[])
                                                   at->e.health / at->e.maxHealth,
                                                   &perkFx);
 
+                hit.damage *= title_bow_mult(&player)                       // Nişancı
+                            * title_damage_mult(&player, at->type,
+                                                gametime_is_night());       // aile/gece (M3)
                 if ((player.sneaking || at->sleeping) && !at->aggro)
                 {
-                    hit.damage *= perkFx.backstabMult;   // taban 2.0 + ağaç düğümleri
+                    hit.damage *= perkFx.backstabMult
+                                + title_backstab_bonus(&player);
+                    title_notify(title_stat_add(&player, TS_SNEAK_HITS, 1),
+                                 &player, floatTexts);
                     SDL_Color purple = { 200, 140, 255, 255 };
                     floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                          tx, at->e.rect.y - 26.0f,
@@ -6275,6 +6378,14 @@ int main(int argc, char *argv[])
             SDL_Color warm = { 255, 205, 130, 230 };
             draw_text(renderer, gameFont, tokBuf, 16.0f, 96.0f, warm);
         }
+        if (player.carriedTitle >= 0 && gameFont != NULL &&
+            gameState == GAME_PLAYING)
+        {
+            char ttl[48];
+            snprintf(ttl, sizeof(ttl), "- %s -", TITLES[player.carriedTitle].name);
+            SDL_Color tgold = { 235, 195, 90, 210 };
+            draw_text(renderer, gameFont, ttl, 16.0f, 118.0f, tgold);
+        }
 
         // Hedef HP bar (seçili mob varsa)
         Mob *hpTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
@@ -6390,7 +6501,7 @@ int main(int argc, char *argv[])
         {
             // Yolculuk günlüğü (Faz B2): kitap paneli — sayfa klampi burada
             journalPageCount = journal_render(renderer, gameFont, bookTex,
-                                              questStatus, journalTab,
+                                              questStatus, &player, journalTab,
                                               journalPage, winW, winH);
             if (journalPage >= journalPageCount)
                 journalPage = journalPageCount - 1;

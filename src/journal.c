@@ -4,6 +4,8 @@
 #include "font.h"
 #include "gametime.h"
 #include "worldmap.h"
+#include "title.h"
+#include "player.h"
 
 // --- Giriş havuzu -----------------------------------------------------------
 static JournalEntry entries[JOURNAL_MAX];
@@ -157,6 +159,14 @@ static void entry_text(const JournalEntry *e, char *out, size_t cap)
                "Aldığım şeyin içinde onun sonu da vardı. Sofra kurulmaya "
                "devam ediyor ve bu benim yüzümden.";
         break;
+    case JE_TITLE:
+        if (e->param >= 0 && e->param < TITLE_COUNT) {
+            snprintf(buf, sizeof(buf), "Bana artık '%s' diyorlar. İnsan ne "
+                     "yaparsa o oluyor demek — kimse bana bunu vermedi, "
+                     "kendi ellerimle biriktirdim.", TITLES[e->param].name);
+            body = buf;
+        } else body = "Bir ünvan kazandım.";
+        break;
     case JE_DAY_NOTE: {
         body = "Günler geçiyor.";
         for (size_t i = 0; i < sizeof(DAY_NOTES) / sizeof(DAY_NOTES[0]); i++)
@@ -204,8 +214,8 @@ static void flow_block(Flow *f, const char *text, SDL_Color color)
 }
 
 int journal_render(R2D *renderer, TTF_Font *font, R2DTexture *bookTex,
-                   const QuestStatus *quests, int tab, int page,
-                   int winW, int winH)
+                   const QuestStatus *quests, const struct Player *player,
+                   int tab, int page, int winW, int winH)
 {
     float bw = 224.0f * BOOK_SCALE, bh = 133.0f * BOOK_SCALE;
     float bx = (winW - bw) / 2.0f, by = (winH - bh) / 2.0f + 10.0f;
@@ -225,16 +235,17 @@ int journal_render(R2D *renderer, TTF_Font *font, R2DTexture *bookTex,
     SDL_Color ink    = { 62, 44, 30, 255 };    // parşömen üstü koyu mürekkep
     SDL_Color faded  = { 120, 100, 84, 255 };
     SDL_Color tabCol = { 255, 240, 210, 255 };
-    for (int t = 0; t < 2; t++) {
-        float rxp = bx + 60.0f + t * 150.0f;
+    for (int t = 0; t < 3; t++) {
+        float rxp = bx + 30.0f + t * 165.0f;
         float drop = (t == tab) ? 26.0f : 8.0f;
         if (bookTex != NULL) {
-            SDL_FRect rsrc = { (t == 0) ? 752.0f : 800.0f, 31, 22, 18 };
+            SDL_FRect rsrc = { 752.0f + t * 48.0f, 31, 22, 18 };
             SDL_FRect rdst = { rxp, by - 34.0f + drop, 66, 54 };
             r2d_draw_texture(renderer, bookTex, &rsrc, &rdst);
         }
-        draw_text(renderer, font, (t == 0) ? "Görevler" : "Günlük",
-                  rxp + 74.0f, by - 20.0f + drop,
+        draw_text(renderer, font,
+                  (t == 0) ? "Görevler" : (t == 1) ? "Günlük" : "Ünvanlar",
+                  rxp + 70.0f, by - 20.0f + drop,
                   (t == tab) ? tabCol : faded);
     }
 
@@ -273,7 +284,7 @@ int journal_render(R2D *renderer, TTF_Font *font, R2DTexture *bookTex,
         if (!any)
             flow_block(&f, "Henüz üstlenilmiş bir iş yok. Köy küçük; "
                            "iş kendini buldurur.", faded);
-    } else {
+    } else if (tab == 1) {
         // GÜNLÜK: kronolojik yaşanmışlıklar
         if (entryCount == 0)
             flow_block(&f, "Henüz yazacak bir şey yaşamadım.", faded);
@@ -284,7 +295,36 @@ int journal_render(R2D *renderer, TTF_Font *font, R2DTexture *bookTex,
         }
     }
 
-    int pageCount = f.col / 2 + 1;
+    if (tab == 2) {
+        // ÜNVANLAR (M3): sol sayfa 5 + sağ sayfa 5 satır; tıkla = taşı/bırak
+        SDL_Color gold  = { 176, 128, 34, 255 };
+        SDL_Color carry = { 210, 60, 40, 255 };
+        for (int i = 0; i < TITLE_COUNT; i++) {
+            float x = (i < 5) ? f.lx : f.rx;
+            float y = f.ty + (i % 5) * 82.0f;
+            bool un = title_unlocked(player, i);
+            char head[80];
+            if (player->carriedTitle == i)
+                snprintf(head, sizeof(head), "~ %s ~  [TAŞINAN x2]", TITLES[i].name);
+            else
+                snprintf(head, sizeof(head), "~ %s ~", TITLES[i].name);
+            draw_text(renderer, font, head, x, y, un ? (player->carriedTitle == i ? carry : gold) : faded);
+            draw_text(renderer, font, TITLES[i].effect, x, y + 22.0f,
+                      un ? ink : faded);
+            if (!un) {
+                char prog[48];
+                snprintf(prog, sizeof(prog), "%d / %d",
+                         player->titleStats[TITLES[i].stat], TITLES[i].threshold);
+                draw_text(renderer, font, prog, x, y + 44.0f, faded);
+            } else if (player->carriedTitle != i) {
+                draw_text(renderer, font, "(tıkla: taşı)", x, y + 44.0f, faded);
+            } else {
+                draw_text(renderer, font, "(tıkla: bırak)", x, y + 44.0f, carry);
+            }
+        }
+    }
+
+    int pageCount = (tab == 2) ? 1 : f.col / 2 + 1;
 
     // Alt bilgi: sayfa + tuşlar
     char foot[80];
@@ -296,4 +336,19 @@ int journal_render(R2D *renderer, TTF_Font *font, R2DTexture *bookTex,
     draw_text(renderer, font, foot, (winW - tw) / 2.0f, by + bh + 10.0f, footCol);
 
     return pageCount;
+}
+
+
+int journal_title_at(float x, float y, int winW, int winH)
+{
+    float bw = 224.0f * BOOK_SCALE, bh = 133.0f * BOOK_SCALE;
+    float bx = (winW - bw) / 2.0f, by = (winH - bh) / 2.0f + 10.0f;
+    float lx = bx + 60.0f, rx = bx + bw / 2.0f + 36.0f, ty = by + 44.0f;
+    for (int i = 0; i < TITLE_COUNT; i++) {
+        float cx = (i < 5) ? lx : rx;
+        float cy = ty + (i % 5) * 82.0f;
+        if (x >= cx && x < cx + PAGE_TEXT_W && y >= cy && y < cy + 70.0f)
+            return i;
+    }
+    return -1;
 }

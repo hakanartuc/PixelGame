@@ -43,6 +43,7 @@ add_executable(game
     src/ecology.c
     src/tooltip.c
     src/ambience.c
+    src/title.c
     src/gametime.c
     src/decor.c
     src/audio.c

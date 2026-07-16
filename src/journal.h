@@ -25,6 +25,7 @@ typedef enum {
     JE_NEST_CLEANSE,    // param = 0 reis / 1 totem / 2 gölcük / 3 mezar (ekoloji E1)
     JE_K9_CHOICE,       // K9 Kandil: param = 1 gerçek / 2 yalan / 3 sus (D1a)
     JE_K2_CHOICE,       // K2 Son Müşteri: 1 yumuşak / 2 düz / 4 anlatamadı (D1b)
+    JE_TITLE,           // ünvan kazanıldı: param = TITLES indeksi (M3)
 } JournalEvent;
 
 typedef struct {
@@ -43,10 +44,15 @@ int  journal_count(void);
 const JournalEntry *journal_get(int i);
 void journal_load_entry(int type, int param, int day);   // save yükleme köprüsü
 
-// Kitap panelini çiz. tab: 0=Görevler 1=Günlük; page: yaprak (spread) indeksi.
+// Kitap panelini çiz. tab: 0=Görevler 1=Günlük 2=Ünvanlar; page: yaprak indeksi.
 // Dönen: o sekmenin toplam yaprak sayısı (main page'i bununla klample).
+// player: Ünvanlar sekmesi (sayaç ilerlemeleri + taşınan) için.
+struct Player;
 int journal_render(R2D *renderer, TTF_Font *font, R2DTexture *bookTex,
-                   const QuestStatus *quests, int tab, int page,
-                   int winW, int winH);
+                   const QuestStatus *quests, const struct Player *player,
+                   int tab, int page, int winW, int winH);
+
+// Ünvanlar sekmesinde tıklanan ünvan satırı (-1 = yok) — taşınan seçimi için
+int journal_title_at(float x, float y, int winW, int winH);
 
 #endif
