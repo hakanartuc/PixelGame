@@ -8,6 +8,8 @@
 //   CARAVAN — 2 gün meydanda kervan tüccarı (özel stok, %15 pahalı)
 //   BOUNTY  — bereket: av sürüleri +2 doğum
 //   SEAL    — mühür sancısı: gece yankılar parlar, fısıltı duyulur
+//   GRAVE   — huzursuz mezarlık: gece iskeletler yükselir; sabaha
+//             temizlenmezse mühürlü/boş mezar YENİDEN yuva olur
 
 typedef enum {
     WE_NONE = 0,
@@ -15,6 +17,7 @@ typedef enum {
     WE_CARAVAN,
     WE_BOUNTY,
     WE_SEAL,
+    WE_GRAVE,
     WE_COUNT,
 } WorldEvent;
 

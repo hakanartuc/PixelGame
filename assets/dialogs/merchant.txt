@@ -2,6 +2,9 @@
 [start]
 text: Hoş geldin yolcu! Ovada dükkan açtım ama goblinler yüzünden kervan gelmiyor. Bakmak bedava.
 opt: Neler satıyorsun? -> shop
+opt: Meydandaki kervancıyı gördün mü? -> h_rakip
+req: event >= 2
+req: event <= 2
 opt: Arkadaki kazan ne işe yarıyor? -> kazan
 opt: Zor günlerdesin, şu parayı al dostum. (30g) -> bagis
 req: gold >= 30
@@ -41,3 +44,8 @@ opt: Hoşçakal. -> end
 [bagis]
 text: Bu ne cömertlik! Kervan gelene kadar beni ayakta tutar bu. Köy senin iyiliğini konuşacak, emin ol.
 opt: Değmez. -> end
+
+# Kervan günü esnaf kıskançlığı (Dünya Olayları)
+[h_rakip]
+text: Selim mi? Gördüm tabii... İki günlük misafir, fiyatları da başında yazıyor: PAHALI. Ama dürüst konuşayım — onda olan bende yok. Taş, öz falan istiyorsan git al; iksir ve demir işini bana bırak.
+opt: İkinizden de alırım, merak etme. -> end

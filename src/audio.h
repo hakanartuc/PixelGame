@@ -23,6 +23,7 @@ typedef enum {
     SFX_WHISPER,   // fısıltı — yankı imzası ("...henüz değil" hissi)
     SFX_HEARTBEAT, // tek kalp atımı (lub-dub) — Sessiz Gün ritmi
     SFX_TYPETICK,  // typewriter yumuşak tık (vinyet metni)
+    SFX_THUNDER,   // gök gürültüsü (fırtına şimşeği)
     SFX_COUNT,
 } SfxId;
 

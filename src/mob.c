@@ -5,7 +5,8 @@
 #include "tilemap.h"
 #include "decor.h"
 #include "mob.h"
-#include "gametime.h"   // E2: gece/gündüz ritmi
+#include "gametime.h"
+#include "weather.h"   // E2: gece/gündüz ritmi
 
 // Önerilen kaydırmayı tile/dekor çarpışmasına göre uygula.
 // Eksen ayrı denenir → duvar boyunca kayma (oyuncu hareketiyle aynı desen).
@@ -700,7 +701,8 @@ void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Ca
     if (!m->e.alive && !m->dying) return;   // ne canlı ne ölüyorsa çizme
 
     // Aktif animasyon clip'i: durum + yön (RETURN'un kendi satırı yok → koşma clip'i)
-    MobState animState = (m->state == MOB_RETURN) ? MOB_CHASE : m->state;
+    MobState animState = (m->state == MOB_RETURN) ? MOB_CHASE
+                       : (m->state == MOB_SEARCH) ? MOB_IDLE : m->state;
     const AnimClip *clip = &m->type->anims[animState][m->e.facing];
 
     // Kaynak: clip'in başlangıcından currentFrame kadar kay (clip'in kendi kare boyutuyla)
@@ -897,8 +899,10 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
                 m->e.facing = (ny < 0) ? 1 : 0;
             }
             mob_move(m, nx * m->e.speed * slowK * dt, ny * m->e.speed * slowK * dt);
-        } else if (!m->sleeping && m->waterX != 0.0f && hrs >= 10.0f && hrs < 14.0f) {
+        } else if (!m->sleeping && m->waterX != 0.0f && hrs >= 10.0f && hrs < 14.0f &&
+                   !weather_is_wet()) {
             // Su ziyareti (E2): öğlen su kenarına iner — avcıya pusu fırsatı
+            // (yağmurda gerek yok: su ayağına geldi)
             float wdx = m->waterX - (m->e.rect.x + m->e.rect.w / 2.0f);
             float wdy = m->waterY - (m->e.rect.y + m->e.rect.h / 2.0f);
             float wd = SDL_sqrtf(wdx * wdx + wdy * wdy);
@@ -941,11 +945,54 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
     float hdy = m->homeY - (m->e.rect.y + m->e.rect.h/2.0f);
     float homeDist = SDL_sqrtf(hdx*hdx + hdy*hdy);
 
-    if (m->state != MOB_RETURN && homeDist > MOB_LEASH_RANGE && !m->type->isBoss) {
-        m->state = MOB_RETURN;
+    if (m->state != MOB_RETURN && m->state != MOB_SEARCH &&
+        homeDist > MOB_LEASH_RANGE && !m->type->isBoss) {
+        // ARAMA (E2+): kovalayan mob izi hemen bırakmaz — olduğu yerde
+        // bakınır (sis + sinsilikle saklambaç). Pasif av aramaz, direkt döner.
+        bool wasHunting = m->aggro && !m->type->passive && !m->scatter;
         m->attacking = false;
         m->aggro = false;      // alarm biter — dönünce normal algıya döner
         m->suspicion = 0.0f;   // şüphe de sıfırlanır (temiz sayfa)
+        if (wasHunting) {
+            m->state = MOB_SEARCH;
+            m->searchTimer = 8.0f;
+            m->patrolTimer = 0.0f;   // bakınma yönü sayacı (yeniden kullanım)
+        } else {
+            m->state = MOB_RETURN;
+        }
+    }
+
+    if (m->state == MOB_SEARCH) {
+        m->searchTimer -= dt;
+
+        // Dikilip bakınır: 1.4-2.4 sn'de bir yön değiştirir (IDLE clip'i oynar)
+        m->patrolTimer -= dt;
+        if (m->patrolTimer <= 0.0f) {
+            m->patrolTimer = 1.4f + randf();
+            m->e.facing = (int)(randf() * 2.99f);
+            m->e.facingLeft = randf() < 0.5f;
+        }
+        const AnimClip *sclip = &m->type->anims[MOB_IDLE][m->e.facing];
+        m->animTimer += dt;
+        if (m->animTimer >= sclip->frameDuration) {
+            m->animTimer -= sclip->frameDuration;
+            m->currentFrame = (m->currentFrame + 1) % sclip->frameCount;
+        }
+        m->lastState = MOB_SEARCH;
+
+        // Oyuncu yakına dönerse: yeniden alarm (arama boşa değil)
+        float sdx2 = targetX - (m->e.rect.x + m->e.rect.w / 2.0f);
+        float sdy2 = targetY - (m->e.rect.y + m->e.rect.h / 2.0f);
+        float sd2 = SDL_sqrtf(sdx2 * sdx2 + sdy2 * sdy2);
+        if (sd2 < m->type->detectRange * 0.6f) {
+            m->aggro = true;
+            m->suspicion = 1.0f;
+            m->alertFlash = 0.6f;
+            m->state = MOB_CHASE;
+        }
+        else if (m->searchTimer <= 0.0f)
+            m->state = MOB_RETURN;   // pes etti — kampa döner
+        return;   // arama sırasında normal algı/saldırı akışı yok
     }
 
     if (m->state == MOB_RETURN) {
@@ -1063,6 +1110,7 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
             }
         }
         else if (!m->sleeping && m->suspicion < 0.25f && m->zoneId >= 0 &&
+                 !(weather_is_wet() && m->type->nocturnal) &&   // yağmur: goblin sığınır
                  (m->type->nocturnal ||          // gececi: aktif saatinde hep devriyede
                   !gametime_is_night() ||        // gündüzcü olmayan (ork): gündüz herkes
                   (m->id % 2 == 0)))             // gece yalnız nöbetçi yarısı (E2)

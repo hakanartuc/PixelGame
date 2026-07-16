@@ -2,6 +2,8 @@
 [start]
 text: Güneydeki bataklığa gitme derim. Orklar yuvalanmış, üstüne bir de dikenler...
 opt: Başka ne var ne yok? -> haber
+opt: Havalar nasıl bakalım? -> h_hava
+req: hava >= 1
 opt: Bir şeyler içelim, benden! (20g) -> icki
 req: gold >= 20
 fx: gold -= 20
@@ -15,3 +17,27 @@ opt: İlginç... -> end
 [icki]
 text: Vay, cömert adammışsın! Şerefine dostum. Bu köyde iyi anılacaksın.
 opt: Sağlık olsun. -> end
+
+# Hava sohbetleri (Dünya Olayları 2) — [h_hava] seçenekleri havaya göre görünür
+[h_hava]
+text: Sorma...
+opt: Yağmur tarlaya iyi mi bari? -> h_yagmur
+req: hava >= 1
+req: hava <= 1
+opt: Bu sis hayra alamet mi? -> h_sis
+req: hava >= 2
+req: hava <= 2
+opt: Fırtına geliyor galiba? -> h_firtina
+req: hava >= 3
+
+[h_yagmur]
+text: İyi olmaz mı! Toprak kana kana içiyor — yarın otlar gür çıkar, ot toplayacaksan yarını bekle. Ben içeri kaçıyorum ama, romatizmam azdı.
+opt: Bereketli olsun. -> end
+
+[h_sis]
+text: Sisin hayrı şerri olmaz, gizlediği olur. Böyle günlerde ne sen uzağı görürsün ne uzak seni... Kimin işine yarar, sen düşün artık.
+opt: (Düşün.) -> end
+
+[h_firtina]
+text: Gök gürlerken açıkta durma, yolcu! Geçen yıl Deli Veli'nin öküzüne yıldırım düştü — öküzden hayır kalmadı. Sen öküzden akıllısındır umarım.
+opt: Sığınırım, merak etme. -> end

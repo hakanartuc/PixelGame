@@ -188,6 +188,11 @@ static void entry_text(const JournalEntry *e, char *out, size_t cap)
                "aile geri geldi. Doğru muydu bilmiyorum. Kimin defterine "
                "yazılır bu, onu da bilmiyorum.";
         break;
+    case JE_GRAVE_RISE:
+        body = "Mezarlık gece boyu huzursuzdu; sabaha kadar kimse müdahale "
+               "etmedi — ben de etmedim. Ölüler mezarı yeniden yurt edindi. "
+               "Kayalık Geçit tarafına giden yolcular dikkatli olmalı.";
+        break;
     case JE_DAY_NOTE: {
         body = "Günler geçiyor.";
         for (size_t i = 0; i < sizeof(DAY_NOTES) / sizeof(DAY_NOTES[0]); i++)

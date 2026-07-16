@@ -41,6 +41,8 @@ typedef enum {
     DVAR_KIBAR,    // kişilik izi: kibar/yardımsever
     DVAR_KETUM,    // kişilik izi: ketum/mesafeli
     DVAR_HINT,     // S3: Zehra ipuçları alındı mı (storyFlags[SF_S3_HINTS])
+    DVAR_EVENT,    // aktif dünya olayı (WorldEvent: 0 yok..5 mezarlık) — salt okunur
+    DVAR_WEATHER,  // aktif hava (Weather: 0 açık 1 yağmur 2 sis 3 fırtına) — salt okunur
 } DialogVar;
 
 typedef struct {
@@ -67,6 +69,8 @@ typedef struct {
 // Seçeneğin ANLIK durumu — main hesaplar, render gösterir
 typedef struct {
     bool locked;      // sert koşul sağlanmadı → soluk, seçilemez
+    bool hidden;      // dünya-durumu koşulu tutmadı (event/hava) → hiç çizilmez
+                      // (numara tuşları ham indeksle eşleşir — satır atlanır)
     bool burned;      // bu konuşmada zar başarısız oldu → kilit
     int chancePct;    // speech zarı yüzdesi (100 = garanti, -1 = speech koşulu yok)
 } DialogOptState;

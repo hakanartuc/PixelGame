@@ -571,6 +571,37 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   fısıltı imaları, cevap yok). Paneller `scripts/gen_dreams.py` (prosedürel).
 - Kervan görünürlüğü yükleme/yeni oyunda senkronize (worldevent_reset + save).
 
+### Faz WE2 — HAVA SİSTEMİ + DÜNYA OLAYLARI KALANLAR (save v26)
+- **weather.c**: her şafak zar — Açık %55 / Yağmur %25 / Sis %15 / Fırtına %5;
+  öğlen (12:00) %25 şansla hava döner. Yağmur 2-6 oyun saati sürer; sis 05-10
+  arası yoğun, öğlen dağılır. `intensity` 0..1 yumuşak geçiş (bastırır/diner).
+  Save v26: aktif hava + kalan saat + "bugün yağdı" bayrağı.
+- **Savaş etkileri (M1 sinerjileriyle simetrik)**: ıslakta yanma DoT süresi
+  ×0.5, Ateş Topu -%15, Yıldırım +%20 (Zehir Patlaması yağmurda altın çağ);
+  siste mob algısı ×0.6 (sinsi fırsatı). FIRTINA: 8-20 sn'de bir yıldırım
+  düşer (60px yakına: mob 25 / oyuncu 20 hasar) + şimşek flaşı + gök gürültüsü.
+- **Çevre etkileri**: köylüler yağmurda evlerine çekilir (npc_set_shelter;
+  kervancı gölgelikte kalır, muhafız nöbette ıslanır + bark); dün yağdıysa
+  bugün ot toplaması ×2 ("Yağmur toprağa iyi geldi"); yağmurda kamp ateşi
+  kurulamaz (köy ateşi çardaklı — çalışır); meşale ışığı ıslakta -%20;
+  fırtınada pencere ışıkları titrer. MOB: yağmurda goblin devriyesi durur
+  (yuvaya çekilir), hayvanlar su ziyaretine çıkmaz (su ayağına geldi).
+- **Görsel/ses**: ekran-uzayı yağmur damlaları (rüzgar eğimli, 140 tavan),
+  iki katmanlı sis örtüsü (nefes alır), fırtına karartması (gündüz loşlaşır),
+  şimşek beyaz flaşı; amb_rain.wav yağmur katmanı (day/night'ın üstüne biner)
+  + thunder.wav (scripts/gen_weather_audio.py — prosedürel).
+- **WE_GRAVE — Huzursuz Mezarlık** (5. dünya olayı): gece mühürlü/boş iskelet
+  mezarında 3 iskelet yükselir (risen); şafakta 2+ sağsa mezar YENİDEN yuva
+  olur (ekoloji kolonisi + pano söylentisi + JE_GRAVE_RISE günlük girişi),
+  sağ kalanlar gün ışığında mezara çekilir.
+- **Mob arama (MOB_SEARCH)**: leash'te iz kaybeden avcı mob hemen dönmez —
+  8 sn olduğu yerde bakınır (IDLE clip, rastgele yön), oyuncu yakına dönerse
+  yeniden alarm; süre dolunca kampa döner. Sis + sinsilikle saklambaç derinleşir.
+- **Haber ağı diyaloğa indi**: DVAR_EVENT (`event`) + DVAR_WEATHER (`hava`)
+  diyalog değişkenleri (salt okunur; koşul tutmayan seçenek GİZLENİR —
+  DialogOptState.hidden). Kemal olay yorumları (5 olay), Osman hava sohbeti
+  (3 hava), Baran kervan kıskançlığı.
+
 ### YAKIN — "oyun gibi hissettir" (his + rol)
 1. ~~CİLA PAKETİ~~ TAMAM (2026-07-14 — bkz. Faz CİLA bölümü); kalan küçük
    UX borcu: speech zar kilidi save'i (uygun faza serpilir)
@@ -598,9 +629,8 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
      sprite'lar: `~/Downloads/snake_right.png, turtleshell_right.png`)
    · Pişirme + yemek buffları (kamp ateşi + av döngüsü)
    · Davranış ünvanları ("Slime Kasabı" — kimlik davranıştan doğar vitrini)
-6. **DÜNYA OLAYLARI tam sistemi**: ~~çekirdek (4 olay + dinlenme/rüya + kervan)~~
-   TAMAM (bkz. Faz WE) — kalan: haber ağının NPC diyaloğuna inmesi, ekoloji
-   ekleri (iskelet için yeni mezar olayı, mob "arama" davranışı)
+6. ~~**DÜNYA OLAYLARI tam sistemi**~~ TAMAM (bkz. Faz WE + WE2): çekirdek,
+   hava sistemi, haber ağı diyalogda, Huzursuz Mezarlık, mob arama
 
 ### UZAK — "derinleştir ve kapat"
 7. **ANA HAT PERDE 2**: Lord sonrası fısıltının çağrısı + ikinci büyük zindan/boss

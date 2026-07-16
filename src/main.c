@@ -31,6 +31,7 @@
 #include "journal.h"
 #include "ecology.h"
 #include "worldevent.h"
+#include "weather.h"
 #include "tooltip.h"
 #include "ambience.h"
 #include "title.h"
@@ -67,6 +68,7 @@ static void dialog_eval_opt(const DialogOpt *o, const Player *p, int npcRegion,
 {
     out->locked = false;
     out->burned = burned;
+    out->hidden = false;
     out->chancePct = -1;
 
     for (int i = 0; i < o->reqCount; i++) {
@@ -81,8 +83,18 @@ static void dialog_eval_opt(const DialogOpt *o, const Player *p, int npcRegion,
             case DVAR_KIBAR:  cur = (float)p->persKibar; break;
             case DVAR_KETUM:  cur = (float)p->persKetum; break;
             case DVAR_HINT:   cur = (float)p->storyFlags[SF_S3_HINTS]; break;
+            case DVAR_EVENT:  cur = (float)worldevent_current(); break;
+            case DVAR_WEATHER: cur = (float)weather_current(); break;
         }
         bool pass = r->lessEq ? (cur <= r->value) : (cur >= r->value);
+
+        // Dünya-durumu koşulları (olay/hava): tutmuyorsa seçenek GİZLENİR —
+        // "kilitli konu" değil, konuşulacak konu yok
+        if ((r->var == DVAR_EVENT || r->var == DVAR_WEATHER) && !pass) {
+            out->hidden = true;
+            out->locked = true;
+            continue;
+        }
 
         if (r->var == DVAR_SPEECH && !r->lessEq && r->value > 0.0f) {
             out->chancePct = pass ? 100 : (int)(cur / r->value * 70.0f);
@@ -410,6 +422,7 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
 // Ağaç etkileri köprüsü: main() yereli perkFx'e statik yardımcılardan erişim
 // (gather_finish/craft yardımcıları imza şişirmeden düğüm etkilerini okur)
 static const PerkEffects *g_fx = NULL;
+static bool g_natureBounty = false;   // hava: dün yağdı → bugün ot toplaması ×2
 
 // Ok kademeleri (Faz 8): tüketim sırası ucuzdan pahalıya (otomatik düşüş bunu izler)
 static const int AMMO_ORDER[3] = { ITEM_ARROW, ITEM_ARROW_BONE, ITEM_ARROW_IRON };
@@ -566,6 +579,9 @@ static void gather_finish(int res, Player *player, Inventory *inv,
         if (randf() < dbl) count *= 2;
     }
 
+    // Doğa beslenir (hava): dün yağmur yağdıysa bugün otlar ×2 verir
+    if (g_natureBounty && rd->skill == SKILL_HERBALISM) count *= 2;
+
     if (inventory_add(inv, &ITEM_TYPES[rd->itemIdx], count, 0))
     {
         resource_harvest(res);
@@ -649,6 +665,9 @@ static void craft_finish_recipe(int ri, Player *player, Inventory *inv,
 int main(int argc, char *argv[])
 {
     (void)argc; (void)argv;   // SDL_main bu imzayı şart koşar, argüman kullanmıyoruz
+    // RNG tohumu: randf() rand() tabanlı — tohumsuz her açılış AYNI zar
+    // dizisini üretiyordu (hava/olay şafak zarları oturumlar arası donuktu)
+    srand((unsigned)(SDL_GetPerformanceCounter() & 0xFFFFFFFFu));
     // 1) SDL'in video alt sistemini ayağa kaldır. SDL3 başarılıysa 'true' döner.
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
@@ -885,6 +904,19 @@ int main(int argc, char *argv[])
     contract_new_day(lastSeenDay);      // panonun ilk günü (load bunu ezebilir)
     bool wasNightWE = gametime_is_night();   // Dünya Olayı: gece kenarı tespiti (baskın)
     float sealWhisperTimer = 20.0f;          // mühür sancısı: aralıklı fısıltı sayacı
+    bool natureBounty = false;               // hava: dün yağdı → bugün ot toplaması ×2
+    Weather lastWeather = WEATHER_CLEAR;     // değişim duyurusu (splash) için
+    int graveSiteIdx = -1;                   // WE_GRAVE: huzursuz mezar sahası (-1 = yok)
+    float stormBoltTimer = 6.0f;             // fırtına: sıradaki yıldırım düşüşü (sn)
+    float lightningFlash = 0.0f;             // şimşek beyaz parlaması (sn, söner)
+    #define RAIN_DROPS 140
+    float rainPX[RAIN_DROPS], rainPY[RAIN_DROPS], rainPS[RAIN_DROPS];
+    for (int i = 0; i < RAIN_DROPS; i++)     // normalize 0..1 ekran uzayı
+    {
+        rainPX[i] = randf();
+        rainPY[i] = randf();
+        rainPS[i] = 1.6f + randf() * 1.2f;   // ekran boyu/sn (hızlı damla önde)
+    }
     ui_theme_init(renderer);   // panel/hücre/buton sprite'ları
     audio_init();      // başarısızsa oyun sessiz devam eder
     ambience_init();   // ortam sesi katmanı (Cila) — yoksa sessiz devam
@@ -2293,6 +2325,14 @@ int main(int argc, char *argv[])
                     minimapOpen = !minimapOpen;
                     audio_play(SFX_UI);
                 }
+                else if (event.key.key == SDLK_F8 && gameState == GAME_PLAYING)
+                {
+                    // DEV: havayı elle döndür (Açık→Yağmur→Sis→Fırtına) —
+                    // hava etkilerini beklemeden test için. Yayında sökülecek.
+                    weather_debug_cycle();
+                    splashText = weather_name(weather_current());
+                    splashTimer = 2.0f;
+                }
                 else if (event.key.key == SDLK_F10 && gameState == GAME_PLAYING)
                 {
                     // DEBUG: perk testi için XP pompala (One-Handed + 3 zırh skill'i)
@@ -2587,6 +2627,7 @@ int main(int argc, char *argv[])
                             journal_add(JE_WAKE, 0);   // günlüğün ilk satırı
                             ecology_reset();
                             worldevent_reset();
+                            weather_reset();
                             if (kervanIdx >= 0) npc_force_hidden(kervanIdx, true);
                             ally_reset(allies);
                             allyWasActive[0] = allyWasActive[1] = false;
@@ -3468,6 +3509,14 @@ int main(int argc, char *argv[])
                                                              player.rect.x + player.rect.w / 2.0f,
                                                              player.rect.y - 10.0f, buf, red);
                                     }
+                                    else if (weather_is_wet() &&
+                                             map_current() == MAP_WORLD)
+                                    {
+                                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                             player.rect.x + player.rect.w / 2.0f,
+                                                             player.rect.y - 10.0f,
+                                                             "Yağmurda ateş tutmaz.", red);
+                                    }
                                     else
                                     {
                                         campBuild = 0.0f;          // kurulum başlar
@@ -4281,6 +4330,7 @@ int main(int argc, char *argv[])
                                                                 lt->type->defense, &perkFx);
                                 sh.damage *= title_damage_mult(&player, lt->type,
                                                                gametime_is_night());
+                                sh.damage *= weather_bolt_mult();   // ıslak iletken
                                 lt->e.health -= sh.damage;
 
                                 // ZEHİR PATLAMASI (M1): zehirli hedefe yıldırım —
@@ -4460,6 +4510,7 @@ int main(int argc, char *argv[])
                 HitResult sh = combat_spell_hit(&player, wpn2,
                                                 ABILITIES[ABILITY_FIREBOLT].damageScale,
                                                 ft->type->defense, &perkFx);
+                sh.damage *= weather_fire_mult();   // ıslak dünyada ateş boğulur
                 ft->e.health -= sh.damage;
                 ft->e.hitFlash = 0.15f;
                 ft->aggro = true;
@@ -4467,9 +4518,10 @@ int main(int argc, char *argv[])
                 audio_play(sh.crit ? SFX_CRIT : SFX_HIT);
                 fx_burst(&weaponFx, tx, ty, 12, 100.0f, 255, 150, 50);
 
-                // YANMA: 3. bağımsız DoT kanalı (Közleme/Yangın düğümleri büyütür)
+                // YANMA: 3. bağımsız DoT kanalı (Közleme/Yangın düğümleri büyütür).
+                // Yağmur yakmayı erken söndürür (süre ×0.5'e kadar iner)
                 ft->burnDps = sh.damage * 0.30f * (1.0f + perkFx.burnBonus) / 3.0f;
-                ft->burnTime = 3.0f;
+                ft->burnTime = 3.0f * weather_burn_time_mult();
 
                 floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
                                 tx + 10.0f, ft->e.rect.y, (int)sh.damage, sh.crit);
@@ -5147,7 +5199,50 @@ int main(int argc, char *argv[])
                 resource_daily_respawn();   // doğa tazelenir (cevher/bitki/ağaç)
                 contract_new_day(today);    // pano yenilenir (yarım kontratlar düşer)
 
+                // HAVA (şafak zarı): dün yağdıysa doğa beslenir (ot toplaması ×2 bugün)
+                natureBounty = weather_rained_today();   // weather_dawn bayrağı sıfırlar
+                g_natureBounty = natureBounty;           // gather_finish köprüsü
+                weather_dawn(today);
+                if (natureBounty)
+                {
+                    SDL_Color grn = { 150, 255, 150, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 36.0f,
+                                         "Yağmur toprağa iyi geldi — otlar gür.", grn);
+                }
+
                 // DÜNYA OLAYI (şafak zarı): günün olayı belirlenir + köy duyurusu
+                // HUZURSUZ MEZARLIK kararı (dünkü olay — worldevent_dawn'dan ÖNCE):
+                // gece 2+ iskelet sağ kaldıysa mezar yeniden yuva olur
+                {
+                    int risenAlive = 0;
+                    for (int m = 0; m < MAX_MOBS; m++)
+                        if (mobs[m].e.alive && mobs[m].risen) risenAlive++;
+                    if (graveSiteIdx >= 0 && risenAlive >= 2)
+                    {
+                        NestState *gns = ecology_state(graveSiteIdx);
+                        gns->colonized = true;
+                        gns->destroyed = false;
+                        gns->chiefAlive = true;
+                        gns->pop[0] = (Sint16)((risenAlive > 2) ? 2 : risenAlive);
+                        gns->pop[1] = (Sint16)((risenAlive > 2) ? 1 : 0);
+                        gns->destroyedDay = 0;
+                        gns->migrateDay = 0;
+                        gns->colonizedDay = (Sint16)today;   // pano 7 gün duyurur
+                        journal_add(JE_GRAVE_RISE, 0);
+                        splashText = "Ölüler mezarı yurt edindi.";
+                        splashTimer = 3.0f;
+                    }
+                    graveSiteIdx = -1;
+                    for (int m = 0; m < MAX_MOBS; m++)   // gün ışığı: geri çekilirler
+                        if (mobs[m].e.alive && mobs[m].risen)
+                        {
+                            mobs[m].e.alive = false;
+                            mobs[m].dying = false;   // sessiz despawn — mezara iner
+                        }
+                }
+
                 WorldEvent newEv = worldevent_dawn(today);
                 for (int m = 0; m < MAX_MOBS; m++)   // baskından sağ kalanlar çekilir
                     if (mobs[m].e.alive && mobs[m].raider)
@@ -5166,6 +5261,7 @@ int main(int argc, char *argv[])
                         newEv == WE_RAID    ? "Sınırda goblin izi var — gece kapını sürgüle!"
                       : newEv == WE_CARAVAN ? "Kervan gelmiş! Meydanda tezgah açmış."
                       : newEv == WE_BOUNTY  ? "Otlaklar dolup taşıyor — bereketli gün!"
+                      : newEv == WE_GRAVE   ? "Mezarcı bu sabah mezarlıktan kaçmış — kıpırtı varmış!"
                       :                       "Taşlar gece parlıyormuş... hayra alamet değil.";
                     for (int ni = 0; ni < NPC_COUNT; ni++)
                     {
@@ -5205,10 +5301,130 @@ int main(int argc, char *argv[])
                         }
             }
 
+            // HAVA (kare bazlı): akış + yağmur sesi + fırtına yıldırımı
+            weather_update(dt, gametime_hours());
+            {
+                bool openSky = (map_current() == MAP_WORLD);
+                Weather wnow = weather_current();
+                bool raining = (wnow == WEATHER_RAIN || wnow == WEATHER_STORM);
+                ambience_set_rain((openSky && raining) ? weather_intensity() : 0.0f);
+
+                // Köylüler yağmur/fırtınada evlerine çekilir (kervancı gölgelikte)
+                npc_set_shelter(raining && weather_intensity() > 0.4f, kervanIdx);
+
+                // Değişim duyurusu: bölge adı gibi ekran ortasında belirir
+                if (wnow != lastWeather)
+                {
+                    lastWeather = wnow;
+                    if (openSky)
+                    {
+                        splashText = (wnow == WEATHER_RAIN)  ? "Yağmur bastırıyor..."
+                                   : (wnow == WEATHER_STORM) ? "Fırtına!"
+                                   : (wnow == WEATHER_FOG)   ? "Sis çöküyor..."
+                                   :                           "Gökyüzü açılıyor";
+                        splashTimer = 3.0f;
+                        if (wnow == WEATHER_RAIN && guardIdx >= 0)   // nöbetçi ıslanır
+                            npc_bark(guardIdx, "Bereket yağmuru... Nöbet ıslak geçecek.", 5.0f);
+                        else if (wnow == WEATHER_STORM && guardIdx >= 0)
+                            npc_bark(guardIdx, "Fırtına geliyor — açıkta durma, yolcu!", 5.0f);
+                    }
+                }
+
+                // FIRTINA YILDIRIMI: açık alanda rastgele düşer — sığınak değerli.
+                // 60px yakınına düşerse hasar (moba da oyuncuya da); uzağı gösteri.
+                if (openSky && wnow == WEATHER_STORM && weather_intensity() > 0.5f)
+                {
+                    stormBoltTimer -= dt;
+                    if (stormBoltTimer <= 0.0f)
+                    {
+                        stormBoltTimer = 8.0f + randf() * 12.0f;
+                        lightningFlash = 0.15f;
+                        audio_play(SFX_THUNDER);
+                        float sx = player.rect.x + (randf() - 0.5f) * 1200.0f;
+                        float sy = player.rect.y + (randf() - 0.5f) * 1200.0f;
+                        fx_burst(&weaponFx, sx, sy, 30, 220.0f, 240, 245, 255);
+                        for (int m = 0; m < mobCount; m++)
+                        {
+                            Mob *lb = &mobs[m];
+                            if (!lb->e.alive) continue;
+                            float ldx = (lb->e.rect.x + lb->e.rect.w / 2.0f) - sx;
+                            float ldy = (lb->e.rect.y + lb->e.rect.h / 2.0f) - sy;
+                            if (ldx * ldx + ldy * ldy > 60.0f * 60.0f) continue;
+                            lb->e.health -= 25.0f;
+                            lb->e.hitFlash = 0.15f;
+                            lb->aggro = true;
+                            floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                            lb->e.rect.x + lb->e.rect.w / 2.0f,
+                                            lb->e.rect.y - 10.0f, 25, false);
+                            if (lb->e.health <= 0.0f)
+                                mob_die(lb, mobs, MAX_MOBS, &nextMobId, loots,
+                                        questStatus, floatTexts, &player);
+                        }
+                        float pdx = (player.rect.x + player.rect.w / 2.0f) - sx;
+                        float pdy = (player.rect.y + player.rect.h / 2.0f) - sy;
+                        if (pdx * pdx + pdy * pdy <= 60.0f * 60.0f)
+                        {
+                            player.health -= 20.0f;
+                            player.gaziTimer = 5.0f;
+                            SDL_Color el = { 240, 245, 160, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 24.0f,
+                                                 "Yıldırım çarptı!", el);
+                        }
+                    }
+                }
+                else
+                    stormBoltTimer = 6.0f;   // fırtına yokken sayaç beklemede
+            }
+            if (lightningFlash > 0.0f) lightningFlash -= dt;
+
             // DÜNYA OLAYI (kare bazlı): baskın gece kenarında başlar; mühür
             // sancısı gecesi yankılar arada fısıldar (görsel büyüme render'da)
             {
                 bool nightNow = gametime_is_night();
+                if (nightNow && !wasNightWE && map_current() == MAP_WORLD &&
+                    worldevent_current() == WE_GRAVE)
+                {
+                    // HUZURSUZ MEZARLIK: mühürlü/boş iskelet mezarı gece kıpırdar.
+                    // Sabaha 2+ iskelet sağ kalırsa mezar YENİDEN yuva olur.
+                    graveSiteIdx = -1;
+                    for (int gi = 0; gi < NEST_SITE_COUNT; gi++)
+                    {
+                        const NestSiteDef *gs = ecology_site(gi);
+                        const NestState *gst = ecology_state(gi);
+                        if (gs->family != FAM_SKELETON) continue;
+                        if (gst->destroyed || !gst->colonized) { graveSiteIdx = gi; break; }
+                    }
+                    // Uygun saha yoksa (ikisi de canlı): ilk mezarda gösteri —
+                    // iskelet yükselir ama koloni kurulamaz (zaten yuva var)
+                    int showSite = graveSiteIdx;
+                    if (showSite < 0)
+                        for (int gi = 0; gi < NEST_SITE_COUNT; gi++)
+                            if (ecology_site(gi)->family == FAM_SKELETON)
+                            { showSite = gi; break; }
+                    if (showSite >= 0)
+                    {
+                        const NestSiteDef *gs = ecology_site(showSite);
+                        for (int r = 0; r < 3; r++)
+                        {
+                            const MobType *gt = (r < 2) ? &MOB_TYPES[12]    // savaşçı
+                                                        : &MOB_TYPES[13];   // okçu
+                            int gid = mob_spawn(mobs, MAX_MOBS, &nextMobId, gt,
+                                                gs->x + (randf() - 0.5f) * 120.0f,
+                                                gs->y + (randf() - 0.5f) * 120.0f, -1);
+                            Mob *gm = mob_find_by_id(mobs, MAX_MOBS, gid);
+                            if (gm != NULL)
+                            {
+                                gm->risen = true;
+                                gm->alertFlash = 1.0f;
+                            }
+                        }
+                        splashText = "Mezarlık huzursuz...";
+                        splashTimer = 3.0f;
+                        audio_play(SFX_WHISPER);
+                    }
+                }
                 if (nightNow && !wasNightWE && map_current() == MAP_WORLD &&
                     worldevent_current() == WE_RAID)
                 {
@@ -5439,7 +5655,7 @@ int main(int argc, char *argv[])
                         if (player.weaponFx == WEAPON_FX_FLAME)
                         {
                             target->burnDps = hit.damage * 0.20f / 3.0f;
-                            target->burnTime = 3.0f;
+                            target->burnTime = 3.0f * weather_burn_time_mult();
                         }
 
                         // Vurulan mob + kamp arkadaşları alarma geçer (grup aggro)
@@ -5712,7 +5928,7 @@ int main(int argc, char *argv[])
                 if (player.weaponFx == WEAPON_FX_FLAME)
                 {
                     at->burnDps = hit.damage * 0.20f / 3.0f;
-                    at->burnTime = 3.0f;
+                    at->burnTime = 3.0f * weather_burn_time_mult();
                 }
                 // Zehir rünü/kaplaması ok ucuna da işler — kanamayla üst üste biner
                 if (player.weaponFx == WEAPON_FX_POISON)
@@ -5922,7 +6138,9 @@ int main(int argc, char *argv[])
             // Gece tehlikesi: algı menzili 1.5x (spawn çarpanı KALKTI —
             // dünya ekolojik, zindan mühür dalgasıyla dolar)
             float detectMul = (gametime_is_night() ? 1.5f * perkFx.nightDetectMult : 1.0f)
-                            * perkFx.detectOnPlayerMult;   // Hayalet/Hortlak düğümleri
+                            * perkFx.detectOnPlayerMult    // Hayalet/Hortlak düğümleri
+                            * (map_current() == MAP_WORLD
+                               ? weather_percept_mult() : 1.0f);   // sis örter
 
             // Hız çarpanı: perk (Çevik/Rüzgar/Uyumlu) × gece (Gölge Adımı) × eğilme.
             // player_update tile hızıyla çarpar (doğrudan speed yazmak eziliyordu — bug'dı)
@@ -6842,6 +7060,12 @@ int main(int argc, char *argv[])
         // altına (HUD gece de okunur). Ambient ay ışığı mavisine iner; ışık
         // kaynakları (pencere/direk/meşale) piksel başına sıcak renk katar.
         float dark01 = gametime_darkness01();
+        if (map_current() == MAP_WORLD)
+        {
+            // Hava karartması: fırtına 0.45, yağmur 0.20 — geceyle yarışmaz (max)
+            float wd = weather_darkness01();
+            if (wd > dark01) dark01 = wd;
+        }
         bool inDungeon = map_is_dungeon(map_current());
         if (dark01 > 0.0f || inDungeon)
         {
@@ -6916,6 +7140,62 @@ int main(int argc, char *argv[])
                                                        STATIONS[i].x, STATIONS[i].y - 24.0f);
             }
             r2d_light_pass(renderer, ambR, ambG, ambB, lights, lightN);
+        }
+
+        // --- HAVA GÖRSELLERİ (dünya üstü, HUD altı) ---
+        if (map_current() == MAP_WORLD && weather_intensity() > 0.0f)
+        {
+            float wi = weather_intensity();
+            Weather wn = weather_current();
+            if (wn == WEATHER_RAIN || wn == WEATHER_STORM)
+            {
+                // Damlalar: hafif eğik ince çizgiler — ekran uzayında düşer
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                int drops = (int)(RAIN_DROPS * wi);
+                for (int i = 0; i < drops; i++)
+                {
+                    rainPY[i] += rainPS[i] * dt;
+                    rainPX[i] -= rainPS[i] * 0.22f * dt;   // rüzgar eğimi
+                    if (rainPY[i] > 1.0f)
+                    {
+                        rainPY[i] -= 1.0f;
+                        rainPX[i] = randf();
+                    }
+                    if (rainPX[i] < 0.0f) rainPX[i] += 1.0f;
+                    float dx = rainPX[i] * (float)winW;
+                    float dy = rainPY[i] * (float)winH;
+                    Uint8 a = (Uint8)((90.0f + 60.0f * (rainPS[i] - 1.6f)) * wi);
+                    r2d_set_color(renderer, 180, 200, 230, a);
+                    SDL_FRect d1 = { dx, dy, 2.0f, 9.0f };
+                    SDL_FRect d2 = { dx + 2.0f, dy - 7.0f, 2.0f, 8.0f };
+                    r2d_fill_rect(renderer, &d1);
+                    r2d_fill_rect(renderer, &d2);
+                }
+            }
+            if (wn == WEATHER_FOG)
+            {
+                // Sis: iki katman gri örtü — yavaş nefes alır (tek renkte boğmaz)
+                float tsec = (float)((double)SDL_GetTicks() / 1000.0);
+                float breathe = 0.9f + 0.1f * SDL_sinf(tsec * 0.35f);
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                r2d_set_color(renderer, 190, 195, 205,
+                              (Uint8)(95.0f * wi * breathe));
+                SDL_FRect fogFull = { 0, 0, (float)winW, (float)winH };
+                r2d_fill_rect(renderer, &fogFull);
+                r2d_set_color(renderer, 210, 214, 222, (Uint8)(45.0f * wi));
+                SDL_FRect fogBand = { 0, (float)winH * 0.25f,
+                                      (float)winW, (float)winH * 0.5f };
+                r2d_fill_rect(renderer, &fogBand);
+            }
+        }
+        if (lightningFlash > 0.0f)
+        {
+            // Şimşek: tüm ekran beyaz parlar, 0.15 sn'de söner
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_set_color(renderer, 235, 240, 255,
+                          (Uint8)(180.0f * (lightningFlash / 0.15f)));
+            SDL_FRect lfull = { 0, 0, (float)winW, (float)winH };
+            r2d_fill_rect(renderer, &lfull);
         }
 
         // Hasar flash'ı: kırmızı kenar vinyeti, hızla söner (HUD'un altında)

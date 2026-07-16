@@ -28,6 +28,7 @@ typedef enum {
     JE_TITLE,           // ünvan kazanıldı: param = TITLES indeksi (M3)
     JE_S3_STEP,         // S3: 0 Zehra ipuçları · 1 Nuh güveni/konak yolu (D1c)
     JE_S3_CHOICE,       // S3 kapanış: 2 nöbet devralındı · 3 kayıt kapatıldı
+    JE_GRAVE_RISE,      // huzursuz mezarlık: mezar yeniden yuva oldu (WE_GRAVE)
 } JournalEvent;
 
 typedef struct {

@@ -161,9 +161,17 @@ static const NpcStop *current_stop(const NpcDef *def, float hours)
 }
 
 static bool npcActive = true;   // dünyada mıyız (zindanda NPC işlemez)
-static int talkingIdx = -1;     // diyalogdaki NPC — hareketi durur
+static int talkingIdx = -1;       // diyalogdaki NPC — hareketi durur
+static bool shelter = false;      // yağmur sığınması (main basar)
+static int shelterExempt = -1;    // sığınmayan NPC (kervancı — gölgelik)
 
 void npc_set_talking(int i) { talkingIdx = i; }
+
+void npc_set_shelter(bool s, int exemptIdx)
+{
+    shelter = s;
+    shelterExempt = exemptIdx;
+}
 
 void npc_force_hidden(int i, bool hidden)
 {
@@ -219,6 +227,13 @@ void npc_update(float dt, float hours)
         }
 
         if (NPCS[i].isGuard) continue;   // muhafızı guard.c beyni yürütür
+
+        // Yağmur sığınması: köylü evine çekilir (rutin beklemede kalır)
+        if (shelter && i != shelterExempt) {
+            st->hidden = true;
+            st->walking = false;
+            continue;
+        }
 
         const NpcStop *target = current_stop(&NPCS[i], hours);
         float dx = target->x - st->x;

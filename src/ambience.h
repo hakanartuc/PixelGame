@@ -20,6 +20,10 @@ typedef enum {
 bool ambience_init(void);
 void ambience_set(AmbKind k);          // aynıysa no-op; geçiş crossfade
 void ambience_set_volume(float v01);   // kullanıcı müzik seviyesiyle ölçeklenir
+
+// Yağmur katmanı: day/night'ın ÜSTÜNE biner (crossfade havuzundan bağımsız).
+// g01 = hedef şiddet (weather_intensity) — geçişi ambience_update yumuşatır.
+void ambience_set_rain(float g01);
 void ambience_update(float dt);
 void ambience_quit(void);
 

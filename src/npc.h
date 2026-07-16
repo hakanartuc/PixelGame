@@ -60,6 +60,10 @@ int npc_nearest_in_range(float px, float py);
 // Olay NPC'si (kervan): dünyada görünürlüğü main açar/kapar (rutinden bağımsız)
 void npc_force_hidden(int i, bool hidden);
 
+// Hava sığınması: yağmur/fırtınada köylüler evlerine çekilir (muhafız nöbette,
+// exemptIdx — kervancı gölgeliği — dışarıda kalır). Main her kare basar.
+void npc_set_shelter(bool s, int exemptIdx);
+
 // Diyalogdaki NPC (her kare main basar; -1 = yok): konuşan NPC rutinini
 // DURDURUR — oyuncuyla konuşurken yürüyüp gitmesin (doğallık düzeltmesi)
 void npc_set_talking(int i);

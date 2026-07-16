@@ -1,4 +1,5 @@
 #include "light.h"
+#include "weather.h"
 
 // Köy ışıkları: ev pencereleri (decor.c'deki evlerin gövdesine hizalı — ev
 // tabanı (x,y)'de, pencere ışığı biraz yukarıda) + meydan meşale direkleri.
@@ -49,14 +50,20 @@ int light_collect(R2DLight *out, int cap, const Camera *cam, int sw, int sh, boo
             continue;   // ekran dışı — shader döngüsüne sokma
         out[n++] = (R2DLight){ sx, sy, sr,
                                LIGHTS[i].r, LIGHTS[i].g, LIGHTS[i].b,
-                               LIGHTS[i].intensity * flicker_mul(LIGHTS[i].flicker, t, i) };
+                               LIGHTS[i].intensity *
+                               flicker_mul(LIGHTS[i].flicker +
+                                           (weather_current() == WEATHER_STORM
+                                            ? 0.10f * weather_intensity() : 0.0f),
+                                           t, i) };   // fırtınada pencereler titrer
     }
 
     float psx = (torchX - cam->x) * zoom;
     float psy = (torchY - cam->y) * zoom;
 
     if (torchOn && n < cap) {
-        out[n++] = (R2DLight){ psx, psy, TORCH_RADIUS * zoom,
+        // Yağmur meşaleyi boğar: ışık yarıçapı %20'ye kadar kısalır
+        float wetMul = 1.0f - 0.2f * (weather_is_wet() ? weather_intensity() : 0.0f);
+        out[n++] = (R2DLight){ psx, psy, TORCH_RADIUS * wetMul * zoom,
                                1.00f, 0.65f, 0.30f,
                                0.70f * flicker_mul(0.12f, t, LIGHT_COUNT) };
     }

@@ -112,6 +112,15 @@ gece yankı ×1.8 + fısıltı). Duyuru: köylü bark + pano söylentisi. Dinlen
 gece ateş başında → 07:00 (rollover doğal), HP/STA tam + mana %50, %25 rüya
 vinyeti (3 havuz, gen_dreams.py). Harita genişlemeleri (ikinci yerleşim/biyom)
 kullanıcı kararıyla "gerçek harita tasarımı gelince" ertelendi.
+**HAVA SİSTEMİ + DÜNYA OLAYLARI KALANLAR TAMAM (save v26)**: weather.c (şafak
+zarı Açık/Yağmur/Sis/Fırtına %55/25/15/5 + öğlen %25 dönüş; intensity yumuşak);
+savaş: ıslakta yanma ×0.5, ateş -%15, yıldırım +%20, siste algı ×0.6, fırtına
+yıldırımı (60px: 25/20 hasar); çevre: NPC sığınması, ot ×2 (dün yağdıysa),
+yağmurda kamp ateşi kurulamaz, meşale -%20, mob yağmur davranışı; görsel/ses:
+damla+sis+şimşek+amb_rain/thunder (gen_weather_audio.py). WE_GRAVE Huzursuz
+Mezarlık (gece 3 iskelet, şafakta 2+ sağsa mezar yuva olur); MOB_SEARCH (leash
+sonrası 8sn bakınma); haber ağı diyalogda (event/hava değişkenleri, gizlenen
+seçenekler; Kemal/Osman/Baran satırları).
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
 mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13) + BÜYÜ SİSTEMİ
 (22: 6 büyü + Asa + INT + zırh ağırlığı + mana iksiri; ayrıntı PROGRESS Faz 22).

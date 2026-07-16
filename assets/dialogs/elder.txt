@@ -4,7 +4,48 @@
 [start]
 text: Ah, bir maceracı! Tam zamanında geldin. Goblinler ovayı sardı, sürülerimize saldırıyorlar.
 opt: Yardım edebilirim. -> gorev
+opt: Köyde neler oluyor? -> havadis
+req: event >= 1
 opt: Benim işim var. -> end
+
+# Haber ağı (Dünya Olayları): aktif olaya göre TEK düğüm görünür
+[havadis]
+text: Hangi birini anlatayım...
+opt: Baskın söylentisi? -> h_baskin
+req: event >= 1
+req: event <= 1
+opt: Kervan mı gelmiş? -> h_kervan
+req: event >= 2
+req: event <= 2
+opt: Sürüler bereketliymiş? -> h_bereket
+req: event >= 3
+req: event <= 3
+opt: Taşlardan ses mi geliyor? -> h_muhur
+req: event >= 4
+req: event <= 4
+opt: Mezarlıkta kıpırtı mı var? -> h_mezar
+req: event >= 5
+req: event <= 5
+
+[h_baskin]
+text: Goblinler sınırda koklanıyor, evladım. Gece kapını sürgüle; açıkta kalan tavuk kendi suçu. Sen kılıç taşıyorsun ama — köy kenarında nöbet tutarsan kimse unutmaz.
+opt: Gözüm üstlerinde olur. -> end
+
+[h_kervan]
+text: Kervancı Selim gelmiş, meydanda tezgah kurmuş. Pahalıdır o adam ama malı sağlamdır — köyde bulamayacağın taşlar, özler... İki gün kalır, sonra yine yollara.
+opt: Bir bakarım. -> end
+
+[h_bereket]
+text: Otlaklar dolup taşıyor — koca sürüler indi ovaya. Avcıysan bugün günündür. Ama aç gözlülük etme; doğa verdiğini geri ister.
+opt: Aklımda. -> end
+
+[h_muhur]
+text: Taşların dibinden ses geliyormuş bu gece... Ben yaşlıyım, çok şey duydum — böyle gecelerde büyükler "eve gir, mor ışığa bakma" derdi. Sen bakacaksın ama, biliyorum.
+opt: Belki de bakmalıyım. -> end
+
+[h_mezar]
+text: Mezarcı sabah kaçarak geldi — mezarlıkta kıpırtı varmış, taşlar oynamış. Bu gece orada temizlik yapılmazsa... eskiler "ölü yurt tutar" derdi. Kayalık Geçit yoluna dikkat.
+opt: Gece mezarlığa bakarım. -> end
 
 [gorev]
 text: 5 goblin öldür, sana 100 altın veririm. Kampları kuzeydoğudaki yol boyunda.

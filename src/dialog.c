@@ -32,6 +32,9 @@ static bool parse_var(const char *s, size_t len, DialogVar *out)
     if (len == 5 && strncmp(s, "kibar", 5) == 0)  { *out = DVAR_KIBAR;  return true; }
     if (len == 5 && strncmp(s, "ketum", 5) == 0)  { *out = DVAR_KETUM;  return true; }
     if (len == 4 && strncmp(s, "hint", 4) == 0)   { *out = DVAR_HINT;   return true; }
+    if (len == 5 && strncmp(s, "event", 5) == 0)  { *out = DVAR_EVENT;  return true; }
+    if (len == 4 && strncmp(s, "hava", 4) == 0)   { *out = DVAR_WEATHER; return true; }
+    if (len == 7 && strncmp(s, "weather", 7) == 0) { *out = DVAR_WEATHER; return true; }
     return false;
 }
 
@@ -148,7 +151,8 @@ bool dialog_load(Dialog *d, const char *path)
             if (lastOpt == NULL || lastOpt->fxCount >= DIALOG_MAX_FX ||
                 !parse_cond_line(p + 3, &var, op, &val) ||
                 (op[0] != '+' && op[0] != '-' && op[0] != '=') ||
-                var == DVAR_SPEECH) {   // skill'e diyalog efekti yazılamaz
+                var == DVAR_SPEECH ||    // skill'e diyalog efekti yazılamaz
+                var == DVAR_EVENT || var == DVAR_WEATHER) {   // dünya salt okunur
                 SDL_Log("Diyalog hatasi (%s:%d): bozuk/yersiz fx", path, lineNo);
                 fclose(f);
                 return false;
@@ -332,6 +336,7 @@ void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
                 snprintf(label, sizeof(label), "[Speech %d] ", (int)th);
         }
 
+        if (st != NULL && st->hidden) continue;   // konu dünyada yok — çizme
         bool inactive = st != NULL && (st->locked || st->burned);
         char buf[DIALOG_OPT_LEN + 48];
         snprintf(buf, sizeof(buf), "%d) %s%s%s", i + 1, label, o->text,

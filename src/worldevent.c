@@ -44,6 +44,7 @@ const char *worldevent_name(WorldEvent e)
         case WE_CARAVAN: return "Gezgin Kervan";
         case WE_BOUNTY:  return "Bereket";
         case WE_SEAL:    return "Mühür Sancısı";
+        case WE_GRAVE:   return "Huzursuz Mezarlık";
         default:         return "";
     }
 }
@@ -55,6 +56,7 @@ const char *worldevent_rumor(WorldEvent e)
         case WE_CARAVAN: return "Meydana kervan indi! Nadir mal varmış, pahalıymış ama.";
         case WE_BOUNTY:  return "Sürüler bereketli bu mevsim — otlaklar dolu.";
         case WE_SEAL:    return "Bu gece taşların dibinden ses geliyor diyorlar...";
+        case WE_GRAVE:   return "Mezarlıkta kıpırtı görülmüş — ölüler rahat durmuyor.";
         default:         return "";
     }
 }

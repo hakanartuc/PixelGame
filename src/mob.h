@@ -34,6 +34,8 @@ typedef enum {
     MOB_RETURN,  // leash: kampına dönüyor (oyuncuyu yok sayar, hızla iyileşir)
                  // DİKKAT: anims[4][3]'te satırı YOK — animasyonu CHASE clip'idir
                  // (pasif av kaçışı da ayrı durum DEĞİL: CHASE clip'iyle koşar)
+    MOB_SEARCH,  // izini kaybetti: olduğu yerde 8 sn bakınır (IDLE clip'i),
+                 // oyuncu yakına dönerse yeniden alarm; süre dolunca RETURN
 } MobState;
 
 #define MOB_FLEE_TIME 4.0f   // pasif hayvan vuruştan sonra bu kadar sn kaçar
@@ -137,6 +139,9 @@ typedef struct {
     float waterX, waterY; // hayvan su noktası (0 = yok; öğlen iner)
     bool raider;          // gece baskını mobu (WE_RAID): öldüren itibar kazanır,
                           // şafakta sağ kalanlar sessizce çekilir (despawn)
+    bool risen;           // huzursuz mezarlık mobu (WE_GRAVE): şafakta 2+ sağsa
+                          // mezar yeniden yuva olur (koloni), sonra geri çekilir
+    float searchTimer;    // MOB_SEARCH kalan süre (bakınma)
 } Mob;
 
 

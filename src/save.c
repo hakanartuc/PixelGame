@@ -8,6 +8,7 @@
 #endif
 #include "save.h"
 #include "worldevent.h"
+#include "weather.h"
 #include "item.h"
 #include "skill.h"
 #include "gametime.h"
@@ -20,7 +21,7 @@
 #include "ecology.h"    // yuva durumları (v20)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 25u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+#define SAVE_VERSION 26u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
                           // v12: ilan panosu (gün + slot durum/ilerleme);
                           // v13: skill ağacı maskeleri (perkChoice'un yerini aldı);
                           // v18: özet bloğu (slot kartları) + kişilik sayaçları;
@@ -30,7 +31,8 @@
                           // v22: hikaye kartı bayrakları (storyFlags);
                           // v23: davranış ünvanları (titleStats + carriedTitle);
                           // v24: karakter adı/ten/geçmiş (özet bloğuna isim);
-                          // v25: dünya olayı durumu (worldevent)
+                          // v25: dünya olayı durumu (worldevent);
+                          // v26: hava durumu (weather)
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -257,6 +259,13 @@ bool save_game(const char *path, const Player *p,
         int weCur, weStart, weLast;
         worldevent_save_get(&weCur, &weStart, &weLast);
         ok = ok && w32(f, weCur) && w32(f, weStart) && w32(f, weLast);
+    }
+
+    // Hava durumu (v26): aktif hava + kalan yağış saati + bugün yağdı bayrağı
+    {
+        int wCur, wRained; float wHours;
+        weather_save_get(&wCur, &wHours, &wRained);
+        ok = ok && w32(f, wCur) && wf(f, wHours) && w32(f, wRained);
     }
 
     // Mob ekolojisi (v20): saha başına yuva durumu
@@ -505,6 +514,10 @@ bool load_game(const char *path, Player *p,
     Sint32 weCur = 0, weStart = -1, weLast = 0;
     ok = ok && r32(f, &weCur) && r32(f, &weStart) && r32(f, &weLast);
 
+    // Hava durumu (v26) — geçici; başarıda uygulanır
+    Sint32 wCur = 0, wRained = 0; float wHours = 0.0f;
+    ok = ok && r32(f, &wCur) && rf(f, &wHours) && r32(f, &wRained);
+
     // Mob ekolojisi (v20) — geçici; başarıda uygulanır
     Sint32 nNest = 0;
     Sint32 nsCol[64], nsDes[64], nsChf[64], nsP0[64], nsP1[64], nsP2[64],
@@ -530,6 +543,7 @@ bool load_game(const char *path, Player *p,
     memcpy(quests, tmpQ, sizeof(tmpQ));
     gametime_set(tmpDay, tmpHours);
     worldevent_save_set(weCur, weStart, weLast);
+    weather_save_set(wCur, wHours, wRained);
     map_set_current((MapId)savedMap);   // main, değişimi görüp haritayı yeniden yükler
     for (int i = 0; i < nChest && i < CHEST_COUNT; i++)
         chest_set_opened_day(i, chestDays[i]);
