@@ -79,6 +79,7 @@ static void dialog_eval_opt(const DialogOpt *o, const Player *p, int npcRegion,
             case DVAR_KABA:   cur = (float)p->persKaba; break;
             case DVAR_KIBAR:  cur = (float)p->persKibar; break;
             case DVAR_KETUM:  cur = (float)p->persKetum; break;
+            case DVAR_HINT:   cur = (float)p->storyFlags[SF_S3_HINTS]; break;
         }
         bool pass = r->lessEq ? (cur <= r->value) : (cur >= r->value);
 
@@ -844,8 +845,17 @@ int main(int argc, char *argv[])
     int nazifeIdx = -1;  // K2 Son Müşteri (D1b)
     for (int i = 0; i < NPC_COUNT; i++)
         if (SDL_strcmp(NPCS[i].name, "Nazife") == 0) { nazifeIdx = i; break; }
+    int nuhIdx = -1, zehraIdx = -1;   // S3 Sayan Adam (D1c)
+    for (int i = 0; i < NPC_COUNT; i++)
+    {
+        if (SDL_strcmp(NPCS[i].name, "Nuh") == 0)   nuhIdx = i;
+        if (SDL_strcmp(NPCS[i].name, "Zehra") == 0) zehraIdx = i;
+    }
+    int nuhLockDay = -1;   // yanlış cevap: o gün kilit (save'e girmez — zar kilidi gibi)
     #define SOFRA_X (19.4f * TILE_SIZE)   // han önü (köy GD) — gece kurulur
     #define SOFRA_Y (13.1f * TILE_SIZE)
+    #define KAYIT_X (20.5f * TILE_SIZE)    // S3: kayıt odası kapısı (konak)
+    #define KAYIT_Y (6.0f * TILE_SIZE)
     #define ECHO_K9 2                            // ECHOES[2] = Kerem (F2)
     #define KANDIL_X (144.0f * TILE_SIZE)        // geçit kemeri önü
     #define KANDIL_Y (8.5f * TILE_SIZE)
@@ -1414,6 +1424,18 @@ int main(int argc, char *argv[])
                         {
                             player.echoesWitnessed += sfx.witness;
                             player.echoesConsumed += sfx.consume;
+                            if (sfx.s3 == 2)   // nöbet devralındı (S3)
+                            {
+                                player.storyFlags[SF_S3_STATE] = 2;
+                                journal_add(JE_S3_CHOICE, 2);
+                                title_notify(title_stat_add(&player, TS_RECORD, 1),
+                                             &player, floatTexts);
+                            }
+                            else if (sfx.s3 == 3)   // kayıt kapatıldı
+                            {
+                                player.storyFlags[SF_S3_STATE] = 3;
+                                journal_add(JE_S3_CHOICE, 3);
+                            }
                             if ((sfx.witness > 0 || sfx.consume > 0) && activeEcho >= 0)
                             {
                                 echo_set_done(activeEcho, true);   // anı bir kez yaşanır
@@ -1546,6 +1568,44 @@ int main(int argc, char *argv[])
                                     npc_bark(nazifeIdx, "Beklemek bitti.", 4.0f);
                                 else
                                     npc_bark(nazifeIdx, "Sofra bekler.", 4.0f);
+                                audio_play(SFX_UI);
+                            }
+                            else if (strncmp(target, "nuh:", 4) == 0)
+                            {
+                                // S3 bulmaca akışı (D1c)
+                                const char *nt = target + 4;
+                                if (strcmp(nt, "t1") == 0)
+                                    player.storyFlags[SF_S3_TRUST] = 1;
+                                else if (strcmp(nt, "t2") == 0)
+                                    player.storyFlags[SF_S3_TRUST] = 2;
+                                else if (strcmp(nt, "t3") == 0)
+                                {
+                                    player.storyFlags[SF_S3_TRUST] = 3;
+                                    player.storyFlags[SF_S3_STATE] = 1;
+                                    journal_add(JE_S3_STEP, 1);
+                                    // Nuh konağa doğru "sayarak" yürür (sahne aracı)
+                                    npc_walk_to(nuhIdx, 166.0f * TILE_SIZE,
+                                                46.0f * TILE_SIZE);
+                                    npc_bark(nuhIdx, "...bir, iki, üç...", 6.0f);
+                                    float nwx, nwy;   // kamera onu kısaca izler
+                                    if (npc_visible_pos(nuhIdx, &nwx, &nwy))
+                                    {
+                                        cineActive = true;
+                                        cineX = nwx + 80.0f;
+                                        cineY = nwy;
+                                        cineTimer = 2.5f;
+                                    }
+                                }
+                                else if (strcmp(nt, "kilit") == 0)
+                                    nuhLockDay = gametime_day();
+                                dialogNpc = -1;
+                                audio_play(SFX_UI);
+                            }
+                            else if (strncmp(target, "zehra:", 6) == 0)
+                            {
+                                player.storyFlags[SF_S3_HINTS] = 1;
+                                journal_add(JE_S3_STEP, 0);
+                                dialogNpc = -1;
                                 audio_play(SFX_UI);
                             }
                             else if (strncmp(target, "accept:", 7) == 0)
@@ -1745,6 +1805,35 @@ int main(int argc, char *argv[])
                     }
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
+                         map_current() == MAP_KONAK && dialogNpc < 0 &&
+                         SDL_fabsf(player.rect.x + player.rect.w / 2.0f - KAYIT_X) < 70.0f &&
+                         SDL_fabsf(player.rect.y + player.rect.h / 2.0f - KAYIT_Y) < 70.0f)
+                {
+                    // S3 kayıt odası: yalnız Nuh'la (STATE 1) açılır
+                    Uint8 st3 = player.storyFlags[SF_S3_STATE];
+                    if (st3 == 1)
+                    {
+                        scene_set_speech(player.skills[SKILL_SPEECH].level);
+                        scene_start("assets/scenes/kayit_odasi.txt");
+                    }
+                    else if (st3 >= 2)
+                    {
+                        SDL_Color dim3 = { 170, 170, 190, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f,
+                                             "Oda sessiz.", dim3);
+                    }
+                    else
+                    {
+                        SDL_Color red3 = { 255, 140, 100, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f,
+                                             "Kilitli — Eşikçi mührü. Nuh'suz açılmaz.", red3);
+                    }
+                }
+                else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
                          dialogNpc < 0 && nearestRitual >= 0)
                 {
                     // Ritüel: gölcük kurutma (meşale ister) / mezar mühürleme
@@ -1877,6 +1966,24 @@ int main(int argc, char *argv[])
                             else if (k2 == 4) entry = "bos_tekrar";
                             else if (cart == 1) entry = "bilgi";
                             else if (cart == 2) entry = "bilgi_bos";
+                        }
+                        else if (nearestNpc == nuhIdx)
+                        {
+                            // S3: güvene/duruma göre tur — yanlış cevap gün kilidi
+                            Uint8 st3 = player.storyFlags[SF_S3_STATE];
+                            Uint8 tr3 = player.storyFlags[SF_S3_TRUST];
+                            if (st3 == 2)      entry = "devraldin";
+                            else if (st3 == 3) entry = "kapandi";
+                            else if (st3 == 1) entry = "yolda";
+                            else if (nuhLockDay == gametime_day()) entry = "kilit";
+                            else if (tr3 == 1) entry = "tur2";
+                            else if (tr3 >= 2) entry = "tur3";
+                            // tr3 == 0 → start (tur1'e oradan akar)
+                        }
+                        else if (nearestNpc == zehraIdx)
+                        {
+                            if (player.storyFlags[SF_S3_HINTS] > 0)
+                                entry = "tekrar";
                         }
                         else if (NPCS[nearestNpc].questId != NULL)
                         {
@@ -4618,7 +4725,8 @@ int main(int argc, char *argv[])
                 if (player.health > player.maxHealth) player.health = player.maxHealth;
 
                 player.maxMana    = 50.0f  + (float)gearStat[STAT_MP]
-                                  + perkFx.maxManaBonus;
+                                  + perkFx.maxManaBonus
+                                  + title_max_mana_bonus(&player);   // Kayıt Tutan
                 // M4 rezerve: dost yaşarken max mananın bir kısmı BAĞLI kalır
                 {
                     float reserve = perkFx.summonReserve

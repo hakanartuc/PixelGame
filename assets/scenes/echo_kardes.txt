@@ -1,0 +1,31 @@
+# S3 (D1c): Eşikçi Konağı — Nuh'un kardeşi İdris'in yankısı.
+# Tanık: kayıt düzeninin anlamını gösterir. Sömüren: fısıltı İLK KEZ bir yan
+# hikayeye karışır — "ondan uzak dur" (açıklanmaz; ürkütücü sinyal).
+
+[giris]
+image: assets/scenes/echo_kardes.png
+duck: 0.15
+sfx: heartbeat
+text: Büyük salonun köşesinde, devrilmiş bir yazı masasının altında mor bir soluk. Masanın çekmecesi açık; içinde kurumuş bir hokka ve yarıda kalmış bir satır: "...ve sayı düşerse—"
+opt: Elini mühre koy, dinle. -> yanki
+opt: Soluğu kendine çek. -> somur
+opt: Geri çekil. -> end
+
+[yanki]
+image: assets/scenes/echo_kardes_memory.png
+duck: 0.08
+sfx: whisper
+text: Bir adam görüyorsun — Nuh'un yüzü ama daha genç, daha yorgun. İdris. Defterlere yazıyor, durmadan: doğumlar, ölümler, geçitten esen rüzgarlar, dokuz atım. "Kayıt kopmasın," diye mırıldanıyor, "kopan kayıt geri örülmez."
+text: Son anında elinde kalem var. Son yazdığı satır bitmemiş. Son düşüncesi bir sayı değil — kardeşinin adı: "Nuh sayar. Nuh unutmaz."
+text: Fısıltı, sana: "...henüz değil."
+opt: (Elini çek.) -> end
+fx: witness
+
+[somur]
+image: assets/scenes/echo_kardes_drain.png
+duck: 0.08
+text: Soluğu çekiyorsun. Kırk yıllık kayıt disiplini, o sarsılmaz düzen hissi — içine akıyor. Ama bu kez fısıltı DURAKSIYOR. İlk kez sana bir şey söylüyor; bir yankı hakkında, bir İNSAN hakkında:
+text: "...sayan adamdan uzak dur."
+text: Neden? Cevap yok. Fısıltı sustu. Ama mühür, Nuh'un adı geçince... küçülür gibi oldu.
+opt: (Arkana bakma.) -> end
+fx: consume

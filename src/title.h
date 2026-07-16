@@ -20,6 +20,7 @@ typedef enum {
     TS_ARROWS,       // atılan ok
     TS_POTIONS,      // içilen iksir
     TS_COOKED,       // pişirilen yemek
+    TS_RECORD,       // S3: nöbet devralındı (0/1 — yalnız hikaye seçimiyle)
     TS_COUNT,
 } TitleStat;
 
@@ -30,7 +31,7 @@ typedef struct {
     int threshold;
 } TitleDef;
 
-#define TITLE_COUNT 10
+#define TITLE_COUNT 11
 extern const TitleDef TITLES[TITLE_COUNT];
 
 struct Player;   // forward
@@ -49,5 +50,6 @@ float title_bow_mult(const struct Player *p);         // yay hasarı çarpanı
 float title_potion_mult(const struct Player *p);      // iksir etki çarpanı
 float title_food_dur_mult(const struct Player *p);    // Tok süre çarpanı
 float title_double_loot_chance(const struct Player *p); // av çift ürün şansı (0..1)
+float title_max_mana_bonus(const struct Player *p);      // Kayıt Tutan: +max mana
 
 #endif

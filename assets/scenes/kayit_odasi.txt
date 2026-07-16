@@ -1,0 +1,49 @@
+# S3 (D1c): Kayıt Odası — Nuh'la birlikte. Nöbet devri kararı.
+# fx s3: 2 = devral (Kayıt Tutan ünvanı) · 3 = kapat (aile huzuru).
+
+[giris]
+image: assets/scenes/kayit_odasi.png
+duck: 0.12
+text: Nuh mührü kapıya bastırıyor — kapı, kırk yıldır ilk kez, içeriden değil DIŞARIDAN açılıyor. Raflar. Yüzlerce defter. Hepsi aynı elden çıkmış gibi düzenli; en yenisinde mürekkep hâlâ parlak.
+text: "Eşikçilerin kaydı," diyor Nuh. "Geçit ne zaman esner, mühür ne zaman ısınır, dokuz atım ne zaman gelir — hepsi burada. Babam tuttu. Ondan önce babası. Şimdi ben. Ve ben... yoruluyorum, yolcu."
+opt: (Dinle.) -> teklif
+
+[teklif]
+image: assets/scenes/kayit_odasi.png
+duck: 0.1
+text: Sana dönüyor. Parmakları saymıyor — İKİ eliyle omuzlarını tutuyor. "Dili biliyorsun. Mührü taşıyorsun. Sayıyı sana devredebilirim — nöbeti. Ya da..." Duruyor. "Ya da bu kapıyı birlikte kapatırız. Sonsuza dek. Zehra'yla eve dönerim. Kayıt biter, ben başlarım."
+opt: Nöbeti devral: "Sayıyı bana ver, Nuh." -> devral
+opt: Kapıyı kapat: "Kırk yıl yetti. Eve dön." -> kapat
+opt: [Speech] "Üçüncü yol: kaydı Zehra'ya ÖĞRET — kan bağı sürer, sen dinlenirsin." -> ucuncu
+roll: speech 30 -> ucuncu_fail
+
+[devral]
+image: assets/scenes/kayit_devir.png
+duck: 0.06
+sfx: whisper
+text: Nuh son sayıyı söylüyor — bu kez sayı değil, bir EMANET gibi: "On dört bin altı yüz on üç. Yarın on dört olacak. Sen sayacaksın." Mühür göğsünde ısınıyor; bir an, rafların hepsini aynı anda OKUYABİLECEKMİŞSİN gibi geliyor.
+text: Kayıt Tutan'sın artık. Dünya durduğunda sayacak olan sensin.
+opt: (Nöbeti kabul et.) -> end
+fx: s3 2
+
+[kapat]
+image: assets/scenes/kayit_kapat.png
+duck: 0.2
+text: Kapıyı birlikte itiyorsunuz. Eşikçi mührü son kez parlıyor — sonra taş, taşa dönüyor. Nuh'un omuzları düşüyor; ama yüzü... kırk yıldır ilk kez SADECE bir dedenin yüzü.
+text: "Zehra çay demler," diyor. "Gel bir gün. Saymadan otururuz."
+opt: (Kapıdan birlikte çıkın.) -> end
+fx: s3 3
+
+[ucuncu]
+image: assets/scenes/kayit_odasi.png
+duck: 0.1
+text: Nuh uzun süre susuyor. "...Zehra." Sanki bu ihtimal aklına hiç gelmemiş — ya da gelmesine izin vermemiş. "Torunuma yük olmaz mı?" — "Yük değil," diyorsun, "miras. Senin sayıların onun ninnileriydi zaten." Nuh gülüyor. İlk kez.
+text: Karar yine ikinizin: kayıt aile içinde kalacak — ama bugün değil. Önce Zehra'nın da EVET demesi gerek. (Nuh nöbeti şimdilik taşımaya devam ediyor; kapı açık kaldı.)
+opt: (Bugünlük bu kadar — çıkın.) -> end
+
+[ucuncu_fail]
+image: assets/scenes/kayit_odasi.png
+duck: 0.1
+text: "Zehra'ya öğret—" diye başlıyorsun; Nuh'un yüzü KAPANIYOR. "Torunumu bu odaya sokmam." Sesi kırk yıllık taş gibi. Konu kapandı — karar yine ikili: devral ya da kapat.
+opt: Nöbeti devral. -> devral
+opt: Kapıyı kapat. -> kapat

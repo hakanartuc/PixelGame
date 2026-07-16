@@ -78,6 +78,28 @@ const NpcDef NPCS[] = {
           { .hour = 7.0f,  .x = T(18),   .y = T(12.6f), .indoors = false }, // han kapısı
           { .hour = 19.0f, .x = T(19.2f), .y = T(13),    .indoors = false }, // sofra başı
       }, .stopCount = 2 },
+
+    // S3 Sayan Adam (D1c): Nuh — gündüz sunak yolunda sayarak volta, gece köy kenarı
+    { .name = "Nuh",
+      .sheetPath = "assets/characters/npcs/Fisherman_Fin.png",
+      .dialogFile = "assets/dialogs/nuh.txt",
+      .isVendor = false, .questId = NULL,
+      .schedule = {
+          { .hour = 7.0f,  .x = T(60), .y = T(18),   .indoors = false },  // yol üstü
+          { .hour = 12.0f, .x = T(64), .y = T(19),   .indoors = false },  // volta (sayarak)
+          { .hour = 16.0f, .x = T(60), .y = T(18),   .indoors = false },
+          { .hour = 20.0f, .x = T(21), .y = T(12),   .indoors = false },  // gece köy kenarı
+      }, .stopCount = 4 },
+    // Zehra — Nuh'un torunu; köy meydanında dedesini dert eder
+    { .name = "Zehra",
+      .sheetPath = "assets/characters/npcs/Desert_Person_2.png",
+      .dialogFile = "assets/dialogs/zehra.txt",
+      .isVendor = false, .questId = NULL,
+      .schedule = {
+          { .hour = 8.0f,  .x = T(12), .y = T(7.5f), .indoors = false },  // meydan
+          { .hour = 20.0f, .x = T(14), .y = T(6.2f), .indoors = true },   // gece içeri
+      }, .stopCount = 2,
+      .frameSize = 32, .drawScale = 2.8f },
 };
 const int NPC_COUNT = (int)(sizeof(NPCS) / sizeof(NPCS[0]));
 
@@ -104,11 +126,11 @@ typedef struct {
     bool scriptWalk;  // sahne yürütmesi aktif (rutini ezer)
     float scriptX, scriptY;
 } NpcState;
-static NpcState npcState[8];   // NPC_COUNT tavanı (dizi statik kalsın diye bolca)
+static NpcState npcState[12];  // NPC_COUNT tavanı (dizi statik kalsın diye bolca)
 
 void npc_reset(void)
 {
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 12; i++) {
         npcState[i].alive = true;
         npcState[i].health = (i < NPC_COUNT) ? npc_max_health(i) : NPC_MAX_HEALTH;
         npcState[i].hitFlash = 0.0f;
@@ -137,7 +159,7 @@ void npc_set_active(bool active) { npcActive = active; }
 void npc_update(float dt, float hours)
 {
     if (!npcActive) return;
-    for (int i = 0; i < NPC_COUNT && i < 8; i++) {
+    for (int i = 0; i < NPC_COUNT && i < 12; i++) {
         NpcState *st = &npcState[i];
         if (!st->alive) continue;   // ölü NPC rutin yürümez
         if (st->hitFlash > 0.0f) st->hitFlash -= dt;
@@ -202,14 +224,14 @@ void npc_update(float dt, float hours)
 
 void npc_bark(int i, const char *text, float seconds)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 8) return;
+    if (i < 0 || i >= NPC_COUNT || i >= 12) return;
     SDL_strlcpy(npcState[i].bark, text, sizeof(npcState[i].bark));
     npcState[i].barkTimer = seconds;
 }
 
 void npc_walk_to(int i, float x, float y)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 8) return;
+    if (i < 0 || i >= NPC_COUNT || i >= 12) return;
     npcState[i].scriptWalk = true;
     npcState[i].scriptX = x;
     npcState[i].scriptY = y;
@@ -217,7 +239,7 @@ void npc_walk_to(int i, float x, float y)
 
 bool npc_walk_done(int i)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 8) return true;
+    if (i < 0 || i >= NPC_COUNT || i >= 12) return true;
     if (!npcState[i].scriptWalk) return true;
     float dx = npcState[i].scriptX - npcState[i].x;
     float dy = npcState[i].scriptY - npcState[i].y;
@@ -226,14 +248,14 @@ bool npc_walk_done(int i)
 
 void npc_walk_cancel(int i)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 8) return;
+    if (i < 0 || i >= NPC_COUNT || i >= 12) return;
     npcState[i].scriptWalk = false;
 }
 
 bool npc_visible_pos(int i, float *x, float *y)
 {
     if (!npcActive) return false;
-    if (i < 0 || i >= NPC_COUNT || i >= 8 ||
+    if (i < 0 || i >= NPC_COUNT || i >= 12 ||
         npcState[i].hidden || !npcState[i].alive)
         return false;
     *x = npcState[i].x;
@@ -243,7 +265,7 @@ bool npc_visible_pos(int i, float *x, float *y)
 
 int npc_at_point(float wx, float wy)
 {
-    for (int i = 0; i < NPC_COUNT && i < 8; i++) {
+    for (int i = 0; i < NPC_COUNT && i < 12; i++) {
         float nx, ny;
         if (!npc_visible_pos(i, &nx, &ny)) continue;
         // Çizim kutusu (render ile aynı hiza: x,y = ayak noktası)
@@ -257,7 +279,7 @@ int npc_at_point(float wx, float wy)
 
 bool npc_damage(int i, float dmg)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 8 || !npcState[i].alive)
+    if (i < 0 || i >= NPC_COUNT || i >= 12 || !npcState[i].alive)
         return false;
     npcState[i].health -= dmg;
     npcState[i].hitFlash = 0.15f;
@@ -271,25 +293,25 @@ bool npc_damage(int i, float dmg)
 
 bool npc_is_alive(int i)
 {
-    return i >= 0 && i < NPC_COUNT && i < 8 && npcState[i].alive;
+    return i >= 0 && i < NPC_COUNT && i < 12 && npcState[i].alive;
 }
 
 float npc_health(int i)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 8) return 0.0f;
+    if (i < 0 || i >= NPC_COUNT || i >= 12) return 0.0f;
     return npcState[i].health;
 }
 
 void npc_set_alive(int i, bool alive)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 8) return;
+    if (i < 0 || i >= NPC_COUNT || i >= 12) return;
     npcState[i].alive = alive;
     npcState[i].health = alive ? npc_max_health(i) : 0.0f;
 }
 
 bool npc_pos(int i, float *x, float *y)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 8 || !npcState[i].initialized)
+    if (i < 0 || i >= NPC_COUNT || i >= 12 || !npcState[i].initialized)
         return false;
     *x = npcState[i].x;
     *y = npcState[i].y;
@@ -298,7 +320,7 @@ bool npc_pos(int i, float *x, float *y)
 
 void npc_set_pos(int i, float x, float y)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 8) return;
+    if (i < 0 || i >= NPC_COUNT || i >= 12) return;
     npcState[i].x = x;
     npcState[i].y = y;
 }
@@ -308,7 +330,7 @@ int npc_nearest_in_range(float px, float py)
     if (!npcActive) return -1;
     int best = -1;
     float bestDist = NPC_INTERACT_RANGE;
-    for (int i = 0; i < NPC_COUNT && i < 8; i++) {
+    for (int i = 0; i < NPC_COUNT && i < 12; i++) {
         if (npcState[i].hidden || !npcState[i].alive) continue;   // içeride/ölü konuşulamaz
         float dx = npcState[i].x - px;
         float dy = npcState[i].y - py;
@@ -329,7 +351,7 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
     // Tüm NPC'ler aynı ritimde soluk alır — NPC başına sayaç tutmaya değmez
     int frame = (int)(SDL_GetTicks() / NPC_IDLE_SPEED_MS) % NPC_IDLE_FRAMES;
 
-    for (int i = 0; i < NPC_COUNT && i < 8; i++) {
+    for (int i = 0; i < NPC_COUNT && i < 12; i++) {
         if (npcTextures[i] == NULL || npcState[i].hidden || !npcState[i].alive)
             continue;
 

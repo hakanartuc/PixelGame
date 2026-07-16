@@ -26,6 +26,8 @@ typedef enum {
     JE_K9_CHOICE,       // K9 Kandil: param = 1 gerçek / 2 yalan / 3 sus (D1a)
     JE_K2_CHOICE,       // K2 Son Müşteri: 1 yumuşak / 2 düz / 4 anlatamadı (D1b)
     JE_TITLE,           // ünvan kazanıldı: param = TITLES indeksi (M3)
+    JE_S3_STEP,         // S3: 0 Zehra ipuçları · 1 Nuh güveni/konak yolu (D1c)
+    JE_S3_CHOICE,       // S3 kapanış: 2 nöbet devralındı · 3 kayıt kapatıldı
 } JournalEvent;
 
 typedef struct {

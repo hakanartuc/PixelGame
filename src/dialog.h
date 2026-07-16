@@ -25,7 +25,7 @@
 //   gold/rep/bounty: SERT kilit — sağlanmazsa seçenek soluk, seçilemez
 
 #define DIALOG_MAX_NODES 32
-#define DIALOG_MAX_OPTS 4
+#define DIALOG_MAX_OPTS 5   // S3: 3 yorum + Speech + ipucu
 #define DIALOG_ID_LEN 32
 #define DIALOG_TEXT_LEN 220
 #define DIALOG_OPT_LEN 80
@@ -40,6 +40,7 @@ typedef enum {
     DVAR_KABA,     // kişilik izi: kaba/sert (gizli sayaç, Faz B1)
     DVAR_KIBAR,    // kişilik izi: kibar/yardımsever
     DVAR_KETUM,    // kişilik izi: ketum/mesafeli
+    DVAR_HINT,     // S3: Zehra ipuçları alındı mı (storyFlags[SF_S3_HINTS])
 } DialogVar;
 
 typedef struct {

@@ -31,6 +31,7 @@ static bool parse_var(const char *s, size_t len, DialogVar *out)
     if (len == 4 && strncmp(s, "kaba", 4) == 0)   { *out = DVAR_KABA;   return true; }
     if (len == 5 && strncmp(s, "kibar", 5) == 0)  { *out = DVAR_KIBAR;  return true; }
     if (len == 5 && strncmp(s, "ketum", 5) == 0)  { *out = DVAR_KETUM;  return true; }
+    if (len == 4 && strncmp(s, "hint", 4) == 0)   { *out = DVAR_HINT;   return true; }
     return false;
 }
 

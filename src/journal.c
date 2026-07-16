@@ -167,6 +167,27 @@ static void entry_text(const JournalEntry *e, char *out, size_t cap)
             body = buf;
         } else body = "Bir ünvan kazandım.";
         break;
+    case JE_S3_STEP:
+        body = (e->param == 0)
+             ? "Zehra dedesinin dilini anlattı: sayıları hep BİR ŞEYİN sayısı. "
+               "Köyün nefesi, dokuz atım, kırk yıllık günler... Deli diyorlar; "
+               "bana kayıt tutan bir adam gibi geldi."
+             : "Nuh'un üç sayısını da çözdüm. Parmakları durdu — kırk yıldır "
+               "ilk kez, dedi Zehra sonra. Beni konağa çağırdı: Eşikçilerin "
+               "konağına. 'Dili biliyorsun' dedi. Hangi dili bildiğimi ben de "
+               "bilmiyorum ama mühür o an ısındı.";
+        break;
+    case JE_S3_CHOICE:
+        body = (e->param == 2)
+             ? "Kayıt odası açıldı ve Nuh nöbeti bana devretti. Sayı artık "
+               "bende. Zehra dedesini geri kazandı — 'deli değil, nöbetçiymiş' "
+               "diyecek herkese. Ben ise artık dünya durduğunda sayacak olanım. "
+               "Ağır. Ama biri saymalı."
+             : "Kayıt odasını kapattık — sonsuza dek. Nuh'un omuzları düştü ama "
+               "yüzü... hafifledi. Zehra'yla eve döndüler. Kayıt gitti; bir "
+               "aile geri geldi. Doğru muydu bilmiyorum. Kimin defterine "
+               "yazılır bu, onu da bilmiyorum.";
+        break;
     case JE_DAY_NOTE: {
         body = "Günler geçiyor.";
         for (size_t i = 0; i < sizeof(DAY_NOTES) / sizeof(DAY_NOTES[0]); i++)
@@ -300,8 +321,8 @@ int journal_render(R2D *renderer, TTF_Font *font, R2DTexture *bookTex,
         SDL_Color gold  = { 176, 128, 34, 255 };
         SDL_Color carry = { 210, 60, 40, 255 };
         for (int i = 0; i < TITLE_COUNT; i++) {
-            float x = (i < 5) ? f.lx : f.rx;
-            float y = f.ty + (i % 5) * 82.0f;
+            float x = (i < 6) ? f.lx : f.rx;
+            float y = f.ty + (i % 6) * 70.0f;
             bool un = title_unlocked(player, i);
             char head[80];
             if (player->carriedTitle == i)
@@ -345,9 +366,9 @@ int journal_title_at(float x, float y, int winW, int winH)
     float bx = (winW - bw) / 2.0f, by = (winH - bh) / 2.0f + 10.0f;
     float lx = bx + 60.0f, rx = bx + bw / 2.0f + 36.0f, ty = by + 44.0f;
     for (int i = 0; i < TITLE_COUNT; i++) {
-        float cx = (i < 5) ? lx : rx;
-        float cy = ty + (i % 5) * 82.0f;
-        if (x >= cx && x < cx + PAGE_TEXT_W && y >= cy && y < cy + 70.0f)
+        float cx = (i < 6) ? lx : rx;
+        float cy = ty + (i % 6) * 70.0f;
+        if (x >= cx && x < cx + PAGE_TEXT_W && y >= cy && y < cy + 60.0f)
             return i;
     }
     return -1;

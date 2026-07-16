@@ -13,6 +13,7 @@ const TitleDef TITLES[TITLE_COUNT] = {
     { "Nişancı",       "Yay hasarı +%3",              TS_ARROWS,      300 },
     { "Kadeh",         "İksir etkisi +%5",            TS_POTIONS,      50 },
     { "Aşçı",          "Tok süresi +%20",             TS_COOKED,       25 },
+    { "Kayıt Tutan",   "+10 max mana (yankı bağı)",   TS_RECORD,        1 },
 };
 
 bool title_unlocked(const struct Player *p, int title)
@@ -69,3 +70,4 @@ float title_bow_mult(const struct Player *p)       { return 1.0f + bonus(p, 7, 0
 float title_potion_mult(const struct Player *p)    { return 1.0f + bonus(p, 8, 0.05f); }
 float title_food_dur_mult(const struct Player *p)  { return 1.0f + bonus(p, 9, 0.20f); }
 float title_double_loot_chance(const struct Player *p) { return bonus(p, 6, 0.10f); }
+float title_max_mana_bonus(const struct Player *p)      { return bonus(p, 10, 10.0f); }

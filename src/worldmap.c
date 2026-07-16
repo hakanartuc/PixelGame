@@ -26,6 +26,12 @@ const MapDef MAPS[MAP_COUNT] = {
         .mood = MOOD_DUNGEON,
         .ambient = 0.28f,       // daha karanlık (boss katı)
     },
+    [MAP_KONAK] = {
+        .name = "Eşikçi Konağı",
+        .csvPath = "assets/maps/konak.csv",
+        .mood = MOOD_NIGHT,     // sakin-tekinsiz koyu pad (zindan droni DEĞİL)
+        .ambient = 0.55f,       // loş ama okunur
+    },
 };
 
 // ---------------------------------------------------------------------------
@@ -33,6 +39,16 @@ const MapDef MAPS[MAP_COUNT] = {
 // (assets/maps/dungeon_f*.csv scripts/gen_dungeon.py'den; oda düzeni orada)
 // ---------------------------------------------------------------------------
 const MapPortal PORTALS[] = {
+    // S3: Eşikçi Konağı — kuzeydoğu tepe eteği (harabe kapısı)
+    { .from = MAP_WORLD, .x = T(168), .y = T(45), .radius = 80.0f,
+      .to = MAP_KONAK, .tx = T(4), .ty = T(10),
+      .label = "[E] Konağa gir", .decorTex = "assets/decor/dungeon_arch.png",
+      .decorScale = 2.4f },
+    { .from = MAP_KONAK, .x = T(3.5f), .y = T(10), .radius = 70.0f,
+      .to = MAP_WORLD, .tx = T(168), .ty = T(46),
+      .label = "[E] Dışarı çık", .decorTex = "assets/decor/dungeon_stairs_up.png",
+      .decorScale = 1.8f },
+
     // Dünya (Karanlık Orman açıklığı) → Kat 1 giriş odası
     { .from = MAP_WORLD, .x = T(145), .y = T(7), .radius = 80.0f,
       .to = MAP_DUNGEON_F1, .tx = T(8), .ty = T(7),
@@ -177,6 +193,9 @@ const EchoDef ECHOES[] = {
       "assets/decor/obelisk.png", 1.6f },
     // K9 Kandil (D1a): F2 nöbetçi odası — Kerem'in sonu (bir kez yaşanır)
     { ECHO_ANI, MAP_DUNGEON_F2, T(20), T(6), "assets/scenes/echo_kerem.txt",
+      NULL, 0.0f },
+    // S3 (D1c): Eşikçi Konağı büyük salonu — Nuh'un kardeşi (bir kez)
+    { ECHO_ANI, MAP_KONAK, T(21), T(12), "assets/scenes/echo_kardes.txt",
       NULL, 0.0f },
 };
 const int ECHO_COUNT = (int)(sizeof(ECHOES) / sizeof(ECHOES[0]));

@@ -188,6 +188,9 @@ enum {
     SF_K9_KANDIL = 0,   // 0 yok · 1 gerçek (tapınak) · 2 yalan (söner) · 3 sus
     SF_K2_CART   = 1,   // devrik araba hattı: 0 yaşanmadı · 1 Tanık · 2 Sömüren
     SF_K2_NAZIFE = 2,   // 0 yok · 1 yumuşak söyledi · 2 düz söyledi · 4 anlatamadı
+    SF_S3_TRUST  = 3,   // Nuh güveni: 0-3 (üç doğru yorum → konak yolu açılır)
+    SF_S3_STATE  = 4,   // 0 yok · 1 konak yolu · 2 nöbet DEVRALINDI · 3 kayıt kapatıldı
+    SF_S3_HINTS  = 5,   // Zehra ipuçları alındı (1) — Nuh seçeneklerinde işaret
 };
 
 

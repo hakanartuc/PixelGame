@@ -1,0 +1,65 @@
+# Nuh — S3 Sayan Adam (D1c). Üç turlu sayı bulmacası: doğru yorum güven
+# kazandırır (SF_S3_TRUST); yanlış = o gün kilit ("yarın gel"). Speech yüksekse
+# tur zarla geçilebilir. Giriş düğümü koddan: güvene göre tur1/tur2/tur3;
+# güven 3 → "acilis"; kilitliyse "kilit"; konak yolu açıksa "yolda".
+
+[start]
+text: ...üç yüz kırk bir, üç yüz kırk iki... (Duruyor. Sana bakıyor ama saymayı bırakmıyor; parmakları dizinde tıklamaya devam ediyor.)
+opt: Sayıyorsun. Neyi? -> tur1
+opt: (Rahatsız etme, ayrıl.) -> end
+
+[tur1]
+text: (İlk kez doğrudan sana bakıyor.) Kırk bir.
+opt: Köyde nefes alan insan sayısı. -> dogru1
+opt: Yaşın... değil mi? -> yanlis
+opt: Kırk bir adım mı attın? -> yanlis
+opt: [Speech] "Sayının kendisi değil, güncel olması önemli — bugünkü sayı bu." -> dogru1
+req: speech >= 25
+opt: (Zehra: "köyün nefesi.") Nefes alan insan sayısı. -> dogru1
+req: hint >= 1
+
+[dogru1]
+text: (Bir şey değişiyor yüzünde — şaşkınlık değil, RAHATLAMA.) ...Kimse bilmez. Doğumda artar. Ölümde eksilir. Ben tutarım.
+opt: (Bekle.) -> nuh:t1
+
+[tur2]
+text: (Bugün seni görünce başıyla selamlıyor. Parmakları hâlâ sayıyor.) Dokuz.
+opt: Sessiz Gün. Atımları saydın. -> dogru2
+opt: Dokuz kayıp mı verdi köy? -> yanlis
+opt: Dokuz gün mü sürdü? -> yanlis
+opt: (Zehra: "o günden beri dokuz der.") Sessiz Gün'ü saydın. -> dogru2
+req: hint >= 1
+
+[dogru2]
+text: (Uzun bir sessizlik. Parmakları İLK KEZ duruyor.) ...Saydım. Herkes dondu; ben saydım. Biri saymalıydı. Kayıt böyle tutulur — dünya durduğunda bile.
+opt: (Başınla onayla.) -> nuh:t2
+
+[tur3]
+text: (Bu akşam sayıyı sana söylüyor — sanki hep birine söylemek istermiş gibi.) On dört bin altı yüz on iki.
+opt: Nöbet günlerin. Kırk yıl... her gün. -> dogru3
+opt: Köyün kuruluşundan beri geçen günler. -> yanlis
+opt: Attığın toplam adım olamaz herhalde... -> yanlis
+
+[dogru3]
+text: (Gözleri doluyor ama sesi düz.) Kırk yıl. Babam bana devretti, ona babası. Eşikçiler gitti, konak sustu, bir ben kaldım. Ve sen... sen DİLİ BİLİYORSUN. Konağa gel. Birlikte. Sana gösterecek bir şeyim var.
+opt: Önden buyur, Nuh. -> nuh:t3
+
+[yanlis]
+text: (Yüzü kapanıyor. Sayıya geri dönüyor — sanki hiç konuşmamışsınız.) ...üç yüz kırk üç, üç yüz kırk dört...
+opt: (Bugünlük bu kadar. Ayrıl.) -> nuh:kilit
+
+[kilit]
+text: (Sana bakmıyor. Sayılar arasında bir duvar var bugün.) ...beş yüz on, beş yüz on bir...
+opt: (Yarın tekrar gel.) -> end
+
+[yolda]
+text: Konak kuzeydoğuda, tepelerin dibinde. Kapı beni tanır. Orada buluşalım — sayarak gelirim, sen yürü.
+opt: Orada görüşürüz. -> end
+
+[devraldin]
+text: (Parmakları artık saymıyor. İlk gördüğünden daha küçük görünüyor — ama gözleri hafif.) Sayı sende artık. Ağır mı? Ağırdır. Ama artık biliyorsun: dünya durduğunda bile biri sayar.
+opt: Sayarım, Nuh. -> end
+
+[kapandi]
+text: (Sayıyor yine ama daha yavaş, daha huzurlu.) Zehra çay demledi dün. Kırk yıldır ilk kez saymadan içtim. ...Yalan. Saydım. Ama azını.
+opt: (Gülümse.) -> end

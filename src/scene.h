@@ -31,6 +31,7 @@ typedef struct {
     int consume;    // Çek/Sömür sayacı +N
     int essence;    // Soluk Öz item +N (sömürü ödülü)
     int gold;
+    int s3;         // S3 kayıt odası kararı: 2 devral / 3 kapat (D1c)
 } SceneFx;
 
 // Görsel yükleme için renderer (main init'te bir kez çağırır)

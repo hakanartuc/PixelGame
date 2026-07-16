@@ -1,0 +1,32 @@
+# Zehra — S3 Sayan Adam (D1c). Nuh'un torunu; ipuçlarını verir (şart değil,
+# kolaylaştırır). Giriş düğümü koddan: ipucu alındıysa "tekrar".
+
+[start]
+text: Dedem... yol üstünde gördün mü onu? Sayıyor. Adımlarını, lokmalarını, kalp atışlarını. Köy "deli" diyor; ağabeyim onu kapatmak istiyor. Ama ben biliyorum — dedem deli değil, bir şey ANLATMAYA çalışıyor. Kimse dilini çözemiyor sadece.
+opt: Dilini ben çözerim. Sayıları anlat bana. -> ipucu1
+opt: Belki de dinlenmesi gerekiyordur. -> kirgin
+
+[kirgin]
+text: Sen de mi... Peki. Ama kırk yıllık nöbetçiyi "dinlendirmek" için önce nöbetinin ne olduğunu bilmek gerekmez mi?
+opt: Nöbet mi? Anlat. -> ipucu1
+opt: (Ayrıl.) -> end
+
+[ipucu1]
+text: Küçükken saymayı ondan öğrendim. Ama onun sayıları hep BİR ŞEYİN sayısı. Mesela köyden söz ederken hep aynı sayıyı söyler — kaç kişi nefes alıyorsa o. Her doğumda bir artar, her ölümde bir eksilir. Kimse fark etmez, o günceller.
+opt: Devam et. -> ipucu2
+
+[ipucu2]
+text: Bir de... o günden beri — sen bilmezsin, Sessiz Gün — hep "dokuz" der durur. Dokuz ne, kimse bilmez. Ben bir kere sordum; "saydım" dedi, başka bir şey demedi. Sanki o duraksamayı saymış gibi.
+opt: Ya en büyük sayısı? -> ipucu3
+
+[ipucu3]
+text: Gecede bir kere, yatmadan, kocaman bir sayı söyler — her gece BİR artar. Ağabeyim "saçmalıyor" diyor. Ben hesapladım bir kere... dedemin nöbete başladığından beri geçen günler. Kırk yıl, yolcu. Kırk yıl her günü saymış.
+opt: Onunla konuşacağım. Dilinden anlıyorum artık. -> soz
+
+[soz]
+text: Gerçekten mi? O zaman... yanlış cevap verirsen küsmez ama KAPANIR, ertesi güne kadar açılmaz. Acele etme. Ve lütfen — ağabeyimden önce sen bul onu.
+opt: (Söz ver.) -> zehra:1
+
+[tekrar]
+text: Dedemle konuştun mu? Sayıları söylerken gözünün içine bak — cevabı zaten yüzünde taşıyor, sayı sadece kapı.
+opt: Uğraşıyorum. -> end

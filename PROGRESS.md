@@ -502,6 +502,29 @@ Güncelleme: 2026-07-11
   KURBAN BAĞI (dost hasarı +%40, dost ölünce SEN 15 hasar — "Bağ koptu!")
 - Ünvan çarpanları dost hasarına da işler; ikon atlası 15 hücre; F10 Conjuration
 
+### Faz D1c — S3 SAYAN ADAM (Dalga 1 kapanışı; MAP_KONAK)
+- **NUH + ZEHRA** (Fisherman_Fin / Desert_Person_2, 32px frameSize): Nuh gündüz
+  sunak yolunda sayarak volta (T60,18), gece köy kenarı; Zehra meydanda —
+  3 ipucu verir (SF_S3_HINTS; yeni `hint` diyalog değişkeni req'te okunur)
+- **SAYI BULMACASI** (3 tur): 41 (köyün nefesi) / 9 (Sessiz Gün atımları) /
+  14.612 (kırk yıllık nöbet günleri); yanlış = O GÜN kilit (nuhLockDay —
+  save'e girmez, zar kilidi kuralı); ipuçlu kolay seçenek + Speech 25 zar turu;
+  DIALOG_MAX_OPTS 4→5
+- **KONAK YOLculuğu**: 3. doğru → cine (kamera Nuh'u izler) + npc_walk ile
+  sayarak yürüyüş (sahne araçlarının ilk gerçek kullanımı)
+- **EŞİKÇİ KONAĞI** (MAP_KONAK, T168,45 kemer): loş ama zindan DEĞİL (dalga/mob
+  yok; MOOD_NIGHT + 0.55 ambient); giriş salonu/koridor/büyük salon/kilitli
+  KAYIT ODASI ("Nuh'suz açılmaz")
+- **KARDEŞ YANKISI** (İdris): Tanık = kaydın anlamı; SÖMÜREN = fısıltı İLK KEZ
+  yan hikayeye karışır: "...sayan adamdan uzak dur." (açıklanmaz — kanon sinyali)
+- **KAYIT ODASI VİNYETİ** (nöbet devri): DEVRAL → "Kayıt Tutan" ünvanı (11. —
+  eşiksiz, yalnız bu seçimle; +10 max mana, taşınırsa ×2; TS_RECORD) /
+  KAPAT → aile huzuru / [Speech 30 ZAR] üçüncü yol: Zehra'ya öğret (kapı açık
+  kalır — vinyet zarının ilk kullanımı; SceneFx.s3 alanı)
+- Nuh/Zehra kapanış diyalogları kalıcı; JE_S3_STEP + JE_S3_CHOICE günlük
+  metinleri; paneller gen_s3.py (6 panel); npcState tavanı 8→12 (9 NPC)
+- **DALGA 1 KAPANDI**: K9 + K2 + S3 oyunda
+
 ## 🔜 ROADMAP (2026-07-14 — RPG-ruhu analiziyle onaylandı)
 
 Analiz özeti: sistem omurgası güçlü (build kimliği, ekonomi, suç/itibar, ekoloji,
@@ -516,9 +539,9 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 2. **HİKAYE KARTLARI DALGA 1** (K9+K2+S3 seçildi 2026-07-14; kart başına commit):
    ~~D1a: sahne araçları + K9 Kandil~~ TAMAM (bkz. Faz D1a bölümü)
    ~~D1b: K2 Son Müşteri~~ TAMAM (bkz. Faz D1b bölümü)
-   → D1c: S3 Sayan Adam — Eşikçi konağı mini haritası, sayı-diyalog bulmacası,
-     Nuh'la konağa birlikte yürüyüş (npc_walk), ana hatta iz (kâtip mührü)
-   + bu dalgada: kişilik+itibar sayaçlarının diyaloglarda OKUNMASI (`req: kaba >= 3`)
+   ~~D1c: S3 Sayan Adam~~ TAMAM (bkz. Faz D1c) — **DALGA 1 KAPANDI**
+   + kalan alışkanlık: kişilik+itibar sayaçlarının mevcut köy diyaloglarına
+     serpilmesi (`req: kaba >= 3` — her dokunulan diyalogda sürer)
 3. **KARAKTER YARATMA-LİTE**: isim + görünüm seçenekleri + 3 "geçmiş"
    (küçük stat/eşya farkı); slot kartlarında isim
 
