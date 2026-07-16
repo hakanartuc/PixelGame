@@ -1042,6 +1042,12 @@ int main(int argc, char *argv[])
         save_read_summary(save_slot_path(i), &slotSums[i]);
     float titlePulse = 0.0f;   // "bir tuşa bas" nefes animasyonu
 
+    // Karakter yaratma (lite): Yeni Oyun slotu seçilince açılır
+    int createSlot = -1;
+    char createName[24] = "";
+    int createSkin = 0;      // 0 açık / 1 buğday / 2 koyu
+    int createBg = 0;        // 0 Gezgin / 1 Asker / 2 Avcı / 3 Çırak
+
     // Ses ayarları (Cila): settings.cfg'den yüklenir, kaydırıcıyla kaydedilir
     float musicVol = 1.0f, sfxVol = 1.0f;
     {
@@ -1128,9 +1134,49 @@ int main(int argc, char *argv[])
             {                    // Kullanıcı pencereyi kapatmak istedi mi?
                 running = false; // Oyun döngüsünden çık
             }
+            else if (event.type == SDL_EVENT_TEXT_INPUT &&
+                     gameState == GAME_CREATE)
+            {
+                // İsim girişi (UTF-8; 23 bayt tavan)
+                if (SDL_strlen(createName) + SDL_strlen(event.text.text)
+                        < sizeof(createName))
+                    SDL_strlcat(createName, event.text.text, sizeof(createName));
+            }
             else if (event.type == SDL_EVENT_KEY_DOWN)
             { // Bir tuşa basıldı mı?
-                if (gameState == GAME_TITLE)
+                if (gameState == GAME_CREATE)
+                {
+                    if (event.key.key == SDLK_BACKSPACE)
+                    {
+                        // UTF-8 farkındalıklı son karakteri sil
+                        int len = (int)SDL_strlen(createName);
+                        while (len > 0 &&
+                               ((unsigned char)createName[len - 1] & 0xC0) == 0x80)
+                            len--;
+                        if (len > 0) len--;
+                        createName[len] = '\0';
+                    }
+                    else if (event.key.key == SDLK_ESCAPE)
+                    {
+                        SDL_StopTextInput(window);
+                        gameState = GAME_MENU;
+                        menuScreen = MENU_ROOT;
+                    }
+                    // Enter = Başla: fare işleyicisindeki butonla aynı yol —
+                    // kod tekrarı olmasın diye buton tıklaması simüle edilir
+                    else if (event.key.key == SDLK_RETURN)
+                    {
+                        int cwW2, cwH2;
+                        SDL_GetWindowSize(window, &cwW2, &cwH2);
+                        SDL_Event fake = { 0 };
+                        fake.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
+                        fake.button.button = SDL_BUTTON_LEFT;
+                        fake.button.x = cwW2 / 2.0f;
+                        fake.button.y = cwH2 * 0.78f + 20.0f;
+                        SDL_PushEvent(&fake);
+                    }
+                }
+                else if (gameState == GAME_TITLE)
                 {
                     // Başlık ekranı: herhangi bir tuş → ana menü
                     gameState = GAME_MENU;
@@ -2378,6 +2424,156 @@ int main(int argc, char *argv[])
                         audio_play(SFX_UI);
                     }
                 }
+                // KARAKTER YARATMA (lite): tıklamalar — ten/geçmiş/Başla
+                else if (gameState == GAME_CREATE &&
+                         event.button.button == SDL_BUTTON_LEFT)
+                {
+                    int cwW, cwH;
+                    SDL_GetWindowSize(window, &cwW, &cwH);
+                    float cx0 = cwW / 2.0f, mxx = (float)event.button.x,
+                          myy = (float)event.button.y;
+                    // Ten kutuları (3 × 40px, y=cwH*0.36)
+                    for (int t2 = 0; t2 < 3; t2++)
+                    {
+                        float sx = cx0 - 70.0f + t2 * 50.0f, sy = cwH * 0.36f;
+                        if (mxx >= sx && mxx < sx + 40.0f &&
+                            myy >= sy && myy < sy + 40.0f)
+                        { createSkin = t2; audio_play(SFX_UI); }
+                    }
+                    // Geçmiş kartları (4 × 190px, y=cwH*0.48, h=96)
+                    for (int b2 = 0; b2 < 4; b2++)
+                    {
+                        float bx2 = cx0 - 400.0f + b2 * 205.0f, by2 = cwH * 0.48f;
+                        if (mxx >= bx2 && mxx < bx2 + 190.0f &&
+                            myy >= by2 && myy < by2 + 96.0f)
+                        { createBg = b2; audio_play(SFX_UI); }
+                    }
+                    // Başla butonu (240×56, y=cwH*0.78)
+                    if (mxx >= cx0 - 120.0f && mxx < cx0 + 120.0f &&
+                        myy >= cwH * 0.78f && myy < cwH * 0.78f + 56.0f)
+                    {
+                        SDL_StopTextInput(window);
+                        audio_play(SFX_PERK);
+
+                            // === YENİ OYUN: her şey şablondan/sıfırdan (Faz B1) ===
+                            activeSlot = createSlot;
+                            player = playerTemplate;
+                            player.rect.x = 24.0f * TILE_SIZE;   // köy doğusu, yol kenarı —
+                            player.rect.y = 8.0f * TILE_SIZE;    // varışta yankının yanından geçilir
+                            inventory = (Inventory){0};
+                            equipment = (Equipment){0};
+                            // Gezgin çıkını: uyanan yolcunun üstündekiler — kılıç +
+                            // DERİ set (hafif: ağırlık cezasız, 15 def — ilk goblinler
+                            // öldürmesin ama demir set hâlâ hedef olarak kalsın)
+                            equipment.slots[EQUIP_WEAPON] =
+                                item_make(&ITEM_TYPES[ITEM_LONG_SWORD], 1, 0);
+                            equipment.slots[EQUIP_HELMET] =
+                                item_make(&ITEM_TYPES[ITEM_HELMET_LEATHER], 1, 0);
+                            equipment.slots[EQUIP_CHEST] =
+                                item_make(&ITEM_TYPES[ITEM_CHEST_LEATHER], 1, 0);
+                            equipment.slots[EQUIP_BOOTS] =
+                                item_make(&ITEM_TYPES[ITEM_BOOTS_LEATHER], 1, 0);
+                            inventory_add(&inventory, &ITEM_TYPES[ITEM_POTION_HP], 3, 0);
+                            inventory_add(&inventory, &ITEM_TYPES[ITEM_MEAT_COOKED], 2, 0);
+                            inventory_add(&inventory, &ITEM_TYPES[ITEM_TORCH], 1, 0);
+                            tree_set_debug_points(0);   // F10 kalıntısı yeni oyuna taşınmaz
+                            tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
+                            skill_set_xp_mult(perkFx.xpGainMult);
+                            hotbar = (Hotbar){0};
+                            hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
+                            memset(questStatus, 0, sizeof(QuestStatus) * MAX_QUESTS);
+                            for (int i = 0; i < MAX_MOBS; i++) mobs[i] = (Mob){0};
+                            nextMobId = 1;
+                            for (int i = 0; i < MAX_LOOT; i++) loots[i] = (Loot){0};
+                            openLootIndex = -1;
+                            for (int i = 0; i < MAX_ARROWS; i++) arrows[i].active = false;
+                            for (int i = 0; i < MAX_TRAPS; i++) traps[i].active = false;
+                            for (int i = 0; i < MAX_MOB_PROJS; i++) mobProjs[i].active = false;
+                            for (int i = 0; i < MAX_SPELL_PROJS; i++) spellProjs[i].active = false;
+                            for (int i = 0; i < MAX_BURSTS; i++) bursts[i].active = false;
+                            for (int i = 0; i < MAX_SPIKE_FX; i++) spikeFx[i].active = false;
+                            memset(floatTexts, 0, sizeof(FloatText) * MAX_FLOAT_TEXTS);
+                            deathTimer = 0.0f;
+                            volleyLeft = 0;
+                            activeAmmo = ITEM_ARROW;
+                            castSpell = -1;
+                            gametime_init();
+                            lastSeenDay = gametime_day();
+                            contract_new_day(lastSeenDay);
+                            resource_reset();
+                            npc_reset();
+                            craft_reset_learned();
+                            minimap_reset_explored();
+                            for (int i = 0; i < ECHO_COUNT; i++) echo_set_done(i, false);
+                            boss_set_last_kill_day(-999);
+                            boss_set_first_kill_done(false);
+                            for (int i = 0; i < CHEST_COUNT; i++)
+                                chest_set_opened_day(i, -999);
+                            if (guardIdx >= 0) guard_init(guardIdx);
+                            catchOpen = false;
+                            journal_reset();
+                            journal_add(JE_WAKE, 0);   // günlüğün ilk satırı
+                            ecology_reset();
+                            ally_reset(allies);
+                            allyWasActive[0] = allyWasActive[1] = false;
+                            map_set_current(MAP_WORLD);
+                            mapReloadNeeded = true;   // geçiş bloğu kamp/sandık/tuzağı kurar
+                            currentRegion = -2;
+
+                            // Slot hemen mühürlenir (kart dolu görünsün, F5 hedefi belli)
+                            save_game(save_slot_path(createSlot), &player,
+                                      &inventory, &equipment, &hotbar, questStatus);
+                            save_read_summary(save_slot_path(createSlot),
+                                              &slotSums[createSlot]);
+
+                            // Sessiz Gün açılış vinyeti — bitince köy doğusunda "uyanış"
+                            gameState = GAME_PLAYING;
+                            scene_start("assets/scenes/intro_sessiz_gun.txt");
+                        
+                        // --- Kimlik uygulanır (yaratma ekranı) ---
+                        SDL_strlcpy(player.name,
+                                    createName[0] ? createName : "Gezgin",
+                                    sizeof(player.name));
+                        player.skinTone = (Sint8)createSkin;
+                        player.background = (Sint8)createBg;
+                        if (createBg == 1)        // ESKİ ASKER: miğfer + söylenti
+                        {
+                            equipment.slots[EQUIP_HELMET] =
+                                item_make(&ITEM_TYPES[ITEM_HELMET_IRON], 1, 0);
+                            rep_add(&player.reputation[0], -5.0f);
+                        }
+                        else if (createBg == 2)   // AVCI: yay, kılıç YOK
+                        {
+                            equipment.slots[EQUIP_WEAPON] =
+                                item_make(&ITEM_TYPES[ITEM_BOW], 1, 0);
+                            inventory_add(&inventory, &ITEM_TYPES[ITEM_ARROW], 30, 0);
+                        }
+                        else if (createBg == 3)   // ÇIRAK: iksir+ot, altın eksik
+                        {
+                            inventory_add(&inventory,
+                                          &ITEM_TYPES[ITEM_POTION_MANA], 2, 0);
+                            inventory_add(&inventory,
+                                          &ITEM_TYPES[ITEM_HERB_RED], 3, 0);
+                            player.gold -= 25;
+                            if (player.gold < 0) player.gold = 0;
+                        }
+                        // Ten tonu: base katmanlara renk çarpanı (yüklemede de)
+                        {
+                            static const Uint8 tones[3][3] = {
+                                { 255, 255, 255 }, { 225, 190, 155 },
+                                { 185, 140, 105 } };
+                            for (int L = 0; L < LAYER_COUNT; L++)
+                                r2d_texture_set_color_mod(layers[L].tex,
+                                    tones[createSkin][0], tones[createSkin][1],
+                                    tones[createSkin][2]);
+                        }
+                        // Slot mührü kimlikle güncellensin (isim kartta görünsün)
+                        save_game(save_slot_path(createSlot), &player,
+                                  &inventory, &equipment, &hotbar, questStatus);
+                        save_read_summary(save_slot_path(createSlot),
+                                          &slotSums[createSlot]);
+                    }
+                }
                 // MENÜ AÇIKSA (ana menü ya da ESC): tıklama menüye gider
                 else if (gameState == GAME_PAUSED || gameState == GAME_MENU)
                 {
@@ -2478,81 +2674,15 @@ int main(int argc, char *argv[])
                         }
                         else if (act == MENU_ACTION_NEW_GAME && actSlot >= 0)
                         {
-                            // === YENİ OYUN: her şey şablondan/sıfırdan (Faz B1) ===
-                            activeSlot = actSlot;
-                            player = playerTemplate;
-                            player.rect.x = 24.0f * TILE_SIZE;   // köy doğusu, yol kenarı —
-                            player.rect.y = 8.0f * TILE_SIZE;    // varışta yankının yanından geçilir
-                            inventory = (Inventory){0};
-                            equipment = (Equipment){0};
-                            // Gezgin çıkını: uyanan yolcunun üstündekiler — kılıç +
-                            // DERİ set (hafif: ağırlık cezasız, 15 def — ilk goblinler
-                            // öldürmesin ama demir set hâlâ hedef olarak kalsın)
-                            equipment.slots[EQUIP_WEAPON] =
-                                item_make(&ITEM_TYPES[ITEM_LONG_SWORD], 1, 0);
-                            equipment.slots[EQUIP_HELMET] =
-                                item_make(&ITEM_TYPES[ITEM_HELMET_LEATHER], 1, 0);
-                            equipment.slots[EQUIP_CHEST] =
-                                item_make(&ITEM_TYPES[ITEM_CHEST_LEATHER], 1, 0);
-                            equipment.slots[EQUIP_BOOTS] =
-                                item_make(&ITEM_TYPES[ITEM_BOOTS_LEATHER], 1, 0);
-                            inventory_add(&inventory, &ITEM_TYPES[ITEM_POTION_HP], 3, 0);
-                            inventory_add(&inventory, &ITEM_TYPES[ITEM_MEAT_COOKED], 2, 0);
-                            inventory_add(&inventory, &ITEM_TYPES[ITEM_TORCH], 1, 0);
-                            tree_set_debug_points(0);   // F10 kalıntısı yeni oyuna taşınmaz
-                            tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
-                            skill_set_xp_mult(perkFx.xpGainMult);
-                            hotbar = (Hotbar){0};
-                            hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
-                            memset(questStatus, 0, sizeof(QuestStatus) * MAX_QUESTS);
-                            for (int i = 0; i < MAX_MOBS; i++) mobs[i] = (Mob){0};
-                            nextMobId = 1;
-                            for (int i = 0; i < MAX_LOOT; i++) loots[i] = (Loot){0};
-                            openLootIndex = -1;
-                            for (int i = 0; i < MAX_ARROWS; i++) arrows[i].active = false;
-                            for (int i = 0; i < MAX_TRAPS; i++) traps[i].active = false;
-                            for (int i = 0; i < MAX_MOB_PROJS; i++) mobProjs[i].active = false;
-                            for (int i = 0; i < MAX_SPELL_PROJS; i++) spellProjs[i].active = false;
-                            for (int i = 0; i < MAX_BURSTS; i++) bursts[i].active = false;
-                            for (int i = 0; i < MAX_SPIKE_FX; i++) spikeFx[i].active = false;
-                            memset(floatTexts, 0, sizeof(FloatText) * MAX_FLOAT_TEXTS);
-                            deathTimer = 0.0f;
-                            volleyLeft = 0;
-                            activeAmmo = ITEM_ARROW;
-                            castSpell = -1;
-                            gametime_init();
-                            lastSeenDay = gametime_day();
-                            contract_new_day(lastSeenDay);
-                            resource_reset();
-                            npc_reset();
-                            craft_reset_learned();
-                            minimap_reset_explored();
-                            for (int i = 0; i < ECHO_COUNT; i++) echo_set_done(i, false);
-                            boss_set_last_kill_day(-999);
-                            boss_set_first_kill_done(false);
-                            for (int i = 0; i < CHEST_COUNT; i++)
-                                chest_set_opened_day(i, -999);
-                            if (guardIdx >= 0) guard_init(guardIdx);
-                            catchOpen = false;
-                            journal_reset();
-                            journal_add(JE_WAKE, 0);   // günlüğün ilk satırı
-                            ecology_reset();
-                            ally_reset(allies);
-                            allyWasActive[0] = allyWasActive[1] = false;
-                            map_set_current(MAP_WORLD);
-                            mapReloadNeeded = true;   // geçiş bloğu kamp/sandık/tuzağı kurar
-                            currentRegion = -2;
-
-                            // Slot hemen mühürlenir (kart dolu görünsün, F5 hedefi belli)
-                            save_game(save_slot_path(actSlot), &player,
-                                      &inventory, &equipment, &hotbar, questStatus);
-                            save_read_summary(save_slot_path(actSlot),
-                                              &slotSums[actSlot]);
-
-                            // Sessiz Gün açılış vinyeti — bitince köy doğusunda "uyanış"
-                            gameState = GAME_PLAYING;
-                            scene_start("assets/scenes/intro_sessiz_gun.txt");
+                            // Yeni Oyun: önce KİM olduğuna karar ver (yaratma ekranı)
+                            createSlot = actSlot;
+                            createName[0] = '\0';
+                            createSkin = 0;
+                            createBg = 0;
+                            gameState = GAME_CREATE;
+                            SDL_StartTextInput(window);
                         }
+
                     }
                     // menü açıkken oyun tıklaması işlenmez
                 }
@@ -4691,9 +4821,21 @@ int main(int argc, char *argv[])
                             gearStat[st->statType[k]] +=
                                 STAT_TIER_VALUE[st->statType[k]] * st->statTier[k];
                 }
-                player.strength     = 10 + gearStat[STAT_STR];
-                player.dexterity    = 10 + gearStat[STAT_DEX];
-                player.intelligence = 10 + gearStat[STAT_INT];
+                {   // Ten tonu: base katman rengi (yaratma/yükleme farkı olmasın)
+                    static const Uint8 tones[3][3] = {
+                        { 255, 255, 255 }, { 225, 190, 155 }, { 185, 140, 105 } };
+                    int sk2 = (player.skinTone >= 0 && player.skinTone < 3)
+                            ? player.skinTone : 0;
+                    for (int L = 0; L < LAYER_COUNT; L++)
+                        r2d_texture_set_color_mod(layers[L].tex,
+                            tones[sk2][0], tones[sk2][1], tones[sk2][2]);
+                }
+                player.strength     = 10 + gearStat[STAT_STR]
+                                    + (player.background == 1 ? 2 : 0);   // Asker
+                player.dexterity    = 10 + gearStat[STAT_DEX]
+                                    + (player.background == 2 ? 2 : 0);   // Avcı
+                player.intelligence = 10 + gearStat[STAT_INT]
+                                    + (player.background == 3 ? 2 : 0);   // Çırak
 
                 // Zırh ağırlığı (Faz 22): ağır 5 / orta 2 / hafif 1 puan;
                 // STR (taban 10 üstü) puan başına 1 telafi eder. Kalan puan
@@ -6132,9 +6274,10 @@ int main(int argc, char *argv[])
                 splashTimer -= dt;
         }
 
-        if (gameState == GAME_TITLE || gameState == GAME_MENU)
+        if (gameState == GAME_TITLE || gameState == GAME_MENU ||
+            gameState == GAME_CREATE)
         {
-            music_set_mood(MOOD_MENU);   // başlık/ana menü: mühür nabzı (Cila)
+            music_set_mood(MOOD_MENU);   // başlık/menü/yaratma: mühür nabzı
             ambience_set(AMB_NONE);
         }
         music_update(dt);   // fade + loop besleme (menüde/ölümde de akar)
@@ -7021,6 +7164,89 @@ int main(int argc, char *argv[])
 
         if (gameState == GAME_PAUSED || gameState == GAME_MENU)
             menu_render(renderer, gameFont, menuScreen, winW, winH, slotSums);
+        else if (gameState == GAME_CREATE)
+        {
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_set_color(renderer, 8, 6, 12, 255);
+            r2d_fill_rect(renderer, &(SDL_FRect){ 0, 0, (float)winW, (float)winH });
+
+            float cx0 = winW / 2.0f;
+            int tw = 0, th = 0;
+            SDL_Color white = { 255, 255, 255, 255 };
+            SDL_Color dimc  = { 150, 145, 165, 255 };
+            SDL_Color goldc = { 235, 195, 90, 255 };
+
+            const char *ct = "Kim olacaksın?";
+            TTF_GetStringSize(splashFont, ct, 0, &tw, &th);
+            draw_text(renderer, splashFont, ct, cx0 - tw / 2.0f,
+                      winH * 0.10f, white);
+
+            // İsim kutusu (imleç yanıp söner)
+            draw_text(renderer, gameFont, "İsim:", cx0 - 180.0f,
+                      winH * 0.24f, dimc);
+            r2d_set_color(renderer, 30, 28, 38, 255);
+            r2d_fill_rect(renderer, &(SDL_FRect){ cx0 - 110.0f,
+                          winH * 0.24f - 6.0f, 290.0f, 30.0f });
+            char nbuf[32];
+            bool blink = (SDL_GetTicks() / 400) % 2 == 0;
+            snprintf(nbuf, sizeof(nbuf), "%s%s",
+                     createName[0] ? createName : "", blink ? "_" : "");
+            draw_text(renderer, gameFont, nbuf, cx0 - 100.0f,
+                      winH * 0.24f, white);
+
+            // Ten tonları
+            draw_text(renderer, gameFont, "Ten:", cx0 - 180.0f,
+                      winH * 0.36f + 10.0f, dimc);
+            static const Uint8 tns[3][3] = { { 236, 199, 165 },
+                { 205, 165, 125 }, { 160, 115, 82 } };
+            for (int t2 = 0; t2 < 3; t2++)
+            {
+                float sx = cx0 - 70.0f + t2 * 50.0f, sy = winH * 0.36f;
+                r2d_set_color(renderer, tns[t2][0], tns[t2][1], tns[t2][2], 255);
+                r2d_fill_rect(renderer, &(SDL_FRect){ sx, sy, 40.0f, 40.0f });
+                if (t2 == createSkin)
+                {
+                    r2d_set_color(renderer, 255, 255, 255, 255);
+                    r2d_rect(renderer, &(SDL_FRect){ sx - 3, sy - 3, 46, 46 });
+                }
+            }
+
+            // Geçmiş kartları
+            static const char *bgName[4] = { "Gezgin", "Eski Asker",
+                                             "Avcı", "Çırak Simyacı" };
+            static const char *bgPlus[4] = { "Dengeli başlangıç",
+                "+2 STR, Demir Miğfer", "+2 DEX, Yay + 30 ok",
+                "+2 INT, 2 mana iksiri" };
+            static const char *bgCost[4] = { "Bedel yok",
+                "Bedel: köy itibarı -5", "Bedel: kılıçsız",
+                "Bedel: 25 altın eksik" };
+            for (int b2 = 0; b2 < 4; b2++)
+            {
+                float bx2 = cx0 - 400.0f + b2 * 205.0f, by2 = winH * 0.48f;
+                r2d_set_color(renderer, 30, 28, 38, 255);
+                r2d_fill_rect(renderer, &(SDL_FRect){ bx2, by2, 190.0f, 96.0f });
+                if (b2 == createBg)
+                {
+                    r2d_set_color(renderer, 235, 195, 90, 255);
+                    r2d_rect(renderer, &(SDL_FRect){ bx2 - 2, by2 - 2, 194, 100 });
+                }
+                draw_text(renderer, gameFont, bgName[b2], bx2 + 10.0f,
+                          by2 + 8.0f, b2 == createBg ? goldc : white);
+                draw_text(renderer, gameFont, bgPlus[b2], bx2 + 10.0f,
+                          by2 + 38.0f, dimc);
+                draw_text(renderer, gameFont, bgCost[b2], bx2 + 10.0f,
+                          by2 + 62.0f, dimc);
+            }
+
+            // Başla
+            ui_button(renderer, cx0 - 120.0f, winH * 0.78f, 240.0f, 56.0f);
+            TTF_GetStringSize(gameFont, "Başla", 0, &tw, &th);
+            draw_text(renderer, gameFont, "Başla", cx0 - tw / 2.0f,
+                      winH * 0.78f + 18.0f, UI_TEXT_DARK);
+            draw_text(renderer, gameFont,
+                      "[Enter] Başla   [ESC] Geri", cx0 - 130.0f,
+                      winH * 0.78f + 70.0f, dimc);
+        }
         else if (gameState == GAME_TITLE)
         {
             // Atmosferik başlık: tam karanlık + oyun adı + nefes alan çağrı satırı

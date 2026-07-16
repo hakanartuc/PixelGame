@@ -75,6 +75,9 @@ typedef struct PlayerLayer {
 // Karakterin TÜM kalıcı durumu
 // (struct etiketi combat.h'ın forward declaration'ı için gerekli)
 typedef struct Player {
+    char name[24];       // karakter adı (yaratma ekranı; save v24 + slot kartı)
+    Sint8 skinTone;      // 0 açık / 1 buğday / 2 koyu (LPC base tint)
+    Sint8 background;    // 0 Gezgin / 1 Asker / 2 Avcı / 3 Çırak (geçmiş)
     SDL_FRect rect;      // dünya konumu + mantıksal boyut (ayak izi)
     float drawW, drawH;  // ekranda çizim boyutu
 

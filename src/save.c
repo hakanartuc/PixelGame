@@ -19,7 +19,7 @@
 #include "ecology.h"    // yuva durumları (v20)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 23u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+#define SAVE_VERSION 24u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
                           // v12: ilan panosu (gün + slot durum/ilerleme);
                           // v13: skill ağacı maskeleri (perkChoice'un yerini aldı);
                           // v18: özet bloğu (slot kartları) + kişilik sayaçları;
@@ -27,7 +27,8 @@
                           // v20: mob ekolojisi (yuva durumları);
                           // v21: yuva colonizedDay (haber ağı);
                           // v22: hikaye kartı bayrakları (storyFlags);
-                          // v23: davranış ünvanları (titleStats + carriedTitle)
+                          // v23: davranış ünvanları (titleStats + carriedTitle);
+                          // v24: karakter adı/ten/geçmiş (özet bloğuna isim)
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -93,12 +94,16 @@ bool save_read_summary(const char *path, SaveSummary *out)
 
     char magic[4];
     Sint32 version, lvl, day, gold, mapId;
+    char nm[24] = {0};
     bool ok = fread(magic, 4, 1, f) == 1 && memcmp(magic, SAVE_MAGIC, 4) == 0 &&
               r32(f, &version) && version == (Sint32)SAVE_VERSION &&
+              fread(nm, sizeof(nm), 1, f) == 1 &&
               r32(f, &lvl) && r32(f, &day) && r32(f, &gold) && r32(f, &mapId);
     fclose(f);
     if (!ok) return false;
     out->used = true;
+    memcpy(out->name, nm, sizeof(out->name));
+    out->name[23] = '\0';
     out->totalLevel = lvl;
     out->day = day;
     out->gold = gold;
@@ -124,7 +129,8 @@ bool save_game(const char *path, const Player *p,
         for (int i = 0; i < SKILL_COUNT; i++) totalLvl += p->skills[i].level;
         int sDay; float sHours;
         gametime_get(&sDay, &sHours);
-        ok = ok && w32(f, totalLvl) && w32(f, sDay)
+        ok = ok && fwrite(p->name, sizeof(p->name), 1, f) == 1
+                && w32(f, totalLvl) && w32(f, sDay)
                 && w32(f, p->gold) && w32(f, (Sint32)map_current());
     }
 
@@ -241,6 +247,9 @@ bool save_game(const char *path, const Player *p,
         ok = w32(f, p->titleStats[i]);
     ok = ok && w32(f, p->carriedTitle);
 
+    // Karakter kimliği (v24): ten + geçmiş (isim özet bloğunda)
+    ok = ok && w32(f, p->skinTone) && w32(f, p->background);
+
     // Mob ekolojisi (v20): saha başına yuva durumu
     ok = ok && w32(f, NEST_SITE_COUNT);
     for (int i = 0; ok && i < NEST_SITE_COUNT; i++) {
@@ -275,9 +284,11 @@ bool load_game(const char *path, Player *p,
         return false;
     }
 
-    // Özet bloğu (v18) atlanır — asıl alanlar aşağıda tek tek okunur
+    // Özet bloğu atlanır — isim yine de okunur (asıl alanlar aşağıda)
+    char sumName[24] = {0};
     {
         Sint32 skip;
+        if (fread(sumName, sizeof(sumName), 1, f) != 1) { fclose(f); return false; }
         for (int i = 0; i < 4; i++)
             if (!r32(f, &skip)) { fclose(f); return false; }
     }
@@ -470,6 +481,15 @@ bool load_game(const char *path, Player *p,
         Sint32 ct = -1;
         ok = ok && r32(f, &ct);
         tmpP.carriedTitle = (Sint8)ct;
+    }
+
+    // Karakter kimliği (v24)
+    {
+        Sint32 skin = 0, bg = 0;
+        ok = ok && r32(f, &skin) && r32(f, &bg);
+        tmpP.skinTone = (Sint8)skin;
+        tmpP.background = (Sint8)bg;
+        memcpy(tmpP.name, sumName, sizeof(tmpP.name));
     }
 
     // Mob ekolojisi (v20) — geçici; başarıda uygulanır

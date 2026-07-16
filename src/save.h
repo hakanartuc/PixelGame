@@ -28,6 +28,7 @@ const char *save_slot_path(int slot);
 // Slot kartı özeti (dosyanın başındaki özet bloğundan — tam yükleme yapmadan)
 typedef struct {
     bool used;        // dosya var ve sürüm tutuyor
+    char name[24];    // karakter adı (v24 — slot kartının başlığı)
     int totalLevel;   // tüm skill seviyeleri toplamı
     int day;          // oyun günü
     int gold;

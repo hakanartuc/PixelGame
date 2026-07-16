@@ -126,7 +126,9 @@ static void draw_slot_card(R2D *renderer, TTF_Font *font, SDL_FRect r,
         char info[96];
         const char *loc = (s->mapId >= 0 && s->mapId < MAP_COUNT)
                         ? MAPS[s->mapId].name : "?";
-        draw_text(renderer, font, title, r.x + 8.0f, r.y + 6.0f, UI_TEXT_DARK);
+        // v24: karakter adı varsa kartın başlığı odur (slot no yerine)
+        draw_text(renderer, font, s->name[0] ? s->name : title,
+                  r.x + 8.0f, r.y + 6.0f, UI_TEXT_DARK);
         SDL_snprintf(info, sizeof(info), "Sv %d G%d %s", s->totalLevel, s->day, loc);
         draw_text(renderer, font, info, r.x + 8.0f, r.y + 34.0f, UI_TEXT_DARK);
     } else {

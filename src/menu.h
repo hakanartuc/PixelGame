@@ -9,6 +9,7 @@
 typedef enum {
     GAME_TITLE,      // atmosferik baslik ekrani ("bir tusa bas") — Faz B1
     GAME_MENU,       // ana menu (Yeni Oyun / Yukle / Cikis)
+    GAME_CREATE,     // karakter yaratma (isim + ten + gecmis) — Yeni Oyun sonrasi
     GAME_PLAYING,    // normal oynanis
     GAME_PAUSED,     // ESC menusu acik, dunya donmus
 } GameState;

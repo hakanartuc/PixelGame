@@ -525,6 +525,20 @@ Güncelleme: 2026-07-11
   metinleri; paneller gen_s3.py (6 panel); npcState tavanı 8→12 (9 NPC)
 - **DALGA 1 KAPANDI**: K9 + K2 + S3 oyunda
 
+### Faz KY — KARAKTER YARATMA-LİTE (save v24; roadmap YAKIN kapandı)
+- **"Kim olacaksın?" ekranı** (GAME_CREATE): Yeni Oyun slotundan sonra, intro'dan
+  önce; menü müziği (mühür nabzı) çalar; [Enter] Başla / [ESC] Geri
+- **İSİM**: SDL text input (UTF-8/Türkçe, 23 bayt, yanıp sönen imleç, Backspace);
+  boşsa "Gezgin"; save v24 ÖZET BLOĞUNA girer → SLOT KARTI BAŞLIĞI artık isim
+- **TEN TONU**: 3 seçenek (açık/buğday/koyu) — LPC base katman color-mod,
+  her kare uygulanır (yaratma/yükleme farkı yok)
+- **GEÇMİŞLER** (hepsi bedelli — trade-off): Gezgin (nötr) / Eski Asker
+  (+2 STR + Demir Miğfer; köy itibarı −5) / Avcı (+2 DEX + Yay + 30 ok;
+  KILIÇSIZ) / Çırak Simyacı (+2 INT + 2 mana iksiri + 3 Kızılot; −25 altın);
+  stat bonusları TÜRETİLMİŞ statlarda (gear ile doğru toplanır);
+  player.background kalıcı — ileride diyaloglar okuyabilir
+- Yeni oyun reset bloğu yaratma ekranının "Başla"sına taşındı
+
 ## 🔜 ROADMAP (2026-07-14 — RPG-ruhu analiziyle onaylandı)
 
 Analiz özeti: sistem omurgası güçlü (build kimliği, ekonomi, suç/itibar, ekoloji,
@@ -542,8 +556,7 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
    ~~D1c: S3 Sayan Adam~~ TAMAM (bkz. Faz D1c) — **DALGA 1 KAPANDI**
    + kalan alışkanlık: kişilik+itibar sayaçlarının mevcut köy diyaloglarına
      serpilmesi (`req: kaba >= 3` — her dokunulan diyalogda sürer)
-3. **KARAKTER YARATMA-LİTE**: isim + görünüm seçenekleri + 3 "geçmiş"
-   (küçük stat/eşya farkı); slot kartlarında isim
+3. ~~KARAKTER YARATMA-LİTE~~ TAMAM (bkz. Faz KY) — **YAKIN KADEMESİ KAPANDI**
 
 ### ORTA — "dünyayı büyüt"
 4. **İKİNCİ YERLEŞİM + İLK YENİ BİYOM** (çöl ya da mantar): yeni NPC'ler +

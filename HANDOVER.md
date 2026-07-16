@@ -102,9 +102,11 @@ Sürü Efendisi/Kurban Bağı. ONAYLI 4 MEKANİK KAPANDI (M1-M4).
 (hint diyalog değişkeni + gün kilidi), Eşikçi Konağı (MAP_KONAK), kardeş
 yankısı (Sömüren'de fısıltı sinyali), kayıt odası vinyeti (devral = Kayıt Tutan
 ünvanı / kapat / Speech-30 zarlı üçüncü yol).
-Sıradaki adaylar (roadmap): **karakter yaratma-lite** (YAKIN'ın sonu) /
-**ikinci yerleşim + biyom** (ORTA başlangıcı) / **Dünya Olayları çekirdeği**.
-Kullanıcıya sorulacak.
+**KARAKTER YARATMA-LİTE TAMAM (save v24)**: "Kim olacaksın?" ekranı — isim
+(text input; slot kartı başlığı), 3 ten tonu (LPC tint), 4 geçmiş (bedelli:
+Gezgin/Asker/Avcı/Çırak). **ROADMAP YAKIN KADEMESİ KAPANDI.**
+Sıradaki (ORTA): **ikinci yerleşim + ilk biyom** (S1 Değirmenin Borcu ile) ya da
+**Dünya Olayları çekirdeği**. Kullanıcıya sorulacak.
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
 mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13) + BÜYÜ SİSTEMİ
 (22: 6 büyü + Asa + INT + zırh ağırlığı + mana iksiri; ayrıntı PROGRESS Faz 22).
