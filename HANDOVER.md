@@ -90,6 +90,8 @@ storyFlags[16]) + konuşulan NPC durur (npc_set_talking).
 **D1b TAMAM (2026-07-14)**: K2 Son Müşteri — han (köy GD) + Nazife + gece sofrası;
 araba yankısı hattı kalıcı (SF_K2_CART); Tanık = süt kokusu kanıtıyla üç ton,
 Sömüren = kanıtsız (ilk somut bedel, sofra sonsuza dek kurulur).
+**D1b-ek (2026-07-16)**: k2:1'e son sofra vinyeti (2 panel + fısıltı susması),
+han → gerçek Inn_Red sprite'ı, gen_k2.py yol fixi (paneller script'te).
 **PİVOT (2026-07-14)**: hat MEKANİK-ÖNCELİKLİ (hikaye = mekanik test aracı).
 **M1 TAMAM**: element sinerjileri (Termal Şok ×1.6 / Zehir Patlaması +çevre %50 /
 Alev Rünü %20 yakma basar — hibritler sinerjide).

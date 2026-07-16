@@ -444,6 +444,12 @@ Güncelleme: 2026-07-11
   Bilmiyorsun." Sofra sonsuza dek kurulur; günlüğe itiraf ("bu benim yüzümden")
 - Karar kalıcı (SF_K2_NAZIFE) + JE_K2_CHOICE 3 metin + kapanış diyalogları
 - Kişilik fx'leri ilk kez kart diyaloğunda (kibar/ketum — okunma D1c'de genişler)
+- **D1b-ek (2026-07-16, merge sonrası port)**: k2:1 artık 2 panellik SON SOFRA
+  vinyetiyle kapanır ("ikimize" gecesi + ocakta süt devri + fısıltının ilk kez
+  susması — huzur=sessizlik kuralı); han House_1 kopyasından gerçek Inn_Red
+  sprite'ına yükseldi (0.8 ölçek, konum aynı); gen_k2.py yol fixi + paneller
+  script'e eklendi. NOT: paralel oturum çakışmasında remote D1b esas alındı,
+  yereldeki bağımsız D1b atıldı — bu iki parça oradan taşındı.
 
 ### Faz M1 — ELEMENT SİNERJİLERİ (mekanik-öncelikli hat #1)
 - **TERMAL ŞOK**: yanan hedefe Buz Novası → kalan yanma ANINDA ×1.6 patlar,
