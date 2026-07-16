@@ -8,6 +8,7 @@ static float intensity = 0.0f;      // 0..1 görsel/etki şiddeti (yumuşak geç
 static bool rainedToday = false;    // doğa beslenir bayrağı (şafakta okunur)
 static bool middayRolled = false;   // öğlen zarı günde bir kez
 static bool debugForce = false;     // DEV: F8 döngüsü — sis saat şartını aşar
+static float snowCover = 0.0f;      // zemin beyazlığı 0..1 (yavaş birikir, yavaş erir)
 
 void weather_reset(void)
 {
@@ -18,13 +19,14 @@ void weather_reset(void)
     middayRolled = false;
 }
 
-// Havuzdan çek: Açık %55 / Yağmur %25 / Sis %15 / Fırtına %5
+// Havuzdan çek: Açık %50 / Yağmur %22 / Sis %13 / Kar %10 / Fırtına %5
 static Weather roll_pool(void)
 {
     float r = randf();
-    if (r < 0.55f) return WEATHER_CLEAR;
-    if (r < 0.80f) return WEATHER_RAIN;
-    if (r < 0.95f) return WEATHER_FOG;
+    if (r < 0.50f) return WEATHER_CLEAR;
+    if (r < 0.72f) return WEATHER_RAIN;
+    if (r < 0.85f) return WEATHER_FOG;
+    if (r < 0.95f) return WEATHER_SNOW;
     return WEATHER_STORM;
 }
 
@@ -34,6 +36,9 @@ static void start_weather(Weather w)
     if (w == WEATHER_RAIN || w == WEATHER_STORM) {
         hoursLeft = 2.0f + randf() * 4.0f;   // 2-6 saat yağar
         rainedToday = true;
+    } else if (w == WEATHER_SNOW) {
+        hoursLeft = 4.0f + randf() * 6.0f;   // 4-10 saat — kar oturur
+        // rainedToday YOK: kar doğayı beslemez (tersine, ot uykuda)
     } else {
         hoursLeft = 0.0f;   // sis saate bakar (05-10), açık süresiz
     }
@@ -52,7 +57,8 @@ void weather_debug_cycle(void)
 {
     debugForce = true;
     start_weather((Weather)((current + 1) % WEATHER_COUNT));
-    if (current == WEATHER_RAIN || current == WEATHER_STORM)
+    if (current == WEATHER_RAIN || current == WEATHER_STORM ||
+        current == WEATHER_SNOW)
         hoursLeft = 6.0f;   // testte erken dinmesin
 }
 
@@ -67,14 +73,16 @@ void weather_update(float dt, float hours)
         }
     }
 
-    // Yağmur/fırtına süresi dolunca açar
-    if ((current == WEATHER_RAIN || current == WEATHER_STORM) && hoursLeft > 0.0f) {
+    // Yağmur/fırtına/kar süresi dolunca açar
+    if ((current == WEATHER_RAIN || current == WEATHER_STORM ||
+         current == WEATHER_SNOW) && hoursLeft > 0.0f) {
         hoursLeft -= dt * (24.0f / GAMETIME_DAY_SECONDS);
         if (hoursLeft <= 0.0f) { current = WEATHER_CLEAR; hoursLeft = 0.0f; }
     }
 
     // Sis yalnız sabah yoğun (05-10) — öğlen kendiliğinden dağılır
-    bool active = (current == WEATHER_RAIN || current == WEATHER_STORM) ||
+    bool active = (current == WEATHER_RAIN || current == WEATHER_STORM ||
+                   current == WEATHER_SNOW) ||
                   (current == WEATHER_FOG &&
                    (debugForce || (hours >= 5.0f && hours < 10.0f)));
 
@@ -84,6 +92,13 @@ void weather_update(float dt, float hours)
     intensity += (target - intensity) * rate * dt * 6.0f;
     if (intensity < 0.001f) intensity = 0.0f;
     if (intensity > 1.0f) intensity = 1.0f;
+
+    // Zemin beyazlığı: kar yağarken ~20 sn'de birikir, dinince ~75 sn'de erir
+    float coverTarget = (current == WEATHER_SNOW) ? intensity : 0.0f;
+    float coverRate = (coverTarget > snowCover) ? (1.0f / 20.0f) : (1.0f / 75.0f);
+    snowCover += (coverTarget - snowCover) * coverRate * dt * 4.0f;
+    if (snowCover < 0.001f) snowCover = 0.0f;
+    if (snowCover > 1.0f) snowCover = 1.0f;
 }
 
 Weather weather_current(void) { return current; }
@@ -96,6 +111,7 @@ const char *weather_name(Weather w)
         case WEATHER_RAIN:  return "Yağmur";
         case WEATHER_FOG:   return "Sis";
         case WEATHER_STORM: return "Fırtına";
+        case WEATHER_SNOW:  return "Kar";
         default:            return "Açık";
     }
 }
@@ -135,8 +151,34 @@ float weather_darkness01(void)
 {
     if (current == WEATHER_STORM) return 0.45f * intensity;   // fırtına gündüzü loşlaştırır
     if (current == WEATHER_RAIN)  return 0.20f * intensity;
+    if (current == WEATHER_SNOW)  return 0.10f * intensity;   // kapalı kış göğü
     return 0.0f;
 }
+
+bool weather_is_snowy(void)
+{
+    return current == WEATHER_SNOW && intensity > 0.3f;
+}
+
+float weather_ice_mult(void)
+{
+    if (current != WEATHER_SNOW) return 1.0f;
+    return 1.0f + 0.20f * intensity;   // buz kendi mevsiminde
+}
+
+float weather_slow_dur_mult(void)
+{
+    if (current != WEATHER_SNOW) return 1.0f;
+    return 1.0f + 0.5f * intensity;    // yavaşlatma karda uzun tutar
+}
+
+float weather_speed_mult(void)
+{
+    if (current != WEATHER_SNOW) return 1.0f;
+    return 1.0f - 0.12f * intensity;   // kar bastırıyor — herkes eşit yavaş
+}
+
+float weather_snow_cover(void) { return snowCover; }
 
 void weather_save_get(int *cur, float *hl, int *rained)
 {

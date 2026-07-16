@@ -29,6 +29,9 @@ req: hava >= 2
 req: hava <= 2
 opt: Fırtına geliyor galiba? -> h_firtina
 req: hava >= 3
+req: hava <= 3
+opt: Bu kar da nereden çıktı? -> h_kar
+req: hava >= 4
 
 [h_yagmur]
 text: İyi olmaz mı! Toprak kana kana içiyor — yarın otlar gür çıkar, ot toplayacaksan yarını bekle. Ben içeri kaçıyorum ama, romatizmam azdı.
@@ -41,3 +44,7 @@ opt: (Düşün.) -> end
 [h_firtina]
 text: Gök gürlerken açıkta durma, yolcu! Geçen yıl Deli Veli'nin öküzüne yıldırım düştü — öküzden hayır kalmadı. Sen öküzden akıllısındır umarım.
 opt: Sığınırım, merak etme. -> end
+
+[h_kar]
+text: Kuzeyden soğuk cephe inmiş diyorlar. Tarlaya zararı yok da otlar uykuya yattı — bugün ot arama boşuna. Hayvanlar da birbirine sokuldu, kımıldamıyorlar... Avcıysan kolay gün, ama karda İZ bırakırsın, unutma. Seni kovalayanlar da unutmaz.
+opt: İzime dikkat ederim. -> end

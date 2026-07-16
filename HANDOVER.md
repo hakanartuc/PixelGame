@@ -121,6 +121,10 @@ damla+sis+şimşek+amb_rain/thunder (gen_weather_audio.py). WE_GRAVE Huzursuz
 Mezarlık (gece 3 iskelet, şafakta 2+ sağsa mezar yuva olur); MOB_SEARCH (leash
 sonrası 8sn bakınma); haber ağı diyalogda (event/hava değişkenleri, gizlenen
 seçenekler; Kemal/Osman/Baran satırları).
+**KAR (soğuk cephe, v26 uyumlu)**: havuz %50/22/13/10(KAR)/5; buz +%20 +
+yavaşlatma ×1.5 + herkes %12 yavaş (av +%15); zemin beyazlar (snowCover),
+sürü büzüşür, su donar, ot yarıya, ateş ömrü 12 saat, karda İZ SÜRME (arama
+12sn + mob sana yürür); F8 döngüsünde. RNG artık tohumlu (kritik fix).
 TAMAM: Meslek 5/5 (13-17) + Av & Pano & Kamp Ateşi (18) + Slime (19) + İskelet &
 mermiler & ok kademeleri (20) + DERİN SKILL AĞACI (21, save v13) + BÜYÜ SİSTEMİ
 (22: 6 büyü + Asa + INT + zırh ağırlığı + mana iksiri; ayrıntı PROGRESS Faz 22).

@@ -601,6 +601,17 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   diyalog değişkenleri (salt okunur; koşul tutmayan seçenek GİZLENİR —
   DialogOptState.hidden). Kemal olay yorumları (5 olay), Osman hava sohbeti
   (3 hava), Baran kervan kıskançlığı.
+- **KAR (soğuk cephe)** — 5. hava: havuz Açık %50 / Yağmur %22 / Sis %13 /
+  KAR %10 / Fırtına %5; 4-10 saat sürer. SAVAŞ: buz büyüleri +%20, buz
+  yavaşlatma süresi ×1.5 (Buz Novası 4→6sn, Buz Oku 3→4.5sn), HERKES %12
+  yavaş (oyuncu+mob eşit; av +%15 daha) — ateş/yıldırım NORMAL (kuru soğuk,
+  Termal Şok karda altın çağ). ÇEVRE: zemin beyaza bürünür (snowCover —
+  yağarken ~20sn birikir, dinince ~75sn erir), sürüler büzüşür (devriye
+  70→32px), su ziyareti iptal (dondu), ot toplaması yarıya (doğa uykuda),
+  kamp ateşi ömrü 24→12 saat, İZ SÜRME: arama modundaki mob karda bakınmaz —
+  12 sn boyunca izinden SANA doğru yürür. Görsel: salınan kar taneleri +
+  kapalı gökyüzü karartması; Osman kar sohbeti; F8 döngüsünde kar da var.
+  Save v26 UYUMLU (enum sona eklendi — bump yok).
 
 ### YAKIN — "oyun gibi hissettir" (his + rol)
 1. ~~CİLA PAKETİ~~ TAMAM (2026-07-14 — bkz. Faz CİLA bölümü); kalan küçük

@@ -582,6 +582,13 @@ static void gather_finish(int res, Player *player, Inventory *inv,
     // Doğa beslenir (hava): dün yağmur yağdıysa bugün otlar ×2 verir
     if (g_natureBounty && rd->skill == SKILL_HERBALISM) count *= 2;
 
+    // Kar: doğa uykuda — ot toplaması yarıya iner (en az 1)
+    if (weather_is_snowy() && rd->skill == SKILL_HERBALISM)
+    {
+        count /= 2;
+        if (count < 1) count = 1;
+    }
+
     if (inventory_add(inv, &ITEM_TYPES[rd->itemIdx], count, 0))
     {
         resource_harvest(res);
@@ -4284,6 +4291,7 @@ int main(int argc, char *argv[])
                                                                 nb->type->defense, &perkFx);
                                 sh.damage *= title_damage_mult(&player, nb->type,
                                                                gametime_is_night());
+                                sh.damage *= weather_ice_mult();   // buz kendi mevsiminde
                                 nb->e.health -= sh.damage;
 
                                 // TERMAL ŞOK (M1): yanan hedefte nova — kalan yanma
@@ -4307,7 +4315,7 @@ int main(int argc, char *argv[])
                                 }
                                 nb->e.hitFlash = 0.15f;
                                 nb->slowMult = 0.5f;
-                                nb->slowTimer = 4.0f;
+                                nb->slowTimer = 4.0f * weather_slow_dur_mult();
                                 nb->aggro = true;
                                 floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
                                                 nb->e.rect.x + nb->e.rect.w / 2.0f + 10.0f,
@@ -4569,9 +4577,11 @@ int main(int argc, char *argv[])
                                 player.rect.y + player.rect.h + 8.0f;   // ayak önü
 
                             // Ömür: şu andan 24 oyun saati sonra söner
+                            // (karda 12 — soğuk odunu hızlı yer)
                             int cfDay; float cfHours;
                             gametime_get(&cfDay, &cfHours);
-                            campfireOutAt = (float)cfDay * 24.0f + cfHours + 24.0f;
+                            campfireOutAt = (float)cfDay * 24.0f + cfHours +
+                                            (weather_is_snowy() ? 12.0f : 24.0f);
                             audio_play(SFX_PERK);
                             SDL_Color warm = { 255, 190, 90, 255 };
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
@@ -5326,12 +5336,15 @@ int main(int argc, char *argv[])
                         splashText = (wnow == WEATHER_RAIN)  ? "Yağmur bastırıyor..."
                                    : (wnow == WEATHER_STORM) ? "Fırtına!"
                                    : (wnow == WEATHER_FOG)   ? "Sis çöküyor..."
+                                   : (wnow == WEATHER_SNOW)  ? "Kar başlıyor..."
                                    :                           "Gökyüzü açılıyor";
                         splashTimer = 3.0f;
                         if (wnow == WEATHER_RAIN && guardIdx >= 0)   // nöbetçi ıslanır
                             npc_bark(guardIdx, "Bereket yağmuru... Nöbet ıslak geçecek.", 5.0f);
                         else if (wnow == WEATHER_STORM && guardIdx >= 0)
                             npc_bark(guardIdx, "Fırtına geliyor — açıkta durma, yolcu!", 5.0f);
+                        else if (wnow == WEATHER_SNOW && guardIdx >= 0)
+                            npc_bark(guardIdx, "Kar... Kemiklerim kuzeyden kötü haber alır.", 5.0f);
                     }
                 }
 
@@ -5943,10 +5956,11 @@ int main(int argc, char *argv[])
                 }
 
                 // Buz Oku: %40 yavaşlatma 3 sn + buz kristali serpintisi
+                // (karda süre ×1.5 — buz kendi mevsiminde tutar)
                 if (arrows[a].kind == 1)
                 {
                     at->slowMult = 0.6f;
-                    at->slowTimer = 3.0f;
+                    at->slowTimer = 3.0f * weather_slow_dur_mult();
                     fx_burst(&weaponFx, tx, ty, 10, 70.0f, 150, 210, 255);
                     SDL_Color iceCol = { 150, 210, 255, 255 };
                     floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
@@ -6149,7 +6163,9 @@ int main(int argc, char *argv[])
 
             // Hız çarpanı: perk (Çevik/Rüzgar/Uyumlu) × gece (Gölge Adımı) × eğilme.
             // player_update tile hızıyla çarpar (doğrudan speed yazmak eziliyordu — bug'dı)
-            player.speedMult = (player.foodBuffType == FB_STA_SPEED ? 1.05f : 1.0f)
+            player.speedMult = (map_current() == MAP_WORLD
+                                ? weather_speed_mult() : 1.0f)   // kar bastırıyor
+                             * (player.foodBuffType == FB_STA_SPEED ? 1.05f : 1.0f)
                              * (1.0f - armorSpeedPenalty)   // zırh ağırlığı (STR telafili)
                              * perkFx.speedMult
                              * (gametime_is_night() ? perkFx.nightSpeedMult : 1.0f)
@@ -7058,6 +7074,17 @@ int main(int argc, char *argv[])
             }
         }
 
+        // KAR ÖRTÜSÜ: dünya beyaza bürünür (ışık pass'inden önce — gece
+        // karartması karın üstüne doğal biner; yağış durunca yavaş erir)
+        if (map_current() == MAP_WORLD && weather_snow_cover() > 0.0f)
+        {
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_set_color(renderer, 235, 240, 248,
+                          (Uint8)(60.0f * weather_snow_cover()));
+            SDL_FRect snowFull = { 0, 0, (float)winW, (float)winH };
+            r2d_fill_rect(renderer, &snowFull);
+        }
+
         // Hasar yazıları (mob'ların üstünde, dünya uzayında)
         floattext_render_all(floatTexts, MAX_FLOAT_TEXTS, renderer, gameFont, &camera); // ← BURAYA (present'tan önce)
 
@@ -7175,6 +7202,33 @@ int main(int argc, char *argv[])
                     SDL_FRect d2 = { dx + 2.0f, dy - 7.0f, 2.0f, 8.0f };
                     r2d_fill_rect(renderer, &d1);
                     r2d_fill_rect(renderer, &d2);
+                }
+            }
+            if (wn == WEATHER_SNOW)
+            {
+                // Kar taneleri: ağır süzülür, rüzgarla salınır (damla dizileri
+                // yeniden kullanılır — yağmurla aynı anda asla aktif değil)
+                float tsec2 = (float)((double)SDL_GetTicks() / 1000.0);
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                int flakes = (int)(RAIN_DROPS * 0.7f * wi);
+                for (int i = 0; i < flakes; i++)
+                {
+                    rainPY[i] += rainPS[i] * 0.09f * dt;   // ağır düşüş
+                    rainPX[i] += SDL_sinf(tsec2 * 1.3f + (float)i) * 0.02f * dt;
+                    if (rainPY[i] > 1.0f)
+                    {
+                        rainPY[i] -= 1.0f;
+                        rainPX[i] = randf();
+                    }
+                    if (rainPX[i] < 0.0f) rainPX[i] += 1.0f;
+                    if (rainPX[i] > 1.0f) rainPX[i] -= 1.0f;
+                    float dx = rainPX[i] * (float)winW;
+                    float dy = rainPY[i] * (float)winH;
+                    float fs = 2.0f + (rainPS[i] - 1.6f) * 1.5f;   // öndeki iri
+                    r2d_set_color(renderer, 245, 248, 255,
+                                  (Uint8)(170.0f * wi));
+                    SDL_FRect fl = { dx, dy, fs, fs };
+                    r2d_fill_rect(renderer, &fl);
                 }
             }
             if (wn == WEATHER_FOG)

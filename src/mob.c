@@ -6,7 +6,8 @@
 #include "decor.h"
 #include "mob.h"
 #include "gametime.h"
-#include "weather.h"   // E2: gece/gündüz ritmi
+#include "weather.h"
+#include "worldmap.h"   // E2: gece/gündüz ritmi
 
 // Önerilen kaydırmayı tile/dekor çarpışmasına göre uygula.
 // Eksen ayrı denenir → duvar boyunca kayma (oyuncu hareketiyle aynı desen).
@@ -802,6 +803,12 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
 
     // Buz Oku yavaşlatması: süre boyunca hareket hızı çarpanı düşük
     float slowK = (m->slowTimer > 0.0f) ? m->slowMult : 1.0f;
+    if (!map_is_dungeon(map_current()))
+    {
+        slowK *= weather_speed_mult();          // kar bastırıyor — herkes eşit
+        if (m->type->passive && weather_is_snowy())
+            slowK *= 0.85f;                     // av karda iyice ağırlaşır
+    }
     if (m->slowTimer > 0.0f) m->slowTimer -= dt;
     if (m->tauntTimer > 0.0f) m->tauntTimer -= dt;   // M4: kabuk taunt'u söner
 
@@ -900,9 +907,9 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
             }
             mob_move(m, nx * m->e.speed * slowK * dt, ny * m->e.speed * slowK * dt);
         } else if (!m->sleeping && m->waterX != 0.0f && hrs >= 10.0f && hrs < 14.0f &&
-                   !weather_is_wet()) {
+                   !weather_is_wet() && !weather_is_snowy()) {
             // Su ziyareti (E2): öğlen su kenarına iner — avcıya pusu fırsatı
-            // (yağmurda gerek yok: su ayağına geldi)
+            // (yağmurda gerek yok: su ayağına geldi; karda su dondu)
             float wdx = m->waterX - (m->e.rect.x + m->e.rect.w / 2.0f);
             float wdy = m->waterY - (m->e.rect.y + m->e.rect.h / 2.0f);
             float wd = SDL_sqrtf(wdx * wdx + wdy * wdy);
@@ -955,7 +962,9 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
         m->suspicion = 0.0f;   // şüphe de sıfırlanır (temiz sayfa)
         if (wasHunting) {
             m->state = MOB_SEARCH;
-            m->searchTimer = 8.0f;
+            // Kar: izler görünür — arama uzar (8→12 sn) ve mob İZE basarak
+            // sana doğru sürer (bakınmak yerine); saklambaç sertleşir
+            m->searchTimer = weather_is_snowy() ? 12.0f : 8.0f;
             m->patrolTimer = 0.0f;   // bakınma yönü sayacı (yeniden kullanım)
         } else {
             m->state = MOB_RETURN;
@@ -965,18 +974,42 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
     if (m->state == MOB_SEARCH) {
         m->searchTimer -= dt;
 
-        // Dikilip bakınır: 1.4-2.4 sn'de bir yön değiştirir (IDLE clip'i oynar)
-        m->patrolTimer -= dt;
-        if (m->patrolTimer <= 0.0f) {
-            m->patrolTimer = 1.4f + randf();
-            m->e.facing = (int)(randf() * 2.99f);
-            m->e.facingLeft = randf() < 0.5f;
-        }
-        const AnimClip *sclip = &m->type->anims[MOB_IDLE][m->e.facing];
-        m->animTimer += dt;
-        if (m->animTimer >= sclip->frameDuration) {
-            m->animTimer -= sclip->frameDuration;
-            m->currentFrame = (m->currentFrame + 1) % sclip->frameCount;
+        bool tracking = weather_is_snowy() && !map_is_dungeon(map_current());
+        if (tracking) {
+            // KAR İZİ: bakınmaz — izin üstünden sana doğru ağır ağır yürür
+            float txd = targetX - (m->e.rect.x + m->e.rect.w / 2.0f);
+            float tyd = targetY - (m->e.rect.y + m->e.rect.h / 2.0f);
+            float td = SDL_sqrtf(txd * txd + tyd * tyd);
+            if (td > 4.0f) {
+                if (SDL_fabsf(txd) > SDL_fabsf(tyd)) {
+                    m->e.facing = 2;
+                    m->e.facingLeft = (txd < 0);
+                } else {
+                    m->e.facing = (tyd < 0) ? 1 : 0;
+                }
+                mob_move(m, txd / td * m->e.speed * 0.35f * slowK * dt,
+                            tyd / td * m->e.speed * 0.35f * slowK * dt);
+            }
+            const AnimClip *tclip = &m->type->anims[MOB_CHASE][m->e.facing];
+            m->animTimer += dt;
+            if (m->animTimer >= tclip->frameDuration) {
+                m->animTimer -= tclip->frameDuration;
+                m->currentFrame = (m->currentFrame + 1) % tclip->frameCount;
+            }
+        } else {
+            // Dikilip bakınır: 1.4-2.4 sn'de bir yön değiştirir (IDLE clip'i)
+            m->patrolTimer -= dt;
+            if (m->patrolTimer <= 0.0f) {
+                m->patrolTimer = 1.4f + randf();
+                m->e.facing = (int)(randf() * 2.99f);
+                m->e.facingLeft = randf() < 0.5f;
+            }
+            const AnimClip *sclip = &m->type->anims[MOB_IDLE][m->e.facing];
+            m->animTimer += dt;
+            if (m->animTimer >= sclip->frameDuration) {
+                m->animTimer -= sclip->frameDuration;
+                m->currentFrame = (m->currentFrame + 1) % sclip->frameCount;
+            }
         }
         m->lastState = MOB_SEARCH;
 
@@ -1121,8 +1154,10 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
                 m->patrolAngle += 1.8f + randf() * 1.6f;     // sıradaki nokta
                 m->patrolTimer = 3.5f + randf() * 4.0f;
             }
-            float ptx = m->homeX + SDL_cosf(m->patrolAngle) * 70.0f;
-            float pty = m->homeY + SDL_sinf(m->patrolAngle) * 70.0f;
+            float pr = (m->type->passive && weather_is_snowy())
+                     ? 32.0f : 70.0f;   // karda sürü bir arada büzüşür
+            float ptx = m->homeX + SDL_cosf(m->patrolAngle) * pr;
+            float pty = m->homeY + SDL_sinf(m->patrolAngle) * pr;
             float pdx = ptx - (m->e.rect.x + m->e.rect.w / 2.0f);
             float pdy = pty - (m->e.rect.y + m->e.rect.h / 2.0f);
             float pd = SDL_sqrtf(pdx * pdx + pdy * pdy);
