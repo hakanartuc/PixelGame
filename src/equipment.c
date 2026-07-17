@@ -53,14 +53,15 @@ bool equip_from_inventory(Equipment *eq, Inventory *inv, int invSlotIndex)
     EquipSlot targetSlot = item->equipSlot;
 
     // --- Silah tipi özel kuralları ---
+    bool clearShield = false;   // iki-el: kalkan da çıkmalı (takas planına girer)
     if (targetSlot == EQUIP_WEAPON || targetSlot == EQUIP_SHIELD) {
         WeaponType wt = item->weaponType;
 
         if (wt == WEAPON_TWO_HAND || wt == WEAPON_BOW || wt == WEAPON_STAFF) {
-            // Çift el (yay dahil): hem WEAPON hem SHIELD slotu boşalmalı
-            if (!unequip_to_inventory(eq, inv, EQUIP_WEAPON)) return false;
-            if (!unequip_to_inventory(eq, inv, EQUIP_SHIELD)) return false;
-            // İki-el silahı WEAPON'a koy (SHIELD boş kalır = kilitli)
+            // Çift el (yay dahil): WEAPON'a takılır, SHIELD boşalmalı.
+            // Çıkarma SIRASI aşağıda takasla çözülür — çanta dolu olsa bile
+            // eski silah yeni itemin slotuna YERİNDE takas edilir.
+            clearShield = true;
             targetSlot = EQUIP_WEAPON;
         }
         else if (wt == WEAPON_SHIELD) {
@@ -80,26 +81,30 @@ bool equip_from_inventory(Equipment *eq, Inventory *inv, int invSlotIndex)
         // (WEAPON_DUAL — şimdilik ONE_HAND gibi davransın, ikinci eli sonra ele alırız)
     }
 
-    // --- Hedef slottaki eskiyi envantere geri koy (takas) ---
-    // Ama önce: kuşanılacak item'i envanterden çıkaracağız, o yüzden
-    // takas sırası önemli. Şöyle: eskiyi geri koy, sonra yeniyi koy.
-
-    // Önce kuşanılacak item'i sakla (envanterden çıkmadan)
+    // --- YERİNDE TAKAS: eski ekipman, yeni itemin geldiği slota yazılır ---
+    // (çanta DOLU olsa bile çalışır — yer aramıyoruz, slotu takas ediyoruz;
+    //  instance'lar olduğu gibi taşınır: plus/rün/stat kaybolmaz)
     ItemStack toEquip = *invStack;
+    ItemStack old = eq->slots[targetSlot];   // eski (type NULL olabilir)
 
-    // Envanter slotunu boşalt (item'i "elimize aldık")
-    invStack->type = NULL;
-    invStack->count = 0;
-    invStack->plusLevel = 0;
-
-    // Hedef slottaki eskiyi envantere geri koy — instance OLDUĞU GİBİ
-    // (inventory_add türden yeniden üretir: rün/stat silinirdi — bug'dı)
-    if (eq->slots[targetSlot].type != NULL) {
-        // Eskisini envantere ekle (yer var, çünkü az önce bir slot boşalttık)
-        inventory_add_stack(inv, &eq->slots[targetSlot]);
+    // İki el + takılı kalkan: kalkana da yer lazım.
+    if (clearShield && eq->slots[EQUIP_SHIELD].type != NULL) {
+        if (old.type != NULL) {
+            // Eski silah takas slotunu kullanacak → kalkana AYRI yer gerek.
+            // Çanta doluysa dürüst ret (hiçbir şey değişmez).
+            if (!unequip_to_inventory(eq, inv, EQUIP_SHIELD)) return false;
+        } else {
+            // Silah eli boş: kalkan doğrudan yeni itemin slotuna takas olur
+            *invStack = eq->slots[EQUIP_SHIELD];
+            eq->slots[EQUIP_SHIELD] = item_make(NULL, 0, 0);
+            eq->slots[targetSlot] = toEquip;
+            return true;
+        }
     }
 
-    // Yeniyi kuşan (instance olduğu gibi taşınır — plus kaybolmaz)
+    *invStack = old;                    // eski ekipman yeni itemin slotuna
+    if (old.type == NULL)               // eski yoksa slot temiz boşalır
+        *invStack = item_make(NULL, 0, 0);
     eq->slots[targetSlot] = toEquip;
 
     return true;
