@@ -15,13 +15,17 @@ typedef struct {
     float scale;           // kaynak piksel → dünya çarpanı
     bool solidBase;        // tabanı katı mı (ev/ağaç girer, çalı girmez)
     bool conceals;         // içine girilebilir gizlenme (çalı/saman — sneak örtüsü)
+    int map;               // hangi haritada (0 = MAP_WORLD; Lanetli Mezarlık = MAP_MEZARLIK)
 } DecorDef;
 
+#define DECOR_TEX_CAP 64   // texture dizileri tavanı (main + decor.c AYNI sabit)
 extern const DecorDef DECORS[];
 extern const int DECOR_COUNT;
 
-// Harita geçişi: dünya dışında dekorlar işlemez (çizim + çarpışma + LoS)
+// Harita geçişi: aktif haritanın dekorları işler (map alanıyla filtre —
+// dekorsuz haritalarda (zindan katları) hepsi kapalı)
 void decor_set_active(bool active);
+void decor_set_map(int mapId);   // aktif harita (filtre; main geçişte basar)
 
 // Hepsini çiz (tilemap'ten sonra, entity'lerden önce)
 void decor_render_all(R2D *renderer, R2DTexture **decorTextures,

@@ -20,6 +20,11 @@ const TileType TILE_TYPES[] = {
     [8] = { .solid = false, .r = 70,  .g = 72,  .b = 100, .texturePath = "assets/tiles/dungeon/d2_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // K2 doseme
     [9] = { .solid = true,  .r = 105, .g = 110, .b = 140, .texturePath = "assets/tiles/dungeon/d2_wall.png",  .speedMultiplier = 1.0f, .damage = 0.0f }, // K2 duvar
     [10] = { .solid = true, .r = 7,   .g = 7,   .b = 13,  .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // void: oda disi karanlik (duz renk)
+
+    // --- Lanetli Mezarlık (Faz HG-B — undead paleti, açık hava zindanı) ---
+    [12] = { .solid = false, .r = 111, .g = 115, .b = 106, .texturePath = "assets/tiles/undead/mz_ground.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü toprak
+    [13] = { .solid = true,  .r = 38,  .g = 42,  .b = 54,  .texturePath = "assets/tiles/undead/mz_rock.png",   .speedMultiplier = 1.0f, .damage = 0.0f },  // dikenli kaya
+    [14] = { .solid = true,  .r = 26,  .g = 32,  .b = 46,  .texturePath = "assets/tiles/undead/mz_water.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü su
 };
 const int TILE_TYPE_COUNT = (int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0]));
 
@@ -220,6 +225,7 @@ static R2DTexture *edgeTex = NULL;
 static R2DTexture *flowerTex = NULL;    // flowers.png (160×160 — 10×10 hücre 16px)
 static R2DTexture *pathDecTex = NULL;   // Path_Decoration.png (3 hücre 16px)
 static R2DTexture *waterDecTex = NULL;  // Water_Decoration.png (3 hücre 16px)
+static R2DTexture *mzGround2 = NULL;    // mezarlık zemin 2. varyantı
 
 void tilemap_load_details(R2D *renderer)
 {
@@ -232,6 +238,7 @@ void tilemap_load_details(R2D *renderer)
     flowerTex = load_texture(renderer, "assets/decor/flowers.png");
     pathDecTex = load_texture(renderer, "assets/tiles/Grass/Path_Decoration.png");
     waterDecTex = load_texture(renderer, "assets/tiles/Water/Water_Decoration.png");
+    mzGround2 = load_texture(renderer, "assets/tiles/undead/mz_ground2.png");
 }
 
 void tilemap_free_details(void)
@@ -242,6 +249,7 @@ void tilemap_free_details(void)
     if (flowerTex) { r2d_texture_destroy(NULL, flowerTex); flowerTex = NULL; }
     if (pathDecTex) { r2d_texture_destroy(NULL, pathDecTex); pathDecTex = NULL; }
     if (waterDecTex) { r2d_texture_destroy(NULL, waterDecTex); waterDecTex = NULL; }
+    if (mzGround2) { r2d_texture_destroy(NULL, mzGround2); mzGround2 = NULL; }
 }
 
 // Deterministik varyant: hash(col,row) — save'e girmez, hep aynı görünür
@@ -298,8 +306,13 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
                 TILE_SIZE * zoom
             };
 
+            // Mezarlık zemini: 2 varyant (aynı hash deseni)
+            if (tileID == 12 && mzGround2 != NULL && grass_variant(col, row) >= 2)
+            {
+                r2d_draw_texture(renderer, mzGround2, NULL, &dst);
+            }
             // Çimen: 4 varyanttan hash ile seç (tekdüzelik kırılır)
-            if (tileID == 0 && grassVar[0] != NULL)
+            else if (tileID == 0 && grassVar[0] != NULL)
             {
                 R2DTexture *gv = grassVar[grass_variant(col, row)];
                 if (gv != NULL) { r2d_draw_texture(renderer, gv, NULL, &dst); }

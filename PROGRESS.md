@@ -800,6 +800,43 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   ocak arkası taş çit — rutin yollarının dışında.
 - Faz B (sıradaki): LANETLİ MEZARLIK haritası (undead tileset).
 
+### Faz HG-B — LANETLİ MEZARLIK HARİTASI (v29 uyumlu; MapId append-safe)
+- **MAP_MEZARLIK** (60×45, açık hava zindanı): undead tileset paleti — ölü
+  toprak [12] (2 varyant) + dikenli kaya [13] + ölü su [14]; gen_mezarlik.py
+  sabit-tohumlu üretir (sınır kayalıkları, iç siperler, doğu gölcüğü).
+- **Zindan MEKANİĞİ, açık hava GÖRÜNÜMÜ**: map_is_dungeon=true → mühür
+  dalgası respawn, sabit alacakaranlık (ambient 0.45), MOOD_DUNGEON, NPC/hava
+  kapalı. Boss YOK (Bringer-of-Death sonraki mob dalgasında buraya oturacak).
+- **Portal**: Kayalık Geçit mezar sahaları yanı T(135,88) ↔ mezarlık güney
+  girişi T(30,41); giriş görseli skull_door.
+- **Map-bazlı dekor**: DecorDef.map alanı (0=dünya — eski girdiler değişmedi);
+  render/collision/conceal filtreli; decor_set_map geçişte basılır. Mezarlık:
+  DEV İSKELET KALINTISI (Lich, merkez landmark) + mezar taşları + kurumuş
+  ağaçlar + harabe + kemik/kafatası yığınları + kristal.
+- **İçerik**: MZ_CAMPS 5 iskelet kampı (savaşçı/okçu/büyücü, mühür dalgalı);
+  2 sandık — kuzeybatı harabe (Sağlam) + dev iskeletin ardı (USTA → Hortum
+  tomarının 2. kaynağı).
+
+### Faz HB-WOW — HOTBAR WoW DÜZENİ (32) + TAB HEDEFLEME + TIKLA-BAS
+- WoW düzeni, hepsi hep görünür (sıra/F-tuşu kavramı YOK — Hakan'ın evrilen
+  isteği): 2 ana bar 8×1 alt alta (1-8 / Shift+1-8) + sağ dikey 2×4
+  (Alt+1-8) + sol dikey 2×4 tuşsuz. slot_rect() tek kaynak (çizim+hit-test).
+  Save count-toleranslı — eski 8/30'luk kayıtlar oturur, taşan düşer
+  (açık aktifler place_unlocks ile geri gelir).
+- TIKLA-BAS: dolu hücreye düz sol tık = tuşla basmakla aynı akış; bar
+  üstündeki her tık yutulur (dünyaya geçmez). Taşıma/takas YALNIZ
+  SHIFT+sürükle; kaldırma yalnız sürüklerken beliren ✕ hedefine (üst barın
+  üstünde ortada) — dışarı bırakmak İPTAL (yanlışlıkla beceri atılamaz).
+- Silah uygunluğu görseli: mevcut silaha uymayan beceri barda SOLUK
+  (abilityUsable[] main'de her kare; büyüler silahtan bağımsız hep aktif).
+- TAB: mob hedefleme (Z KALDIRILDI) — panel önceliği: envanter açıkken çanta
+  sekmesi, günlük açıkken günlük sekmesi, yoksa hedef.
+- K panelinde ALINMIŞ aktif düğümü bara sürükle = ata; item→hotbar yol korunur.
+- NOT: "meslek paneli kısayolu barda" fikri KONUŞULDU ve VAZGEÇİLDİ (craft
+  istasyona bağlı tasarımla çelişiyor; ileride Günlük'e Tarifler sekmesi olabilir).
+- Crash fix: DECOR 37 > 32 texture dizisi taşması (DECOR_TEX_CAP 64 ortak
+  sabit + döngü korumaları + aşım logu); portalTex 8→16 (tam doluydu).
+
 ### ASSET SIRASI (2026-07-17 — Hakan'ın indirdiği paketler, onaylı işleme sırası)
 İndirilenler (~/Downloads):
 - **Harita**: Free-Undead-Tileset (açık hava lanetli arazi — LANETLİ MEZARLIK

@@ -40,7 +40,15 @@ Cute_Fantasy paketleri (`/Users/hakanartuc/Cute Fantasy` — NPC, ev, düşman, 
 - **main.c** — tüm bağlantı/orkestrasyon burada (~5000 satır; ileride bölünebilir).
 
 ## Tuşlar
-WASD hareket · Space auto-attack toggle · Z hedef · 1-8 hotbar · E konuş/istasyon/topla · I envanter · K skill/ağaç · J Yolculuk günlüğü (Tab sekme, ←→ yaprak)
+WASD hareket · Space auto-attack toggle · TAB hedef (Z KALDIRILDI) · 1-8 hotbar
+(WoW düzeni 32 yuva: 2 ana bar 8×1 alt alta [1-8 / Shift+1-8] + sağ dikey 2×4
+[Alt+1-8] + sol dikey 2×4 tuşsuz; hepsi hep görünür) · SHIFT aktif blok (kalkanla) ·
+P yankesicilik (eğilmişken) · R dinlen (gece ateş başında) · E konuş/istasyon/
+topla/kuyu · I envanter (TAB Eşya↔Malzeme) · K skill/ağaç (alınmış aktif düğümü
+hotbara SÜRÜKLE) · J Yolculuk günlüğü (Tab sekme, ←→ yaprak) · F8 hava döngüsü (dev)
+Hotbar: düz TIK = becerine bas (click-to-cast); SHIFT+sürükle = taşı/takas;
+kaldırma YALNIZ sürüklerken beliren ✕ hedefine (dışarı=iptal — yanlış atma yok);
+silaha uymayan beceri SOLUK çizilir (kullanım engeli hotbarPressed akışında)
 · M minimap · C eğilme · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 AKTİF slota kaydet/yükle · ESC katmanlı kapatma/menü
 (K = skill listesi + ağaç paneli; ok mühimmatı sağ tıkla seçilir)
 (F efekt önizleme KALDIRILDI 2026-07-10 — rünün instance efektini eziyordu)
@@ -144,6 +152,16 @@ S15 / Gezgin S40), Malzeme 25→55 (Kese S10 / Usta S35) — üretilince OTOMAT�
 takılır, İp yeni ara malzeme (2 Ayotu, kamp ateşi). Player.bagUpgrades +
 craftBag save v28; Inventory.cap dinamik; MAX_RECIPES 48. DİKKAT: yeni item
 eklerken MAX_ITEM_TYPES (96) tavanına bak — 64 taşması crash yaratmıştı.
+**HOTBAR WoW DÜZENİ + TAB HEDEFLEME**: 32 yuva hep görünür (2 ana bar 8×1 +
+2 yan dikey 2×4; 1-8/Shift/Alt; sol bar tuşsuz); düz tık=bas, SHIFT+sürükle=
+taşı; silaha uymayan beceri soluk; TAB mob hedefler (panel önceliği: envanter/
+günlük sekmeleri önce; Z kaldırıldı); K panelinden alınmış aktif düğüm bara
+sürüklenir + ✕ hedefi (dışarı=iptal). Save toleranslı (8/30→32). DECOR_TEX_CAP 64
++ portalTex 16 (tavan crash'leri — paralel-dizi dersi hafızada).
+**LANETLİ MEZARLIK TAMAM (HG-B)**: MAP_MEZARLIK 60×45 açık hava zindanı
+(undead palet; mühür dalgası + ambient 0.45); portal Kayalık Geçit T135,88;
+map-bazlı dekor (DecorDef.map) — dev iskelet landmark + mezarlar/ağaçlar;
+5 iskelet kampı + 2 sandık (USTA = Hortum 2. kaynak). Boss sonraki dalgada.
 **HARİTA GÖRSEL YENİLEME FAZ A TAMAM**: çimen kenar taşması (12 hücreli
 dalgalı overlay atlası — gen_tile_edges.py), 4 çimen varyantı (hash),
 taş/bataklık/diken dokuları, süs serpiştirmesi (çiçek/taş/saz — deterministik

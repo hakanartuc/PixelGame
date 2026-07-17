@@ -18,6 +18,7 @@ typedef enum {
     MAP_DUNGEON_F1,   // Eski Geçit — Kat 1 (Dungeon_1 tileset)
     MAP_DUNGEON_F2,   // Kat 2 (Dungeon_2 tileset + boss)
     MAP_KONAK,        // Eşikçi Konağı (S3 — loş ama zindan DEĞİL: dalga/mob yok)
+    MAP_MEZARLIK,     // Lanetli Mezarlık (açık hava zindanı — undead tileset)
     MAP_COUNT,
 } MapId;
 

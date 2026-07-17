@@ -871,6 +871,8 @@ int main(int argc, char *argv[])
     int invTab = 0;            // aktif sekme: 0 Eşya / 1 Malzeme (I döngüsü)
     int craftScroll = 0;       // craft paneli kaydırma (tekerlek; satır cinsinden)
     int trashTab = -1, trashSlot = -1;   // çöp onayı bekleyen item (-1 = yok)
+    int dragHbSlot = -1;                 // hotbar'dan sürüklenen hücre (-1 = yok)
+    int dragAbility = -1;                // K panelinden sürüklenen beceri (-1 = yok)
     int pickTries[12] = {0};   // NPC başına BUGÜNKÜ yankesicilik denemesi (-15%/deneme)
     bool pickFailUsed = false; // Masum Yüz: günde bir affedilen başarısızlık kullanıldı mı
     int dragTab = 0;           // sürükleme HANGİ sekmeden başladı (I ile değişse de doğru)
@@ -955,8 +957,8 @@ int main(int argc, char *argv[])
     const Player playerTemplate = player;
 
     // Dekorlar (ev/ağaç/çalı/saman): texture + boyutları (render/collision tek kaynaktan)
-    R2DTexture *decor_textures[32] = {0};
-    for (int i = 0; i < DECOR_COUNT && i < 32; i++)
+    R2DTexture *decor_textures[DECOR_TEX_CAP] = {0};
+    for (int i = 0; i < DECOR_COUNT && i < DECOR_TEX_CAP; i++)
         decor_textures[i] = load_texture(renderer, DECORS[i].texPath);
     decor_set_texture_sizes(decor_textures);
 
@@ -1380,7 +1382,7 @@ int main(int argc, char *argv[])
     {
         bool attackPressed = false;
         bool targetPressed = false;
-        int hotbarPressed = -1;   // bu kare basılan hotbar tuşu (0..7, -1 = yok)
+        int hotbarPressed = -1;   // bu kare basılan hotbar yuvası (tuş/tık; -1 = yok)
         // 4a) INPUT: OS'in bu kare için kuyruğa attığı tüm olayları boşalt.
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -1768,7 +1770,8 @@ int main(int argc, char *argv[])
                                              player.rect.y - 24.0f, "Karşı koydun! +50 bounty", red);
                     }
                 }
-                else if (event.key.key >= SDLK_1 && event.key.key <= SDLK_8 &&
+                else if (((event.key.key >= SDLK_1 && event.key.key <= SDLK_9) ||
+                          event.key.key == SDLK_0) &&
                          gameState == GAME_PLAYING)
                 {
                     if (scene_active())
@@ -2252,9 +2255,17 @@ int main(int argc, char *argv[])
                             }
                         }
                     }
-                    else
+                    else if (event.key.key >= SDLK_1 && event.key.key <= SDLK_8)
                     {
-                        hotbarPressed = (int)(event.key.key - SDLK_1);   // '1' → slot 0
+                        // WoW düzeni: düz sayı = alt ana bar, Shift+sayı = üst
+                        // ana bar, Alt/Option+sayı = sağ dikey bar. Sol dikey
+                        // tuşsuz (tıklamayla kullanılır).
+                        int hbRow = 0;
+                        SDL_Keymod hbMod = SDL_GetModState();
+                        if (hbMod & SDL_KMOD_SHIFT) hbRow = 1;
+                        else if (hbMod & SDL_KMOD_ALT) hbRow = 2;
+                        hotbarPressed = hbRow * HOTBAR_COLS
+                                      + (int)(event.key.key - SDLK_1);
                     }
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
@@ -2716,10 +2727,6 @@ int main(int argc, char *argv[])
                         }
                     }
                 }
-                else if (event.key.key == SDLK_Z && gameState == GAME_PLAYING)
-                {
-                    targetPressed = true;
-                }
                 else if (event.key.key == SDLK_I && gameState == GAME_PLAYING)
                 {
                     // I: aç/kapa — sekme TAB ile değişir (açılış hep Eşya)
@@ -2734,6 +2741,12 @@ int main(int argc, char *argv[])
                     // TAB: Eşya ↔ Malzeme (günlük sekmesinden ÖNCE — çanta öncelikli)
                     invTab = 1 - invTab;
                     audio_play(SFX_UI);
+                }
+                else if (event.key.key == SDLK_TAB && gameState == GAME_PLAYING &&
+                         !questLogOpen && !scene_active() && dialogNpc < 0)
+                {
+                    // TAB: mob hedefle (modern hedefleme — Z'nin yerini aldı)
+                    targetPressed = true;
                 }
                 else if (event.key.key == SDLK_K && gameState == GAME_PLAYING)
                 {
@@ -3097,6 +3110,41 @@ int main(int argc, char *argv[])
                                              player.rect.y - 10.0f, "Yüklendi", white);
                     }
                 }
+            }
+            else if (event.type == SDL_EVENT_MOUSE_BUTTON_UP &&
+                     event.button.button == SDL_BUTTON_LEFT &&
+                     (dragHbSlot >= 0 || dragAbility >= 0))
+            {
+                // HOTBAR bırakma: hücre = takas/ata · ✕ = kaldır · dışarı = İPTAL
+                int hbW, hbH;
+                SDL_GetWindowSize(window, &hbW, &hbH);
+                float ux2 = (float)event.button.x, uy2 = (float)event.button.y;
+                int target = hotbar_slot_at(ux2, uy2, hbW, hbH);
+                if (dragHbSlot >= 0)
+                {
+                    if (target >= 0 && target != dragHbSlot)
+                    {
+                        HotbarSlot tmp = hotbar.slots[target];
+                        hotbar.slots[target] = hotbar.slots[dragHbSlot];
+                        hotbar.slots[dragHbSlot] = tmp;   // takas (boşsa taşıma)
+                        audio_play(SFX_UI);
+                    }
+                    else if (hotbar_remove_zone_at(ux2, uy2, hbW, hbH))
+                    {
+                        hotbar.slots[dragHbSlot] = (HotbarSlot){0};   // yalnız ✕'e bırakınca
+                        audio_play(SFX_UI);
+                    }
+                    // dışarı bırakma: hiçbir şey olmaz (yanlışlıkla kaldırma yok)
+                }
+                else if (dragAbility >= 0 && target >= 0)
+                {
+                    // K panelinden beceri atama: hedef hücreye yaz (üstüne yazar)
+                    hotbar.slots[target] = (HotbarSlot){ .kind = HOTBAR_SKILL,
+                                                         .abilityId = (AbilityId)dragAbility };
+                    audio_play(SFX_UI);
+                }
+                dragHbSlot = -1;
+                dragAbility = -1;
             }
             else if (event.type == SDL_EVENT_MOUSE_BUTTON_UP &&
                      event.button.button == SDL_BUTTON_LEFT &&
@@ -3528,6 +3576,28 @@ int main(int argc, char *argv[])
 
                     bool handled = false;
 
+                    // -4) HOTBAR tıklaması: düz tık = becerine BAS (click-to-cast),
+                    //     SHIFT+tık = sürükleme başlat (takas/taşıma/✕ kaldırma —
+                    //     bırakma ayrı blokta). Boş hücre tıklaması da yutulur
+                    //     (barın üzerinden dünyaya tık geçmesin).
+                    {
+                        int hbW2, hbH2;
+                        SDL_GetWindowSize(window, &hbW2, &hbH2);
+                        int hs2 = hotbar_slot_at((float)event.button.x,
+                                                 (float)event.button.y, hbW2, hbH2);
+                        if (hs2 >= 0)
+                        {
+                            if (hotbar.slots[hs2].kind != HOTBAR_EMPTY)
+                            {
+                                if (SDL_GetModState() & SDL_KMOD_SHIFT)
+                                    dragHbSlot = hs2;      // taşıma modu
+                                else
+                                    hotbarPressed = hs2;   // tıkla-bas
+                            }
+                            handled = true;
+                        }
+                    }
+
                     // -3) Günlük Ünvanlar sekmesi: satıra tıkla = taşı/bırak (M3)
                     if (questLogOpen && journalTab == 2)
                     {
@@ -3601,6 +3671,14 @@ int main(int argc, char *argv[])
                         bool isFate = (ts == TREE_FATE);
                         Uint32 tsTaken = isFate ? player.fateTaken
                                                 : player.treeTaken[ts];
+
+                        // ALINMIŞ aktif düğüm: sürükleme başlat (hotbar'a atama)
+                        if (node >= 0 && (tsTaken & (1u << node)))
+                        {
+                            const SkillTreeDef *tdd = tree_get(ts);
+                            if (tdd != NULL && tdd->nodes[node].grantAbility >= 0)
+                                dragAbility = tdd->nodes[node].grantAbility;
+                        }
                         int tsLevel = 0;
                         if (isFate)
                             for (int sl = 0; sl < SKILL_COUNT; sl++)
@@ -4468,7 +4546,8 @@ int main(int argc, char *argv[])
 
                 // 5) Dünya-özel sistemler kapanır/açılır + ambiyans
                 npc_set_active(to == MAP_WORLD);
-                decor_set_active(to == MAP_WORLD);
+                decor_set_active(to == MAP_WORLD || to == MAP_MEZARLIK);
+                decor_set_map((int)to);
                 map_set_current(to);
                 if (MAPS[to].name[0] != '\0')
                 {
@@ -9061,8 +9140,41 @@ int main(int argc, char *argv[])
         }
 
         // Hotbar (alt-orta): skill CD'leri + pot adetleri
+        // Hotbar sürüklemesi: ✕ kaldırma hedefi (yalnız sürüklerken görünür)
+        if (dragHbSlot >= 0)
+        {
+            float hbX0 = winW / 2.0f - 24.0f;
+            float hbY0 = winH - 12.0f - 3.0f * (48.0f + 6.0f);
+            ui_cell_gray(renderer, hbX0, hbY0, 48.0f, 48.0f);
+            if (gameFont != NULL)
+                draw_text(renderer, gameFont, "X", hbX0 + 18.0f, hbY0 + 14.0f,
+                          (SDL_Color){ 255, 110, 90, 255 });
+        }
+        // Silah uygunluğu: uymayan beceriler barda SOLUK çizilir (kullanım
+        // kapılarının aynası — asıl engel hotbarPressed akışında duruyor)
+        bool abilityUsable[ABILITY_COUNT];
+        {
+            bool hbSh = equipment.slots[EQUIP_SHIELD].type != NULL &&
+                        equipment.slots[EQUIP_SHIELD].type->weaponType
+                            == WEAPON_SHIELD;
+            for (int ai = 0; ai < ABILITY_COUNT; ai++)
+            {
+                const AbilityDef *ad = &ABILITIES[ai];
+                if (ad->skill == SKILL_DESTRUCTION ||
+                    ad->skill == SKILL_CONJURATION || ad->skill == SKILL_ECHO)
+                    abilityUsable[ai] = true;   // büyü silahtan bağımsız
+                else if (ai == ABILITY_SHIELD_BASH)
+                    abilityUsable[ai] = hbSh;
+                else if (ad->skill == SKILL_TWO_HANDED)
+                    abilityUsable[ai] = player.spearEquipped;
+                else
+                    abilityUsable[ai] =
+                        ((ad->skill == SKILL_ARCHERY) == player.bowEquipped);
+            }
+        }
         hotbar_render(&hotbar, renderer, itemIconTex, &itemTex, abilityIconTex, gameFont,
-                      player.abilityCd, player.itemCd, &inventory, winW, winH);
+                      player.abilityCd, player.itemCd, &inventory, abilityUsable,
+                      winW, winH);
 
         // Yay kuşanılıyken aktif ok sayacı (hotbar'ın üstünde) — tür adıyla
         if (player.bowEquipped && gameFont != NULL)
@@ -9583,7 +9695,7 @@ int main(int argc, char *argv[])
         if (npc_textures[i])
             r2d_texture_destroy(NULL, npc_textures[i]);
 
-    for (int i = 0; i < DECOR_COUNT && i < 32; i++)
+    for (int i = 0; i < DECOR_COUNT && i < DECOR_TEX_CAP; i++)
         if (decor_textures[i])
             r2d_texture_destroy(NULL, decor_textures[i]);
     for (int i = 0; i < RESOURCE_COUNT && i < MAX_RESOURCES; i++)

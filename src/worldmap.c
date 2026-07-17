@@ -32,6 +32,12 @@ const MapDef MAPS[MAP_COUNT] = {
         .mood = MOOD_NIGHT,     // sakin-tekinsiz koyu pad (zindan droni DEĞİL)
         .ambient = 0.55f,       // loş ama okunur
     },
+    [MAP_MEZARLIK] = {
+        .name = "Lanetli Mezarlık",
+        .csvPath = "assets/maps/mezarlik.csv",
+        .mood = MOOD_DUNGEON,
+        .ambient = 0.45f,       // kalıcı alacakaranlık (açık hava ama lanetli)
+    },
 };
 
 // ---------------------------------------------------------------------------
@@ -67,6 +73,16 @@ const MapPortal PORTALS[] = {
       .label = "[E] Derinlige in", .decorTex = "assets/decor/stairs_down.png",
       .decorScale = 3.5f },
 
+    // Kayalık Geçit mezar sahaları yanı → Lanetli Mezarlık (güney girişi)
+    { .from = MAP_WORLD, .x = T(122), .y = T(83), .radius = 80.0f,
+      .to = MAP_MEZARLIK, .tx = T(30), .ty = T(41),
+      .label = "[E] Mezarlığa gir", .decorTex = "assets/decor/undead/skull_door.png",
+      .decorScale = 2.2f },   // görünür mezar sahasının (yuva T120,81) bitişiği
+    { .from = MAP_MEZARLIK, .x = T(30), .y = T(43), .radius = 80.0f,
+      .to = MAP_WORLD, .tx = T(122), .ty = T(84),
+      .label = "[E] Mezarlıktan çık", .decorTex = NULL,
+      .decorScale = 1.0f },
+
     // Kat 2 giriş → Kat 1 (merdiven başı)
     { .from = MAP_DUNGEON_F2, .x = T(5.5f), .y = T(5.5f), .radius = 70.0f,
       .to = MAP_DUNGEON_F1, .tx = T(35), .ty = T(28),
@@ -85,6 +101,14 @@ static const RegionCamp F1_CAMPS[] = {
     { .x = T(28), .y = T(24), .radius = T(4), .type = &MOB_TYPES[12], .maxCount = 2 }, // D odası: karışık
     { .x = T(33), .y = T(26), .radius = T(3), .type = &MOB_TYPES[13], .maxCount = 1 },
 };
+// Lanetli Mezarlık: iskelet kampları (mühür dalgasıyla tazelenir — açık hava)
+static const RegionCamp MZ_CAMPS[] = {
+    { .x = T(18), .y = T(30), .radius = T(4), .type = &MOB_TYPES[12], .maxCount = 3 }, // güneybatı mezarlar
+    { .x = T(42), .y = T(30), .radius = T(4), .type = &MOB_TYPES[13], .maxCount = 2 }, // güneydoğu — okçular
+    { .x = T(30), .y = T(18), .radius = T(5), .type = &MOB_TYPES[12], .maxCount = 3 }, // dev iskelet önü
+    { .x = T(16), .y = T(12), .radius = T(4), .type = &MOB_TYPES[14], .maxCount = 2 }, // kuzeybatı — büyücüler
+    { .x = T(44), .y = T(12), .radius = T(4), .type = &MOB_TYPES[13], .maxCount = 2 }, // kuzeydoğu
+};
 static const RegionCamp F2_CAMPS[] = {
     { .x = T(20), .y = T(9),  .radius = T(4), .type = &MOB_TYPES[12], .maxCount = 2 }, // salon
     { .x = T(23), .y = T(11), .radius = T(3), .type = &MOB_TYPES[14], .maxCount = 1 }, // salon: büyücü
@@ -101,6 +125,9 @@ const RegionCamp *map_camps(MapId id, int *count)
         case MAP_DUNGEON_F2:
             *count = (int)(sizeof(F2_CAMPS) / sizeof(F2_CAMPS[0]));
             return F2_CAMPS;
+        case MAP_MEZARLIK:
+            *count = (int)(sizeof(MZ_CAMPS) / sizeof(MZ_CAMPS[0]));
+            return MZ_CAMPS;
         default:
             *count = 0;
             return NULL;   // dünya: REGIONS kampları (main kurar)
@@ -157,6 +184,8 @@ const ChestDef CHESTS[] = {
     { MAP_DUNGEON_F2, T(24), T(5),   1 },   // salon: Sağlam
     { MAP_DUNGEON_F2, T(15), T(26),  1 },   // boss odası köşe: Sağlam
     { MAP_DUNGEON_F2, T(30), T(21),  2 },   // boss odası dip: USTA (nadir ödül)
+    { MAP_MEZARLIK,   T(12), T(9),   1 },   // mezarlık kuzeybatı harabesi: Sağlam
+    { MAP_MEZARLIK,   T(30), T(13),  2 },   // dev iskeletin ardı: USTA (Hortum tomarı şansı)
 };
 const int CHEST_COUNT = (int)(sizeof(CHESTS) / sizeof(CHESTS[0]));
 
@@ -248,11 +277,11 @@ const int BOLT_TRAP_COUNT = (int)(sizeof(BOLT_TRAPS) / sizeof(BOLT_TRAPS[0]));
 // Durum + geçit yardımcıları
 // ---------------------------------------------------------------------------
 static MapId curMap = MAP_WORLD;
-static R2DTexture *portalTex[8];   // PORTALS ile paralel (küçük tavan)
+static R2DTexture *portalTex[16];   // PORTALS ile paralel (küçük tavan)
 
 bool worldmap_init(R2D *renderer)
 {
-    for (int i = 0; i < PORTAL_COUNT && i < 8; i++)
+    for (int i = 0; i < PORTAL_COUNT && i < 16; i++)
         portalTex[i] = (PORTALS[i].decorTex != NULL)
                      ? load_texture(renderer, PORTALS[i].decorTex) : NULL;
     for (int i = 0; i < ECHO_COUNT && i < 16; i++)
@@ -263,7 +292,7 @@ bool worldmap_init(R2D *renderer)
 
 void worldmap_quit(void)
 {
-    for (int i = 0; i < PORTAL_COUNT && i < 8; i++)
+    for (int i = 0; i < PORTAL_COUNT && i < 16; i++)
         if (portalTex[i]) { r2d_texture_destroy(NULL, portalTex[i]); portalTex[i] = NULL; }
     for (int i = 0; i < ECHO_COUNT && i < 16; i++)
         if (echoTex[i]) { r2d_texture_destroy(NULL, echoTex[i]); echoTex[i] = NULL; }
@@ -271,7 +300,12 @@ void worldmap_quit(void)
 
 MapId map_current(void) { return curMap; }
 void  map_set_current(MapId id) { if (id >= 0 && id < MAP_COUNT) curMap = id; }
-bool  map_is_dungeon(MapId id) { return id == MAP_DUNGEON_F1 || id == MAP_DUNGEON_F2; }
+bool  map_is_dungeon(MapId id)
+{
+    // MEZARLIK açık hava ama zindan MEKANİĞİ taşır: mühür dalgası respawn'ı,
+    // sabit loşluk, NPC/hava yok — "lanet" sistemsel olarak zindan sayılır
+    return id == MAP_DUNGEON_F1 || id == MAP_DUNGEON_F2 || id == MAP_MEZARLIK;
+}
 
 int map_portal_near(float px, float py)
 {

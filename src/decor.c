@@ -2,6 +2,8 @@
 
 // Köy evleri — NPC'lerin gece gittiği kapılar bunların önü (npc.c rutinleri)
 #define T(n) ((n) * (float)TILE_SIZE)
+#define DM_MEZARLIK 4   // MAP_MEZARLIK (worldmap.h enum sırası — include döngüsünden kaçınmak için literal)
+
 const DecorDef DECORS[] = {
     // RİTÜEL TAŞLARI (YANKICI — gizli): Karanlık Orman derinliği, işaretsiz.
     // Uzaktan sıradan kaya kümesi; 3. sömürüden sonra fısıltı buraya çağırır.
@@ -53,18 +55,52 @@ const DecorDef DECORS[] = {
     // Saman balyaları: Osman'ın tarlası (çiftlik gizlenmesi)
     { .texPath = "assets/decor/hay_bale.png", .x = T(6), .y = T(12),   .scale = 3.0f, .conceals = true },
     { .texPath = "assets/decor/hay_bale.png", .x = T(8), .y = T(12.3f), .scale = 3.0f, .conceals = true },
+    // --- LANETLİ MEZARLIK dekorları (map = MEZARLIK) ---
+    { .texPath = "assets/decor/undead/lich.png",          // DEV İSKELET KALINTISI
+      .x = T(30), .y = T(15), .scale = 2.2f, .solidBase = true, .map = DM_MEZARLIK },
+    { .texPath = "assets/decor/undead/skulls.png",
+      .x = T(27), .y = T(17), .scale = 1.4f, .solidBase = false, .map = DM_MEZARLIK },
+    { .texPath = "assets/decor/undead/dead_tree1.png",
+      .x = T(10), .y = T(16), .scale = 1.6f, .solidBase = true, .map = DM_MEZARLIK },
+    { .texPath = "assets/decor/undead/dead_tree2.png",
+      .x = T(50), .y = T(18), .scale = 1.6f, .solidBase = true, .map = DM_MEZARLIK },
+    { .texPath = "assets/decor/undead/dead_tree1.png",
+      .x = T(38), .y = T(36), .scale = 1.5f, .solidBase = true, .map = DM_MEZARLIK },
+    { .texPath = "assets/decor/undead/ruin1.png",
+      .x = T(12), .y = T(9), .scale = 1.8f, .solidBase = true, .map = DM_MEZARLIK },   // Sağlam sandık harabesi
+    { .texPath = "assets/decor/undead/grave1.png",
+      .x = T(17), .y = T(29), .scale = 1.6f, .solidBase = true, .map = DM_MEZARLIK },
+    { .texPath = "assets/decor/undead/grave2.png",
+      .x = T(20), .y = T(31), .scale = 1.6f, .solidBase = true, .map = DM_MEZARLIK },
+    { .texPath = "assets/decor/undead/grave1.png",
+      .x = T(43), .y = T(29), .scale = 1.6f, .solidBase = true, .map = DM_MEZARLIK },
+    { .texPath = "assets/decor/undead/grave2.png",
+      .x = T(41), .y = T(32), .scale = 1.6f, .solidBase = true, .map = DM_MEZARLIK },
+    { .texPath = "assets/decor/undead/bones1.png",
+      .x = T(24), .y = T(24), .scale = 1.6f, .solidBase = false, .map = DM_MEZARLIK },
+    { .texPath = "assets/decor/undead/bones2.png",
+      .x = T(36), .y = T(22), .scale = 1.6f, .solidBase = false, .map = DM_MEZARLIK },
+    { .texPath = "assets/decor/undead/crystal.png",
+      .x = T(52), .y = T(9), .scale = 1.5f, .solidBase = true, .map = DM_MEZARLIK },
+
 };
 const int DECOR_COUNT = (int)(sizeof(DECORS) / sizeof(DECORS[0]));
 
 // Texture boyutları (yüklemede bir kez okunur — çizim/collision tek kaynaktan)
-#define DECOR_CAP 32
+#define DECOR_CAP DECOR_TEX_CAP   // ortak tavan (decor.h) — 32 taşmıştı, CRASH
 static float texW[DECOR_CAP], texH[DECOR_CAP];
 
 static bool decorActive = true;
+static int decorMap = 0;   // aktif harita (DecorDef.map ile eşleşen çizilir)
+void decor_set_map(int mapId) { decorMap = mapId; }
+
 void decor_set_active(bool active) { decorActive = active; }
 
 void decor_set_texture_sizes(R2DTexture **decorTextures)
 {
+    if (DECOR_COUNT > DECOR_CAP)
+        SDL_Log("UYARI: DECOR_COUNT (%d) > DECOR_CAP (%d) — tavani buyut!",
+                DECOR_COUNT, DECOR_CAP);
     for (int i = 0; i < DECOR_COUNT && i < DECOR_CAP; i++) {
         texW[i] = texH[i] = 0.0f;
         if (decorTextures[i] != NULL)
@@ -86,8 +122,9 @@ void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
 {
     if (!decorActive) return;
     float zoom = camera->zoom;
-    for (int i = 0; i < DECOR_COUNT; i++) {
+    for (int i = 0; i < DECOR_COUNT && i < DECOR_CAP; i++) {
         if (decorTextures[i] == NULL) continue;
+        if (DECORS[i].map != decorMap) continue;   // başka haritanın dekoru
         SDL_FRect r = decor_rect(i);
         SDL_FRect dst = {
             (r.x - camera->x) * zoom, (r.y - camera->y) * zoom,
@@ -100,8 +137,9 @@ void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
 bool decor_blocks(SDL_FRect box)
 {
     if (!decorActive) return false;
-    for (int i = 0; i < DECOR_COUNT; i++) {
+    for (int i = 0; i < DECOR_COUNT && i < DECOR_CAP; i++) {
         if (texW[i] <= 0.0f || !DECORS[i].solidBase) continue;   // çalı/saman engellemez
+        if (DECORS[i].map != decorMap) continue;
         SDL_FRect r = decor_rect(i);
         // Katı taban: alt %35 (üst kısım çatı/yaprak — arkasından geçilebilir)
         SDL_FRect base = { r.x, r.y + r.h * 0.65f, r.w, r.h * 0.35f };
@@ -114,8 +152,9 @@ bool decor_blocks(SDL_FRect box)
 
 bool decor_conceals(float x, float y)
 {
-    for (int i = 0; i < DECOR_COUNT; i++) {
+    for (int i = 0; i < DECOR_COUNT && i < DECOR_CAP; i++) {
         if (texW[i] <= 0.0f || !DECORS[i].conceals) continue;
+        if (DECORS[i].map != decorMap) continue;
         SDL_FRect r = decor_rect(i);   // çalı küçük — tüm sprite alanı örtüdür
         if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h)
             return true;
