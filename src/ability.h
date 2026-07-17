@@ -37,6 +37,9 @@ typedef enum {
     ABILITY_GATE_STANCE,    // Kapı Tutucu (keystone): duruş AÇ/KAPA —
                             // yavaşlarsın ama menzile giren otomatik saplanır
     ABILITY_SHIELD_BASH,    // Kalkan Vuruşu (Block): kısa menzil + 2sn sersemletme
+    // YANKICI (Sömüren hattı): bedel MANA DEĞİL CAN — fısıltıyla pazarlık
+    ABILITY_WHISPER_BURST,  // Fısıltı Patlaması: max HP %10 → çevresel gölge hasarı
+    ABILITY_SHADOW_FORM,    // Gölge Formu: 5sn algılanmaz + hızlı, 4 HP/sn
     ABILITY_COUNT,
 } AbilityId;
 
@@ -49,7 +52,8 @@ typedef struct {
     float damageScale;    // normal vuruş hasarının çarpanı
     float cooldown;       // saniye
     float stamina;        // atım maliyeti (0 = kaynaksız); yetmezse atılmaz, CD yanmaz
-    float mana;           // büyü maliyeti (Destruction becerileri; 0 = manasız)
+    float mana;
+    float hpFrac;           // bedel: max HP'nin bu oranı (Yankıcı — mana yerine)           // büyü maliyeti (Destruction becerileri; 0 = manasız)
 } AbilityDef;
 
 extern const AbilityDef ABILITIES[ABILITY_COUNT];

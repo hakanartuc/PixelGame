@@ -1,0 +1,31 @@
+# Yabancı — Kör Kuyu tanıtıcısı (BİR KEZ, gece kuyu civarında).
+# Kurgu: kim olduğu belirsiz; kuyuyu anlatır ama güven VERMEZ — şüphe kalmalı.
+# Diyalog bitince kaybolur; kuyu aktifleşir (SF_WELL = 1).
+
+[start]
+text: (Karanlıktan bir ses — ne zaman yaklaştığını duymadın.) Kesende şıngırdayanlar... temiz değil, değil mi? Kokusu var öylelerinin. Merak etme — burada herkes bir şey saklar. Kimisi kuyuya.
+opt: Kimsin sen? -> kim
+opt: Neden bahsettiğini bilmiyorum. -> inkar
+
+[kim]
+text: Kimse. Bir yolcu. (Gülümsüyor mu? Karanlıkta belli değil.) Ama şunu bilirim: bu kuyu susuz. İçine düşen şey kaybolmaz — SAYILIR. Gece bırakırsın, şafakta kuyu başında temiz bir kese bulursun. Yarısı. Diğer yarısı... hizmet bedeli.
+opt: Kim topluyor? Kim sayıyor? -> kim2
+opt: Neden bana anlatıyorsun? -> neden
+
+[inkar]
+text: (Ses güldü — kısa, kuru.) Tabii bilmiyorsun. O zaman şunu boş bir masal say: bu kuyu susuz. İçine gece bir şey bırakılırsa, şafakta yarısı temiz altın olarak geri gelir. Masalı kime anlatırsan anlat — muhafıza anlatma.
+opt: Kim topluyor peki? -> kim2
+opt: Neden bana anlatıyorsun? -> neden
+
+[kim2]
+text: Yanlış soru, yolcu. Doğru soru şu: kimin SAYDIĞINI bilmek ister miydin gerçekten? (Bir duraklama.) Onlar toplamaz. Onlar sayar. Toplayan... başkası. Kuyunun dibi köyden uzağa çıkar, o kadarını söyleyeyim.
+opt: (Sırtında bir ürperti.) Anladım. -> son
+
+[neden]
+text: Çünkü kesesi kirli olan er geç ya kuyuyu bulur ya ipi. (Kuyunun kenarını tıklattı — üç kez.) Ben sadece yolu kısalttım. Bir gün belki sen de birine kısaltırsın. Biz... yolu kısaltanları unutmayız.
+opt: "Biz" kim? -> kim2
+opt: (Başını salla.) -> son
+
+[son]
+text: Şafak yaklaşıyor. Ben yokum — hiç olmadım. Kuyu var. (Gözünü kırptığında, olduğu yerde kimse yoktu. Sadece kuyunun taşında üç tık sesi — sanki içeriden.)
+opt: (Kuyuya bak.) -> kuyu:1

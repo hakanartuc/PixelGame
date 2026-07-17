@@ -101,6 +101,17 @@ const NpcDef NPCS[] = {
       }, .stopCount = 2,
       .frameSize = 32, .drawScale = 2.8f },
 
+    // KÖR KUYU tanıtıcısı: gece kuyu civarında BİR KEZ belirir, anlatır, kaybolur.
+    // Kim olduğu söylenmez — 'sayanlar'dan biri (yeraltı örgütü tohumu).
+    { .name = "Yabancı",
+      .sheetPath = "assets/characters/npcs/Desert_Person_3.png",
+      .dialogFile = "assets/dialogs/yabanci.txt",
+      .isVendor = false, .questId = NULL,
+      .schedule = {
+          { .hour = 0.0f, .x = T(27), .y = T(16), .indoors = false },  // kuyu yanı
+      }, .stopCount = 1,
+      .frameSize = 32, .drawScale = 2.8f },
+
     // Dünya Olayı: Gezgin Kervan tüccarı — yalnız kervan günlerinde görünür
     { .name = "Kervancı Selim",
       .sheetPath = "assets/characters/npcs/Desert_Trader_1.png",

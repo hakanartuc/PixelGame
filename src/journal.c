@@ -188,6 +188,13 @@ static void entry_text(const JournalEntry *e, char *out, size_t cap)
                "aile geri geldi. Doğru muydu bilmiyorum. Kimin defterine "
                "yazılır bu, onu da bilmiyorum.";
         break;
+    case JE_WELL_INTRO:
+        body = "Gece, köy dışındaki kuyunun başında biri vardı — ne zaman "
+               "geldiğini görmedim, ne zaman gittiğini de. Kuyu susuzmuş; "
+               "içine bırakılan 'sayılırmış'. Yarısı şafakta geri gelirmiş. "
+               "Kimin saydığını sordum. Yanlış soru, dedi. Hâlâ düşünüyorum: "
+               "doğru soru neydi?";
+        break;
     case JE_GRAVE_RISE:
         body = "Mezarlık gece boyu huzursuzdu; sabaha kadar kimse müdahale "
                "etmedi — ben de etmedim. Ölüler mezarı yeniden yurt edindi. "

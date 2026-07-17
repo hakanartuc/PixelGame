@@ -208,6 +208,7 @@ enum {
     SF_S3_TRUST  = 3,   // Nuh güveni: 0-3 (üç doğru yorum → konak yolu açılır)
     SF_S3_STATE  = 4,   // 0 yok · 1 konak yolu · 2 nöbet DEVRALINDI · 3 kayıt kapatıldı
     SF_S3_HINTS  = 5,   // Zehra ipuçları alındı (1) — Nuh seçeneklerinde işaret
+    SF_WELL      = 6,   // Kör Kuyu: 0 bilinmiyor · 1 Yabancı anlattı (kuyu aktif)
 };
 
 

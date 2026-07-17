@@ -71,6 +71,7 @@ const char *skill_name(SkillType t)
         case SKILL_DESTRUCTION:  return "Destruction";
         case SKILL_STAFF:        return "Staff";
         case SKILL_CONJURATION:  return "Conjuration";
+        case SKILL_ECHO:         return "Yankı";
         default:                 return "?";
     }
 }
