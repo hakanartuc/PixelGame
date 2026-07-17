@@ -854,6 +854,9 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   90° döndürmeyle üretildi — slash_up/down/left/right.png).
 - Assetler: Free Pixel Effects Pack (public domain) + Gigapack splatter/impact
   + Frostwindz Slash 1 → assets/fx/; CREDITS.md güncellendi.
+- UX FIX (aynı commit): otomatik kayıttan yüklemede F5 "Aktif slot yok"
+  uyarısında bırakıyordu — artık kayıt slotu ekranını doğrudan açar (seçilen
+  slot aktif olur); F9 slotsuz durumda bildirim basar.
 
 ### ASSET SIRASI (2026-07-17 — Hakan'ın indirdiği paketler, onaylı işleme sırası)
 İndirilenler (~/Downloads):

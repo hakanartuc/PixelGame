@@ -49,7 +49,7 @@ hotbara SÜRÜKLE) · J Yolculuk günlüğü (Tab sekme, ←→ yaprak) · F8 ha
 Hotbar: düz TIK = becerine bas (click-to-cast); SHIFT+sürükle = taşı/takas;
 kaldırma YALNIZ sürüklerken beliren ✕ hedefine (dışarı=iptal — yanlış atma yok);
 silaha uymayan beceri SOLUK çizilir (kullanım engeli hotbarPressed akışında)
-· M minimap · C eğilme · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 AKTİF slota kaydet/yükle · ESC katmanlı kapatma/menü
+· M minimap · C eğilme · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 AKTİF slota kaydet/yükle (slot yoksa — otomatik kayıttan yüklendiyse — F5 kayıt ekranını açar, seçilen slot aktif olur) · ESC katmanlı kapatma/menü
 (K = skill listesi + ağaç paneli; ok mühimmatı sağ tıkla seçilir)
 (F efekt önizleme KALDIRILDI 2026-07-10 — rünün instance efektini eziyordu)
 AÇILIŞ AKIŞI (Faz B1): başlık ekranı → ana menü (Yeni Oyun/Yükle/Çıkış) → 20+1 slot;
@@ -158,6 +158,13 @@ taşı; silaha uymayan beceri soluk; TAB mob hedefler (panel önceliği: envante
 günlük sekmeleri önce; Z kaldırıldı); K panelinden alınmış aktif düğüm bara
 sürüklenir + ✕ hedefi (dışarı=iptal). Save toleranslı (8/30→32). DECOR_TEX_CAP 64
 + portalTex 16 (tavan crash'leri — paralel-dizi dersi hafızada).
+**VFX HİS CİLASI TAMAM (onaylı sıra ③)**: AnimFx grid-sheet havuzu (fx.c,
+48'lik — tek-seferlik efektlerin ortak altyapısı); strike_fx_mob köprüsü
+(melee weaponhit / büyü magickahit + her isabette kan, 17 hasar noktası;
+DoT/yansıtma hariç); mob_die'da büyük kan + hit-stop (melee 50ms / ok 30ms /
+ölüm 90ms / PERFECT parry 120ms — dünya dt ×0.08, menü gerçek zaman); blok
+kıvılcımı, cast halkası, yöne göre slash yayı. Assetler assets/fx/ +
+CREDITS.md. Sırada: ④ müzik seti (xDeviruchi).
 **LANETLİ MEZARLIK TAMAM (HG-B)**: MAP_MEZARLIK 60×45 açık hava zindanı
 (undead palet; mühür dalgası + ambient 0.45); portal Kayalık Geçit T135,88;
 map-bazlı dekor (DecorDef.map) — dev iskelet landmark + mezarlar/ağaçlar;
