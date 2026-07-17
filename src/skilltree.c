@@ -49,6 +49,33 @@ static const TreeNode T_ONEHAND[] = {
     N_ACT("Quick Slash",   "AKTİF: x0.7 hızlı kesik (2 sn bekleme)",      7, 2, 3, ABILITY_QUICK_SLASH),
 };
 
+// --- TWO-HANDED: "Mızrak Yolu" — Delici / Tempo / Hat + 2 aktif + duruş ---
+static const TreeNode T_TWOHAND[] = {
+    N_ROOT("Mızrak Eğitimi", "Çift el hasarı +%3"),
+    N_MIN("Uç Bakımı",     "Çift el hasarı +%3",               0, 1, 1),
+    N_MIN("Nokta Atışı",   "Kritik şansı +%2",                 1, 1, 2),
+    N_NOT("Zırh Delici",   "Defans delme +%8",                 2, 1, 3),
+    N_MIN("Derin Saplama", "Defans delme +%7 daha",            3, 1, 4),
+    N_NOT("Mihenk",        "Çift el hasarı +%12",              4, 1, 5),
+
+    N_MIN("Denge",         "Saldırı aralığı -%5",              0, 3, 1),
+    N_MIN("Adım Çalışması","Saldırı aralığı -%5",              6, 3, 2),
+    N_NOT("Akıcı Dürtüş",  "Saldırı aralığı -%10 daha",        7, 3, 3),
+    N_MIN("Soluklanma",    "Mızrak becerileri -%15 stamina",   8, 3, 4),
+    N_NOT("Uzun Erim",     "Mızrak menzili +20",               9, 3, 5),
+
+    N_MIN("Sıra Bozan",    "Hat vuruşu hasarı %60 -> %75",     0, 5, 1),
+    N_NOT("Şişleme",       "Hat vuruşu +1 hedef (toplam 3)",  11, 5, 2),
+    N_MIN("Sert Süpürüş",  "Süpürme yavaşı %30 -> %45",       12, 5, 3),
+    N_NOT("Geri İt",       "Geri itme +%50 (mızrakla)",       13, 5, 4),
+
+    { "KAPI TUTUCU", "AKTİF duruş: %40 yavaşlarsın — menzile giren otomatik saplanır",
+      NODE_KEYSTONE, 10, 14, 3, 6, ABILITY_GATE_STANCE },
+
+    N_ACT("Saplama",       "AKTİF: x2.2 + sert geri itme (8 sn, 25 stamina)",  0, 2, 1, ABILITY_STAB),
+    N_ACT("Süpürme",       "AKTİF: ön yay x1.0 + yavaşlatma (12 sn, 35 stamina)", 7, 2, 3, ABILITY_SWEEP),
+};
+
 // --- ARCHERY: "Yay Yolu" — Nişancı / Tempo / Beceri + 5 yay aktifi ---
 static const TreeNode T_ARCHERY[] = {
     N_ROOT("Okçu Eğitimi", "Yay hasarı +%3"),
@@ -398,6 +425,7 @@ static const TreeNode T_ENCHANTING[] = {
 #define TREE_DEF(id, tbl) { id, tbl, (int)(sizeof(tbl) / sizeof((tbl)[0])) }
 static const SkillTreeDef TREES[] = {
     TREE_DEF(SKILL_ONE_HANDED,   T_ONEHAND),
+    TREE_DEF(SKILL_TWO_HANDED,   T_TWOHAND),
     TREE_DEF(SKILL_ARCHERY,      T_ARCHERY),
     TREE_DEF(SKILL_LIGHT_ARMOR,  T_LIGHT),
     TREE_DEF(SKILL_MEDIUM_ARMOR, T_MEDIUM),
@@ -502,6 +530,7 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         .xpGainMult = 1.0f, .goldFindMult = 1.0f,
         .spellDmgMult = 1.0f, .manaCostMult = 1.0f, .castSpeedMult = 1.0f,
         .staffDmgMult = 1.0f,
+        .twoHandDmgMult = 1.0f, .sweepSlowMult = 1.0f,
         .summonDmgMult = 1.0f, .summonHpMult = 1.0f, .summonReserve = 0.25f,
         .snakePoisonMult = 1.0f, .summonCostMult = 1.0f,
         .lockZoneMult = 1.0f, .lockCursorMult = 1.0f, .lockNoiseMult = 1.0f,
@@ -543,6 +572,27 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         if (ON(T, 15)) fx->critMult = 1.8f;
         if (ON(T, 16)) { fx->oneHandDmgMult *= 1.25f; fx->dmgTakenMult *= 1.20f; }   // BERSERKER
         if (ON(T, 17)) { fx->executeBonus = 0.60f; fx->maxHpBonus -= 10.0f; }        // İNFAZCI
+    }
+
+    // --- Two-Handed (Mızrak Yolu) ---
+    {
+        const int T = SKILL_TWO_HANDED;
+        if (ON(T, 0))  fx->twoHandDmgMult *= 1.03f;
+        if (ON(T, 1))  fx->twoHandDmgMult *= 1.03f;
+        if (ON(T, 2))  fx->critChanceBonus += 0.02f;
+        if (ON(T, 3))  fx->pierceBonus += 0.08f;
+        if (ON(T, 4))  fx->pierceBonus += 0.07f;
+        if (ON(T, 5))  fx->twoHandDmgMult *= 1.12f;
+        if (ON(T, 6))  fx->attackIntervalMult *= 0.95f;
+        if (ON(T, 7))  fx->attackIntervalMult *= 0.95f;
+        if (ON(T, 8))  fx->attackIntervalMult *= 0.90f;
+        if (ON(T, 9))  fx->spearStaminaMult = 0.85f;
+        if (ON(T, 10)) fx->spearRangeBonus += 20.0f;
+        if (ON(T, 11)) fx->lineDmgFrac = 0.75f;
+        if (ON(T, 12)) fx->lineTargetBonus += 1;
+        if (ON(T, 13)) fx->sweepSlowMult = 1.5f;
+        if (ON(T, 14)) fx->kbDealtMult *= 1.5f;
+        // 15 KAPI TUTUCU: grantAbility (duruş) — pasif etki yok
     }
 
     // --- Archery (Yay Yolu) ---

@@ -35,6 +35,7 @@ typedef struct Equipment Equipment;   // ← forward decl (pointer için yeter)
 #define SPAWN_Y 300.0f
 #define FRAME_DURATION 0.1f
 #define PLAYER_ATTACK_RANGE 80.0f
+#define PLAYER_SPEAR_RANGE 130.0f   // mızrak: mob saldırı menzilinin dışından dürter
 #define PLAYER_ATTACK_HIT_FRAME 3   // slash'ın vuruş karesi (6 karelik slash'ta ~3)
 
 // Yay (Faz 5): köklü atış — çekme boyunca durulur, WASD iptal eder
@@ -70,6 +71,8 @@ typedef struct PlayerLayer {
     int idleRowOverride;  // -1 = yok (base satirini kullan), >=0 = idle'da bu satiri ciz
     bool slashOversize;   // slash'ta 64px satir yerine oversize blogu ciz (silah katmanlari)
     bool smash128;        // arac katmani (LPC Hand Tools): YALNIZ slash'ta, kendi 128 grid'i
+    bool thrustOversize;  // mizrak katmani: SALT thrust'ta, kendi 1536×768 sheet'i
+                          // (8 kare × 4 yon, 192px — thrust disinda cizilmez)
 } PlayerLayer;
 
 // Karakterin TÜM kalıcı durumu
@@ -152,6 +155,8 @@ typedef struct Player {
     // yay kuşanılıyken slash yerine SHOOT başlatır. Hareket atışı iptal eder.
     bool bowEquipped;
     bool staffEquipped;  // asa melee'si SLASH değil THRUST oynar (main yazar; Faz 22)
+    bool spearEquipped;   // mızrak: thrust anim + uzun menzil (Two-Handed A)
+    bool gateStance;      // Kapı Tutucu duruşu: yavaş ama menzile giren saplanır
     bool shooting;       // çekme animasyonu sürüyor
     bool shotReleased;   // bu çekmede ok çıktı mı (release karesinde main atar)
     float drawSpeedMult; // çekme süresi çarpanı (ağaç düğümleri — main yazar, <1 hızlı)

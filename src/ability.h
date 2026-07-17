@@ -31,6 +31,11 @@ typedef enum {
     ABILITY_TORNADO,        // Hortum: ileri süzülen alan — tick hasarı + yavaşlatma
     ABILITY_SNAKEBITE,      // Yılan Isırığı: hedefe zehir DoT — Zehir Patlaması hattı
     ABILITY_FIRELION,       // Ateş Aslanı: hat dalgası — çarptığını yakar
+    // Two-Handed (Parça A): mızrak aktifleri — stamina yakar, ağaçtan açılır
+    ABILITY_STAB,           // Saplama: ×2.2 tek hedef + sert geri itme
+    ABILITY_SWEEP,          // Süpürme: ön 140° yay ×1.0 + %30 yavaş 2sn
+    ABILITY_GATE_STANCE,    // Kapı Tutucu (keystone): duruş AÇ/KAPA —
+                            // yavaşlarsın ama menzile giren otomatik saplanır
     ABILITY_COUNT,
 } AbilityId;
 

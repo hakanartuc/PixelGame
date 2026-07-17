@@ -854,9 +854,9 @@ int main(int argc, char *argv[])
     // Katmanlar ÇİZİM SIRASINDA (alttan üste). Yeni parça eklemek = buraya bir satır.
     // base katmanlar: body → head → face. { texture, z } — z = LPC dosya öneki (çizim sırası, küçük=arka).
     PlayerLayer layers[] = {
-        {load_texture(renderer, "assets/characters/body/male/light.png"), 10, -1, false, false},
-        {load_texture(renderer, "assets/characters/head/male/human_light.png"), 100, -1, false, false},
-        {load_texture(renderer, "assets/characters/face/male/neutral_light.png"), 101, -1, false, false},
+        {load_texture(renderer, "assets/characters/body/male/light.png"), 10, -1, false, false, false},
+        {load_texture(renderer, "assets/characters/head/male/human_light.png"), 100, -1, false, false, false},
+        {load_texture(renderer, "assets/characters/face/male/neutral_light.png"), 101, -1, false, false, false},
     };
 
     R2DTexture *glowTex = create_glow_texture(renderer, 64);
@@ -2566,15 +2566,16 @@ int main(int argc, char *argv[])
                     // Yayın öncesi kaldırılacak — commit'e girer ama işaretli.
                     // Eğri dik: seviye 25 ≈ 125k, 100 ≈ 4M XP → basış başına 1M
                     // (1 basış ~lv57, 2 ~lv75, 4 = tüm eşikler açık)
-                    SkillType dbg[16] = { SKILL_ONE_HANDED, SKILL_LIGHT_ARMOR,
+                    SkillType dbg[17] = { SKILL_ONE_HANDED, SKILL_LIGHT_ARMOR,
                                           SKILL_MEDIUM_ARMOR, SKILL_HEAVY_ARMOR,
                                           SKILL_SMITHING, SKILL_ALCHEMY, SKILL_MINING,
                                           SKILL_HERBALISM, SKILL_WOODCUTTING,
                                           SKILL_ENCHANTING, SKILL_ARCHERY,
                                           SKILL_SNEAK, SKILL_SPEECH,
                                           SKILL_DESTRUCTION, SKILL_STAFF,
-                                          SKILL_CONJURATION };   // ağaç testi
-                    for (int d = 0; d < 16; d++)
+                                          SKILL_CONJURATION,
+                                          SKILL_TWO_HANDED };   // ağaç testi
+                    for (int d = 0; d < 17; d++)
                         if (skill_add_xp(player.skills, dbg[d], 1000000.0f))
                             on_skill_levelup(&player, dbg[d], &hotbar, floatTexts);
 
@@ -2595,6 +2596,7 @@ int main(int argc, char *argv[])
                     bag_add(&ITEM_TYPES[ITEM_TOME_TORNADO], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_TOME_SNAKEBITE], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_TOME_FIRELION], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_SPEAR], 1, 0);   // Two-Handed testi
                     bag_add(&ITEM_TYPES[ITEM_BP_SWORD_IRON], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_BP_HELMET_IRON], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_BP_POISON_OIL], 1, 0);
@@ -4242,6 +4244,7 @@ int main(int argc, char *argv[])
                     // GO/BO/GS/YA/AO yay) — yanlış silahla CD boşa yanmasın
                     const AbilityDef *ad = &ABILITIES[hs->abilityId];
                     bool needBow = (ad->skill == SKILL_ARCHERY);
+                    bool needSpear = (ad->skill == SKILL_TWO_HANDED);
                     bool isSpell = (ad->skill == SKILL_DESTRUCTION ||
                                     ad->skill == SKILL_CONJURATION);
                     bool isSummon = (hs->abilityId == ABILITY_SUMMON_SNAKE ||
@@ -4303,7 +4306,14 @@ int main(int argc, char *argv[])
                             audio_play(SFX_UI);
                         }
                     }
-                    else if (needBow != player.bowEquipped)
+                    else if (needSpear && !player.spearEquipped)
+                    {
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f,
+                                             "Mızrak gerekli!", red);
+                    }
+                    else if (!needSpear && needBow != player.bowEquipped)
                     {
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
@@ -4316,7 +4326,9 @@ int main(int argc, char *argv[])
                         // CD sürüyor — sessiz (bar perdesi zaten gösteriyor)
                     }
                     else if (player.stamina < ad->stamina *
-                                 (needBow ? perkFx.bowStaminaMult : 1.0f))
+                                 (needBow ? perkFx.bowStaminaMult
+                                  : (needSpear && perkFx.spearStaminaMult > 0.0f)
+                                          ? perkFx.spearStaminaMult : 1.0f))
                     {
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
@@ -4367,6 +4379,82 @@ int main(int argc, char *argv[])
                                  player.rect.x + player.rect.w / 2.0f,
                                  player.rect.y + player.rect.h, 10, 60.0f,
                                  200, 190, 160);   // toz bulutu
+                    }
+                    else if (hs->abilityId == ABILITY_GATE_STANCE)
+                    {
+                        // KAPI TUTUCU (keystone): duruş AÇ/KAPA — yavaşlarsın ama
+                        // menzile giren mob otomatik hedeflenip saplanır
+                        player.gateStance = !player.gateStance;
+                        player.abilityCd[ABILITY_GATE_STANCE] = 1.0f;
+                        audio_play(SFX_UI);
+                        SDL_Color st2 = { 255, 200, 120, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f,
+                                             player.gateStance ? "Kapı tutuluyor."
+                                                               : "Duruş bırakıldı.", st2);
+                    }
+                    else if (hs->abilityId == ABILITY_SWEEP &&
+                             !player.attacking && !player.shooting)
+                    {
+                        // SÜPÜRME: bakış yönünde 140° yay — herkese ×1.0 + yavaş.
+                        // Anında çözülür (Nova deseni) ama melee formülüyle vurur.
+                        float fxv = (player.facing == DIR_LEFT)  ? -1.0f
+                                  : (player.facing == DIR_RIGHT) ?  1.0f : 0.0f;
+                        float fyv = (player.facing == DIR_UP)    ? -1.0f
+                                  : (player.facing == DIR_DOWN)  ?  1.0f : 0.0f;
+                        float pcx2 = player.rect.x + player.rect.w / 2.0f;
+                        float pcy2 = player.rect.y + player.rect.h / 2.0f;
+                        float swRange = PLAYER_SPEAR_RANGE + perkFx.spearRangeBonus;
+                        float slowAmt = 0.30f * perkFx.sweepSlowMult;
+                        if (slowAmt > 0.6f) slowAmt = 0.6f;
+                        player.attacking = true;   // thrust animasyonu oynasın
+                        player.state = PLAYER_THRUST;
+                        player.currentFrame = 0;
+                        player.animTimer = 0.0f;
+                        player.stamina -= ad->stamina *
+                            (perkFx.spearStaminaMult > 0.0f ? perkFx.spearStaminaMult : 1.0f);
+                        if (player.stamina < 0.0f) player.stamina = 0.0f;
+                        player.abilityCd[ABILITY_SWEEP] = ad->cooldown;
+                        audio_play(SFX_HIT);
+                        const ItemStack *swWpn = &equipment.slots[EQUIP_WEAPON];
+                        for (int m2 = 0; m2 < mobCount; m2++)
+                        {
+                            Mob *nb = &mobs[m2];
+                            if (!nb->e.alive) continue;
+                            float ndx = (nb->e.rect.x + nb->e.rect.w / 2.0f) - pcx2;
+                            float ndy = (nb->e.rect.y + nb->e.rect.h / 2.0f) - pcy2;
+                            float nd = SDL_sqrtf(ndx * ndx + ndy * ndy);
+                            if (nd > swRange || nd < 0.001f) continue;
+                            // 140° yay: bakışla açı (cos 70° ≈ 0.34)
+                            if ((ndx * fxv + ndy * fyv) / nd < 0.34f) continue;
+                            float effDef2 = nb->type->defense;
+                            if (swWpn->type != NULL && swWpn->type->armorPierce > 0.0f)
+                                effDef2 *= 1.0f - swWpn->type->armorPierce
+                                                - perkFx.pierceBonus;
+                            HitResult sh = combat_player_hit(&player, swWpn, effDef2,
+                                                             ad->damageScale,
+                                                             nb->e.health / nb->e.maxHealth,
+                                                             &perkFx);
+                            sh.damage *= title_damage_mult(&player, nb->type,
+                                                           gametime_is_night());
+                            nb->e.health -= sh.damage;
+                            nb->e.hitFlash = 0.15f;
+                            nb->slowMult = 1.0f - slowAmt;
+                            nb->slowTimer = 2.0f;
+                            nb->aggro = true;
+                            floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                            nb->e.rect.x + nb->e.rect.w / 2.0f + 10.0f,
+                                            nb->e.rect.y, (int)sh.damage, sh.crit);
+                            float sxp = combat_xp_for_hit(sh.damage, nb->type->level,
+                                            player.skills[SKILL_TWO_HANDED].level);
+                            if (skill_add_xp(player.skills, SKILL_TWO_HANDED, sxp))
+                                on_skill_levelup(&player, SKILL_TWO_HANDED,
+                                                 &hotbar, floatTexts);
+                            if (nb->e.health <= 0.0f)
+                                mob_die(nb, mobs, MAX_MOBS, &nextMobId, loots,
+                                        questStatus, floatTexts, &player);
+                        }
                     }
                     else if (!player.attacking && !player.shooting)
                     {
@@ -5362,7 +5450,9 @@ int main(int argc, char *argv[])
                         float ady = aimY - (player.rect.y + player.rect.h / 2.0f);
                         float atkRange = player.bowEquipped
                                        ? PLAYER_BOW_RANGE + perkFx.bowRangeBonus
-                                       : PLAYER_ATTACK_RANGE;
+                                       : player.spearEquipped
+                                         ? PLAYER_SPEAR_RANGE + perkFx.spearRangeBonus
+                                         : PLAYER_ATTACK_RANGE;
                         if (SDL_sqrtf(adx * adx + ady * ady) <= atkRange)
                         {
                             attackPressed = true;
@@ -5441,7 +5531,9 @@ int main(int argc, char *argv[])
                     float tdist = SDL_sqrtf(tdx * tdx + tdy * tdy);
                     float atkRange = player.bowEquipped
                                    ? PLAYER_BOW_RANGE + perkFx.bowRangeBonus
-                                   : PLAYER_ATTACK_RANGE;
+                                   : player.spearEquipped
+                                     ? PLAYER_SPEAR_RANGE + perkFx.spearRangeBonus
+                                     : PLAYER_ATTACK_RANGE;
 
                     if (tdist > atkRange)
                     {
@@ -5473,7 +5565,10 @@ int main(int argc, char *argv[])
                                 ABILITIES[player.pendingAbility].cooldown * cdMult;
                             player.stamina -= ABILITIES[player.pendingAbility].stamina *
                                 (ABILITIES[player.pendingAbility].skill == SKILL_ARCHERY
-                                 ? perkFx.bowStaminaMult : 1.0f);
+                                 ? perkFx.bowStaminaMult
+                                 : (ABILITIES[player.pendingAbility].skill == SKILL_TWO_HANDED
+                                    && perkFx.spearStaminaMult > 0.0f)
+                                 ? perkFx.spearStaminaMult : 1.0f);
                             if (player.stamina < 0.0f) player.stamina = 0.0f;
                         }
                     }
@@ -5495,6 +5590,9 @@ int main(int argc, char *argv[])
                                   wpnStack->type->weaponType == WEAPON_BOW);
             player.staffEquipped = (wpnStack->type != NULL &&
                                     wpnStack->type->weaponType == WEAPON_STAFF);
+            player.spearEquipped = (wpnStack->type != NULL &&
+                                    wpnStack->type->thrustOversize);
+            if (!player.spearEquipped) player.gateStance = false;   // duruş mızrakla yaşar
             player.drawSpeedMult = perkFx.drawSpeedMult;   // ağaç: çekme hızı
 
             // Kaynatma/tören animasyonu: kazan ve sunakta süreç sürerken spellcast;
@@ -5863,6 +5961,34 @@ int main(int argc, char *argv[])
                         }
             }
 
+            // KAPI TUTUCU duruşu: menzile giren en yakın mob otomatik hedef
+            // alınır ve KO auto-attack devreye girer (0.8sn iç tempo tavanı)
+            if (player.gateStance && !player.attacking)
+            {
+                float gcx = player.rect.x + player.rect.w / 2.0f;
+                float gcy = player.rect.y + player.rect.h / 2.0f;
+                float gRange = PLAYER_SPEAR_RANGE + perkFx.spearRangeBonus;
+                int bestId = -1;
+                float bestD = gRange;
+                for (int m2 = 0; m2 < mobCount; m2++)
+                {
+                    Mob *nb = &mobs[m2];
+                    if (!nb->e.alive || nb->type->isStructure) continue;
+                    if (nb->type->passive && !nb->aggro) continue;   // ava saplanmaz
+                    float ndx = (nb->e.rect.x + nb->e.rect.w / 2.0f) - gcx;
+                    float ndy = (nb->e.rect.y + nb->e.rect.h / 2.0f) - gcy;
+                    float nd = SDL_sqrtf(ndx * ndx + ndy * ndy);
+                    if (nd < bestD) { bestD = nd; bestId = nb->id; }
+                }
+                if (bestId >= 0)
+                {
+                    player.targetMobId = bestId;
+                    player.autoAttack = true;
+                    if (player.attackTimer > 0.8f)
+                        player.attackTimer = 0.8f;   // duruş temposu: hızlı dürtme
+                }
+            }
+
             // HAVA (kare bazlı): akış + yağmur sesi + fırtına yıldırımı
             weather_update(dt, gametime_hours());
             {
@@ -6128,7 +6254,9 @@ int main(int argc, char *argv[])
                     float tdy = (target->e.rect.y + target->e.rect.h / 2.0f) - (player.rect.y + player.rect.h / 2.0f);
                     float tdist = SDL_sqrtf(tdx * tdx + tdy * tdy);
 
-                    if (tdist <= PLAYER_ATTACK_RANGE)
+                    if (tdist <= (player.spearEquipped
+                                  ? PLAYER_SPEAR_RANGE + perkFx.spearRangeBonus
+                                  : PLAYER_ATTACK_RANGE))
                     {
                         // Combat A: hasar silah instance'ından (plus dahil) + stat + skill + perk.
                         // Bu vuruş bir ability ise çarpanı uygula (PS ×2, QS ×0.7)
@@ -6142,8 +6270,17 @@ int main(int argc, char *argv[])
                                 abilityScale = perkFx.psScaleOverride;
                         }
                         const ItemStack *weapon = &equipment.slots[EQUIP_WEAPON];
+                        // Delici silah (mızrak): hedef defansının bir kısmı yok
+                        // sayılır (silah tabanı + ağaç Zırh Delici düğümleri)
+                        float effDef = target->type->defense;
+                        if (weapon->type != NULL && weapon->type->armorPierce > 0.0f)
+                        {
+                            float pierce = weapon->type->armorPierce + perkFx.pierceBonus;
+                            if (pierce > 0.8f) pierce = 0.8f;   // tavan: delme %80
+                            effDef *= 1.0f - pierce;
+                        }
                         HitResult hit = combat_player_hit(&player, weapon,
-                                                          target->type->defense,
+                                                          effDef,
                                                           abilityScale,
                                                           target->e.health / target->e.maxHealth,
                                                           &perkFx);
@@ -6241,12 +6378,50 @@ int main(int argc, char *argv[])
                                 on_skill_levelup(&player, sk, &hotbar, floatTexts);
                         }
 
-                        float kb = 180.0f * perkFx.kbDealtMult;   // Ezici Ağırlık
+                        float kb = 180.0f * perkFx.kbDealtMult    // Ezici Ağırlık
+                                 * (player.pendingAbility == ABILITY_STAB
+                                    ? 2.0f : 1.0f);   // Saplama sert iter
                         if (tdist > 0.0f)
                         {
                             target->e.knockbackX = (tdx / tdist) * kb;
                             target->e.knockbackY = (tdy / tdist) * kb;
                         }
+
+                        // HAT VURUŞU (mızrak): saplama çizgisindeki İKİNCİ mob
+                        // hasarın %60'ını yer (ağaç: %75 + ek hedef)
+                        if (player.spearEquipped && tdist > 0.0f)
+                        {
+                            float lineFrac = (perkFx.lineDmgFrac > 0.0f)
+                                           ? perkFx.lineDmgFrac : 0.60f;
+                            int lineLeft = 1 + perkFx.lineTargetBonus;
+                            float lnx = tdx / tdist, lny = tdy / tdist;
+                            for (int m2 = 0; m2 < mobCount; m2++)
+                            {
+                                Mob *lb = &mobs[m2];
+                                if (!lb->e.alive || lb == target) continue;
+                                float ldx = (lb->e.rect.x + lb->e.rect.w / 2.0f)
+                                          - (player.rect.x + player.rect.w / 2.0f);
+                                float ldy = (lb->e.rect.y + lb->e.rect.h / 2.0f)
+                                          - (player.rect.y + player.rect.h / 2.0f);
+                                float ld = SDL_sqrtf(ldx * ldx + ldy * ldy);
+                                if (ld < 0.001f || ld > PLAYER_SPEAR_RANGE + 25.0f)
+                                    continue;
+                                if ((ldx * lnx + ldy * lny) / ld < 0.85f)
+                                    continue;   // hatta değil
+                                float ldmg = hit.damage * lineFrac;
+                                lb->e.health -= ldmg;
+                                lb->e.hitFlash = 0.15f;
+                                lb->aggro = true;
+                                floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                                lb->e.rect.x + lb->e.rect.w / 2.0f + 10.0f,
+                                                lb->e.rect.y, (int)ldmg, false);
+                                if (lb->e.health <= 0.0f)
+                                    mob_die(lb, mobs, MAX_MOBS, &nextMobId, loots,
+                                            questStatus, floatTexts, &player);
+                                if (--lineLeft <= 0) break;   // Şişleme: +1 hedef
+                            }
+                        }
+
                         if (target->e.health <= 0.0f)
                             mob_die(target, mobs, MAX_MOBS, &nextMobId, loots, questStatus, floatTexts, &player);
                     }
@@ -6823,7 +6998,8 @@ int main(int argc, char *argv[])
 
             // Hız çarpanı: perk (Çevik/Rüzgar/Uyumlu) × gece (Gölge Adımı) × eğilme.
             // player_update tile hızıyla çarpar (doğrudan speed yazmak eziliyordu — bug'dı)
-            player.speedMult = (map_current() == MAP_WORLD
+            player.speedMult = (player.gateStance ? 0.6f : 1.0f) // Kapı Tutucu duruşu
+                             * (map_current() == MAP_WORLD
                                 ? weather_speed_mult() : 1.0f)   // kar bastırıyor
                              * (player.foodBuffType == FB_STA_SPEED ? 1.05f : 1.0f)
                              * (1.0f - armorSpeedPenalty)   // zırh ağırlığı (STR telafili)

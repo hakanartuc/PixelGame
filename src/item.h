@@ -72,6 +72,9 @@ typedef struct {
     int equipZBack;              // arka katman z (equipSpritePathBack varsa zorunlu)
     int equipIdleRow;            // idle'da çizilecek satır (0 = yok, sheet'in kendi idle'ı oynar)
     bool slashOversize;          // slash'ı oversize bloktan çiz (64px slash satırı boş silahlar)
+    bool thrustOversize;         // mızrak: katman SALT thrust-oversize sheet'i (1536×768,
+                                 // 8 kare × 4 yön 192px) — thrust dışında çizilmez
+    float armorPierce;           // hedef defansının bu oranını yok sayar (mızrak 0.25)
     WeaponFxType weaponFx;       // silahın partikül efekti (0 = WEAPON_FX_NONE)
 
     // --- Tüketilebilir (iksir vb.) ---
@@ -260,6 +263,8 @@ typedef enum {
     // Büyü dalgası 2, parça 2 — SONA eklendi (save item indeksleri kaymasın)
     ITEM_TOME_SNAKEBITE,  // Tomar: Yılan Isırığı (Yıkım 20 — kervan havuzu)
     ITEM_TOME_FIRELION,   // Tomar: Ateş Aslanı (Yıkım 50 — yalnız boss leşi)
+    // Two-Handed hattı (Parça A)
+    ITEM_SPEAR,           // Mızrak: uzun menzil + yavaş + delici + hat vuruşu
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

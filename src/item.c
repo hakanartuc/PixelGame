@@ -385,6 +385,17 @@ const ItemType ITEM_TYPES[] = {
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .tomeAbility = ABILITY_FIRELION, .tomeReqLevel = 50,
       .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+
+    // Two-Handed hattı (Parça A): mızrak — mesafe kontrolü silahı.
+    // Menzil 130 (kılıç 80) + tempo 1.5sn + defans delme %25 + hat vuruşu
+    // (saplama çizgisindeki 2. mob %60 yer — main işler). İki el: kalkan kilitli.
+    { .name = "Mızrak", .iconIndex = 4, .maxStack = 1, .value = 260,
+      .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_TWO_HAND,
+      .damage = 34.0f, .attackInterval = 1.5f, .armorPierce = 0.25f,
+      .equipSpritePath     = "assets/equipment/weapon/spear_thrust_150.png",
+      .equipSpritePathBack = "assets/equipment/weapon/spear_thrust_001.png",
+      .equipZ = 150, .equipZBack = 1, .thrustOversize = true,
+      .iconSpritePath = "assets/icons/items/spear.png", .iconSrc = { 0, 0, 64, 64 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

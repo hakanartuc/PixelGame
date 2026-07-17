@@ -116,6 +116,26 @@ const AbilityDef ABILITIES[ABILITY_COUNT] = {
         .cooldown = 9.0f, .mana = 28.0f,
     },
 
+    // Two-Handed (Parça A): mızrak aktifleri (yalnız mızrak kuşanılıyken)
+    [ABILITY_STAB] = {
+        .name = "Saplama", .abbrev = "SP",
+        .skill = SKILL_TWO_HANDED, .unlockLevel = 1,
+        .damageScale = 2.2f,    // melee çarpanı (PS deseni) + geri itme ×2
+        .cooldown = 8.0f, .stamina = 25.0f,
+    },
+    [ABILITY_SWEEP] = {
+        .name = "Süpürme", .abbrev = "SÜ",
+        .skill = SKILL_TWO_HANDED, .unlockLevel = 1,
+        .damageScale = 1.0f,    // ön yay AoE + %30 yavaş 2sn (main işler)
+        .cooldown = 12.0f, .stamina = 35.0f,
+    },
+    [ABILITY_GATE_STANCE] = {
+        .name = "Kapı Tutucu", .abbrev = "KT",
+        .skill = SKILL_TWO_HANDED, .unlockLevel = 1,
+        .damageScale = 1.0f,    // duruş: menzile giren otomatik saplanır (0.8sn iç CD)
+        .cooldown = 1.0f, .stamina = 0.0f,
+    },
+
     // M4 Conjuration: çağırma büyüleri (köklü cast; rezerve main'de işler)
     [ABILITY_SUMMON_SNAKE] = {
         .name = "Öz Yılanı", .abbrev = "YIL",

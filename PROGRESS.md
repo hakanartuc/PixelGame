@@ -672,6 +672,29 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   save v28; Inventory.cap dinamik (INVENTORY_SIZE 60 dizi tavanı);
   MAX_RECIPES 32→48. Başlık "Eşya 12/30" doluluk gösterir.
 
+### Faz TH-A — TWO-HANDED PARÇA A: MIZRAK (v28 uyumlu)
+- **Mızrak** (ITEM_SPEAR, enum sonu): mesafe kontrolü silahı — menzil 130
+  (kılıç 80; çoğu mobun saldırı menzilinin DIŞI), tempo 1.5sn, taban 34,
+  DELİCİ (hedef defansının %25'i yok sayılır, ağaçla %40, tavan %80),
+  HAT VURUŞU (saplama çizgisindeki 2. mob %60 hasar; ağaçla %75 + 3. hedef).
+  İki el: WEAPON_TWO_HAND — kalkan kilitli. Kaynak: Demirci Ocağı (S20:
+  3 Odun + 2 Demir Külçe) ya da vendor 260g. F10 setine girdi.
+- **Animasyon**: PLAYER_THRUST (asa dürtmesiyle ortak state) + thrustOversize
+  katmanı — salt-thrust sheet (1536×768, 8 kare × 4 yön 192px, ULPC
+  thrust_oversize çıktısı; fg z150 + bg z1). Mızrak katmanı thrust dışında
+  çizilmez (sheet'te walk satırı yok).
+- **Two-Handed ağacı** (T_TWOHAND, 18 düğüm): Delici/Tempo/Hat dalları;
+  aktifler AĞAÇTAN — Saplama (×2.2 + geri itme ×2, 8sn/25 STA), Süpürme
+  (ön 140° yay ×1.0 + %30 yavaş 2sn — ağaçla %45; 12sn/35 STA; Nova deseni
+  ama melee formülü + TH XP). Keystone KAPI TUTUCU: duruş AÇ/KAPA — hız %40
+  düşer ama menzile giren mob otomatik hedeflenir + KO auto devreye girer
+  (0.8sn tempo tavanı); mızrak çıkınca duruş düşer. combat_weapon_skill
+  zaten TWO_HANDED eşliyordu — XP otomatik. PerkEffects: twoHandDmgMult /
+  pierceBonus / lineTargetBonus / lineDmgFrac / sweepSlowMult /
+  spearStaminaMult / spearRangeBonus. İkon atlası 20→23.
+- Parça B (sonraki): kalkan itemleri + Block skill + pasif blok şansı +
+  SHIFT aktif blok + PERFECT BLOCK (parry) + Block ağacı.
+
 ### YAKIN — "oyun gibi hissettir" (his + rol)
 1. ~~CİLA PAKETİ~~ TAMAM (2026-07-14 — bkz. Faz CİLA bölümü); kalan küçük
    UX borcu: speech zar kilidi save'i (uygun faza serpilir)

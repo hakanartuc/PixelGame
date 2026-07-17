@@ -64,6 +64,10 @@ void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, in
         if (layers[i].smash128 && p->state != PLAYER_SLASH)
             continue;
 
+        // Mizrak katmani (thrustOversize) yalniz saplama sirasinda gorunur
+        if (layers[i].thrustOversize && p->state != PLAYER_THRUST)
+            continue;
+
         SDL_FRect layerSrc = src;    // varsayilan: ortak src (state satiri + currentFrame)
         SDL_FRect layerDst = screen; // varsayilan: ortak dst
         r2d_texture_set_alpha_mod(layers[i].tex, sneakAlpha);
@@ -88,6 +92,21 @@ void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, in
             layerDst.y -= screen.h / 2.0f;
             layerDst.w = screen.w * 2.0f;   // 128/64
             layerDst.h = screen.h * 2.0f;
+        }
+
+        // Mizrak katmani: SALT thrust'ta cizilir — sheet'i salt-thrust blok
+        // (y = yon*192, x = kare*192; LPC yon sirasi UP/LEFT/DOWN/RIGHT)
+        if (layers[i].thrustOversize)
+        {
+            layerSrc = (SDL_FRect){
+                .x = p->currentFrame * OVERSIZE_FRAME,
+                .y = (int)p->facing * OVERSIZE_FRAME,
+                .w = OVERSIZE_FRAME,
+                .h = OVERSIZE_FRAME};
+            layerDst.x -= screen.w;
+            layerDst.y -= screen.h;
+            layerDst.w = screen.w * 3.0f;
+            layerDst.h = screen.h * 3.0f;
         }
 
         // Slash'ta oversize katman: 192px blok + 3x buyutulmus merkezli dst
@@ -199,7 +218,8 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
     // --- DURUM (state) belirleme ---
     if (p->attacking)
     {
-        p->state = p->staffEquipped ? PLAYER_THRUST : PLAYER_SLASH;
+        p->state = (p->staffEquipped || p->spearEquipped)
+                 ? PLAYER_THRUST : PLAYER_SLASH;
     }
     else if (p->shooting)
     {
@@ -230,7 +250,8 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
         else
         {
             p->attacking = true;
-            p->state = p->staffEquipped ? PLAYER_THRUST : PLAYER_SLASH;
+            p->state = (p->staffEquipped || p->spearEquipped)
+                 ? PLAYER_THRUST : PLAYER_SLASH;
             p->attackHit = false;
         }
         p->currentFrame = 0;
@@ -459,6 +480,7 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
             out[n].idleRowOverride = idleRow;
             out[n].slashOversize = st->type->slashOversize;
             out[n].smash128 = isTool;
+            out[n].thrustOversize = st->type->thrustOversize;
             n++;
         }
 
@@ -471,6 +493,7 @@ int build_player_layers(const PlayerLayer *base, int baseCount,
             out[n].idleRowOverride = idleRow;
             out[n].slashOversize = st->type->slashOversize;
             out[n].smash128 = isTool;
+            out[n].thrustOversize = st->type->thrustOversize;
             n++;
         }
     }

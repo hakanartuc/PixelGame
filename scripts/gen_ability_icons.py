@@ -51,7 +51,7 @@ def save_png(path, W, H, img):
     png += chunk(b'IEND', b'')
     open(path, 'wb').write(png)
 
-N = 20; CELL = 32
+N = 23; CELL = 32
 W, H = N * CELL, CELL
 px = bytearray(W * H * 4)
 
@@ -198,5 +198,27 @@ quarter_blit(SNBI, 0, 256, 18)
 frame(19, (84, 48, 30))
 quarter_blit(FLIO, 256, 128, 19)
 
+# Two-Handed (Parça A): mızrak glifleri — sword() dilinde prosedürel
+def spear(cell, tip=(220, 225, 235), shaft=(150, 105, 60)):
+    frame(cell)
+    c = cell*CELL
+    for i in range(16):                        # çapraz gövde (sol-alt → sağ-üst)
+        rect(c + 7 + i, 24 - i, 2, 2, shaft)
+    rect(c + 22, 7, 3, 3, tip)                 # uç
+    rect(c + 21, 10, 2, 2, tip)
+
+# 20 STAB — mızrak + vuruş izi
+spear(20)
+rect(20*CELL + 24, 12, 4, 2, (255, 220, 90))
+# 21 SWEEP — mızrak + yay izi (alt yarım daire hissi)
+spear(21)
+for i in range(10):
+    rect(21*CELL + 8 + i*2, 26 - abs(i-5)//2, 2, 1, (120, 220, 255))
+# 22 GATE_STANCE — mızrak + kapı çerçevesi
+spear(22, shaft=(120, 90, 55))
+rect(22*CELL + 5, 5, 2, 22, (200, 170, 110))
+rect(22*CELL + 25, 5, 2, 22, (200, 170, 110))
+rect(22*CELL + 5, 5, 22, 2, (200, 170, 110))
+
 save_png('assets/icons/abilities.png', W, H, px)
-print("OK assets/icons/abilities.png (20 hücre 32x32)")
+print("OK assets/icons/abilities.png (23 hücre 32x32)")

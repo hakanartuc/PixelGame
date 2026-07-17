@@ -96,6 +96,10 @@ HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
     if (sk == SKILL_STAFF)
         perkScale *= fx->staffDmgMult;
 
+    // Mızrak ağacı: çift el hasar çarpanı (Parça A)
+    if (sk == SKILL_TWO_HANDED)
+        perkScale *= fx->twoHandDmgMult;
+
     float raw = base * strScale * skillScale * perkScale
               * abilityScale * damage_variance();
 

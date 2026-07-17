@@ -21,6 +21,7 @@ const ShopEntry SHOP_STOCK[] = {
     { &ITEM_TYPES[ITEM_STAFF] },       // asa: tam-buyucu silahi (buyu +%20)
     { &ITEM_TYPES[ITEM_ARROW] },       // ok: tik basina 1 (craft 10'lu, ~yari fiyat)
     { &ITEM_TYPES[ITEM_LONG_SWORD] },
+    { &ITEM_TYPES[ITEM_SPEAR] },      // Two-Handed girişi: craft (S20) ya da hazır
     { &ITEM_TYPES[ITEM_HELMET_IRON] },
     { &ITEM_TYPES[ITEM_CHEST_IRON] },
     { &ITEM_TYPES[ITEM_LEGS_IRON] },

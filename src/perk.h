@@ -103,6 +103,14 @@ typedef struct {
 
     // Asa (Staff ağacı)
     float staffDmgMult;       // asa melee çarpanı
+    // Two-Handed (Parça A — mızrak)
+    float twoHandDmgMult;     // mızrak/çift el hasar çarpanı
+    float pierceBonus;        // defans delmeye eklenir (silahın 0.25'i üstüne)
+    int   lineTargetBonus;    // hat vuruşu ek hedef sayısı (+1 = toplam 2 ek)
+    float sweepSlowMult;      // Süpürme yavaşlatma gücü çarpanı
+    float spearStaminaMult;   // mızrak becerileri stamina çarpanı (0 = 1.0 say)
+    float spearRangeBonus;    // mızrak menzili bonusu (px)
+    float lineDmgFrac;        // hat vuruşu hasar oranı (0 = 0.60 varsayılan)
     float staffSpellBonus;    // asa KUŞANILIYKEN ek büyü çarpanı payı
 
     // Kader Ağacı (karakter-geneli)
