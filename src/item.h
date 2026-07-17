@@ -257,6 +257,9 @@ typedef enum {
     ITEM_BAG_TRAVELER,    // Gezgin Çantası: Eşya +10 daha (Smithing 40)
     ITEM_POUCH_MATERIAL,  // Malzeme Kesesi: Malzeme +15 (Smithing 10)
     ITEM_POUCH_MASTER,    // Usta Kesesi: Malzeme +15 daha (Smithing 35)
+    // Büyü dalgası 2, parça 2 — SONA eklendi (save item indeksleri kaymasın)
+    ITEM_TOME_SNAKEBITE,  // Tomar: Yılan Isırığı (Yıkım 20 — kervan havuzu)
+    ITEM_TOME_FIRELION,   // Tomar: Ateş Aslanı (Yıkım 50 — yalnız boss leşi)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

@@ -128,8 +128,12 @@ spellsLearned bit maskesi; Yıkım seviye şartı; spells_apply_learned köprüs
 HER tree_compute_effects sonrası şart) + 3 büyü: Yıldırım Pençesi (koni,
 ıslakta +%20), Buz Dikenleri (hedef alan, karda +%20 & yavaş ×1.5), Hortum
 (süzülen alan, fırtınada güçlü). Kaynak: kervan (Pençe+Diken) + zindan USTA
-sandık %25 (Hortum). F10 3 tomar basar. KALAN parça 2: Ateş Aslanı + Yılan
-Isırığı (yönlü sheet'ler) + kervan tomar havuzu rastgeleleşmesi.
+sandık %25 (Hortum). F10 5 tomar basar.
+**PARÇA 2 TAMAM — BÜYÜ DALGASI 2 KAPANDI**: Yılan Isırığı (zehir DoT kanala
+eklenir; Zehir Patlaması salt-büyü) + Ateş Aslanı (hat dalgası, tek-vuruş
+takibi, yanma basar; YALNIZ boss leşi %35, Yıkım 50). Kervan tomarları
+RASTGELE havuz ({Pençe,Isırık,Diken}'den 2 farklı; startDay tohumlu).
+Yeni item'lar enum SONUNA (v28 indeks güvenliği).
 **ÇANTA SEKMELERİ TAMAM (save v28)**: Eşya + Malzeme çantası — I aç/kapa,
 TAB sekme değiştirir, sekme şeridi tıklanır, sürükleyip diğer sekme başlığına
 bırak = taşı, şeridin sağındaki ÇÖP'e bırak = imha. Craft paneli tekerlekle

@@ -637,8 +637,18 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   rastgeleleşecek); Hortum tomarı YALNIZ zindan USTA sandığı (%25). F10 dev
   seti 3 tomarı çantaya basar.
 - İkon atlası 15→18 hücre (gen_ability_icons.py — sheet karelerinden indirme).
-- Parça 2 (sonraki): Ateş Aslanı + Yılan Isırığı (yönlü sheet'ler) + kervan
-  tomar havuzu rastgeleleşmesi.
+- **Parça 2 TAMAM**: Yılan Isırığı (YS, 12/20/7sn — hedefe küçük vuruş + zehir
+  DoT %60/4sn zehir kanalına EKLENİR → Zehir Patlaması salt-büyü kombo; yönlü
+  snakebite sheet'i hedefte yükselip ısırır) + Ateş Aslanı (AA, 30/28/9sn —
+  bakış yönüne 430px/sn hat dalgası 0.7sn, çarptığı HER moba 1 kez vurur
+  [hitIds takibi] + Ateş Topu yanma kanalı basar → Termal Şok'u besler;
+  ıslakta -%15; yönlü firelion sheet'leri). Tomarlar: Yılan Isırığı Yıkım 20
+  (kervan 400g) / Ateş Aslanı Yıkım 50 (YALNIZ boss leşi %35 — haftalık kural).
+  KERVAN TOMAR HAVUZU RASTGELE: her kervanda {Pençe, Isırık, Diken}
+  havuzundan 2 FARKLI tomar — worldevent startDay tohumlu (save gerekmez,
+  ziyaret boyunca sabit, sonraki kervanda değişir). İkon atlası 18→20.
+  Item enum'ları SONA eklendi (v28 kayıtların item indeksleri kaymadı).
+  BÜYÜ DALGASI 2 KAPANDI — magic_pack'in 5 büyüsü de oyunda.
 
 ### Faz ÇANTA — ÇANTA SEKMELERİ: Eşya + Malzeme (save v28)
 - **İki çanta, tek panel**: I aç/kapa, TAB sekme değiştirir (Eşya ↔ Malzeme);

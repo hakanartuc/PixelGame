@@ -29,6 +29,8 @@ typedef enum {
     ABILITY_LIGHTNING_CLAW, // Yıldırım Pençesi: yakın koni — büyücünün panik butonu
     ABILITY_ICETACLE,       // Buz Dikenleri: hedef alanda yerden buz + güçlü yavaş
     ABILITY_TORNADO,        // Hortum: ileri süzülen alan — tick hasarı + yavaşlatma
+    ABILITY_SNAKEBITE,      // Yılan Isırığı: hedefe zehir DoT — Zehir Patlaması hattı
+    ABILITY_FIRELION,       // Ateş Aslanı: hat dalgası — çarptığını yakar
     ABILITY_COUNT,
 } AbilityId;
 

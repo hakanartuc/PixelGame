@@ -375,6 +375,16 @@ const ItemType ITEM_TYPES[] = {
     { .name = "Usta Kesesi", .iconIndex = 6, .maxStack = 1, .value = 0,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .bagUpgrade = 4 },
+
+    // Büyü dalgası 2, parça 2 — SONA eklendi (save item indeksleri kaymasın)
+    { .name = "Tomar: Yılan Isırığı", .iconIndex = 0, .maxStack = 1, .value = 400,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .tomeAbility = ABILITY_SNAKEBITE, .tomeReqLevel = 20,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+    { .name = "Tomar: Ateş Aslanı", .iconIndex = 0, .maxStack = 1, .value = 750,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .tomeAbility = ABILITY_FIRELION, .tomeReqLevel = 50,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

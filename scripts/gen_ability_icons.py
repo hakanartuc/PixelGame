@@ -51,7 +51,7 @@ def save_png(path, W, H, img):
     png += chunk(b'IEND', b'')
     open(path, 'wb').write(png)
 
-N = 18; CELL = 32
+N = 20; CELL = 32
 W, H = N * CELL, CELL
 px = bytearray(W * H * 4)
 
@@ -187,5 +187,16 @@ quarter_blit(ICET, 384, 128, 16)
 frame(17, (58, 66, 48))
 quarter_blit(TORN, 128, 128, 17)
 
+# Büyü dalgası 2 parça 2: yönlü sheet'lerden kareler
+SNBI = load_png('assets/fx/snakebite_side.png')
+FLIO = load_png('assets/fx/firelion_right.png')
+
+# 18 SNAKEBITE — yılan başı karesi (satır 2, kare 1 → 0,256)
+frame(18, (40, 78, 40))
+quarter_blit(SNBI, 0, 256, 18)
+# 19 FIRELION — dolu aslan karesi (satır 1, kare 2 → 256,128)
+frame(19, (84, 48, 30))
+quarter_blit(FLIO, 256, 128, 19)
+
 save_png('assets/icons/abilities.png', W, H, px)
-print("OK assets/icons/abilities.png (18 hücre 32x32)")
+print("OK assets/icons/abilities.png (20 hücre 32x32)")

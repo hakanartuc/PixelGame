@@ -103,6 +103,19 @@ const AbilityDef ABILITIES[ABILITY_COUNT] = {
         .cooldown = 14.0f, .mana = 35.0f,
     },
 
+    [ABILITY_SNAKEBITE] = {
+        .name = "Yılan Isırığı", .abbrev = "YS",
+        .skill = SKILL_DESTRUCTION, .unlockLevel = 1,
+        .damageScale = 12.0f,   // vuruş küçük — asıl yük zehir DoT'unda (%60/4sn)
+        .cooldown = 7.0f, .mana = 20.0f,
+    },
+    [ABILITY_FIRELION] = {
+        .name = "Ateş Aslanı", .abbrev = "AA",
+        .skill = SKILL_DESTRUCTION, .unlockLevel = 1,
+        .damageScale = 30.0f,   // hat dalgası: 300px ileri, çarptığını yakar
+        .cooldown = 9.0f, .mana = 28.0f,
+    },
+
     // M4 Conjuration: çağırma büyüleri (köklü cast; rezerve main'de işler)
     [ABILITY_SUMMON_SNAKE] = {
         .name = "Öz Yılanı", .abbrev = "YIL",

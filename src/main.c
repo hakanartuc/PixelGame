@@ -312,6 +312,10 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
                 item_make(&ITEM_TYPES[ITEM_SWORD_LORD], 1, 2);   // +2 hazır düşer
             boss_set_first_kill_done(true);
         }
+        // Ateş Aslanı tomarı: türün TEK kaynağı boss leşi (%35 — haftalık kural)
+        if (li >= 0 && loots[li].itemCount < MAX_LOOT_ITEMS && randf() < 0.35f)
+            loots[li].items[loots[li].itemCount++] =
+                item_make(&ITEM_TYPES[ITEM_TOME_FIRELION], 1, 0);
         SDL_Color gold = { 255, 210, 60, 255 };
         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                              player->rect.x + player->rect.w / 2.0f,
@@ -956,6 +960,17 @@ int main(int argc, char *argv[])
     R2DTexture *clawTex     = load_texture(renderer, "assets/fx/lightningclaw.png");  // 4×4 128px
     R2DTexture *icetacleTex = load_texture(renderer, "assets/fx/icetacle.png");
     R2DTexture *tornadoTex  = load_texture(renderer, "assets/fx/tornado.png");
+    R2DTexture *snakebiteTex[3] = {   // 0 down / 1 up / 2 side (sola bakar)
+        load_texture(renderer, "assets/fx/snakebite_down.png"),
+        load_texture(renderer, "assets/fx/snakebite_up.png"),
+        load_texture(renderer, "assets/fx/snakebite_side.png"),
+    };
+    R2DTexture *firelionTex[4] = {    // 0 down / 1 up / 2 left / 3 right
+        load_texture(renderer, "assets/fx/firelion_down.png"),
+        load_texture(renderer, "assets/fx/firelion_up.png"),
+        load_texture(renderer, "assets/fx/firelion_left.png"),
+        load_texture(renderer, "assets/fx/firelion_right.png"),
+    };
 
     // Diken patlaması görselleri (yer efekti — 10 kare × 0.06sn)
     #define MAX_SPIKE_FX 6
@@ -967,6 +982,23 @@ int main(int argc, char *argv[])
     SpikeFxAnim clawFx[MAX_CLAW_FX] = {0};      // lightningclaw sheet (16 kare)
     #define MAX_ICETACLE_FX 4
     SpikeFxAnim icetacleFx[MAX_ICETACLE_FX] = {0};  // icetacle sheet (16 kare)
+    #define MAX_SNAKEBITE_FX 4
+    typedef struct { bool active; float x, y, t; int dirRow; bool flip; } SnakeFxAnim;
+    SnakeFxAnim snakeFx[MAX_SNAKEBITE_FX] = {0};   // dirRow: 0 down/1 up/2 side
+    #define MAX_FIRELIONS 3
+    typedef struct {
+        bool active;
+        float x, y;          // merkez (dünya)
+        float dirX, dirY;    // hamle yönü (birim)
+        float t;             // yaş (ömür = FIRELION_LIFE)
+        float damage;        // cast anında hesaplandı
+        int hitIds[8];       // aynı moba İKİ KEZ vurmaz (tek dalga)
+        int hitN;
+        int facing;          // hangi sheet: 0 down/1 up/2 left/3 right
+    } FireLion;
+    FireLion firelions[MAX_FIRELIONS] = {0};
+    #define FIRELION_LIFE 0.7f
+    #define FIRELION_SPEED 430.0f
     #define MAX_TORNADOES 3
     typedef struct {
         bool active;
@@ -1078,6 +1110,8 @@ int main(int argc, char *argv[])
     int dialogNode = -1;   // aktif diyalog düğümü
     bool shopOpen = false;
     bool shopCaravan = false;   // açık dükkan kervan mı? (özel stok + %15 pahalı)
+    ShopEntry caravanStock[12]; // aktif kervan stoğu: sabit liste + 2 rastgele tomar
+    int caravanStockN = 0;      // (olayın startDay'i tohumlar — save gerekmez)
     int nearestNpc = -1;   // E prompt'u için (her kare güncellenir)
     int nearestRes = -1;   // E menzilindeki toplanabilir kaynak düğümü
     int gatherRes = -1;    // aktif toplama süreci (-1 = yok): savurma döngüsü çalışır
@@ -1780,6 +1814,27 @@ int main(int argc, char *argv[])
                             {
                                 shopOpen = true;
                                 shopCaravan = (dialogNpc == kervanIdx);
+                                if (shopCaravan)
+                                {
+                                    // Kervan stoğu: sabitler + havuzdan 2 FARKLI tomar.
+                                    // startDay tohumlu → aynı ziyarette hep aynı ikili
+                                    // (save/load değişmez), sonraki kervanda değişir.
+                                    static const int TOME_POOL[3] = {
+                                        ITEM_TOME_CLAW, ITEM_TOME_SNAKEBITE,
+                                        ITEM_TOME_ICETACLE };
+                                    int weCur, weStart, weLast;
+                                    worldevent_save_get(&weCur, &weStart, &weLast);
+                                    caravanStockN = 0;
+                                    for (int c = 0; c < CARAVAN_STOCK_COUNT &&
+                                                    caravanStockN < 10; c++)
+                                        caravanStock[caravanStockN++] = CARAVAN_STOCK[c];
+                                    int t1 = ((weStart % 3) + 3) % 3;
+                                    int t2 = (t1 + 1 + (((weStart / 3) % 2) + 2) % 2) % 3;
+                                    caravanStock[caravanStockN++] =
+                                        (ShopEntry){ &ITEM_TYPES[TOME_POOL[t1]] };
+                                    caravanStock[caravanStockN++] =
+                                        (ShopEntry){ &ITEM_TYPES[TOME_POOL[t2]] };
+                                }
                                 inventoryOpen = true;   // satış için çanta da açık
                                 dialogNpc = -1;
                             }
@@ -2538,6 +2593,8 @@ int main(int argc, char *argv[])
                     bag_add(&ITEM_TYPES[ITEM_TOME_CLAW], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_TOME_ICETACLE], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_TOME_TORNADO], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_TOME_SNAKEBITE], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_TOME_FIRELION], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_BP_SWORD_IRON], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_BP_HELMET_IRON], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_BP_POISON_OIL], 1, 0);
@@ -2833,6 +2890,8 @@ int main(int argc, char *argv[])
                             for (int i = 0; i < MAX_CLAW_FX; i++) clawFx[i].active = false;
                             for (int i = 0; i < MAX_ICETACLE_FX; i++) icetacleFx[i].active = false;
                             for (int i = 0; i < MAX_TORNADOES; i++) tornadoes[i].active = false;
+                            for (int i = 0; i < MAX_SNAKEBITE_FX; i++) snakeFx[i].active = false;
+                            for (int i = 0; i < MAX_FIRELIONS; i++) firelions[i].active = false;
                             memset(floatTexts, 0, sizeof(FloatText) * MAX_FLOAT_TEXTS);
                             deathTimer = 0.0f;
                             volleyLeft = 0;
@@ -3222,10 +3281,10 @@ int main(int argc, char *argv[])
                     {
                         int entry = shop_entry_at((float)event.button.x, (float)event.button.y,
                                                   40.0f, 40.0f,
-                                                  shopCaravan ? CARAVAN_STOCK_COUNT : 0);
+                                                  shopCaravan ? caravanStockN : 0);
                         if (entry >= 0)
                         {
-                            const ItemType *it = shopCaravan ? CARAVAN_STOCK[entry].type
+                            const ItemType *it = shopCaravan ? caravanStock[entry].type
                                                              : SHOP_STOCK[entry].type;
                             // Fiyat itibara göre: dip itibarda ×1.5, saygın müşteriye ×0.9
                             // Kervan pazarlıksız: her şey %15 pahalı (nadir mal bedeli)
@@ -4210,7 +4269,8 @@ int main(int argc, char *argv[])
                                    * (isSummon ? perkFx.summonCostMult : 1.0f);
                         bool needTarget = (hs->abilityId == ABILITY_FIREBOLT ||
                                            hs->abilityId == ABILITY_LIGHTNING ||
-                                           hs->abilityId == ABILITY_ICETACLE);
+                                           hs->abilityId == ABILITY_ICETACLE ||
+                                           hs->abilityId == ABILITY_SNAKEBITE);
                         Mob *spTarget = mob_find_by_id(mobs, mobCount, player.targetMobId);
                         float spDist = 1e9f;
                         if (spTarget != NULL)
@@ -4873,6 +4933,84 @@ int main(int argc, char *argv[])
                                     break;
                                 }
                             audio_play(SFX_DODGE);   // rüzgar whoosh
+                        }
+                        else if (castSpell == ABILITY_SNAKEBITE)
+                        {
+                            // YILAN ISIRIĞI: hedefe küçük vuruş + ağır zehir DoT
+                            // (vuruşun %60'ı 4 sn'ye yayılır — kanalla ÜST ÜSTE biner).
+                            // Zehir Patlaması (M1) artık salt-büyüyle kurulabilir.
+                            Mob *sb = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                            if (sb != NULL)
+                            {
+                                float sx2 = sb->e.rect.x + sb->e.rect.w / 2.0f;
+                                float sy2 = sb->e.rect.y + sb->e.rect.h / 2.0f;
+                                HitResult sh = combat_spell_hit(&player, wpn,
+                                                                sd->damageScale,
+                                                                sb->type->defense, &perkFx);
+                                sh.damage *= title_damage_mult(&player, sb->type,
+                                                               gametime_is_night());
+                                sb->e.health -= sh.damage;
+                                sb->e.hitFlash = 0.15f;
+                                sb->aggro = true;
+                                mob_alert_camp(mobs, mobCount, sb);
+                                // Zehir kanalı: mevcut DoT'a EKLENİR (tam build meşru)
+                                sb->poisonDps += sh.damage * 0.6f / 4.0f;
+                                sb->poisonTime = 4.0f;
+                                // Yön animasyonu: oyuncudan hedefe bakış
+                                float sdx2 = sx2 - pcx, sdy2 = sy2 - pcy;
+                                int row; bool flip = false;
+                                if (SDL_fabsf(sdx2) > SDL_fabsf(sdy2))
+                                { row = 2; flip = (sdx2 > 0); }   // side sola bakar
+                                else row = (sdy2 < 0) ? 1 : 0;
+                                for (int q = 0; q < MAX_SNAKEBITE_FX; q++)
+                                    if (!snakeFx[q].active)
+                                    {
+                                        snakeFx[q] = (SnakeFxAnim){ true, sx2, sy2,
+                                                                    0.0f, row, flip };
+                                        break;
+                                    }
+                                audio_play(SFX_HIT);
+                                floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                                sx2 + 10.0f, sb->e.rect.y,
+                                                (int)sh.damage, sh.crit);
+                                float sxp = combat_xp_for_hit(sh.damage, sb->type->level,
+                                                player.skills[SKILL_DESTRUCTION].level);
+                                if (skill_add_xp(player.skills, SKILL_DESTRUCTION, sxp))
+                                    on_skill_levelup(&player, SKILL_DESTRUCTION,
+                                                     &hotbar, floatTexts);
+                                if (sb->e.health <= 0.0f)
+                                    mob_die(sb, mobs, MAX_MOBS, &nextMobId, loots,
+                                            questStatus, floatTexts, &player);
+                            }
+                        }
+                        else if (castSpell == ABILITY_FIRELION)
+                        {
+                            // ATEŞ ASLANI: bakış yönüne hat dalgası — 300px koşar,
+                            // çarptığını yakar (tek dalga: mob başına 1 vuruş).
+                            // Islakta -%15 (fire mult) — Termal Şok'u besler.
+                            float fxv = (player.facing == DIR_LEFT)  ? -1.0f
+                                      : (player.facing == DIR_RIGHT) ?  1.0f : 0.0f;
+                            float fyv = (player.facing == DIR_UP)    ? -1.0f
+                                      : (player.facing == DIR_DOWN)  ?  1.0f : 0.0f;
+                            HitResult sh = combat_spell_hit(&player, wpn,
+                                                            sd->damageScale,
+                                                            0.0f, &perkFx);
+                            for (int q = 0; q < MAX_FIRELIONS; q++)
+                                if (!firelions[q].active)
+                                {
+                                    firelions[q] = (FireLion){
+                                        .active = true,
+                                        .x = pcx + fxv * 30.0f, .y = pcy + fyv * 30.0f,
+                                        .dirX = fxv, .dirY = fyv,
+                                        .t = 0.0f,
+                                        .damage = sh.damage * weather_fire_mult(),
+                                        .hitN = 0,
+                                        .facing = (fyv > 0) ? 0 : (fyv < 0) ? 1
+                                                : (fxv < 0) ? 2 : 3,
+                                    };
+                                    break;
+                                }
+                            audio_play(SFX_CRIT);   // kükreme yerine çatırtı
                         }
                         else if (castSpell == ABILITY_SUMMON_SNAKE ||
                                  castSpell == ABILITY_SUMMON_TURTLE)
@@ -6449,6 +6587,60 @@ int main(int argc, char *argv[])
                 if (icetacleFx[q].t >= 16 * 0.06f) icetacleFx[q].active = false;
             }
 
+            // YILAN ISIRIĞI animasyonu (16 karelik tek atım)
+            for (int q = 0; q < MAX_SNAKEBITE_FX; q++)
+            {
+                if (!snakeFx[q].active) continue;
+                snakeFx[q].t += dt;
+                if (snakeFx[q].t >= 16 * 0.05f) snakeFx[q].active = false;
+            }
+
+            // ATEŞ ASLANI: hat boyunca koşar — çarptığı HER moba bir kez vurur
+            for (int q = 0; q < MAX_FIRELIONS; q++)
+            {
+                FireLion *fl = &firelions[q];
+                if (!fl->active) continue;
+                fl->t += dt;
+                if (fl->t >= FIRELION_LIFE) { fl->active = false; continue; }
+                fl->x += fl->dirX * FIRELION_SPEED * dt;
+                fl->y += fl->dirY * FIRELION_SPEED * dt;
+                for (int m2 = 0; m2 < mobCount; m2++)
+                {
+                    Mob *nb = &mobs[m2];
+                    if (!nb->e.alive) continue;
+                    float ndx = (nb->e.rect.x + nb->e.rect.w / 2.0f) - fl->x;
+                    float ndy = (nb->e.rect.y + nb->e.rect.h / 2.0f) - fl->y;
+                    if (ndx * ndx + ndy * ndy > 55.0f * 55.0f) continue;
+                    bool already = false;
+                    for (int h = 0; h < fl->hitN; h++)
+                        if (fl->hitIds[h] == nb->id) { already = true; break; }
+                    if (already) continue;
+                    if (fl->hitN < 8) fl->hitIds[fl->hitN++] = nb->id;
+                    float fdmg = fl->damage
+                               * (100.0f / (100.0f + nb->type->defense))
+                               * title_damage_mult(&player, nb->type,
+                                                   gametime_is_night());
+                    nb->e.health -= fdmg;
+                    nb->e.hitFlash = 0.15f;
+                    nb->aggro = true;
+                    mob_alert_camp(mobs, mobCount, nb);
+                    // Yakma: Ateş Topu ile aynı kanal (Termal Şok'a hazırlar)
+                    nb->burnDps = fdmg * 0.30f * (1.0f + perkFx.burnBonus) / 3.0f;
+                    nb->burnTime = 3.0f * weather_burn_time_mult();
+                    floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                    nb->e.rect.x + nb->e.rect.w / 2.0f + 10.0f,
+                                    nb->e.rect.y, (int)fdmg, false);
+                    float sxp = combat_xp_for_hit(fdmg, nb->type->level,
+                                    player.skills[SKILL_DESTRUCTION].level);
+                    if (skill_add_xp(player.skills, SKILL_DESTRUCTION, sxp))
+                        on_skill_levelup(&player, SKILL_DESTRUCTION,
+                                         &hotbar, floatTexts);
+                    if (nb->e.health <= 0.0f)
+                        mob_die(nb, mobs, MAX_MOBS, &nextMobId, loots,
+                                questStatus, floatTexts, &player);
+                }
+            }
+
             // HORTUM: süzülür + 0.5 sn'de bir menzilindekileri döver
             for (int q = 0; q < MAX_TORNADOES; q++)
             {
@@ -7321,6 +7513,39 @@ int main(int argc, char *argv[])
                 r2d_set_blend(renderer, R2D_BLEND_ALPHA);
                 r2d_draw_texture(renderer, icetacleTex, &csrc, &cdst);
             }
+        for (int q = 0; q < MAX_SNAKEBITE_FX; q++)
+        {
+            if (!snakeFx[q].active) continue;
+            R2DTexture *stx = snakebiteTex[snakeFx[q].dirRow];
+            if (stx == NULL) continue;
+            int fr = (int)(snakeFx[q].t / 0.05f);
+            if (fr > 15) fr = 15;
+            SDL_FRect csrc = { (float)((fr % 4) * 128), (float)((fr / 4) * 128),
+                               128, 128 };
+            SDL_FRect cdst = world_to_screen(snakeFx[q].x - 64.0f,
+                                             snakeFx[q].y - 96.0f,
+                                             128.0f, 128.0f, &camera);
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            if (snakeFx[q].flip)
+                r2d_draw_texture_flip(renderer, stx, &csrc, &cdst, true);
+            else
+                r2d_draw_texture(renderer, stx, &csrc, &cdst);
+        }
+        for (int q = 0; q < MAX_FIRELIONS; q++)
+        {
+            const FireLion *fl = &firelions[q];
+            if (!fl->active) continue;
+            R2DTexture *ftx = firelionTex[fl->facing];
+            if (ftx == NULL) continue;
+            int fr = (int)(fl->t / (FIRELION_LIFE / 16.0f));
+            if (fr > 15) fr = 15;
+            SDL_FRect csrc = { (float)((fr % 4) * 128), (float)((fr / 4) * 128),
+                               128, 128 };
+            SDL_FRect cdst = world_to_screen(fl->x - 70.0f, fl->y - 100.0f,
+                                             140.0f, 140.0f, &camera);
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_draw_texture(renderer, ftx, &csrc, &cdst);
+        }
         if (tornadoTex != NULL)
             for (int q = 0; q < MAX_TORNADOES; q++)
             {
@@ -8081,8 +8306,8 @@ int main(int argc, char *argv[])
                         rep_buy_mult(player.reputation[region_of(player.rect.x, player.rect.y)])
                             * (shopCaravan ? 1.15f : 1.0f),
                         40.0f, 40.0f,
-                        shopCaravan ? CARAVAN_STOCK : NULL,
-                        shopCaravan ? CARAVAN_STOCK_COUNT : 0);
+                        shopCaravan ? caravanStock : NULL,
+                        shopCaravan ? caravanStockN : 0);
 
         // Craft paneli + aktif sürecin ilerleme barı
         if (craftOpen && craftStation >= 0)
@@ -8252,12 +8477,12 @@ int main(int argc, char *argv[])
             if (tip == NULL && shopOpen)
             {
                 int se = shop_entry_at(tmx, tmy, 40.0f, 40.0f,
-                                       shopCaravan ? CARAVAN_STOCK_COUNT : 0);
+                                       shopCaravan ? caravanStockN : 0);
                 if (se >= 0 &&
-                    se < (shopCaravan ? CARAVAN_STOCK_COUNT : SHOP_STOCK_COUNT))
+                    se < (shopCaravan ? caravanStockN : SHOP_STOCK_COUNT))
                 {
                     static ItemStack shopTip;   // stok taze instance gibi gösterilir
-                    shopTip = item_make((shopCaravan ? CARAVAN_STOCK : SHOP_STOCK)[se].type,
+                    shopTip = item_make((shopCaravan ? caravanStock : SHOP_STOCK)[se].type,
                                         1, 0);
                     tip = &shopTip;
                     if (shopTip.type->equipable && shopTip.type->equipSlot >= 0 &&
@@ -8438,6 +8663,10 @@ int main(int argc, char *argv[])
     if (clawTex)    r2d_texture_destroy(NULL, clawTex);
     if (icetacleTex) r2d_texture_destroy(NULL, icetacleTex);
     if (tornadoTex) r2d_texture_destroy(NULL, tornadoTex);
+    for (int i = 0; i < 3; i++)
+        if (snakebiteTex[i]) r2d_texture_destroy(NULL, snakebiteTex[i]);
+    for (int i = 0; i < 4; i++)
+        if (firelionTex[i]) r2d_texture_destroy(NULL, firelionTex[i]);
     if (flameTex)   r2d_texture_destroy(NULL, flameTex);
 
     if (glowTex)
