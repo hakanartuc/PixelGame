@@ -110,3 +110,53 @@ void fx_render(ParticleSystem *fx, R2D *renderer,
     r2d_texture_set_color_mod(glowTex, 255, 255, 255);
     r2d_texture_set_alpha_mod(glowTex, 255);
 }
+// --- SHEET-ANİM HAVUZU (VFX his cilası) ---
+
+void animfx_init(AnimFx *pool)
+{
+    for (int i = 0; i < MAX_ANIM_FX; i++)
+        pool[i].active = false;
+}
+
+void animfx_spawn(AnimFx *pool, R2DTexture *tex, int frames, int cols,
+                  float fw, float fh, float x, float y, float fps, float scale)
+{
+    if (tex == NULL) return;
+    int slot = -1;
+    for (int i = 0; i < MAX_ANIM_FX; i++)
+        if (!pool[i].active) { slot = i; break; }
+    if (slot < 0) return;   // havuz dolu — efekt atlanir (kritik degil)
+    pool[slot] = (AnimFx){ .tex = tex, .frames = frames, .cols = cols,
+                           .fw = fw, .fh = fh, .x = x, .y = y,
+                           .t = 0.0f, .fps = fps, .scale = scale,
+                           .active = true };
+}
+
+void animfx_update(AnimFx *pool, float dt)
+{
+    for (int i = 0; i < MAX_ANIM_FX; i++) {
+        if (!pool[i].active) continue;
+        pool[i].t += dt;
+        if (pool[i].t * pool[i].fps >= (float)pool[i].frames)
+            pool[i].active = false;
+    }
+}
+
+void animfx_render(AnimFx *pool, R2D *renderer, const Camera *camera)
+{
+    float zoom = camera->zoom;
+    for (int i = 0; i < MAX_ANIM_FX; i++) {
+        if (!pool[i].active) continue;
+        int fr = (int)(pool[i].t * pool[i].fps);
+        if (fr >= pool[i].frames) fr = pool[i].frames - 1;
+        SDL_FRect src = { (float)(fr % pool[i].cols) * pool[i].fw,
+                          (float)(fr / pool[i].cols) * pool[i].fh,
+                          pool[i].fw, pool[i].fh };
+        float w = pool[i].fw * pool[i].scale;
+        float h = pool[i].fh * pool[i].scale;
+        SDL_FRect dst = { (pool[i].x - w / 2.0f - camera->x) * zoom,
+                          (pool[i].y - h / 2.0f - camera->y) * zoom,
+                          w * zoom, h * zoom };
+        r2d_draw_texture(renderer, pool[i].tex, &src, &dst);
+    }
+}

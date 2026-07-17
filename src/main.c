@@ -260,6 +260,35 @@ static void title_notify(int idx, Player *p, FloatText *floatTexts)
                          p->rect.y - 40.0f, buf, gold);
 }
 
+// --- VFX HİS CİLASI köprüsü: isabet/ölüm/blok efektleri + hit-stop ---
+// (g_fx deseni — imza şişirmeden derin çağrı yerlerinden erişim)
+static AnimFx *g_animFx = NULL;
+static R2DTexture *g_hitWeaponTex = NULL, *g_hitMagicTex = NULL,
+                  *g_splatSmallTex = NULL, *g_splatBigTex = NULL,
+                  *g_sparkTex = NULL;
+static float g_hitStop = 0.0f;   // kalan donma süresi (dünya dt'si kısılır)
+static void hitstop(float s) { if (s > g_hitStop) g_hitStop = s; }
+
+// İsabet efekti: silah patlaması / büyü çarpması + küçük kan + hit-stop.
+// stop 0 = donma yok (alan büyüleri/DoT kaynaklı spam engellenir)
+static void strike_fx_mob(const Mob *m, bool magic, float stop)
+{
+    if (g_animFx == NULL || m == NULL) return;
+    float cx = m->e.rect.x + m->e.rect.w / 2.0f;
+    float cy = m->e.rect.y + m->e.rect.h / 2.0f;
+    if (magic)
+        animfx_spawn(g_animFx, g_hitMagicTex, 49, 7, 100.0f, 100.0f,
+                     cx, cy, 70.0f, 0.75f);
+    else
+        animfx_spawn(g_animFx, g_hitWeaponTex, 36, 6, 100.0f, 100.0f,
+                     cx, cy, 70.0f, 0.75f);
+    animfx_spawn(g_animFx, g_splatSmallTex, 10, 10, 32.0f, 32.0f,
+                 cx + (float)(rand() % 13 - 6), cy + (float)(rand() % 13 - 6),
+                 30.0f, 1.3f);
+    if (stop > 0.0f) hitstop(stop);
+}
+
+
 static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
                     Loot *loots, QuestStatus *questStatus,
                     FloatText *floatTexts, Player *player)
@@ -269,6 +298,16 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
     target->state = MOB_DYING;
     target->currentFrame = 0;
     target->animTimer = 0.0f;
+
+    // VFX: ölüm kan sıçraması + hit-stop (öldürme tatmini)
+    if (g_animFx != NULL)
+    {
+        animfx_spawn(g_animFx, g_splatBigTex, 10, 10, 64.0f, 64.0f,
+                     target->e.rect.x + target->e.rect.w / 2.0f,
+                     target->e.rect.y + target->e.rect.h / 2.0f,
+                     24.0f, 1.6f);
+        hitstop(0.09f);
+    }
 
     // Bölünme (Faz 7): leşin iki yanına yavrular fırlar
     if (target->type->splitCount > 0)
@@ -998,6 +1037,19 @@ int main(int argc, char *argv[])
     R2DTexture *icetacleTex = load_texture(renderer, "assets/fx/icetacle.png");
     R2DTexture *tornadoTex  = load_texture(renderer, "assets/fx/tornado.png");
     R2DTexture *darkburstTex = load_texture(renderer, "assets/fx/dark_burst.png");
+    // VFX his cilası sheet'leri (isabet/kan/kıvılcım/cast halkası/slash yayı)
+    R2DTexture *hitWeaponTex = load_texture(renderer, "assets/fx/hit_weapon.png");   // 6×6 @100
+    R2DTexture *hitMagicTex  = load_texture(renderer, "assets/fx/hit_magic.png");    // 7×7 @100
+    R2DTexture *splatSmallTex = load_texture(renderer, "assets/fx/splat_small.png"); // 10 @32
+    R2DTexture *splatBigTex   = load_texture(renderer, "assets/fx/splat_big.png");   // 10 @64
+    R2DTexture *sparkBlockTex = load_texture(renderer, "assets/fx/spark_block.png"); // 7 @48
+    R2DTexture *castCircleTex = load_texture(renderer, "assets/fx/cast_circle.png"); // 9×9 @100
+    R2DTexture *slashArcTex[4] = {   // facing sırası: UP, LEFT, DOWN, RIGHT
+        load_texture(renderer, "assets/fx/slash_up.png"),
+        load_texture(renderer, "assets/fx/slash_left.png"),
+        load_texture(renderer, "assets/fx/slash_down.png"),
+        load_texture(renderer, "assets/fx/slash_right.png"),
+    };
     R2DTexture *snakebiteTex[3] = {   // 0 down / 1 up / 2 side (sola bakar)
         load_texture(renderer, "assets/fx/snakebite_down.png"),
         load_texture(renderer, "assets/fx/snakebite_up.png"),
@@ -1018,6 +1070,12 @@ int main(int argc, char *argv[])
     // Büyü dalgası 2: pençe/diken tek-atım animasyonları + hortum varlığı
     #define MAX_CLAW_FX 4
     SpikeFxAnim clawFx[MAX_CLAW_FX] = {0};      // lightningclaw sheet (16 kare)
+    AnimFx animFxPool[MAX_ANIM_FX];             // VFX cilası: sheet-anim havuzu
+    animfx_init(animFxPool);
+    g_animFx = animFxPool;
+    g_hitWeaponTex = hitWeaponTex; g_hitMagicTex = hitMagicTex;
+    g_splatSmallTex = splatSmallTex; g_splatBigTex = splatBigTex;
+    g_sparkTex = sparkBlockTex;
     #define MAX_ICETACLE_FX 4
     SpikeFxAnim icetacleFx[MAX_ICETACLE_FX] = {0};  // icetacle sheet (16 kare)
     #define MAX_SNAKEBITE_FX 4
@@ -1248,6 +1306,7 @@ int main(int argc, char *argv[])
     typedef struct { bool active; float x, y; int targetId; } SpellProj;
     SpellProj spellProjs[MAX_SPELL_PROJS] = {0};
     int castSpell = -1;        // aktif cast (AbilityId; -1 yok)
+    bool prevAttacking = false; // slash yayı VFX tetiği (yükselen kenar)
     float castTimer = 0.0f;
 
     // Zırh ağırlığı (Faz 22): türetilmiş statlarda hesaplanır, hız/mana'ya işler
@@ -3061,11 +3120,19 @@ int main(int argc, char *argv[])
                 }
                 else if (event.key.key == SDLK_F5 && gameState == GAME_PLAYING)
                 {
-                    // Hızlı kayıt: AKTİF slota (slot menüden seçilir)
+                    // Hızlı kayıt: AKTİF slota (slot menüden seçilir).
+                    // Aktif slot yoksa (otomatik kayıttan yüklendi) uyarı basmak
+                    // yerine kayıt slotu ekranını AÇ — bir kez seçilince F5 hep
+                    // oraya yazar (otomatik slotun üzerine yazılmaz).
                     const char *msg;
                     if (activeSlot < 0)
-                        msg = "Aktif slot yok - ESC > Kaydet";
-                    else if (save_game(save_slot_path(activeSlot), &player, 
+                    {
+                        gameState = GAME_PAUSED;
+                        menuScreen = MENU_SLOTS_SAVE;
+                        audio_play(SFX_UI);
+                        msg = NULL;
+                    }
+                    else if (save_game(save_slot_path(activeSlot), &player,
                                        &inventory, &craftBag, &equipment, &hotbar, questStatus))
                     {
                         msg = "Kaydedildi";
@@ -3074,10 +3141,13 @@ int main(int argc, char *argv[])
                     }
                     else
                         msg = "Kayıt HATASI";
-                    SDL_Color white = { 255, 255, 255, 255 };
-                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
-                                         player.rect.x + player.rect.w / 2.0f,
-                                         player.rect.y - 10.0f, msg, white);
+                    if (msg != NULL)
+                    {
+                        SDL_Color white = { 255, 255, 255, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f, msg, white);
+                    }
                 }
                 else if (event.key.key == SDLK_F9 && gameState == GAME_PLAYING)
                 {
@@ -3108,6 +3178,16 @@ int main(int argc, char *argv[])
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
                                              player.rect.y - 10.0f, "Yüklendi", white);
+                    }
+                    else if (activeSlot < 0)
+                    {
+                        // F9 da slotsuz sessiz kalmasın (F5 ile aynı durum)
+                        SDL_Color gray = { 200, 200, 210, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f,
+                                             "Aktif slot yok - önce F5 ile kaydet",
+                                             gray);
                     }
                 }
             }
@@ -4433,6 +4513,19 @@ int main(int argc, char *argv[])
         if (dt > 0.05f)
             dt = 0.05f;
 
+        // HIT-STOP (VFX cilası): vuruş oturunca dünya bir anlığına yavaşlar
+        // ("vuruş oturdu" hissi). Menü/ölüm ekranı gerçek zamanda kalır.
+        if (g_hitStop > 0.0f)
+        {
+            if (gameState == GAME_PLAYING && deathTimer <= 0.0f)
+            {
+                g_hitStop -= dt;
+                dt *= 0.08f;
+            }
+            else
+                g_hitStop = 0.0f;
+        }
+
         int winW, winH;
         SDL_GetWindowSize(window, &winW, &winH); // pencere boyutunu al (dinamik olarak, pencere yeniden boyutlandırılabilir)
 
@@ -4968,6 +5061,7 @@ int main(int argc, char *argv[])
                                                              bt->e.health / bt->e.maxHealth,
                                                              &perkFx);
                             bt->e.health -= sh.damage;
+                            strike_fx_mob(bt, false, 0.05f);
                             bt->e.hitFlash = 0.15f;
                             bt->aggro = true;
                             // SERSEMLETME: 2 sn — saldıramaz, sürünür
@@ -5039,6 +5133,7 @@ int main(int argc, char *argv[])
                             sh.damage *= title_damage_mult(&player, nb->type,
                                                            gametime_is_night());
                             nb->e.health -= sh.damage;
+                            strike_fx_mob(nb, false, 0.05f);
                             nb->e.hitFlash = 0.15f;
                             nb->slowMult = 1.0f - slowAmt;
                             nb->slowTimer = 2.0f;
@@ -5323,6 +5418,7 @@ int main(int argc, char *argv[])
                                                                gametime_is_night());
                                 sh.damage *= weather_ice_mult();   // buz kendi mevsiminde
                                 nb->e.health -= sh.damage;
+                                strike_fx_mob(nb, true, 0.0f);
 
                                 // TERMAL ŞOK (M1): yanan hedefte nova — kalan yanma
                                 // ANINDA patlar +%60 (yanma söner; buhar FX)
@@ -5375,6 +5471,7 @@ int main(int argc, char *argv[])
                                                                gametime_is_night());
                                 sh.damage *= weather_bolt_mult();   // ıslak iletken
                                 lt->e.health -= sh.damage;
+                                strike_fx_mob(lt, true, 0.0f);
 
                                 // ZEHİR PATLAMASI (M1): zehirli hedefe yıldırım —
                                 // kalan zehir ANINDA + 90px çevreye %50'si (yeşil bulut)
@@ -5477,6 +5574,7 @@ int main(int argc, char *argv[])
                                                                 sd->damageScale,
                                                                 nb->type->defense, &perkFx);
                                 nb->e.health -= sh.damage;
+                                strike_fx_mob(nb, true, 0.0f);
                                 nb->e.hitFlash = 0.15f;
                                 nb->slowMult = 0.35f;   // dikenlere saplanma hissi
                                 nb->slowTimer = 1.5f;
@@ -5529,6 +5627,7 @@ int main(int argc, char *argv[])
                                                                gametime_is_night());
                                 sh.damage *= weather_bolt_mult();   // ıslak iletken
                                 nb->e.health -= sh.damage;
+                                strike_fx_mob(nb, true, 0.0f);
                                 nb->e.hitFlash = 0.15f;
                                 nb->aggro = true;
                                 mob_alert_camp(mobs, mobCount, nb);
@@ -5575,6 +5674,7 @@ int main(int argc, char *argv[])
                                                                    gametime_is_night());
                                     sh.damage *= weather_ice_mult();   // buz kendi mevsiminde
                                     nb->e.health -= sh.damage;
+                                    strike_fx_mob(nb, true, 0.0f);
                                     nb->e.hitFlash = 0.15f;
                                     nb->slowMult = 0.5f;
                                     nb->slowTimer = 3.0f * weather_slow_dur_mult();
@@ -5648,6 +5748,7 @@ int main(int argc, char *argv[])
                                 if (ndx * ndx + ndy * ndy > wbR * wbR) continue;
                                 float fd = wbDmg * (100.0f / (100.0f + nb->type->defense));
                                 nb->e.health -= fd;
+                                strike_fx_mob(nb, true, 0.0f);
                                 nb->e.hitFlash = 0.15f;
                                 nb->aggro = true;
                                 floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
@@ -5690,6 +5791,7 @@ int main(int argc, char *argv[])
                                 sh.damage *= title_damage_mult(&player, sb->type,
                                                                gametime_is_night());
                                 sb->e.health -= sh.damage;
+                                strike_fx_mob(sb, true, 0.0f);
                                 sb->e.hitFlash = 0.15f;
                                 sb->aggro = true;
                                 mob_alert_camp(mobs, mobCount, sb);
@@ -5812,6 +5914,7 @@ int main(int argc, char *argv[])
                                                 ft->type->defense, &perkFx);
                 sh.damage *= weather_fire_mult();   // ıslak dünyada ateş boğulur
                 ft->e.health -= sh.damage;
+                strike_fx_mob(ft, true, 0.0f);
                 ft->e.hitFlash = 0.15f;
                 ft->aggro = true;
                 mob_alert_camp(mobs, mobCount, ft);
@@ -6335,6 +6438,20 @@ int main(int argc, char *argv[])
             player_update(&player, cineActive ? cineNoKeys : keys,
                           cineActive ? false : attackPressed, dt, &weaponFx);
 
+            // SLASH YAYI (VFX cilası): savurma başladığı karede bakış yönünde
+            // yay efekti — yalnız kılıç savurması (thrust/mızrakta yok)
+            if (player.attacking && !prevAttacking &&
+                player.state == PLAYER_SLASH && g_animFx != NULL)
+            {
+                float acx = player.rect.x + player.rect.w / 2.0f
+                          + WEAPON_FX_OFFSET[player.facing].dx * 1.6f;
+                float acy = player.rect.y + player.rect.h / 2.0f
+                          + WEAPON_FX_OFFSET[player.facing].dy * 1.6f;
+                animfx_spawn(g_animFx, slashArcTex[player.facing], 10, 10,
+                             64.0f, 64.0f, acx, acy, 30.0f, 1.5f);
+            }
+            prevAttacking = player.attacking;
+
             // Ok bırakışı: çekmenin release karesinde 1 ok tüket + güdümlü ok doğur.
             // Hedef çekme sırasında öldüyse ok çıkmaz (ok yanmaz).
             // Beceri oku: pendingAbility türüne göre çarpan/etki taşır.
@@ -6495,6 +6612,7 @@ int main(int argc, char *argv[])
                 }
             }
             fx_update(&weaponFx, dt);
+            animfx_update(animFxPool, dt);
 
             gametime_update(dt);                      // dünya saati
             npc_set_talking(dialogNpc);               // konuşan NPC yerinde durur
@@ -6764,6 +6882,7 @@ int main(int argc, char *argv[])
                             float ldy = (lb->e.rect.y + lb->e.rect.h / 2.0f) - sy;
                             if (ldx * ldx + ldy * ldy > 60.0f * 60.0f) continue;
                             lb->e.health -= 25.0f;
+                            strike_fx_mob(lb, true, 0.0f);
                             lb->e.hitFlash = 0.15f;
                             lb->aggro = true;
                             floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
@@ -6906,6 +7025,12 @@ int main(int argc, char *argv[])
                                                   player.blocking, player.blockHold,
                                                   &dodged, &gBlock);
                     block_feedback(gBlock, &player, &hotbar, floatTexts, &perkFx);
+                    if (gBlock > 0 && g_animFx != NULL)
+                        animfx_spawn(g_animFx, g_sparkTex, 7, 7, 48.0f, 48.0f,
+                                     player.rect.x + player.rect.w / 2.0f,
+                                     player.rect.y + player.rect.h * 0.45f,
+                                     30.0f, 1.2f);
+                    if (gBlock == 3) hitstop(0.12f);   // PERFECT parry donması
                     if (!dodged)
                         dmg = mana_shield_absorb(&player, dmg, floatTexts);
                     if (!dodged && dmg > 0.0f)
@@ -7045,6 +7170,7 @@ int main(int argc, char *argv[])
                         }
 
                         target->e.health -= hit.damage;
+                        strike_fx_mob(target, false, 0.05f);
                         target->e.hitFlash = 0.15f;
                         audio_play(hit.crit ? SFX_CRIT : SFX_HIT);
 
@@ -7151,6 +7277,7 @@ int main(int argc, char *argv[])
                                     continue;   // hatta değil
                                 float ldmg = hit.damage * lineFrac;
                                 lb->e.health -= ldmg;
+                                strike_fx_mob(lb, false, 0.03f);
                                 lb->e.hitFlash = 0.15f;
                                 lb->aggro = true;
                                 floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
@@ -7399,6 +7526,7 @@ int main(int argc, char *argv[])
                 }
 
                 at->e.health -= hit.damage;
+                strike_fx_mob(at, false, 0.03f);
                 at->e.hitFlash = 0.15f;
                 at->arrowsHit++;   // leşten ~%30 geri (mob_die)
                 audio_play(hit.crit ? SFX_CRIT : SFX_HIT);
@@ -7452,6 +7580,7 @@ int main(int argc, char *argv[])
                                                              nb->e.health / nb->e.maxHealth,
                                                              &perkFx);
                         nb->e.health -= splash.damage;
+                        strike_fx_mob(nb, true, 0.0f);
                         nb->e.hitFlash = 0.15f;
                         nb->aggro = true;
                         floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
@@ -7543,6 +7672,7 @@ int main(int argc, char *argv[])
                                * title_damage_mult(&player, nb->type,
                                                    gametime_is_night());
                     nb->e.health -= fdmg;
+                    strike_fx_mob(nb, true, 0.0f);
                     nb->e.hitFlash = 0.15f;
                     nb->aggro = true;
                     mob_alert_camp(mobs, mobCount, nb);
@@ -7589,6 +7719,7 @@ int main(int argc, char *argv[])
                         float tdmg = tn->tickDamage
                                    * (100.0f / (100.0f + nb->type->defense));
                         nb->e.health -= tdmg;
+                        strike_fx_mob(nb, true, 0.0f);
                         nb->e.hitFlash = 0.1f;
                         nb->slowMult = 0.7f;      // hortumun içinde debelenme
                         nb->slowTimer = 1.0f;
@@ -7695,6 +7826,12 @@ int main(int argc, char *argv[])
                                               player.blocking, player.blockHold,
                                               &dodged, &pBlock);
                 block_feedback(pBlock, &player, &hotbar, floatTexts, &perkFx);
+                if (pBlock > 0 && g_animFx != NULL)
+                    animfx_spawn(g_animFx, g_sparkTex, 7, 7, 48.0f, 48.0f,
+                                 player.rect.x + player.rect.w / 2.0f,
+                                 player.rect.y + player.rect.h * 0.45f,
+                                 30.0f, 1.2f);
+                if (pBlock == 3) hitstop(0.12f);   // PERFECT parry donması
                 // (mermide sersemletme/yansıtma yok — atan uzakta)
                 float pcx = player.rect.x + player.rect.w / 2.0f;
                 if (!dodged)
@@ -7960,6 +8097,12 @@ int main(int argc, char *argv[])
                                                   player.blocking, player.blockHold,
                                                   &dodged, &mBlock);
                     block_feedback(mBlock, &player, &hotbar, floatTexts, &perkFx);
+                    if (mBlock > 0 && g_animFx != NULL)
+                        animfx_spawn(g_animFx, g_sparkTex, 7, 7, 48.0f, 48.0f,
+                                     player.rect.x + player.rect.w / 2.0f,
+                                     player.rect.y + player.rect.h * 0.45f,
+                                     30.0f, 1.2f);
+                    if (mBlock == 3) hitstop(0.12f);   // PERFECT parry donması
                     if (mBlock == 3)
                     {
                         // PERFECT (parry): saldıran 1sn sersemler; SİPER yansıtır
@@ -8585,6 +8728,23 @@ int main(int argc, char *argv[])
         int builtCount = build_player_layers(layers, LAYER_COUNT, &equipment,
                                              &itemTex, built, 24);
 
+        // CAST HALKASI (VFX cilası): büyü kanalizasyonu boyunca ayak altında
+        // dönen büyü çemberi (81 karelik sheet, castTimer ile döngü)
+        if (castSpell >= 0 && castCircleTex != NULL && gameState == GAME_PLAYING)
+        {
+            int ccFr = (int)(castTimer * 45.0f) % 81;
+            SDL_FRect ccSrc = { (float)(ccFr % 9) * 100.0f,
+                                (float)(ccFr / 9) * 100.0f, 100.0f, 100.0f };
+            float ccW = 90.0f, ccH = 90.0f;
+            SDL_FRect ccDst = {
+                (player.rect.x + player.rect.w / 2.0f - ccW / 2.0f - camera.x)
+                    * camera.zoom,
+                (player.rect.y + player.rect.h - ccH / 2.0f - 8.0f - camera.y)
+                    * camera.zoom,
+                ccW * camera.zoom, ccH * camera.zoom,
+            };
+            r2d_draw_texture(renderer, castCircleTex, &ccSrc, &ccDst);
+        }
         player_render(&player, renderer, built, builtCount, &camera); // oyuncuyu
         
         for (int i = 0; i < mobCount; i++)
@@ -8756,6 +8916,7 @@ int main(int argc, char *argv[])
 
         // Partiküller dünya varlıklarının ÜSTÜNDE (kan damlası mobun önünde görünsün)
         fx_render(&weaponFx, renderer, glowTex, &camera);
+        animfx_render(animFxPool, renderer, &camera);
 
         if (openLootIndex >= 0)
             loot_popup_render(renderer, &loots[openLootIndex], itemIconTex, &itemTex, gameFont, &camera);
@@ -9722,6 +9883,14 @@ int main(int argc, char *argv[])
     if (icetacleTex) r2d_texture_destroy(NULL, icetacleTex);
     if (tornadoTex) r2d_texture_destroy(NULL, tornadoTex);
     if (darkburstTex) r2d_texture_destroy(NULL, darkburstTex);
+    if (hitWeaponTex)  r2d_texture_destroy(NULL, hitWeaponTex);
+    if (hitMagicTex)   r2d_texture_destroy(NULL, hitMagicTex);
+    if (splatSmallTex) r2d_texture_destroy(NULL, splatSmallTex);
+    if (splatBigTex)   r2d_texture_destroy(NULL, splatBigTex);
+    if (sparkBlockTex) r2d_texture_destroy(NULL, sparkBlockTex);
+    if (castCircleTex) r2d_texture_destroy(NULL, castCircleTex);
+    for (int i = 0; i < 4; i++)
+        if (slashArcTex[i]) r2d_texture_destroy(NULL, slashArcTex[i]);
     for (int i = 0; i < 3; i++)
         if (snakebiteTex[i]) r2d_texture_destroy(NULL, snakebiteTex[i]);
     for (int i = 0; i < 4; i++)

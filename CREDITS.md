@@ -89,3 +89,16 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
 ## Kütüphaneler (vendored)
 - SDL3, SDL3_ttf — zlib lisansı (`vendor/`)
 - stb_image — public domain / MIT (`src/stb_image.h`)
+
+## VFX (his cilası fazı, 2026-07-17)
+- `assets/fx/hit_weapon.png`, `hit_magic.png`, `cast_circle.png` —
+  **Free Pixel Effects Pack** (CodeManu / @DavitMasia, Pixel FX Designer).
+  Public domain, kredi gerekmez. Kare 100×100, grid satır-major.
+- `assets/fx/splat_small.png` (320×32, 10 kare), `splat_big.png` (640×64,
+  10 kare), `spark_block.png` (336×48, 7 kare) — **Super Pixel Effects
+  Gigapack (Free Version)** (itch.io). TODO: yazar sayfası + lisans teyidi.
+- `assets/fx/slash_up/down/left/right.png` (640×64, 10 kare 64px) —
+  **Pixel Art Animations - Slashes** (Frostwindz, itch.io) "Slash 1/color1"
+  sheet'inden yön varyantları üretildi (90° döndürme/ayna). Lisans:
+  paketteki Frostwindz Asset License Agreement (ticari kullanım serbest,
+  yeniden satış yasak).

@@ -57,6 +57,28 @@ static const struct { float dx, dy; } WEAPON_SLASH_FX_OFFSET[4][6] = {
 
 
 
+// SHEET-ANİM HAVUZU (VFX his cilası): tek satırlık/grid sprite sheet'i
+// dünyada bir kez oynatıp söner (isabet patlaması, kan, kıvılcım, slash yayı).
+// Grid satır-major okunur; cols = satır başına kare.
+#define MAX_ANIM_FX 48
+
+typedef struct {
+    R2DTexture *tex;
+    int frames, cols;
+    float fw, fh;        // kare boyutu (sheet px)
+    float x, y;          // dünya MERKEZ noktası
+    float t;             // geçen süre (sn)
+    float fps;
+    float scale;         // dünya ölçeği (çizim = fw*scale)
+    bool active;
+} AnimFx;
+
+void animfx_init(AnimFx *pool);
+void animfx_spawn(AnimFx *pool, R2DTexture *tex, int frames, int cols,
+                  float fw, float fh, float x, float y, float fps, float scale);
+void animfx_update(AnimFx *pool, float dt);
+void animfx_render(AnimFx *pool, R2D *renderer, const Camera *camera);
+
 // Havuzu sifirla
 void fx_init(ParticleSystem *fx);
 

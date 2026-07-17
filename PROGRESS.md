@@ -837,6 +837,24 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - Crash fix: DECOR 37 > 32 texture dizisi taşması (DECOR_TEX_CAP 64 ortak
   sabit + döngü korumaları + aşım logu); portalTex 8→16 (tam doluydu).
 
+### Faz VFX-1 — VFX HİS CİLASI (tam paket, onaylı sıra ③)
+- **AnimFx havuzu** (fx.c/h): genel grid-sheet animasyon havuzu (MAX_ANIM_FX 48,
+  satır-major, bir kez oynar söner) — animfx_init/spawn/update/render.
+- **İsabet efektleri**: strike_fx_mob köprüsü (g_animFx deseni) — melee'de
+  weaponhit (6×6@100), büyüde magickahit (7×7@100) + HER isabette küçük kan
+  sıçraması (Hakan onayı); 17 hasar noktasına tek satır çağrı (DoT/yansıtma
+  tick'leri hariç — spam yok).
+- **Ölüm**: mob_die içinde büyük kan sıçraması + 90ms hit-stop (tüm ölüm
+  yolları tek merkezden).
+- **HIT-STOP**: g_hitStop — melee 50ms, ok/hat 30ms, ölüm 90ms, PERFECT parry
+  120ms; dünya dt'si ×0.08 kısılır (menü/ölüm ekranı gerçek zaman).
+- **Blok kıvılcımı**: 3 block_feedback noktasında (guard/mob/proje) sarı çarpma.
+- **Cast halkası**: kanalizasyon boyunca ayak altında dönen çember (81 kare).
+- **Slash yayı**: savurma başlangıç karesinde yöne göre yay (4 yön sheet'i
+  90° döndürmeyle üretildi — slash_up/down/left/right.png).
+- Assetler: Free Pixel Effects Pack (public domain) + Gigapack splatter/impact
+  + Frostwindz Slash 1 → assets/fx/; CREDITS.md güncellendi.
+
 ### ASSET SIRASI (2026-07-17 — Hakan'ın indirdiği paketler, onaylı işleme sırası)
 İndirilenler (~/Downloads):
 - **Harita**: Free-Undead-Tileset (açık hava lanetli arazi — LANETLİ MEZARLIK
