@@ -163,6 +163,28 @@ const RecipeDef RECIPES[] = {
     { .station = STATION_ALCH, .name = "Ot Çorbası",
       .in1Item = ITEM_HERB_BLUE, .in1Count = 2, .in2Item = ITEM_MEAT, .in2Count = 1,
       .outItem = ITEM_SOUP, .outCount = 1, .work = 4.0f, .xp = 6.0f },
+    // ÇANTA SEKMELERİ: İp (ara malzeme) + 4 çanta eşyası (üretilince OTOMATİK
+    // takılır — craft_finish özel yolu; gümüş oyunda yok, toka = Demir Külçe)
+    { .station = STATION_CAMPFIRE, .name = "İp",
+      .in1Item = ITEM_HERB_BLUE, .in1Count = 2, .in2Item = -1,
+      .outItem = ITEM_ROPE, .outCount = 1, .work = 3.0f, .xp = 2.0f },
+    { .station = STATION_SMITH, .name = "Malzeme Kesesi",
+      .in1Item = ITEM_LEATHER, .in1Count = 4, .in2Item = ITEM_ROPE, .in2Count = 2,
+      .outItem = ITEM_POUCH_MATERIAL, .outCount = 1, .work = 8.0f, .xp = 15.0f,
+      .minSkill = 10 },
+    { .station = STATION_SMITH, .name = "Deri Çanta",
+      .in1Item = ITEM_LEATHER, .in1Count = 6, .in2Item = ITEM_ROPE, .in2Count = 2,
+      .outItem = ITEM_BAG_LEATHER, .outCount = 1, .work = 10.0f, .xp = 20.0f,
+      .minSkill = 15 },
+    { .station = STATION_SMITH, .name = "Usta Kesesi",
+      .in1Item = ITEM_LEATHER, .in1Count = 8, .in2Item = ITEM_INGOT_IRON, .in2Count = 1,
+      .outItem = ITEM_POUCH_MASTER, .outCount = 1, .work = 12.0f, .xp = 25.0f,
+      .minSkill = 35 },
+    { .station = STATION_SMITH, .name = "Gezgin Çantası",
+      .in1Item = ITEM_LEATHER, .in1Count = 10, .in2Item = ITEM_INGOT_IRON, .in2Count = 1,
+      .outItem = ITEM_BAG_TRAVELER, .outCount = 1, .work = 14.0f, .xp = 30.0f,
+      .minSkill = 40 },
+
     { .station = STATION_CAMPFIRE, .name = "Gezgin Kavurması",
       .in1Item = ITEM_MEAT, .in1Count = 2, .in2Item = ITEM_HERB_BLUE, .in2Count = 1,
       .outItem = ITEM_KAVURMA, .outCount = 1, .work = 5.0f, .xp = 8.0f },
@@ -252,6 +274,7 @@ void station_render_all(R2D *renderer, R2DTexture **textures,
 #define CRAFT_ROW_H 44.0f
 #define CRAFT_PAD 16.0f
 #define CRAFT_W 380.0f
+#define CRAFT_MAX_VIS 16   // panelde aynı anda görünen satır (900px penceresi)
 
 // Bu istasyonun kaç tarifi var + n'inci tarifin RECIPES indeksi
 static int station_recipe(int stationIdx, int n)
@@ -273,7 +296,18 @@ static int station_recipe_count(int stationIdx)
     return n;
 }
 
-void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skills,
+int craft_panel_max_scroll(int stationIdx)
+{
+    const StationDef *st = &STATIONS[stationIdx];
+    bool smith = (st->type == STATION_SMITH);
+    bool ench  = (st->type == STATION_ENCHANT);
+    int total = station_recipe_count(stationIdx)
+              + (smith ? 1 : (ench ? (1 + 2 + STAT_COUNT) : 0));
+    return (total > CRAFT_MAX_VIS) ? total - CRAFT_MAX_VIS : 0;
+}
+
+void craft_panel_render(int stationIdx, const Inventory *inv,
+                        const Inventory *inv2, const Skill *skills, int scroll,
                         int selRecipe, float plusChancePct, int plusCost,
                         const ItemStack *weapon,
                         R2D *renderer, TTF_Font *font, float panelX, float panelY)
@@ -283,7 +317,11 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
     bool smith = (st->type == STATION_SMITH);
     bool ench  = (st->type == STATION_ENCHANT);
     int extraRows = smith ? 1 : (ench ? (1 + 2 + STAT_COUNT) : 0);
-    float panelH = (rows + extraRows) * CRAFT_ROW_H + CRAFT_PAD * 2 + 56.0f;
+    int visRows = rows + extraRows;
+    if (visRows > CRAFT_MAX_VIS) visRows = CRAFT_MAX_VIS;
+    float panelH = visRows * CRAFT_ROW_H + CRAFT_PAD * 2 + 56.0f;
+    float clipTop = panelY + CRAFT_PAD + 30.0f;             // satır alanı
+    float clipBot = clipTop + visRows * CRAFT_ROW_H;
 
     ui_panel(renderer, panelX, panelY, CRAFT_W, panelH);
     if (font == NULL) return;
@@ -296,10 +334,14 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
     draw_text(renderer, font, st->name, panelX + CRAFT_PAD, panelY + 8.0f, white);
 
     SkillType sk = station_skill(st->type);
-    float rowY = panelY + CRAFT_PAD + 30.0f;
+    // Kaydırma: satırlar yukarı kayar; klip dışına düşen HİÇ çizilmez
+    #define CROW_ON (rowY >= clipTop - 0.5f && rowY <= clipBot - CRAFT_ROW_H + 0.5f)
+    float rowY = panelY + CRAFT_PAD + 30.0f - (float)scroll * CRAFT_ROW_H;
     for (int n = 0; n < rows; n++) {
         int ri = station_recipe(stationIdx, n);
         const RecipeDef *r = &RECIPES[ri];
+
+        if (!CROW_ON) { rowY += CRAFT_ROW_H; continue; }
 
         SDL_FRect row = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
         if (ri == selRecipe) ui_cell_hi(renderer, row.x, row.y, row.w, row.h);
@@ -314,9 +356,11 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
         }
 
         bool lvlOk = skills[sk].level >= r->minSkill;
-        bool haveIn1 = inventory_count(inv, &ITEM_TYPES[r->in1Item]) >= r->in1Count;
+        bool haveIn1 = inventory_count(inv, &ITEM_TYPES[r->in1Item]) +
+                       inventory_count(inv2, &ITEM_TYPES[r->in1Item]) >= r->in1Count;
         bool haveIn2 = r->in2Item < 0 ||
-                       inventory_count(inv, &ITEM_TYPES[r->in2Item]) >= r->in2Count;
+                       inventory_count(inv, &ITEM_TYPES[r->in2Item]) +
+                       inventory_count(inv2, &ITEM_TYPES[r->in2Item]) >= r->in2Count;
         SDL_Color nameCol = (lvlOk && haveIn1 && haveIn2) ? white : dim;
 
         char line[96];
@@ -343,7 +387,7 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
     }
 
     // '+basma' satırı (yalnız ocak): kuşanılı GERÇEK silah gerekir
-    if (smith) {
+    if (smith && CROW_ON) {
         SDL_FRect row = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
         ui_cell_gray(renderer, row.x, row.y, row.w, row.h);
         char line[96];
@@ -361,10 +405,13 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
                   row.x + 10.0f, rowY + 20.0f, dim);
         rowY += CRAFT_ROW_H;
     }
+    else if (smith) rowY += CRAFT_ROW_H;   // klip dışı — sayaç yine ilerler
 
     // --- Sunak özel satırları: hedef + rün basma + stat basma ---
     if (ench) {
         // Hedef satırı (tıkla: kuşanılı ekipmanlar arasında döner)
+        if (!CROW_ON) goto ench_target_done;
+        {
         SDL_FRect row = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
         ui_cell_hi(renderer, row.x, row.y, row.w, row.h);
         char line[112];
@@ -390,6 +437,8 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
                      weapon->type->name, weapon->plusLevel, stats);
         }
         draw_text(renderer, font, line, row.x + 10.0f, rowY + 12.0f, UI_TEXT_DARK);
+        }
+ench_target_done:
         rowY += CRAFT_ROW_H;
 
         // Rün basma satırları (yalnız SİLAHA; eski efekt yanar)
@@ -397,9 +446,11 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
         const char *runeTxt[2] = { "Rün Bas: Pembe (+%8 hasar)",
                                    "Rün Bas: Zehir (vuruşta DoT)" };
         for (int rn = 0; rn < 2; rn++) {
+            if (!CROW_ON) { rowY += CRAFT_ROW_H; continue; }
             SDL_FRect rrow = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
             ui_cell_gray(renderer, rrow.x, rrow.y, rrow.w, rrow.h);
-            bool haveRune = inventory_count(inv, &ITEM_TYPES[runeItem[rn]]) >= 1;
+            bool haveRune = inventory_count(inv, &ITEM_TYPES[runeItem[rn]]) +
+                            inventory_count(inv2, &ITEM_TYPES[runeItem[rn]]) >= 1;
             draw_text(renderer, font, runeTxt[rn], rrow.x + 10.0f, rowY + 4.0f,
                       haveRune ? white : dim);
             draw_text(renderer, font, "1 rün — kuşanılı silaha (eski efekt yanar)",
@@ -412,6 +463,7 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
                                             ITEM_STONE_DEF, ITEM_STONE_MP, ITEM_STONE_STA,
                                             ITEM_STONE_INT };
         for (int s = 0; s < STAT_COUNT; s++) {
+            if (!CROW_ON) { rowY += CRAFT_ROW_H; continue; }
             SDL_FRect srow = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
             ui_cell_gray(renderer, srow.x, srow.y, srow.w, srow.h);
 
@@ -436,8 +488,10 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
                          STAT_NAMES[s], cur, next, STAT_TIER_VALUE[s] * next,
                          next, ITEM_TYPES[stoneItem[s]].name, next * 2);
             bool can = weapon->type != NULL && cur < STAT_MAX_TIER && slotFree &&
-                       inventory_count(inv, &ITEM_TYPES[stoneItem[s]]) >= next &&
-                       inventory_count(inv, &ITEM_TYPES[ITEM_INGOT_IRON]) >= next * 2;
+                       inventory_count(inv, &ITEM_TYPES[stoneItem[s]]) +
+                       inventory_count(inv2, &ITEM_TYPES[stoneItem[s]]) >= next &&
+                       inventory_count(inv, &ITEM_TYPES[ITEM_INGOT_IRON]) +
+                       inventory_count(inv2, &ITEM_TYPES[ITEM_INGOT_IRON]) >= next * 2;
             draw_text(renderer, font, line2, srow.x + 10.0f, rowY + 12.0f,
                       can ? white : dim);
             rowY += CRAFT_ROW_H;
@@ -449,18 +503,35 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
               : ench ? "Tıkla: bas/üret (şanslı rün üretimi)   ESC: kapat"
               : (st->type == STATION_CAMPFIRE) ? "Tıkla: pişir   ESC: kapat"
                      : "Tıkla: kaynat   ESC: kapat",
-              panelX + CRAFT_PAD, rowY + 6.0f, hint);
+              panelX + CRAFT_PAD, clipBot + 6.0f, hint);
+
+    // Kaydırma göstergeleri: liste taşıyorsa yukarı/aşağı ipucu
+    int maxScroll = craft_panel_max_scroll(stationIdx);
+    if (scroll > 0)
+        draw_text(renderer, font, "▲", panelX + CRAFT_W - 26.0f, clipTop - 22.0f, hint);
+    if (scroll < maxScroll)
+        draw_text(renderer, font, "▼ tekerlek", panelX + CRAFT_W - 110.0f,
+                  clipBot + 6.0f, hint);
+    #undef CROW_ON
 }
 
-int craft_panel_recipe_at(int stationIdx, float x, float y, float panelX, float panelY)
+int craft_panel_recipe_at(int stationIdx, float x, float y, float panelX, float panelY, int scroll)
 {
     int rows = station_recipe_count(stationIdx);
     bool smith = (STATIONS[stationIdx].type == STATION_SMITH);
     bool ench  = (STATIONS[stationIdx].type == STATION_ENCHANT);
     int extraRows = smith ? 1 : (ench ? (1 + 2 + STAT_COUNT) : 0);
+    int visRows = rows + extraRows;
+    if (visRows > CRAFT_MAX_VIS) visRows = CRAFT_MAX_VIS;
+    float clipTop = panelY + CRAFT_PAD + 30.0f;
+    float clipBot = clipTop + visRows * CRAFT_ROW_H;
 
-    float rowY = panelY + CRAFT_PAD + 30.0f;
+    float rowY = clipTop - (float)scroll * CRAFT_ROW_H;
     for (int n = 0; n < rows + extraRows; n++) {
+        if (rowY < clipTop - 0.5f || rowY > clipBot - CRAFT_ROW_H + 0.5f) {
+            rowY += CRAFT_ROW_H;
+            continue;   // klip dışı satır tıklanamaz (render ile aynı)
+        }
         SDL_FRect row = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
         if (x >= row.x && x < row.x + row.w && y >= row.y && y < row.y + row.h) {
             if (n < rows) return station_recipe(stationIdx, n);

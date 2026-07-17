@@ -67,7 +67,7 @@ typedef struct {
                              // (öğrenilenler main'de + save v10)
 } RecipeDef;
 
-#define MAX_RECIPES 32   // öğrenilen tarif dizisi tavanı (save v10)
+#define MAX_RECIPES 48   // öğrenilen tarif dizisi tavanı (save v10; 29+5 çanta tarifi)
 
 extern const RecipeDef RECIPES[];
 extern const int RECIPE_COUNT;
@@ -92,7 +92,10 @@ void craft_reset_learned(void);      // yeni oyun / load öncesi
 // Craft paneli: istasyonun tarifleri (malzeme durumu + kilitler) + '+basma' satırı.
 // selRecipe: aktif süreçteki tarif (vurgulanır, -1 yok).
 // Öğrenilmemiş blueprint tarifi "???" görünür. craft_panel_recipe_at ile aynı yerleşim.
-void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skills,
+// scroll: satır cinsinden kaydırma (tekerlek — main klampler; 0 = tepe)
+int craft_panel_max_scroll(int stationIdx);   // kaydırılabilir satır sayısı
+void craft_panel_render(int stationIdx, const Inventory *inv,
+                        const Inventory *inv2, const Skill *skills, int scroll,
                         int selRecipe, float plusChancePct, int plusCost,
                         const ItemStack *weapon,
                         R2D *renderer, TTF_Font *font, float panelX, float panelY);
@@ -104,6 +107,6 @@ void craft_panel_render(int stationIdx, const Inventory *inv, const Skill *skill
 #define CRAFT_ROW_RUNE0  (-4)    // Pembe Rün bas (sunak)
 #define CRAFT_ROW_RUNE1  (-5)    // Zehir Rünü bas (sunak)
 #define CRAFT_ROW_STAT_BASE (-10)  // -10-STAT_x → stat basma satırı (-10..-15)
-int craft_panel_recipe_at(int stationIdx, float x, float y, float panelX, float panelY);
+int craft_panel_recipe_at(int stationIdx, float x, float y, float panelX, float panelY, int scroll);
 
 #endif

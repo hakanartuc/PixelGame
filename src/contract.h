@@ -56,6 +56,7 @@ void contract_save_set(int day, const int *states, const int *progress);
 // --- Pano paneli (craft panel deseniyle: çizim + tıklama aynı yerleşim) ---
 // rep: panonun bölgesindeki itibar (kilit görünümü için)
 void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
+                           const Inventory *inv2,
                            float rep, float panelX, float panelY);
 // Tıklanan pano satırı: 0-2 (slot) ya da -1
 int contract_panel_slot_at(float x, float y, float panelX, float panelY);

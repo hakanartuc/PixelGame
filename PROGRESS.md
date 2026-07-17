@@ -640,6 +640,28 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - Parça 2 (sonraki): Ateş Aslanı + Yılan Isırığı (yönlü sheet'ler) + kervan
   tomar havuzu rastgeleleşmesi.
 
+### Faz ÇANTA — ÇANTA SEKMELERİ: Eşya + Malzeme (save v28)
+- **İki çanta, tek panel**: I aç/kapa, TAB sekme değiştirir (Eşya ↔ Malzeme);
+  sekme şeridi tıklanabilir (panel üstü 28px bant). Sürüklenen item DİĞER
+  sekmenin başlığına bırakılınca taşınır; şeridin sağ ucundaki ÇÖP hücresine
+  bırakılınca İMHA edilir. Craft paneline tekerlek kaydırması geldi (uzun
+  tarif listeleri — çanta tarifleri artık görünür); pencere 1280×720 → 1600×900.
+- **Otomatik ayıklama**: `ItemType.material` bayrağı (13 tür: cevher×2,
+  külçe×2, ot×2, odun, jel, kemik, öz×2, deri, çiğ et + İp) — toplama/loot/
+  satın alma hammaddeyi Malzeme sekmesine düşürür. Dolu sekme diğerine taşmaz.
+- **bag_* katmanı** (main): bag_add/add_stackp (material yönlendirmesi),
+  bag_count/consume/consume_n (İKİ çantadan, craft öncelikli) — ~70 çağrı
+  noktası bu katmana geçti; craft/kontrat panelleri iki çantayı birden sayar.
+- **Kademeler (craft'la kalıcı büyüme)**: Eşya 30 → +10 (Deri Çanta, Smithing
+  15: 6 Deri+2 İp) → +10 (Gezgin Çantası, S40: 10 Deri+Demir Külçe) = max 50;
+  Malzeme 25 → +15 (Malzeme Kesesi, S10: 4 Deri+2 İp) → +15 (Usta Kesesi,
+  S35: 8 Deri+Demir Külçe) = max 55. Çanta eşyası üretilince OTOMATİK takılır
+  (envantere girmez; "Zaten takılı" korumalı). İP yeni ara malzeme: kamp
+  ateşinde 2 Ayotu → 1 İp. NOT: gümüş oyunda yok — toka = Demir Külçe.
+- `Player.bagUpgrades` (bit0/1 Eşya, bit2/3 Malzeme) + Malzeme çantası içeriği
+  save v28; Inventory.cap dinamik (INVENTORY_SIZE 60 dizi tavanı);
+  MAX_RECIPES 32→48. Başlık "Eşya 12/30" doluluk gösterir.
+
 ### YAKIN — "oyun gibi hissettir" (his + rol)
 1. ~~CİLA PAKETİ~~ TAMAM (2026-07-14 — bkz. Faz CİLA bölümü); kalan küçük
    UX borcu: speech zar kilidi save'i (uygun faza serpilir)

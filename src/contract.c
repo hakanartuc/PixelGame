@@ -132,6 +132,7 @@ void contract_save_set(int day, const int *st, const int *prog)
 #define CT_W 420.0f
 
 void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
+                           const Inventory *inv2,
                            float rep, float panelX, float panelY)
 {
     float panelH = CONTRACT_ACTIVE * CT_ROW_H + CT_PAD * 2 + 56.0f + 64.0f;   // +söylentiler
@@ -196,7 +197,8 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
                       (states[s] == CONTRACT_ACCEPTED && cur >= c->count) ? green : cyan);
         }
         else {
-            int have = inventory_count(inv, &ITEM_TYPES[c->fetchItem]);
+            int have = inventory_count(inv, &ITEM_TYPES[c->fetchItem]) +
+                       inventory_count(inv2, &ITEM_TYPES[c->fetchItem]);
             snprintf(line, sizeof(line), "%dx %s getir  (%d/%d)%s",
                      c->count, ITEM_TYPES[c->fetchItem].name,
                      have > c->count ? c->count : have, c->count,

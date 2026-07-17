@@ -21,7 +21,7 @@
 #include "ecology.h"    // yuva durumları (v20)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 27u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+#define SAVE_VERSION 28u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
                           // v12: ilan panosu (gün + slot durum/ilerleme);
                           // v13: skill ağacı maskeleri (perkChoice'un yerini aldı);
                           // v18: özet bloğu (slot kartları) + kişilik sayaçları;
@@ -33,7 +33,8 @@
                           // v24: karakter adı/ten/geçmiş (özet bloğuna isim);
                           // v25: dünya olayı durumu (worldevent);
                           // v26: hava durumu (weather);
-                          // v27: tomarla öğrenilen büyüler (spellsLearned)
+                          // v27: tomarla öğrenilen büyüler (spellsLearned);
+                          // v28: çanta sekmeleri (craftBag + bagUpgrades)
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -117,7 +118,8 @@ bool save_read_summary(const char *path, SaveSummary *out)
 }
 
 bool save_game(const char *path, const Player *p,
-               const Inventory *inv, const Equipment *eq, const Hotbar *hb,
+               const Inventory *inv, const Inventory *craftInv,
+               const Equipment *eq, const Hotbar *hb,
                const QuestStatus *quests)
 {
     FILE *f = fopen(path, "wb");
@@ -258,6 +260,12 @@ bool save_game(const char *path, const Player *p,
     // Tomarla öğrenilen büyüler (v27): bit maskesi (bit = AbilityId)
     ok = ok && w32(f, (Sint32)p->spellsLearned);
 
+    // Çanta sekmeleri (v28): kademeler + Malzeme çantası içeriği
+    ok = ok && w32(f, (Sint32)p->bagUpgrades);
+    ok = ok && w32(f, INVENTORY_SIZE);
+    for (int i = 0; ok && i < INVENTORY_SIZE; i++)
+        ok = write_stack(f, &craftInv->slots[i]);
+
     // Dünya olayı durumu (v25): aktif olay + başlangıç günü + son olay
     {
         int weCur, weStart, weLast;
@@ -290,7 +298,8 @@ bool save_game(const char *path, const Player *p,
 }
 
 bool load_game(const char *path, Player *p,
-               Inventory *inv, Equipment *eq, Hotbar *hb,
+               Inventory *inv, Inventory *craftInv,
+               Equipment *eq, Hotbar *hb,
                QuestStatus *quests)
 {
     FILE *f = fopen(path, "rb");
@@ -521,6 +530,21 @@ bool load_game(const char *path, Player *p,
         tmpP.spellsLearned = (Uint32)sl;
     }
 
+    // Çanta sekmeleri (v28) — geçici; başarıda uygulanır
+    Inventory tmpCraft = {0};
+    {
+        Sint32 bu = 0, nc = 0;
+        ok = ok && r32(f, &bu);
+        tmpP.bagUpgrades = (Uint8)bu;
+        ok = ok && r32(f, &nc);
+        for (int i = 0; ok && i < nc; i++) {
+            ItemStack st;
+            ok = read_stack(f, &st);
+            if (ok && i < INVENTORY_SIZE)
+                tmpCraft.slots[i] = st;
+        }
+    }
+
     // Dünya olayı durumu (v25) — geçici; başarıda uygulanır
     Sint32 weCur = 0, weStart = -1, weLast = 0;
     ok = ok && r32(f, &weCur) && r32(f, &weStart) && r32(f, &weLast);
@@ -549,6 +573,7 @@ bool load_game(const char *path, Player *p,
     // Her şey okundu — şimdi güvenle uygula
     *p = tmpP;
     *inv = tmpInv;
+    *craftInv = tmpCraft;
     *eq = tmpEq;
     *hb = tmpHb;
     memcpy(quests, tmpQ, sizeof(tmpQ));

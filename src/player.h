@@ -100,6 +100,7 @@ typedef struct Player {
     float mana, maxMana;
     float manaReservedFrac;   // M4: dost rezervi (0..1) — bar kilitli bölme çizer
     Uint32 spellsLearned;     // tomarla öğrenilen büyüler (bit = AbilityId; v27)
+    Uint8 bagUpgrades;        // çanta kademeleri (bit0/1 Eşya +10, bit2/3 Malzeme +15; v28)
     float stamina, maxStamina;
 
     // Süreli tüketilebilir etkileri (Faz 3)

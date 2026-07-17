@@ -426,6 +426,56 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
 static const PerkEffects *g_fx = NULL;
 static bool g_natureBounty = false;   // hava: dün yağdı → bugün ot toplaması ×2
 
+// ÇANTA SEKMELERİ: Eşya (ana) + Malzeme (craft) çantası. Hammadde (material
+// bayrağı) Malzeme sekmesine düşer; sayım/tüketim İKİ çantadan (craft öncelik).
+// Statik köprü: gather/craft yardımcıları imza şişirmeden erişsin (g_fx deseni).
+static Inventory *g_mainBag = NULL, *g_craftBag = NULL;
+
+static bool bag_add(const ItemType *t, int count, int plusLevel)
+{
+    if (t == NULL) return false;
+    Inventory *dst = (t->material && g_craftBag != NULL) ? g_craftBag : g_mainBag;
+    return inventory_add(dst, t, count, plusLevel);
+}
+
+static bool bag_add_stackp(const ItemStack *st)
+{
+    if (st == NULL || st->type == NULL) return false;
+    Inventory *dst = (st->type->material && g_craftBag != NULL) ? g_craftBag : g_mainBag;
+    return inventory_add_stack(dst, st);
+}
+
+static int bag_count(const ItemType *t)
+{
+    return inventory_count(g_craftBag, t) + inventory_count(g_mainBag, t);
+}
+
+static bool bag_consume(const ItemType *t)
+{
+    return inventory_consume(g_craftBag, t) || inventory_consume(g_mainBag, t);
+}
+
+// N adet düş — iki çantanın TOPLAMI yeterse (craft önce). Yetersizse hiç düşmez.
+static bool bag_consume_n(const ItemType *t, int n)
+{
+    if (bag_count(t) < n) return false;
+    for (int k = 0; k < n; k++)
+        if (!inventory_consume(g_craftBag, t))
+            inventory_consume(g_mainBag, t);
+    return true;
+}
+
+// Çanta kademeleri → aktif slot sayıları (bagUpgrades bitleri)
+static void bags_apply_caps(const Player *p, Inventory *mainInv, Inventory *craftInv)
+{
+    mainInv->cap = INV_MAIN_BASE
+                 + ((p->bagUpgrades & 1) ? INV_MAIN_STEP : 0)
+                 + ((p->bagUpgrades & 2) ? INV_MAIN_STEP : 0);
+    craftInv->cap = INV_CRAFT_BASE
+                  + ((p->bagUpgrades & 4) ? INV_CRAFT_STEP : 0)
+                  + ((p->bagUpgrades & 8) ? INV_CRAFT_STEP : 0);
+}
+
 // Tomarla öğrenilen büyüler (Büyü dalgası 2): ağaçtan bağımsız kalıcı açılış.
 // tree_compute_effects perkFx'i SIFIRDAN kurar — her çağrının ardından bu da
 // çağrılmalı (yoksa hotbar_purge_closed öğrenilmiş büyüyü söker).
@@ -573,7 +623,7 @@ static float mana_shield_absorb(Player *p, float dmg, FloatText *floatTexts)
 
 // Toplama tamamlandı: miktar rulosu + envanter + XP + bildirim.
 // Dönen: süreç kapansın mı (çanta doluysa bar dolu-altında bekler, süreç yine kapanır).
-static void gather_finish(int res, Player *player, Inventory *inv,
+static void gather_finish(int res, Player *player,
                           Hotbar *hotbar, FloatText *floatTexts)
 {
     const ResourceDef *rd = &RESOURCES[res];
@@ -601,7 +651,7 @@ static void gather_finish(int res, Player *player, Inventory *inv,
         if (count < 1) count = 1;
     }
 
-    if (inventory_add(inv, &ITEM_TYPES[rd->itemIdx], count, 0))
+    if (bag_add(&ITEM_TYPES[rd->itemIdx], count, 0))
     {
         resource_harvest(res);
         audio_play(SFX_LOOT);
@@ -629,13 +679,23 @@ static void gather_finish(int res, Player *player, Inventory *inv,
 
 // Üretim tamamlandı: malzemeler ŞİMDİ tüketilir (iptal malzeme yakmaz),
 // çıktı + XP + bildirim. Çanta doluysa üretim gerçekleşmez (malzeme durur).
-static void craft_finish_recipe(int ri, Player *player, Inventory *inv,
+static void craft_finish_recipe(int ri, Player *player,
                                 Hotbar *hotbar, FloatText *floatTexts)
 {
     const RecipeDef *r = &RECIPES[ri];
     SDL_Color red = { 255, 120, 100, 255 };
 
-    if (!inventory_consume_n(inv, &ITEM_TYPES[r->in1Item], r->in1Count))
+    // ÇANTA EŞYASI (kademe): zaten takılıysa üretme — malzeme yanmasın
+    int bagBit = ITEM_TYPES[r->outItem].bagUpgrade;
+    if (bagBit > 0 && (player->bagUpgrades & (1u << (bagBit - 1))))
+    {
+        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                             player->rect.x + player->rect.w / 2.0f,
+                             player->rect.y - 10.0f, "Zaten takılı.", red);
+        return;
+    }
+
+    if (!bag_consume_n(&ITEM_TYPES[r->in1Item], r->in1Count))
     {
         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                              player->rect.x + player->rect.w / 2.0f,
@@ -643,13 +703,32 @@ static void craft_finish_recipe(int ri, Player *player, Inventory *inv,
         return;
     }
     if (r->in2Item >= 0 &&
-        !inventory_consume_n(inv, &ITEM_TYPES[r->in2Item], r->in2Count))
+        !bag_consume_n(&ITEM_TYPES[r->in2Item], r->in2Count))
     {
         // in2 eksikse in1'i GERİ koy — yarım tüketim malzeme yakmasın
-        inventory_add(inv, &ITEM_TYPES[r->in1Item], r->in1Count, 0);
+        bag_add(&ITEM_TYPES[r->in1Item], r->in1Count, 0);
         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                              player->rect.x + player->rect.w / 2.0f,
                              player->rect.y - 10.0f, "Malzeme eksik!", red);
+        return;
+    }
+
+    // ÇANTA EŞYASI: envantere girmez — kademe OTOMATİK takılır, slotlar açılır
+    if (bagBit > 0)
+    {
+        player->bagUpgrades |= (Uint8)(1u << (bagBit - 1));
+        bags_apply_caps(player, g_mainBag, g_craftBag);
+        audio_play(SFX_PERK);   // kalıcı kazanım — törensel
+        char buf[FLOAT_TEXT_LEN];
+        snprintf(buf, sizeof(buf), "%s takıldı — +%d slot!",
+                 ITEM_TYPES[r->outItem].name, (bagBit <= 2) ? 10 : 15);
+        SDL_Color vio = { 200, 160, 255, 255 };
+        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                             player->rect.x + player->rect.w / 2.0f,
+                             player->rect.y - 24.0f, buf, vio);
+        SkillType bsk = station_skill(r->station);
+        if (skill_add_xp(player->skills, bsk, r->xp))
+            on_skill_levelup(player, bsk, hotbar, floatTexts);
         return;
     }
     // Aşçı sayacı (M3): yemek pişirildi
@@ -657,12 +736,12 @@ static void craft_finish_recipe(int ri, Player *player, Inventory *inv,
         r->outItem == ITEM_SOUP || r->outItem == ITEM_KAVURMA)
         title_notify(title_stat_add(player, TS_COOKED, 1), player, floatTexts);
 
-    if (!inventory_add(inv, &ITEM_TYPES[r->outItem], r->outCount, 0))
+    if (!bag_add(&ITEM_TYPES[r->outItem], r->outCount, 0))
     {
         // Çanta dolu: tüketilen malzemeyi geri koy (üretim gerçekleşmedi)
-        inventory_add(inv, &ITEM_TYPES[r->in1Item], r->in1Count, 0);
+        bag_add(&ITEM_TYPES[r->in1Item], r->in1Count, 0);
         if (r->in2Item >= 0)
-            inventory_add(inv, &ITEM_TYPES[r->in2Item], r->in2Count, 0);
+            bag_add(&ITEM_TYPES[r->in2Item], r->in2Count, 0);
         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                              player->rect.x + player->rect.w / 2.0f,
                              player->rect.y - 10.0f, "Çanta dolu!", red);
@@ -709,7 +788,7 @@ int main(int argc, char *argv[])
     }
 
     // 2) Pencere oluştur.
-    SDL_Window *window = SDL_CreateWindow("Pixe Game", 1280, 720, 0);
+    SDL_Window *window = SDL_CreateWindow("Pixe Game", 1600, 900, 0);
     if (window == NULL)
     {
         SDL_Log("SDL_CreateWindow basarısız: %s", SDL_GetError());
@@ -751,7 +830,16 @@ int main(int argc, char *argv[])
 
     Loot loots[MAX_LOOT] = {0}; // hepsi inactive başlar
     int openLootIndex = -1;
-    Inventory inventory = {0}; // tüm slotlar boş başlar (main'de, oyuncuyla birlikte)
+    Inventory inventory = {0}; // Eşya çantası (main'de, oyuncuyla birlikte)
+    Inventory craftBag = {0};  // Malzeme çantası (hammadde otomatik buraya düşer)
+    int invTab = 0;            // aktif sekme: 0 Eşya / 1 Malzeme (I döngüsü)
+    int craftScroll = 0;       // craft paneli kaydırma (tekerlek; satır cinsinden)
+    int trashTab = -1, trashSlot = -1;   // çöp onayı bekleyen item (-1 = yok)
+    int dragTab = 0;           // sürükleme HANGİ sekmeden başladı (I ile değişse de doğru)
+    g_mainBag = &inventory;    // bag_* yardımcıları (yönlendirme + iki-çanta sayım)
+    g_craftBag = &craftBag;
+    inventory.cap = INV_MAIN_BASE;    // taban kapasiteler (player henüz yok —
+    craftBag.cap = INV_CRAFT_BASE;    // kademeler yükleme/craft'ta işlenir)
 
     Equipment equipment = {0}; // tüm slotlar boş başlar
 
@@ -1018,7 +1106,7 @@ int main(int argc, char *argv[])
     equipment.slots[EQUIP_HELMET] = item_make(&ITEM_TYPES[ITEM_HELMET_IRON], 1, 0);
     equipment.slots[EQUIP_CHEST]  = item_make(&ITEM_TYPES[ITEM_CHEST_IRON], 1, 0);
     equipment.slots[EQUIP_LEGS]   = item_make(&ITEM_TYPES[ITEM_LEGS_IRON], 1, 0);
-    inventory_add(&inventory, &ITEM_TYPES[ITEM_POTION_HP], 3, 0);
+    bag_add(&ITEM_TYPES[ITEM_POTION_HP], 3, 0);
         
 
     ParticleSystem weaponFx;
@@ -1291,6 +1379,33 @@ int main(int argc, char *argv[])
                     // açılması immersion'ı bozar. Sahnenin dili: 1-8 seçim,
                     // E/Space typewriter hızı (aşağıda ayrıca yutulur), ESC menü.
                 }
+                else if (trashSlot >= 0 && gameState == GAME_PLAYING &&
+                         (event.key.key == SDLK_1 || event.key.key == SDLK_2 ||
+                          event.key.key == SDLK_ESCAPE))
+                {
+                    // ÇÖP ONAYI: [1] yok et · [2]/ESC vazgeç
+                    if (event.key.key == SDLK_1)
+                    {
+                        Inventory *tb2 = (trashTab == 1) ? &craftBag : &inventory;
+                        ItemStack *ts2 = &tb2->slots[trashSlot];
+                        if (trashSlot < tb2->cap && ts2->type != NULL)
+                        {
+                            char tbuf[FLOAT_TEXT_LEN];
+                            snprintf(tbuf, sizeof(tbuf), "%s yok edildi",
+                                     ts2->type->name);
+                            ts2->type = NULL;
+                            ts2->count = 0;
+                            ts2->plusLevel = 0;
+                            SDL_Color red = { 255, 120, 100, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f, tbuf, red);
+                        }
+                    }
+                    trashTab = -1;
+                    trashSlot = -1;
+                    audio_play(SFX_UI);
+                }
                 else if (event.key.key == SDLK_ESCAPE)
                 {
                     if (gameState == GAME_PAUSED)
@@ -1375,7 +1490,7 @@ int main(int argc, char *argv[])
                     {
                         // AÇILDI: keystone bedeli varsa başarıda da maymuncuk gider
                         if (perkFx.lockAlwaysConsume)
-                            inventory_consume(&inventory, &ITEM_TYPES[ITEM_LOCKPICK]);
+                            bag_consume(&ITEM_TYPES[ITEM_LOCKPICK]);
                         loots[li].lockTier = -1;
                         loots[li].state = LOOT_OPENING;
                         loots[li].currentFrame = 0;
@@ -1398,7 +1513,7 @@ int main(int argc, char *argv[])
                         // KIRILDI: maymuncuk gider (Sağlam/Usta Uç kurtarabilir) + GÜRÜLTÜ
                         bool saved = randf() < perkFx.pickSaveChance;
                         if (!saved)
-                            inventory_consume(&inventory, &ITEM_TYPES[ITEM_LOCKPICK]);
+                            bag_consume(&ITEM_TYPES[ITEM_LOCKPICK]);
                         if (skill_add_xp(player.skills, SKILL_LOCKPICKING, 4.0f))
                             on_skill_levelup(&player, SKILL_LOCKPICKING, &hotbar, floatTexts);
                         audio_play(SFX_REFLECT);   // metalik tinlama = gürültü
@@ -1586,7 +1701,7 @@ int main(int argc, char *argv[])
                                 player.gold += sfx.gold;
                             if (sfx.essence > 0)
                             {
-                                inventory_add(&inventory, &ITEM_TYPES[ITEM_ESSENCE_PALE],
+                                bag_add(&ITEM_TYPES[ITEM_ESSENCE_PALE],
                                               sfx.essence, 0);
                                 SDL_Color purple = { 200, 150, 255, 255 };
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
@@ -1793,7 +1908,7 @@ int main(int argc, char *argv[])
                                     QUESTS[q].fetchCount > 0)
                                 {
                                     // FETCH teslimi: malzemeler ŞİMDİ düşülür (yoksa teslim yok)
-                                    ready = inventory_consume_n(&inventory,
+                                    ready = bag_consume_n(
                                                 &ITEM_TYPES[QUESTS[q].fetchItem],
                                                 QUESTS[q].fetchCount);
                                 }
@@ -1804,7 +1919,7 @@ int main(int argc, char *argv[])
 
                                     // Ek item ödülü (örn. Demirci → Çekiç)
                                     if (QUESTS[q].rewardItem > 0 &&
-                                        inventory_add(&inventory,
+                                        bag_add(
                                                       &ITEM_TYPES[QUESTS[q].rewardItem], 1, 0))
                                     {
                                         char ibuf[FLOAT_TEXT_LEN];
@@ -1893,7 +2008,7 @@ int main(int argc, char *argv[])
                             else if (strcmp(target, "buy_bp_chest") == 0)
                             {
                                 // Demirci'den Demir Zırh çizimi (req: gold>=150 diyalogda)
-                                if (inventory_add(&inventory,
+                                if (bag_add(
                                                   &ITEM_TYPES[ITEM_BP_CHEST_IRON], 1, 0))
                                 {
                                     player.gold -= 150;
@@ -1982,7 +2097,7 @@ int main(int argc, char *argv[])
                     // Ritüel: gölcük kurutma (meşale ister) / mezar mühürleme
                     const NestSiteDef *rs = ecology_site(nearestRitual);
                     bool isPool = rs->kind == NEST_POOL;
-                    if (isPool && inventory_count(&inventory, &ITEM_TYPES[ITEM_TORCH]) <= 0)
+                    if (isPool && bag_count(&ITEM_TYPES[ITEM_TORCH]) <= 0)
                     {
                         SDL_Color red = { 255, 140, 100, 255 };
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
@@ -2023,7 +2138,7 @@ int main(int argc, char *argv[])
                     int li = nearestChest;
                     if (loots[li].lockTier >= 0)
                     {
-                        if (inventory_count(&inventory, &ITEM_TYPES[ITEM_LOCKPICK]) <= 0)
+                        if (bag_count(&ITEM_TYPES[ITEM_LOCKPICK]) <= 0)
                         {
                             SDL_Color red = { 255, 120, 100, 255 };
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
@@ -2136,7 +2251,7 @@ int main(int argc, char *argv[])
                                 // FETCH: malzeme tamamsa ACTIVE'de de "done" girişi
                                 bool fetchReady = questStatus[q].state == QUEST_ACTIVE &&
                                     QUESTS[q].fetchCount > 0 &&
-                                    inventory_count(&inventory, &ITEM_TYPES[QUESTS[q].fetchItem])
+                                    bag_count(&ITEM_TYPES[QUESTS[q].fetchItem])
                                         >= QUESTS[q].fetchCount;
                                 if (fetchReady)
                                     entry = "done";
@@ -2224,6 +2339,7 @@ int main(int argc, char *argv[])
                         {
                             craftOpen = true;
                             craftStation = nearestStation;
+                            craftScroll = 0;   // panel tepeden açılır
                             craftRecipe = -1;
                             plusForge = false;
                             enchAction = 0;
@@ -2284,7 +2400,18 @@ int main(int argc, char *argv[])
                 }
                 else if (event.key.key == SDLK_I && gameState == GAME_PLAYING)
                 {
+                    // I: aç/kapa — sekme TAB ile değişir (açılış hep Eşya)
                     inventoryOpen = !inventoryOpen;
+                    if (inventoryOpen) invTab = 0;
+                    trashTab = -1; trashSlot = -1;   // bekleyen çöp onayı düşer
+                    audio_play(SFX_UI);
+                }
+                else if (event.key.key == SDLK_TAB && gameState == GAME_PLAYING &&
+                         inventoryOpen)
+                {
+                    // TAB: Eşya ↔ Malzeme (günlük sekmesinden ÖNCE — çanta öncelikli)
+                    invTab = 1 - invTab;
+                    audio_play(SFX_UI);
                 }
                 else if (event.key.key == SDLK_K && gameState == GAME_PLAYING)
                 {
@@ -2397,53 +2524,53 @@ int main(int argc, char *argv[])
                             on_skill_levelup(&player, dbg[d], &hotbar, floatTexts);
 
                     // Craft test seti: araçlar + bol malzeme
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_PICKAXE], 1, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_AXE], 1, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_HAMMER], 1, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_ORE_COPPER], 20, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_ORE_IRON], 20, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_INGOT_COPPER], 10, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_INGOT_IRON], 10, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_HERB_RED], 10, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_HERB_BLUE], 10, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_WOOD], 10, 0);
+                    bag_add(&ITEM_TYPES[ITEM_PICKAXE], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_AXE], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_HAMMER], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_ORE_COPPER], 20, 0);
+                    bag_add(&ITEM_TYPES[ITEM_ORE_IRON], 20, 0);
+                    bag_add(&ITEM_TYPES[ITEM_INGOT_COPPER], 10, 0);
+                    bag_add(&ITEM_TYPES[ITEM_INGOT_IRON], 10, 0);
+                    bag_add(&ITEM_TYPES[ITEM_HERB_RED], 10, 0);
+                    bag_add(&ITEM_TYPES[ITEM_HERB_BLUE], 10, 0);
+                    bag_add(&ITEM_TYPES[ITEM_WOOD], 10, 0);
                     // Büyü dalgası 2 testi: 3 tomar çantaya (sağ tık = oku)
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_TOME_CLAW], 1, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_TOME_ICETACLE], 1, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_TOME_TORNADO], 1, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_BP_SWORD_IRON], 1, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_BP_HELMET_IRON], 1, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_BP_POISON_OIL], 1, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_SCROLL_SMITHING], 2, 0);
+                    bag_add(&ITEM_TYPES[ITEM_TOME_CLAW], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_TOME_ICETACLE], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_TOME_TORNADO], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_BP_SWORD_IRON], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_BP_HELMET_IRON], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_BP_POISON_OIL], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_SCROLL_SMITHING], 2, 0);
                     // Faz 4 sunak test seti: özler + tam kademe için taşlar
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_ESSENCE_PALE], 12, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_ESSENCE_TOXIC], 12, 0);
+                    bag_add(&ITEM_TYPES[ITEM_ESSENCE_PALE], 12, 0);
+                    bag_add(&ITEM_TYPES[ITEM_ESSENCE_TOXIC], 12, 0);
                     for (int st = ITEM_STONE_STR; st <= ITEM_STONE_STA; st++)
-                        inventory_add(&inventory, &ITEM_TYPES[st], 6, 0);
+                        bag_add(&ITEM_TYPES[st], 6, 0);
                     // Faz 5 okçuluk test seti
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_BOW], 1, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_ARROW], 50, 0);
+                    bag_add(&ITEM_TYPES[ITEM_BOW], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_ARROW], 50, 0);
                     // Faz 6 av test seti: deri seti + yemek malzemesi
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_LEATHER], 12, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_MEAT], 8, 0);
+                    bag_add(&ITEM_TYPES[ITEM_LEATHER], 12, 0);
+                    bag_add(&ITEM_TYPES[ITEM_MEAT], 8, 0);
                     // Faz 7 slime test seti: jel + hazır tuzak
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_SLIME_GEL], 8, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_STICKY_TRAP], 3, 0);
+                    bag_add(&ITEM_TYPES[ITEM_SLIME_GEL], 8, 0);
+                    bag_add(&ITEM_TYPES[ITEM_STICKY_TRAP], 3, 0);
                     // Faz 8 iskelet test seti: kemik + premium ok örnekleri
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_BONE], 6, 0);
+                    bag_add(&ITEM_TYPES[ITEM_BONE], 6, 0);
                     // Faz 22 büyü test seti: asa + Bilgelik Taşları + havuzlar full
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_STAFF], 1, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_STONE_INT], 6, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_POTION_MANA], 5, 0);
+                    bag_add(&ITEM_TYPES[ITEM_STAFF], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_STONE_INT], 6, 0);
+                    bag_add(&ITEM_TYPES[ITEM_POTION_MANA], 5, 0);
                     // M2 yemek test seti
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_STEW], 3, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_SOUP], 3, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_KAVURMA], 3, 0);
+                    bag_add(&ITEM_TYPES[ITEM_STEW], 3, 0);
+                    bag_add(&ITEM_TYPES[ITEM_SOUP], 3, 0);
+                    bag_add(&ITEM_TYPES[ITEM_KAVURMA], 3, 0);
                     player.health  = player.maxHealth;
                     player.mana    = player.maxMana;
                     player.stamina = player.maxStamina;
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_ARROW_BONE], 20, 0);
-                    inventory_add(&inventory, &ITEM_TYPES[ITEM_ARROW_IRON], 20, 0);
+                    bag_add(&ITEM_TYPES[ITEM_ARROW_BONE], 20, 0);
+                    bag_add(&ITEM_TYPES[ITEM_ARROW_IRON], 20, 0);
                     player.gold += 500;
                     // Ünvan testi (M3): sayaçlar eşiğin hemen altına — birkaç
                     // eylemle ünvan düşsün (bildirim/panel/pasif akışı görülür)
@@ -2468,8 +2595,8 @@ int main(int argc, char *argv[])
                     const char *msg;
                     if (activeSlot < 0)
                         msg = "Aktif slot yok - ESC > Kaydet";
-                    else if (save_game(save_slot_path(activeSlot), &player,
-                                       &inventory, &equipment, &hotbar, questStatus))
+                    else if (save_game(save_slot_path(activeSlot), &player, 
+                                       &inventory, &craftBag, &equipment, &hotbar, questStatus))
                     {
                         msg = "Kaydedildi";
                         save_read_summary(save_slot_path(activeSlot),
@@ -2488,7 +2615,7 @@ int main(int argc, char *argv[])
                     MapId mapBeforeLoad = map_current();
                     if (activeSlot >= 0 &&
                         load_game(save_slot_path(activeSlot), &player,
-                                  &inventory, &equipment, &hotbar, questStatus))
+                                  &inventory, &craftBag, &equipment, &hotbar, questStatus))
                     {
                         mapReloadNeeded = true;   // ekoloji popülasyonu haritayı
                         (void)mapBeforeLoad;      // her yüklemede yeniden kurar
@@ -2502,6 +2629,7 @@ int main(int argc, char *argv[])
                         lastSeenDay = gametime_day();   // günlük blok tetiklenmesin
                                                         // (pano durumu save'den geldi)
                         wasNightWE = gametime_is_night();   // gece kenarı yeniden tetiklenmesin
+                        bags_apply_caps(&player, &inventory, &craftBag);
                         if (kervanIdx >= 0)
                             npc_force_hidden(kervanIdx,
                                              worldevent_current() != WE_CARAVAN);
@@ -2520,7 +2648,7 @@ int main(int argc, char *argv[])
                 int dwW, dwH;
                 SDL_GetWindowSize(window, &dwW, &dwH);
                 float ux = (float)event.button.x, uy = (float)event.button.y;
-                int dpx = (dwW - 400) / 2, dpy = 20;
+                int dpx = (dwW - INV_PANEL_W) / 2, dpy = 20;
                 int tInv = inventoryOpen
                          ? inventory_slot_at(ux, uy, (float)dpx, (float)(dpy + 340)) : -1;
                 EquipSlot tEq = inventoryOpen
@@ -2529,20 +2657,54 @@ int main(int argc, char *argv[])
 
                 if (dragInvSlot >= 0)
                 {
-                    ItemStack *src = &inventory.slots[dragInvSlot];
+                    Inventory *db = (dragTab == 1) ? &craftBag : &inventory;
+                    Inventory *ob = (dragTab == 1) ? &inventory : &craftBag;
+                    ItemStack *src = &db->slots[dragInvSlot];
+                    // Sekme başlığına bırak = DİĞER çantaya taşı; şeridin SAĞ
+                    // ucundaki Çöp hücresi = İMHA (geri dönüşü yok)
+                    bool onTabs = inventoryOpen && ux >= dpx &&
+                                  ux <= dpx + INV_PANEL_W &&
+                                  uy >= dpy + 340 - 28 && uy < dpy + 340;
+                    bool onTrash = onTabs && ux >= dpx + INV_PANEL_W - 84.0f;
                     if (src->type != NULL)
                     {
-                        if (tInv >= 0 && tInv != dragInvSlot)
+                        if (onTrash)
                         {
-                            // Envanter içi: yer değiştir (düzenleme)
-                            ItemStack tmp = inventory.slots[tInv];
-                            inventory.slots[tInv] = *src;
+                            // Onay iste — imha [1] ile kesinleşir, [2]/ESC vazgeçer
+                            trashTab = dragTab;
+                            trashSlot = dragInvSlot;
+                            audio_play(SFX_UI);
+                        }
+                        else if (onTabs)
+                        {
+                            ItemStack moving = *src;
+                            if (inventory_add_stack(ob, &moving))
+                            {
+                                src->type = NULL;
+                                src->count = 0;
+                                audio_play(SFX_UI);
+                            }
+                            else
+                            {
+                                SDL_Color red = { 255, 120, 100, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f,
+                                                     "Diğer çanta dolu!", red);
+                            }
+                        }
+                        else if (tInv >= 0 && tInv != dragInvSlot &&
+                                 tInv < db->cap && dragTab == invTab)
+                        {
+                            // Sekme içi: yer değiştir (düzenleme)
+                            ItemStack tmp = db->slots[tInv];
+                            db->slots[tInv] = *src;
                             *src = tmp;
                             audio_play(SFX_UI);
                         }
                         else if (tEq != EQUIP_NONE && src->type->equipable)
                         {
-                            equip_from_inventory(&equipment, &inventory, dragInvSlot);
+                            equip_from_inventory(&equipment, db, dragInvSlot);
                             audio_play(SFX_UI);
                         }
                         else if (tHb >= 0 &&
@@ -2556,7 +2718,7 @@ int main(int argc, char *argv[])
                 else if (dragEquipSlot != EQUIP_NONE)
                 {
                     // Ekipmandan envantere (panelin herhangi bir yerine bırak = çıkar)
-                    if (tInv >= 0 || (ux >= dpx && ux <= dpx + 400 && uy >= dpy + 340))
+                    if (tInv >= 0 || (ux >= dpx && ux <= dpx + INV_PANEL_W && uy >= dpy + 340))
                     {
                         unequip_slot(&equipment, &inventory, dragEquipSlot);
                         audio_play(SFX_UI);
@@ -2570,6 +2732,15 @@ int main(int argc, char *argv[])
             {
                 dragInvSlot = -1;               // güvenlik: askıda sürükleme kalmasın
                 dragEquipSlot = EQUIP_NONE;
+            }
+            else if (event.type == SDL_EVENT_MOUSE_WHEEL &&
+                     gameState == GAME_PLAYING && craftOpen && craftStation >= 0)
+            {
+                // Craft paneli kaydırma: tarif listesi panele sığmayabilir
+                craftScroll -= (int)event.wheel.y;
+                int msc = craft_panel_max_scroll(craftStation);
+                if (craftScroll < 0) craftScroll = 0;
+                if (craftScroll > msc) craftScroll = msc;
             }
             else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
             {
@@ -2634,10 +2805,14 @@ int main(int argc, char *argv[])
                                 item_make(&ITEM_TYPES[ITEM_CHEST_LEATHER], 1, 0);
                             equipment.slots[EQUIP_BOOTS] =
                                 item_make(&ITEM_TYPES[ITEM_BOOTS_LEATHER], 1, 0);
-                            inventory_add(&inventory, &ITEM_TYPES[ITEM_POTION_HP], 3, 0);
-                            inventory_add(&inventory, &ITEM_TYPES[ITEM_MEAT_COOKED], 2, 0);
-                            inventory_add(&inventory, &ITEM_TYPES[ITEM_TORCH], 1, 0);
+                            bag_add(&ITEM_TYPES[ITEM_POTION_HP], 3, 0);
+                            bag_add(&ITEM_TYPES[ITEM_MEAT_COOKED], 2, 0);
+                            bag_add(&ITEM_TYPES[ITEM_TORCH], 1, 0);
                             player.spellsLearned = 0;   // tomarlar yeni hayatta yeniden bulunur
+                            player.bagUpgrades = 0;     // çantalar taban boyuta döner
+                            craftBag = (Inventory){0};
+                            invTab = 0;
+                            bags_apply_caps(&player, &inventory, &craftBag);
                             tree_set_debug_points(0);   // F10 kalıntısı yeni oyuna taşınmaz
                             tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
                             spells_apply_learned(&player, &perkFx);
@@ -2690,8 +2865,8 @@ int main(int argc, char *argv[])
                             currentRegion = -2;
 
                             // Slot hemen mühürlenir (kart dolu görünsün, F5 hedefi belli)
-                            save_game(save_slot_path(createSlot), &player,
-                                      &inventory, &equipment, &hotbar, questStatus);
+                            save_game(save_slot_path(createSlot), &player, 
+                                      &inventory, &craftBag, &equipment, &hotbar, questStatus);
                             save_read_summary(save_slot_path(createSlot),
                                               &slotSums[createSlot]);
 
@@ -2715,13 +2890,13 @@ int main(int argc, char *argv[])
                         {
                             equipment.slots[EQUIP_WEAPON] =
                                 item_make(&ITEM_TYPES[ITEM_BOW], 1, 0);
-                            inventory_add(&inventory, &ITEM_TYPES[ITEM_ARROW], 30, 0);
+                            bag_add(&ITEM_TYPES[ITEM_ARROW], 30, 0);
                         }
                         else if (createBg == 3)   // ÇIRAK: iksir+ot, altın eksik
                         {
-                            inventory_add(&inventory,
+                            bag_add(
                                           &ITEM_TYPES[ITEM_POTION_MANA], 2, 0);
-                            inventory_add(&inventory,
+                            bag_add(
                                           &ITEM_TYPES[ITEM_HERB_RED], 3, 0);
                             player.gold -= 25;
                             if (player.gold < 0) player.gold = 0;
@@ -2737,8 +2912,8 @@ int main(int argc, char *argv[])
                                     tones[createSkin][2]);
                         }
                         // Slot mührü kimlikle güncellensin (isim kartta görünsün)
-                        save_game(save_slot_path(createSlot), &player,
-                                  &inventory, &equipment, &hotbar, questStatus);
+                        save_game(save_slot_path(createSlot), &player, 
+                                  &inventory, &craftBag, &equipment, &hotbar, questStatus);
                         save_read_summary(save_slot_path(createSlot),
                                           &slotSums[createSlot]);
                     }
@@ -2796,8 +2971,8 @@ int main(int argc, char *argv[])
                         }
                         else if (act == MENU_ACTION_SAVE_SLOT && actSlot >= 0)
                         {
-                            bool ok = save_game(save_slot_path(actSlot), &player,
-                                                &inventory, &equipment, &hotbar,
+                            bool ok = save_game(save_slot_path(actSlot), &player, 
+                                                &inventory, &craftBag, &equipment, &hotbar,
                                                 questStatus);
                             if (ok)
                             {
@@ -2816,7 +2991,7 @@ int main(int argc, char *argv[])
                         {
                             MapId mapBeforeMenuLoad = map_current();
                             if (load_game(save_slot_path(actSlot), &player,
-                                          &inventory, &equipment, &hotbar, questStatus))
+                                          &inventory, &craftBag, &equipment, &hotbar, questStatus))
                             {
                                 // (F9 yükleme-sonrası dizisiyle aynı — desenkron etme!)
                                 mapReloadNeeded = true;   // dünya ekolojiden kurulur
@@ -2831,6 +3006,7 @@ int main(int argc, char *argv[])
                                 catchOpen = false;
                                 lastSeenDay = gametime_day();
                                 wasNightWE = gametime_is_night();
+                                bags_apply_caps(&player, &inventory, &craftBag);
                                 if (kervanIdx >= 0)
                                     npc_force_hidden(kervanIdx,
                                                      worldevent_current() != WE_CARAVAN);
@@ -2889,13 +3065,30 @@ int main(int argc, char *argv[])
                     {
                         int dwW, dwH;
                         SDL_GetWindowSize(window, &dwW, &dwH);
-                        int dpx = (dwW - 400) / 2, dpy = 20;
+                        int dpx = (dwW - INV_PANEL_W) / 2, dpy = 20;
+                        // Sekme şeridine tıklama: sekme değiştir (drag başlatmaz)
+                        {
+                            float cx2 = (float)event.button.x, cy2 = (float)event.button.y;
+                            float tabY = (float)(dpy + 340 - 28);
+                            if (cy2 >= tabY && cy2 < tabY + 26.0f)
+                                for (int t = 0; t < 2; t++)
+                                    if (cx2 >= dpx + t * 120.0f &&
+                                        cx2 < dpx + t * 120.0f + 114.0f)
+                                    {
+                                        invTab = t;
+                                        audio_play(SFX_UI);
+                                        handled = true;
+                                    }
+                        }
+                        Inventory *ab = (invTab == 1) ? &craftBag : &inventory;
                         int dsl = inventory_slot_at((float)event.button.x,
                                                     (float)event.button.y,
                                                     (float)dpx, (float)(dpy + 340));
-                        if (dsl >= 0 && inventory.slots[dsl].type != NULL)
+                        if (!handled && dsl >= 0 && dsl < ab->cap &&
+                            ab->slots[dsl].type != NULL)
                         {
                             dragInvSlot = dsl;
+                            dragTab = invTab;
                             handled = true;
                         }
                         else
@@ -3042,7 +3235,7 @@ int main(int argc, char *argv[])
                                                  perkFx.shopBuyMult *
                                                  (shopCaravan ? 1.15f : 1.0f));
                             if (player.gold >= buyPrice &&
-                                inventory_add(&inventory, it, 1, 0))
+                                bag_add(it, 1, 0))
                             {
                                 player.gold -= buyPrice;
                                 rep_add(&player.reputation[shopRegion], REP_SHOPPING); // ekonomik bağ
@@ -3102,7 +3295,7 @@ int main(int argc, char *argv[])
                                 if (ready)
                                 {
                                     if (c->targetMob == NULL)
-                                        inventory_consume_n(&inventory,
+                                        bag_consume_n(
                                                             &ITEM_TYPES[c->fetchItem], c->count);
                                     contract_turn_in(slot);
                                     int cGold = (int)(c->gold * perkFx.contractGoldMult);
@@ -3137,7 +3330,8 @@ int main(int argc, char *argv[])
                     {
                         int hit = craft_panel_recipe_at(craftStation,
                                                         (float)event.button.x,
-                                                        (float)event.button.y, 40.0f, 40.0f);
+                                                        (float)event.button.y, 40.0f, 40.0f,
+                                                        craftScroll);
                         SDL_Color red = { 255, 120, 100, 255 };
                         bool smithSt = STATIONS[craftStation].type == STATION_SMITH;
                         bool enchSt  = STATIONS[craftStation].type == STATION_ENCHANT;
@@ -3167,7 +3361,7 @@ int main(int argc, char *argv[])
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 10.0f, "Silah kuşan!", red);
-                            else if (inventory_count(&inventory, &ITEM_TYPES[runeItem]) < 1)
+                            else if (bag_count(&ITEM_TYPES[runeItem]) < 1)
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 10.0f, "Rün gerekli!", red);
@@ -3210,8 +3404,8 @@ int main(int argc, char *argv[])
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 10.0f, "Slotlar dolu (2/2)", red);
-                            else if (inventory_count(&inventory, &ITEM_TYPES[stone[s]]) < next ||
-                                     inventory_count(&inventory, &ITEM_TYPES[ITEM_INGOT_IRON]) < next * 2)
+                            else if (bag_count(&ITEM_TYPES[stone[s]]) < next ||
+                                     bag_count(&ITEM_TYPES[ITEM_INGOT_IRON]) < next * 2)
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 10.0f, "Malzeme eksik!", red);
@@ -3238,7 +3432,7 @@ int main(int argc, char *argv[])
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 10.0f, "Zaten tavanda", red);
-                            else if (inventory_count(&inventory, &ITEM_TYPES[ITEM_HAMMER]) < 1)
+                            else if (bag_count(&ITEM_TYPES[ITEM_HAMMER]) < 1)
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 10.0f, "Çekiç gerekli!", red);
@@ -3275,9 +3469,9 @@ int main(int argc, char *argv[])
                             else
                             {
                                 bool haveMats =
-                                    inventory_count(&inventory, &ITEM_TYPES[r->in1Item]) >= r->in1Count &&
+                                    bag_count(&ITEM_TYPES[r->in1Item]) >= r->in1Count &&
                                     (r->in2Item < 0 ||
-                                     inventory_count(&inventory, &ITEM_TYPES[r->in2Item]) >= r->in2Count);
+                                     bag_count(&ITEM_TYPES[r->in2Item]) >= r->in2Count);
 
                                 if (player.skills[sk].level < r->minSkill)
                                 {
@@ -3358,7 +3552,7 @@ int main(int argc, char *argv[])
                             ItemStack *stack = &loots[openLootIndex].items[itemIdx];
                             if (stack->type != NULL)
                             {
-                                if (inventory_add_stack(&inventory, stack))
+                                if (bag_add_stackp(stack))
                                 {
                                     audio_play(SFX_LOOT);
                                     stack->type = NULL;
@@ -3409,7 +3603,7 @@ int main(int argc, char *argv[])
                             loots[li].kind == LOOT_KIND_CHEST && loots[li].lockTier >= 0)
                         {
                             // Kilitli sandık: maymuncuk varsa minigame başlar
-                            if (inventory_count(&inventory, &ITEM_TYPES[ITEM_LOCKPICK]) <= 0)
+                            if (bag_count(&ITEM_TYPES[ITEM_LOCKPICK]) <= 0)
                             {
                                 SDL_Color red = { 255, 120, 100, 255 };
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
@@ -3443,7 +3637,7 @@ int main(int argc, char *argv[])
                     {
                         int winW, winH;
                         SDL_GetWindowSize(window, &winW, &winH);   // ← EKLE
-                        int panelX = (winW - 400) / 2;
+                        int panelX = (winW - INV_PANEL_W) / 2;
 
                         // 1) Once ekipman paneline mi tiklandi? (panelY = 20 — render ile aynı;
                         //    35 slotluk çanta 720px pencereye ancak böyle sığıyor)
@@ -3456,11 +3650,12 @@ int main(int argc, char *argv[])
                         else
                         {
                             // 2) Degilse envantere mi? (panelY = 20+340)
+                            Inventory *ab = (invTab == 1) ? &craftBag : &inventory;
                             int slot = inventory_slot_at((float)event.button.x, (float)event.button.y,
                                                          (float)panelX, (float)(20 + 340));
-                            if (slot >= 0)
+                            if (slot >= 0 && slot < ab->cap)
                             {
-                                ItemStack *st = &inventory.slots[slot];
+                                ItemStack *st = &ab->slots[slot];
                                 if (shopOpen && st->type != NULL)
                                 {
                                     // Dükkan açıkken sağ tık = SAT (alışın yarısı × itibar, plus dahil)
@@ -3508,7 +3703,7 @@ int main(int argc, char *argv[])
                                     else
                                     {
                                         const ItemType *tt = st->type;
-                                        if (inventory_consume(&inventory, tt))
+                                        if (bag_consume(tt))
                                         {
                                             player.spellsLearned |= (1u << ta);
                                             perkFx.abilityOpen[ta] = true;
@@ -3530,7 +3725,7 @@ int main(int argc, char *argv[])
                                     SkillType sk = (SkillType)st->type->scrollSkill;
                                     float xp = st->type->scrollXp;
                                     const ItemType *sct = st->type;
-                                    if (inventory_consume(&inventory, sct))
+                                    if (bag_consume(sct))
                                     {
                                         if (skill_add_xp(player.skills, sk, xp))
                                             on_skill_levelup(&player, sk, &hotbar, floatTexts);
@@ -3562,7 +3757,7 @@ int main(int argc, char *argv[])
                                         }
                                     if (learnedNew)
                                     {
-                                        inventory_consume(&inventory, &ITEM_TYPES[bpIdx]);
+                                        bag_consume(&ITEM_TYPES[bpIdx]);
                                         audio_play(SFX_UI);
                                         char buf[FLOAT_TEXT_LEN];
                                         snprintf(buf, sizeof(buf), "Tarif öğrenildi: %s", rName);
@@ -3597,7 +3792,7 @@ int main(int argc, char *argv[])
                                 {
                                     // Odun'a sağ tık: kamp ateşi kurulumu (3 Odun, 3 sn)
                                     SDL_Color red = { 255, 120, 100, 255 };
-                                    if (inventory_count(&inventory, &ITEM_TYPES[ITEM_WOOD])
+                                    if (bag_count(&ITEM_TYPES[ITEM_WOOD])
                                             < CAMPFIRE_WOOD_COST)
                                     {
                                         char buf[FLOAT_TEXT_LEN];
@@ -3631,7 +3826,7 @@ int main(int argc, char *argv[])
                                 }
                                 else
                                 {
-                                    equip_from_inventory(&equipment, &inventory, slot);
+                                    equip_from_inventory(&equipment, ab, slot);
                                 }
                             }
                         }
@@ -3782,8 +3977,8 @@ int main(int argc, char *argv[])
                 // Otomatik kayıt (Faz B1): harita GEÇİŞİ kritik an sayılır
                 // (yüklemeden gelen reload'da yazmaya gerek yok — durum aynı)
                 if (wasPortal &&
-                    save_game(save_slot_path(SAVE_SLOT_AUTO), &player,
-                              &inventory, &equipment, &hotbar, questStatus))
+                    save_game(save_slot_path(SAVE_SLOT_AUTO), &player, 
+                              &inventory, &craftBag, &equipment, &hotbar, questStatus))
                 {
                     save_read_summary(save_slot_path(SAVE_SLOT_AUTO),
                                       &slotSums[SAVE_SLOT_AUTO]);
@@ -4128,7 +4323,7 @@ int main(int argc, char *argv[])
                     if (player.itemCd[typeIdx] <= 0.0f &&
                         (!heals || player.health < player.maxHealth) &&
                         (!manas || player.mana < player.maxMana) &&
-                        inventory_consume(&inventory, hs->itemType))
+                        bag_consume(hs->itemType))
                     {
                         // Akıcı: CD kısalır; İlk Yardım: iyileşme artar
                         player.itemCd[typeIdx] = hs->itemType->useCooldown * perkFx.potionCdMult;
@@ -4265,7 +4460,7 @@ int main(int argc, char *argv[])
                                                           : 1.0f) * dt);
                     if (resource_progress(gatherRes) >= rd->work)
                     {
-                        gather_finish(gatherRes, &player, &inventory, &hotbar, floatTexts);
+                        gather_finish(gatherRes, &player, &hotbar, floatTexts);
                         gatherRes = -1;
                     }
                 }
@@ -4781,7 +4976,7 @@ int main(int argc, char *argv[])
                     if (campBuild >= CAMPFIRE_BUILD_TIME)
                     {
                         campBuild = -1.0f;
-                        if (inventory_consume_n(&inventory, &ITEM_TYPES[ITEM_WOOD],
+                        if (bag_consume_n(&ITEM_TYPES[ITEM_WOOD],
                                                 CAMPFIRE_WOOD_COST))
                         {
                             // Yenisi eskisini söndürür (tek aktif oyuncu ateşi)
@@ -4861,7 +5056,7 @@ int main(int argc, char *argv[])
                         if (enchSt && randf() * 100.0f >= ch)
                         {
                             const RecipeDef *fr = &RECIPES[craftRecipe];
-                            inventory_consume_n(&inventory, &ITEM_TYPES[fr->in1Item],
+                            bag_consume_n(&ITEM_TYPES[fr->in1Item],
                                                 fr->in1Count);
                             SDL_Color red = { 255, 80, 80, 255 };
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
@@ -4873,7 +5068,7 @@ int main(int argc, char *argv[])
                                                  &hotbar, floatTexts);
                         }
                         else
-                            craft_finish_recipe(craftRecipe, &player, &inventory,
+                            craft_finish_recipe(craftRecipe, &player,
                                                 &hotbar, floatTexts);
                         craftRecipe = -1;
                         craftProgress = 0.0f;   // panel açık kalır — tekrar üretilebilir
@@ -4904,7 +5099,7 @@ int main(int argc, char *argv[])
                                                              : ITEM_RUNE_POISON;
                             ItemStack *w = &equipment.slots[EQUIP_WEAPON];
                             if (w->type != NULL &&
-                                inventory_consume(&inventory, &ITEM_TYPES[runeItem]))
+                                bag_consume(&ITEM_TYPES[runeItem]))
                             {
                                 w->fx = (enchAction == 1) ? (Sint8)WEAPON_FX_PINK
                                                           : (Sint8)WEAPON_FX_POISON;
@@ -4937,8 +5132,8 @@ int main(int argc, char *argv[])
                             int next = cur + 1;
                             if (tgt->type != NULL && next <= STAT_MAX_TIER &&
                                 (slotK >= 0 || emptyK >= 0) &&
-                                inventory_consume_n(&inventory, &ITEM_TYPES[stone[s]], next) &&
-                                inventory_consume_n(&inventory,
+                                bag_consume_n(&ITEM_TYPES[stone[s]], next) &&
+                                bag_consume_n(
                                                     &ITEM_TYPES[ITEM_INGOT_IRON], next * 2))
                             {
                                 int k = (slotK >= 0) ? slotK : emptyK;
@@ -5508,8 +5703,8 @@ int main(int argc, char *argv[])
                                              // yuva başına +1 (tavana kadar) + göçler
 
                 // Otomatik kayıt (Faz B1): her şafak auto slotuna yazılır
-                if (save_game(save_slot_path(SAVE_SLOT_AUTO), &player,
-                              &inventory, &equipment, &hotbar, questStatus))
+                if (save_game(save_slot_path(SAVE_SLOT_AUTO), &player, 
+                              &inventory, &craftBag, &equipment, &hotbar, questStatus))
                 {
                     save_read_summary(save_slot_path(SAVE_SLOT_AUTO),
                                       &slotSums[SAVE_SLOT_AUTO]);
@@ -6019,7 +6214,7 @@ int main(int argc, char *argv[])
 
                     if (resource_progress(gatherRes) >= rd->work)
                     {
-                        gather_finish(gatherRes, &player, &inventory, &hotbar, floatTexts);
+                        gather_finish(gatherRes, &player, &hotbar, floatTexts);
                         gatherRes = -1;   // süreç bitti (dolu çantada da bırakılır)
                     }
                 }
@@ -6042,7 +6237,7 @@ int main(int argc, char *argv[])
                             ItemStack *w = &equipment.slots[EQUIP_WEAPON];
                             int cost = w->plusLevel + 1;
                             if (w->type != NULL && w->type->weaponType != WEAPON_TOOL &&
-                                inventory_consume_n(&inventory,
+                                bag_consume_n(
                                                     &ITEM_TYPES[ITEM_INGOT_IRON], cost))
                             {
                                 float ch = plus_chance(w->plusLevel + 1,
@@ -6086,7 +6281,7 @@ int main(int argc, char *argv[])
                         }
                         else
                         {
-                            craft_finish_recipe(craftRecipe, &player, &inventory,
+                            craft_finish_recipe(craftRecipe, &player,
                                                 &hotbar, floatTexts);
                             craftRecipe = -1;   // panel açık — tekrar üretilebilir
                         }
@@ -7702,7 +7897,7 @@ int main(int argc, char *argv[])
         // Yay kuşanılıyken aktif ok sayacı (hotbar'ın üstünde) — tür adıyla
         if (player.bowEquipped && gameFont != NULL)
         {
-            int nArrow = inventory_count(&inventory, &ITEM_TYPES[activeAmmo]);
+            int nArrow = bag_count(&ITEM_TYPES[activeAmmo]);
             char ammoBuf[40];
             snprintf(ammoBuf, sizeof(ammoBuf), "%s: %d",
                      ITEM_TYPES[activeAmmo].name, nArrow);
@@ -7773,12 +7968,79 @@ int main(int argc, char *argv[])
 
         if (inventoryOpen)
         {
-            int panelX = (winW - 400) / 2;
-            int panelY = 20;   // 35 slotluk çanta (5 satır) 720px'e ancak böyle sığıyor
+            int panelX = (winW - INV_PANEL_W) / 2;
+            int panelY = 20;   // çanta 720px'e ancak böyle sığıyor
             equipment_render(&equipment, renderer, itemIconTex, &itemTex,
                              built, builtCount, panelX, panelY, gameFont);
-            inventory_render(&inventory, renderer, itemIconTex, &itemTex, gameFont,
-                             (float)panelX, (float)(panelY + 340));
+
+            // Sekme şeridi: [Eşya] [Malzeme] — I döngüsü / tıklama / sürükle-bırak hedefi
+            {
+                float tabY = (float)(panelY + 340 - 28);
+                const char *tabNames[2] = { "Eşya", "Malzeme" };
+                for (int t = 0; t < 2; t++)
+                {
+                    float tx = (float)panelX + t * 120.0f;
+                    if (t == invTab) ui_cell(renderer, tx, tabY, 114.0f, 26.0f);
+                    else             ui_cell_gray(renderer, tx, tabY, 114.0f, 26.0f);
+                    SDL_Color tc = (t == invTab) ? (SDL_Color){ 255, 230, 120, 255 }
+                                                 : (SDL_Color){ 170, 170, 180, 255 };
+                    if (gameFont != NULL)
+                        draw_text(renderer, gameFont, tabNames[t],
+                                  tx + 12.0f, tabY + 4.0f, tc);
+                }
+                // Çöp hücresi: sürüklenen item buraya bırakılırsa İMHA
+                {
+                    float trX = (float)panelX + INV_PANEL_W - 84.0f;
+                    ui_cell_gray(renderer, trX, tabY, 78.0f, 26.0f);
+                    SDL_Color trc = (dragInvSlot >= 0)
+                                  ? (SDL_Color){ 255, 120, 100, 255 }
+                                  : (SDL_Color){ 150, 130, 130, 255 };
+                    if (gameFont != NULL)
+                        draw_text(renderer, gameFont, "Çöp", trX + 22.0f,
+                                  tabY + 4.0f, trc);
+                }
+                if (gameFont != NULL)
+                    draw_text(renderer, gameFont, "TAB: sekme", 
+                              (float)panelX + 250.0f, tabY + 4.0f,
+                              (SDL_Color){ 150, 150, 160, 255 });
+            }
+
+            inventory_render((invTab == 1) ? &craftBag : &inventory,
+                             renderer, itemIconTex, &itemTex, gameFont,
+                             (float)panelX, (float)(panelY + 340),
+                             (invTab == 1) ? "Malzeme" : "Eşya");
+
+            // Çöp onayı: küçük panel — [1] yok et · [2] vazgeç
+            if (trashSlot >= 0)
+            {
+                Inventory *tb2 = (trashTab == 1) ? &craftBag : &inventory;
+                const ItemStack *ts2 = &tb2->slots[trashSlot];
+                if (ts2->type == NULL) { trashTab = -1; trashSlot = -1; }
+                else
+                {
+                    float cw = 360.0f, ch = 92.0f;
+                    float cx = (winW - cw) / 2.0f, cy = winH / 2.0f - 120.0f;
+                    ui_panel(renderer, cx, cy, cw, ch);
+                    if (gameFont != NULL)
+                    {
+                        char cbuf[96];
+                        if (ts2->count > 1)
+                            snprintf(cbuf, sizeof(cbuf), "%s x%d yok edilsin mi?",
+                                     ts2->type->name, ts2->count);
+                        else
+                            snprintf(cbuf, sizeof(cbuf), "%s yok edilsin mi?",
+                                     ts2->type->name);
+                        SDL_Color wt = { 255, 255, 255, 255 };
+                        SDL_Color red = { 255, 140, 120, 255 };
+                        SDL_Color dim = { 170, 170, 180, 255 };
+                        draw_text(renderer, gameFont, cbuf, cx + 16.0f, cy + 12.0f, wt);
+                        draw_text(renderer, gameFont, "[1] Yok et", cx + 16.0f,
+                                  cy + 48.0f, red);
+                        draw_text(renderer, gameFont, "[2]/ESC Vazgeç", cx + 150.0f,
+                                  cy + 48.0f, dim);
+                    }
+                }
+            }
         }
 
         if (skillsOpen)
@@ -7829,7 +8091,8 @@ int main(int argc, char *argv[])
             const ItemStack *pw = (STATIONS[craftStation].type == STATION_ENCHANT)
                                 ? &equipment.slots[enchTarget]
                                 : &equipment.slots[EQUIP_WEAPON];
-            craft_panel_render(craftStation, &inventory, player.skills,
+            craft_panel_render(craftStation, &craftBag, &inventory, player.skills,
+                               craftScroll,
                                craftRecipe,
                                plus_chance(equipment.slots[EQUIP_WEAPON].plusLevel + 1,
                                            player.skills[SKILL_SMITHING].level),
@@ -7854,7 +8117,7 @@ int main(int argc, char *argv[])
 
         // İlan panosu paneli (Faz 6): günün kontratları + kabul/teslim
         if (boardOpen)
-            contract_panel_render(renderer, gameFont, &inventory,
+            contract_panel_render(renderer, gameFont, &craftBag, &inventory,
                                   player.reputation[region_of(BOARD_X, BOARD_Y)],
                                   40.0f, 40.0f);
 
@@ -7937,7 +8200,7 @@ int main(int argc, char *argv[])
         if (dragInvSlot >= 0 || dragEquipSlot != EQUIP_NONE)
         {
             const ItemStack *ds = (dragInvSlot >= 0)
-                                ? &inventory.slots[dragInvSlot]
+                                ? &((dragTab == 1) ? &craftBag : &inventory)->slots[dragInvSlot]
                                 : &equipment.slots[dragEquipSlot];
             if (ds->type != NULL)
             {
@@ -7966,11 +8229,12 @@ int main(int argc, char *argv[])
 
             if (inventoryOpen)
             {
-                int tpx = (winW - 400) / 2, tpy = 20;
+                const Inventory *tb = (invTab == 1) ? &craftBag : &inventory;
+                int tpx = (winW - INV_PANEL_W) / 2, tpy = 20;
                 int sl = inventory_slot_at(tmx, tmy, (float)tpx, (float)(tpy + 340));
-                if (sl >= 0 && inventory.slots[sl].type != NULL)
+                if (sl >= 0 && sl < tb->cap && tb->slots[sl].type != NULL)
                 {
-                    tip = &inventory.slots[sl];
+                    tip = &tb->slots[sl];
                     const ItemType *tt = tip->type;
                     if (tt->equipable && tt->equipSlot >= 0 &&
                         tt->equipSlot < EQUIP_SLOT_COUNT &&

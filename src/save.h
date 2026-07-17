@@ -38,12 +38,14 @@ bool save_read_summary(const char *path, SaveSummary *out);
 
 // Başarılıysa true. Hata SDL_Log'a yazılır, oyun çökmez.
 bool save_game(const char *path, const Player *p,
-               const Inventory *inv, const Equipment *eq, const Hotbar *hb,
+               const Inventory *inv, const Inventory *craftInv,
+               const Equipment *eq, const Hotbar *hb,
                const QuestStatus *quests);
 
 // Başarılıysa true (dosya yoksa/bozuksa false — mevcut durum korunur).
 bool load_game(const char *path, Player *p,
-               Inventory *inv, Equipment *eq, Hotbar *hb,
+               Inventory *inv, Inventory *craftInv,
+               Equipment *eq, Hotbar *hb,
                QuestStatus *quests);
 
 #endif

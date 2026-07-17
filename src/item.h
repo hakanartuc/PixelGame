@@ -92,6 +92,11 @@ typedef struct {
     int tomeAbility;             // öğretilen AbilityId (0 = tomar değil)
     int tomeReqLevel;            // okumak için gereken Destruction seviyesi
 
+    // --- Çanta sekmeleri: hammadde MALZEME sekmesine düşer (otomatik ayıklama) ---
+    bool material;               // cevher/ot/odun/jel/kemik/öz/külçe/deri/çiğ et
+    int bagUpgrade;              // >0: çanta eşyası — üretilince OTOMATİK takılır
+                                 // (1 Deri Çanta / 2 Gezgin / 3 Malzeme Kesesi / 4 Usta)
+
     // --- Yemek (Faz 6 — av): iksirden farklı, YAVAŞ ama toplamı yüksek yenilenme ---
     float foodRegen;             // saniyede yenilenen can (>0 = yemek)
     float foodDuration;          // yenilenme süresi (sn)
@@ -246,6 +251,12 @@ typedef enum {
     ITEM_TOME_CLAW,       // Tomar: Yıldırım Pençesi (Yıkım 15)
     ITEM_TOME_ICETACLE,   // Tomar: Buz Dikenleri (Yıkım 30)
     ITEM_TOME_TORNADO,    // Tomar: Hortum (Yıkım 40 — yalnız zindan USTA sandığı)
+    // Çanta sekmeleri: İp (ara malzeme) + 4 çanta eşyası (kalıcı kademe)
+    ITEM_ROPE,            // İp (2 Ot → 1 İp, kamp ateşi)
+    ITEM_BAG_LEATHER,     // Deri Çanta: Eşya +10 (Smithing 15)
+    ITEM_BAG_TRAVELER,    // Gezgin Çantası: Eşya +10 daha (Smithing 40)
+    ITEM_POUCH_MATERIAL,  // Malzeme Kesesi: Malzeme +15 (Smithing 10)
+    ITEM_POUCH_MASTER,    // Usta Kesesi: Malzeme +15 daha (Smithing 35)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

@@ -75,19 +75,19 @@ const ItemType ITEM_TYPES[] = {
       .equipSpritePathBack = "assets/equipment/weapon/axe_bg.png",
       .equipZ = 140, .equipZBack = 9,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },   // tool_icons balta
-    { .name = "Bakır Cevheri", .iconIndex = 0, .maxStack = 99, .value = 8,
+    { .name = "Bakır Cevheri", .material = true, .iconIndex = 0, .maxStack = 99, .value = 8,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/resources.png", .iconSrc = { 16, 16, 16, 16 } },
-    { .name = "Demir Cevheri", .iconIndex = 0, .maxStack = 99, .value = 12,
+    { .name = "Demir Cevheri", .material = true, .iconIndex = 0, .maxStack = 99, .value = 12,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/resources.png", .iconSrc = { 16, 0, 16, 16 } },
-    { .name = "Kızılot", .iconIndex = 0, .maxStack = 99, .value = 6,
+    { .name = "Kızılot", .material = true, .iconIndex = 0, .maxStack = 99, .value = 6,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/other_icons.png", .iconSrc = { 0, 0, 16, 16 } },
-    { .name = "Ayotu", .iconIndex = 0, .maxStack = 99, .value = 6,
+    { .name = "Ayotu", .material = true, .iconIndex = 0, .maxStack = 99, .value = 6,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/other_icons.png", .iconSrc = { 0, 16, 16, 16 } },
-    { .name = "Odun", .iconIndex = 0, .maxStack = 99, .value = 4,
+    { .name = "Odun", .material = true, .iconIndex = 0, .maxStack = 99, .value = 4,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/resources.png", .iconSrc = { 0, 64, 16, 16 } },
 
@@ -99,10 +99,10 @@ const ItemType ITEM_TYPES[] = {
       .equipZ = 140, .equipZBack = 9,
       .iconSpritePath = "assets/icons/items/hammer_icon.png",
       .iconSrc = { 0, 0, 25, 44 } },   // fg+bg kompozit, sıkı kırpım
-    { .name = "Bakır Külçe", .iconIndex = 0, .maxStack = 99, .value = 22,
+    { .name = "Bakır Külçe", .material = true, .iconIndex = 0, .maxStack = 99, .value = 22,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/resources.png", .iconSrc = { 32, 16, 16, 16 } },
-    { .name = "Demir Külçe", .iconIndex = 0, .maxStack = 99, .value = 32,
+    { .name = "Demir Külçe", .material = true, .iconIndex = 0, .maxStack = 99, .value = 32,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/resources.png", .iconSrc = { 32, 0, 16, 16 } },
     { .name = "Bakır Kılıç", .iconIndex = 4, .maxStack = 1, .value = 120,
@@ -172,10 +172,10 @@ const ItemType ITEM_TYPES[] = {
       .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 64, 0, 16, 16 } },
 
     // --- Meslek paketi Faz 4: sunak — ozler, runler, stat taslari ---
-    { .name = "Soluk Öz", .iconIndex = 0, .maxStack = 99, .value = 10,
+    { .name = "Soluk Öz", .material = true, .iconIndex = 0, .maxStack = 99, .value = 10,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/decor/ores.png", .iconSrc = { 80, 112, 16, 16 } },
-    { .name = "Zehirli Öz", .iconIndex = 0, .maxStack = 99, .value = 12,
+    { .name = "Zehirli Öz", .material = true, .iconIndex = 0, .maxStack = 99, .value = 12,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/decor/ores.png", .iconSrc = { 80, 48, 16, 16 } },
     { .name = "Pembe Rün", .iconIndex = 0, .maxStack = 10, .value = 70,
@@ -211,11 +211,11 @@ const ItemType ITEM_TYPES[] = {
       .iconSrc = { 0, 0, 32, 32 } },
 
     // --- Faz 6: av paketi — hayvan lootu, deri seti (hafif zırh), yemek ---
-    { .name = "Deri", .iconIndex = 0, .maxStack = 99, .value = 15,
+    { .name = "Deri", .material = true, .iconIndex = 0, .maxStack = 99, .value = 15,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/resources.png",
       .iconSrc = { 16, 80, 16, 16 } },
-    { .name = "Et", .iconIndex = 0, .maxStack = 99, .value = 8,
+    { .name = "Et", .material = true, .iconIndex = 0, .maxStack = 99, .value = 8,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .consumable = true, .useCooldown = 4.0f,   // M2: çiğ yenir — riskli
       .healAmount = 6.0f, .rawRisk = 0.25f,      // %25: 8sn hafif zehir
@@ -247,7 +247,7 @@ const ItemType ITEM_TYPES[] = {
       .iconSrc = { 0, 1536, 64, 64 } },
 
     // --- Faz 7: slime ekonomisi ---
-    { .name = "Slime Jeli", .iconIndex = 0, .maxStack = 99, .value = 6,
+    { .name = "Slime Jeli", .material = true, .iconIndex = 0, .maxStack = 99, .value = 6,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/resources.png",
       .iconSrc = { 32, 48, 16, 16 } },
@@ -259,7 +259,7 @@ const ItemType ITEM_TYPES[] = {
       .iconSrc = { 80, 64, 16, 16 } },
 
     // --- Faz 8: iskelet ekonomisi — kemik + kadim parşömenler ---
-    { .name = "Kemik", .iconIndex = 0, .maxStack = 99, .value = 10,
+    { .name = "Kemik", .material = true, .iconIndex = 0, .maxStack = 99, .value = 10,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/resources.png",
       .iconSrc = { 16, 64, 16, 16 } },
@@ -357,6 +357,24 @@ const ItemType ITEM_TYPES[] = {
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .tomeAbility = ABILITY_TORNADO, .tomeReqLevel = 40,
       .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+
+    // Çanta sekmeleri: İp (ara malzeme) + 4 çanta eşyası.
+    // Çanta eşyaları üretilince OTOMATİK takılır (craft_finish özel yolu) —
+    // envantere hiç girmez, geri alınamaz, satılamaz.
+    { .name = "İp", .material = true, .iconIndex = 6, .maxStack = 99, .value = 8,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE },
+    { .name = "Deri Çanta", .iconIndex = 6, .maxStack = 1, .value = 0,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .bagUpgrade = 1 },
+    { .name = "Gezgin Çantası", .iconIndex = 6, .maxStack = 1, .value = 0,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .bagUpgrade = 2 },
+    { .name = "Malzeme Kesesi", .iconIndex = 6, .maxStack = 1, .value = 0,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .bagUpgrade = 3 },
+    { .name = "Usta Kesesi", .iconIndex = 6, .maxStack = 1, .value = 0,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .bagUpgrade = 4 },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

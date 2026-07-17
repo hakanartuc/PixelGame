@@ -8,17 +8,29 @@
 #include "item.h"
 #include "item_textures.h"
 
-#define INVENTORY_SIZE 40   // çanta slot sayısı (8×5 — büyüyen F10 test seti sığsın)
-#define INV_COLS 8          // panel sütun sayısı (render + slot_at aynı kaynak)
+#define INVENTORY_SIZE 60   // slot DİZİ tavanı (aktif slot sayısı = cap, craft'la büyür)
+#define INV_COLS 10         // panel sütun sayısı (render + slot_at aynı kaynak)
+#define INV_PANEL_W (INV_COLS * 56 + 32)   // panel genişliği (main çapaları bununla ortalar)
 
-// Oyuncunun çantası — item slotları
+// Çanta kademe boyutları (ÇANTA SEKMELERİ fazı): iki çanta ayrı büyür.
+// Eşya:   30 → +10 (Deri Çanta) → +10 (Gezgin Çantası) = max 50
+// Malzeme: 25 → +15 (Malzeme Kesesi) → +15 (Usta Kesesi) = max 55
+#define INV_MAIN_BASE 30
+#define INV_MAIN_STEP 10
+#define INV_CRAFT_BASE 25
+#define INV_CRAFT_STEP 15
+
+// Oyuncunun çantası — item slotları (Eşya ve Malzeme sekmesi ayrı instance)
 typedef struct {
     ItemStack slots[INVENTORY_SIZE];   // boş slot: type = NULL
+    int cap;                           // aktif slot sayısı (çanta kademesi belirler)
 } Inventory;
 
+// title: sekme başlığı ("Eşya"/"Malzeme") — cap'e göre satırlar çizilir
 void inventory_render(const Inventory *inv, R2D *renderer,
                       R2DTexture *itemIconTex, const ItemTextures *itemTex,
-                      TTF_Font *font, float panelX, float panelY);
+                      TTF_Font *font, float panelX, float panelY,
+                      const char *title);
 
 // Envantere item ekle (stack'lenebilirse mevcut yığına, yoksa boş slota).
 // plusLevel instance'a aittir: yalnız AYNI plus'lı yığınlar birleşir.

@@ -6,10 +6,12 @@
 
 void inventory_render(const Inventory *inv, R2D *renderer,
                       R2DTexture *itemIconTex, const ItemTextures *itemTex,
-                      TTF_Font *font, float panelX, float panelY)
+                      TTF_Font *font, float panelX, float panelY,
+                      const char *title)
 {
     int cols = INV_COLS;
-    int rows = (INVENTORY_SIZE + cols - 1) / cols;   // 35/7 = 5 satır
+    int cap = (inv->cap > 0 && inv->cap <= INVENTORY_SIZE) ? inv->cap : INVENTORY_SIZE;
+    int rows = (cap + cols - 1) / cols;
     float cellSize = 56.0f;
     float pad = 16.0f;
 
@@ -19,15 +21,21 @@ void inventory_render(const Inventory *inv, R2D *renderer,
     // Panel arka planı (tema: ahşap çerçeve)
     ui_panel(renderer, panelX, panelY, panelW, panelH);
 
-    // Başlık
+    // Başlık (sekme adı + doluluk)
     if (font != NULL) {
         SDL_Color white = { 255, 255, 255, 255 };
-        draw_text(renderer, font, "Envanter", panelX + pad, panelY + 8.0f, white);
+        int used = 0;
+        for (int i = 0; i < cap; i++)
+            if (inv->slots[i].type != NULL) used++;
+        char head[48];
+        snprintf(head, sizeof(head), "%s  %d/%d",
+                 title != NULL ? title : "Envanter", used, cap);
+        draw_text(renderer, font, head, panelX + pad, panelY + 8.0f, white);
     }
 
-    // Slotlar (hepsi — dolu + boş)
+    // Slotlar (aktif kadar — dolu + boş)
     float gridY = panelY + pad + 30.0f;   // başlığın altından başla
-    for (int i = 0; i < INVENTORY_SIZE; i++) {
+    for (int i = 0; i < cap; i++) {
         int col = i % cols, row = i / cols;
         float cx = panelX + pad + col * cellSize;
         float cy = gridY + row * cellSize;
@@ -86,9 +94,10 @@ bool inventory_add_stack(Inventory *inv, const ItemStack *s)
     // 1) Stack'lenebilen item zaten varsa, ona ekle. Yığın şartı: aynı plus +
     //    aynı fx + her iki taraf da stat'sız (+3, rünlü ya da stat'lı olan
     //    AYRI item'dir, yığına girmez)
+    int cap = (inv->cap > 0 && inv->cap <= INVENTORY_SIZE) ? inv->cap : INVENTORY_SIZE;
     bool sPlain = (s->statType[0] < 0 && s->statType[1] < 0);
     if (s->type->maxStack > 1 && sPlain) {
-        for (int i = 0; i < INVENTORY_SIZE; i++) {
+        for (int i = 0; i < cap; i++) {
             ItemStack *t = &inv->slots[i];
             if (t->type == s->type &&
                 t->plusLevel == s->plusLevel &&
@@ -104,7 +113,7 @@ bool inventory_add_stack(Inventory *inv, const ItemStack *s)
     }
 
     // 2) Boş slot bul — instance OLDUĞU GİBİ taşınır (fx/stat kaybolmaz)
-    for (int i = 0; i < INVENTORY_SIZE; i++) {
+    for (int i = 0; i < cap; i++) {
         if (inv->slots[i].type == NULL) {
             inv->slots[i] = *s;
             return true;
@@ -153,7 +162,9 @@ bool inventory_consume_n(Inventory *inv, const ItemType *type, int n)
 // Donen: slot indeksi (0..INVENTORY_SIZE-1) ya da -1 (bos alana tiklandi).
 int inventory_slot_at(float x, float y, float panelX, float panelY)
 {
-    // inventory_render'daki AYNI matematik (tek kaynak — desenkronize olmasin)
+    // inventory_render'daki AYNI matematik (tek kaynak — desenkronize olmasin).
+    // cap yerine tavan gezilir: aktif sekmenin cap'i dışı zaten çizilmez,
+    // NULL slotlara tıklama da zararsız (main dolu slot şartı arar)
     int cols = INV_COLS;
     float cellSize = 56.0f;
     float pad = 16.0f;

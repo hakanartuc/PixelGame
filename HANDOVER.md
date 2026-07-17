@@ -130,6 +130,16 @@ HER tree_compute_effects sonrası şart) + 3 büyü: Yıldırım Pençesi (koni,
 (süzülen alan, fırtınada güçlü). Kaynak: kervan (Pençe+Diken) + zindan USTA
 sandık %25 (Hortum). F10 3 tomar basar. KALAN parça 2: Ateş Aslanı + Yılan
 Isırığı (yönlü sheet'ler) + kervan tomar havuzu rastgeleleşmesi.
+**ÇANTA SEKMELERİ TAMAM (save v28)**: Eşya + Malzeme çantası — I aç/kapa,
+TAB sekme değiştirir, sekme şeridi tıklanır, sürükleyip diğer sekme başlığına
+bırak = taşı, şeridin sağındaki ÇÖP'e bırak = imha. Craft paneli tekerlekle
+kayar (CRAFT_MAX_VIS 16); pencere 1600×900. material bayrağı (13 hammadde) otomatik Malzeme'ye
+düşer; bag_* katmanı (~70 çağrı) iki çantadan sayar/tüketir (craft öncelik);
+craft/kontrat panelleri iki çantayı görür. Kademeler: Eşya 30→50 (Deri Çanta
+S15 / Gezgin S40), Malzeme 25→55 (Kese S10 / Usta S35) — üretilince OTOMATİK
+takılır, İp yeni ara malzeme (2 Ayotu, kamp ateşi). Player.bagUpgrades +
+craftBag save v28; Inventory.cap dinamik; MAX_RECIPES 48. DİKKAT: yeni item
+eklerken MAX_ITEM_TYPES (96) tavanına bak — 64 taşması crash yaratmıştı.
 **KAR (soğuk cephe, v26 uyumlu)**: havuz %50/22/13/10(KAR)/5; buz +%20 +
 yavaşlatma ×1.5 + herkes %12 yavaş (av +%15); zemin beyazlar (snowCover),
 sürü büzüşür, su donar, ot yarıya, ateş ömrü 12 saat, karda İZ SÜRME (arama
