@@ -32,6 +32,7 @@ typedef struct {
     int essence;    // Soluk Öz item +N (sömürü ödülü)
     int gold;
     int s3;         // S3 kayıt odası kararı: 2 devral / 3 kapat (D1c)
+    int ritual;     // YANKICI ritüeli: 1 = kabul (sınıf + silah açılır)
 } SceneFx;
 
 // Görsel yükleme için renderer (main init'te bir kez çağırır)

@@ -511,6 +511,17 @@ static void spells_apply_learned(const Player *p, PerkEffects *fx)
             fx->abilityOpen[a] = true;
 }
 
+// YANKICI (gizli sınıf): ritüel tamamsa beceriler açık — ağaç/tomar dışı yol.
+// tree_compute_effects sonrası spells_apply_learned ile birlikte çağrılmalı.
+static void echo_apply_unlocks(const Player *p, PerkEffects *fx)
+{
+    if (p->storyFlags[SF_YANKICI] == 2)
+    {
+        fx->abilityOpen[ABILITY_WHISPER_BURST] = true;
+        fx->abilityOpen[ABILITY_SHADOW_FORM] = true;
+    }
+}
+
 // Ok kademeleri (Faz 8): tüketim sırası ucuzdan pahalıya (otomatik düşüş bunu izler)
 static const int AMMO_ORDER[3] = { ITEM_ARROW, ITEM_ARROW_BONE, ITEM_ARROW_IRON };
 
@@ -929,6 +940,7 @@ int main(int argc, char *argv[])
     PerkEffects perkFx;
     tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
     spells_apply_learned(&player, &perkFx);
+    echo_apply_unlocks(&player, &perkFx);
     g_fx = &perkFx;                        // statik yardımcı köprüsü
     skill_set_xp_mult(perkFx.xpGainMult);  // Kader XP çarpanı
     int treeOpenSkill = -1;   // açık ağaç paneli (K panelinden satır tıklanır)
@@ -983,6 +995,7 @@ int main(int argc, char *argv[])
     R2DTexture *clawTex     = load_texture(renderer, "assets/fx/lightningclaw.png");  // 4×4 128px
     R2DTexture *icetacleTex = load_texture(renderer, "assets/fx/icetacle.png");
     R2DTexture *tornadoTex  = load_texture(renderer, "assets/fx/tornado.png");
+    R2DTexture *darkburstTex = load_texture(renderer, "assets/fx/dark_burst.png");
     R2DTexture *snakebiteTex[3] = {   // 0 down / 1 up / 2 side (sola bakar)
         load_texture(renderer, "assets/fx/snakebite_down.png"),
         load_texture(renderer, "assets/fx/snakebite_up.png"),
@@ -1022,6 +1035,8 @@ int main(int argc, char *argv[])
     FireLion firelions[MAX_FIRELIONS] = {0};
     #define FIRELION_LIFE 0.7f
     #define FIRELION_SPEED 430.0f
+    #define MAX_DARKBURST_FX 4
+    SpikeFxAnim darkburstFx[MAX_DARKBURST_FX] = {0};   // dark_burst (16 kare 48×64)
     #define MAX_TORNADOES 3
     typedef struct {
         bool active;
@@ -1764,6 +1779,45 @@ int main(int argc, char *argv[])
                         {
                             player.echoesWitnessed += sfx.witness;
                             player.echoesConsumed += sfx.consume;
+
+                            // YANKICI çağrısı: 3. sömürüde fısıltı YER fısıldar
+                            // (tek ipucu bu — taş halkası haritada işaretsiz)
+                            if (sfx.consume > 0 && player.echoesConsumed >= 3 &&
+                                player.storyFlags[SF_YANKICI] == 0)
+                            {
+                                player.storyFlags[SF_YANKICI] = 1;
+                                audio_play(SFX_WHISPER);
+                                SDL_Color vio = { 200, 160, 255, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                    player.rect.x + player.rect.w / 2.0f,
+                                    player.rect.y - 40.0f,
+                                    "\"Seni tanıyoruz artık. Taşların eskisine gel. Ay görmesin.\"",
+                                    vio);
+                                journal_add(JE_ECHO_CALL, 0);
+                            }
+
+                            // RİTÜEL kabulü: sınıf + silah açılır (geri dönüşsüz)
+                            if (sfx.ritual == 1 &&
+                                player.storyFlags[SF_YANKICI] < 2)
+                            {
+                                player.storyFlags[SF_YANKICI] = 2;
+                                spells_apply_learned(&player, &perkFx);
+                               echo_apply_unlocks(&player, &perkFx);
+                                echo_apply_unlocks(&player, &perkFx);
+                                hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
+                                // Fısıltı Keskisi taşın dibinde belirir
+                                int li2 = loot_spawn(loots, MAX_LOOT,
+                                                     108.0f * TILE_SIZE,
+                                                     7.5f * TILE_SIZE,
+                                                     NULL, 0, 0, 0);
+                                if (li2 >= 0 && loots[li2].itemCount < MAX_LOOT_ITEMS)
+                                    loots[li2].items[loots[li2].itemCount++] =
+                                        item_make(&ITEM_TYPES[ITEM_WHISPER_BLADE], 1, 0);
+                                journal_add(JE_RITUAL, 0);
+                                audio_play(SFX_PERK);
+                                splashText = "YANKICI";
+                                splashTimer = 4.0f;
+                            }
                             if (sfx.s3 == 2)   // nöbet devralındı (S3)
                             {
                                 player.storyFlags[SF_S3_STATE] = 2;
@@ -2301,6 +2355,18 @@ int main(int argc, char *argv[])
                                              vio);
                     }
                     }
+                }
+                else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
+                         !scene_active() && dialogNpc < 0 &&
+                         map_current() == MAP_WORLD && gametime_is_night() &&
+                         player.storyFlags[SF_YANKICI] == 1 &&
+                         SDL_fabsf(player.rect.x + player.rect.w / 2.0f
+                                   - 108.0f * TILE_SIZE) < 100.0f &&
+                         SDL_fabsf(player.rect.y + player.rect.h / 2.0f
+                                   - 7.0f * TILE_SIZE) < 100.0f)
+                {
+                    // RİTÜEL: taşların ortasında, ay görmeden (kabul/reddet vinyeti)
+                    scene_start("assets/scenes/ritual.txt");
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
                          dialogNpc < 0 && nearestEcho >= 0)
@@ -2916,6 +2982,18 @@ int main(int argc, char *argv[])
                     bag_add(&ITEM_TYPES[ITEM_TOME_FIRELION], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_SPEAR], 1, 0);   // Two-Handed testi
                     bag_add(&ITEM_TYPES[ITEM_SHIELD_IRON], 1, 0);   // Block testi
+                    // YANKICI test yolu: sayaç basılır ama sınıf keşifle açılır
+                    if (player.echoesConsumed < 3 &&
+                        player.storyFlags[SF_YANKICI] == 0)
+                    {
+                        player.echoesConsumed = 3;
+                        player.storyFlags[SF_YANKICI] = 1;
+                        SDL_Color vio5 = { 200, 160, 255, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                            player.rect.x + player.rect.w / 2.0f,
+                            player.rect.y - 40.0f,
+                            "\"Taşların eskisine gel. Ay görmesin.\"", vio5);
+                    }
                     bag_add(&ITEM_TYPES[ITEM_BP_SWORD_IRON], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_BP_HELMET_IRON], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_BP_POISON_OIL], 1, 0);
@@ -2999,6 +3077,7 @@ int main(int argc, char *argv[])
                         (void)mapBeforeLoad;      // her yüklemede yeniden kurar
                         tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);   // seçimler değişti
                         spells_apply_learned(&player, &perkFx);
+                        echo_apply_unlocks(&player, &perkFx);
                         skill_set_xp_mult(perkFx.xpGainMult);
                         hotbar_purge_closed(&hotbar, perkFx.abilityOpen);
                         hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
@@ -3216,6 +3295,7 @@ int main(int argc, char *argv[])
                             tree_set_debug_points(0);   // F10 kalıntısı yeni oyuna taşınmaz
                             tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
                             spells_apply_learned(&player, &perkFx);
+                            echo_apply_unlocks(&player, &perkFx);
                             skill_set_xp_mult(perkFx.xpGainMult);
                             hotbar = (Hotbar){0};
                             hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
@@ -3235,6 +3315,7 @@ int main(int argc, char *argv[])
                             for (int i = 0; i < MAX_TORNADOES; i++) tornadoes[i].active = false;
                             for (int i = 0; i < MAX_SNAKEBITE_FX; i++) snakeFx[i].active = false;
                             for (int i = 0; i < MAX_FIRELIONS; i++) firelions[i].active = false;
+                            for (int i = 0; i < MAX_DARKBURST_FX; i++) darkburstFx[i].active = false;
                             memset(floatTexts, 0, sizeof(FloatText) * MAX_FLOAT_TEXTS);
                             deathTimer = 0.0f;
                             volleyLeft = 0;
@@ -3401,6 +3482,7 @@ int main(int argc, char *argv[])
                                 tree_compute_effects(player.treeTaken,
                                                      player.fateTaken, &perkFx);
                                 spells_apply_learned(&player, &perkFx);
+                                echo_apply_unlocks(&player, &perkFx);
                                 skill_set_xp_mult(perkFx.xpGainMult);
                                 hotbar_purge_closed(&hotbar, perkFx.abilityOpen);
                                 hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
@@ -3550,6 +3632,7 @@ int main(int argc, char *argv[])
                                 else        player.treeTaken[ts] = 0;
                                 tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
                                 spells_apply_learned(&player, &perkFx);
+                                echo_apply_unlocks(&player, &perkFx);
                                 skill_set_xp_mult(perkFx.xpGainMult);
                                 hotbar_purge_closed(&hotbar, perkFx.abilityOpen);
                                 hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
@@ -3576,6 +3659,7 @@ int main(int argc, char *argv[])
                                 else        player.treeTaken[ts] |= (1u << node);
                                 tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
                                 spells_apply_learned(&player, &perkFx);
+                                echo_apply_unlocks(&player, &perkFx);
                                 skill_set_xp_mult(perkFx.xpGainMult);
                                 hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
                                 const SkillTreeDef *td = tree_get(ts);
@@ -4238,6 +4322,17 @@ int main(int argc, char *argv[])
                                 }
                                 else
                                 {
+                                    if (st->type == &ITEM_TYPES[ITEM_WHISPER_BLADE] &&
+                                        player.storyFlags[SF_YANKICI] != 2)
+                                    {
+                                        SDL_Color vio3 = { 200, 160, 255, 255 };
+                                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                            player.rect.x + player.rect.w / 2.0f,
+                                            player.rect.y - 10.0f,
+                                            "Sapı avucunda ISLANIYOR sanki... tutamıyorsun.",
+                                            vio3);
+                                    }
+                                    else
                                     equip_from_inventory(&equipment, ab, slot);
                                 }
                             }
@@ -4597,7 +4692,8 @@ int main(int argc, char *argv[])
                     bool needBow = (ad->skill == SKILL_ARCHERY);
                     bool needSpear = (ad->skill == SKILL_TWO_HANDED);
                     bool isSpell = (ad->skill == SKILL_DESTRUCTION ||
-                                    ad->skill == SKILL_CONJURATION);
+                                    ad->skill == SKILL_CONJURATION ||
+                                    ad->skill == SKILL_ECHO);
                     bool isSummon = (hs->abilityId == ABILITY_SUMMON_SNAKE ||
                                      hs->abilityId == ABILITY_SUMMON_TURTLE);
                     AllyKind sumKind = (hs->abilityId == ABILITY_SUMMON_TURTLE)
@@ -4638,6 +4734,12 @@ int main(int argc, char *argv[])
 
                         if (player.abilityCd[hs->abilityId] > 0.0f)
                             ;   // CD sürüyor — bar perdesi gösteriyor
+                        else if (ad->hpFrac > 0.0f &&
+                                 player.health <= player.maxHealth * ad->hpFrac + 5.0f)
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f,
+                                                 "Kanın yetmiyor!", red);
                         else if (player.mana < cost)
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  player.rect.x + player.rect.w / 2.0f,
@@ -5439,6 +5541,58 @@ int main(int argc, char *argv[])
                                     break;
                                 }
                             audio_play(SFX_DODGE);   // rüzgar whoosh
+                        }
+                        else if (castSpell == ABILITY_WHISPER_BURST)
+                        {
+                            // FISILTI PATLAMASI: bedel KAN (max HP %10) —
+                            // çevrene gölge dalgası; Yankı seviyesi büyütür
+                            float hpCost = player.maxHealth * sd->hpFrac;
+                            player.health -= hpCost;
+                            if (player.health < 1.0f) player.health = 1.0f;
+                            for (int q = 0; q < MAX_DARKBURST_FX; q++)
+                                if (!darkburstFx[q].active)
+                                {
+                                    darkburstFx[q] = (SpikeFxAnim){ true, pcx, pcy, 0.0f };
+                                    break;
+                                }
+                            audio_play(SFX_WHISPER);
+                            float wbR = 130.0f;
+                            float wbDmg = sd->damageScale
+                                        * (1.0f + (float)player.skills[SKILL_ECHO].level * 0.02f);
+                            for (int m2 = 0; m2 < mobCount; m2++)
+                            {
+                                Mob *nb = &mobs[m2];
+                                if (!nb->e.alive) continue;
+                                float ndx = (nb->e.rect.x + nb->e.rect.w / 2.0f) - pcx;
+                                float ndy = (nb->e.rect.y + nb->e.rect.h / 2.0f) - pcy;
+                                if (ndx * ndx + ndy * ndy > wbR * wbR) continue;
+                                float fd = wbDmg * (100.0f / (100.0f + nb->type->defense));
+                                nb->e.health -= fd;
+                                nb->e.hitFlash = 0.15f;
+                                nb->aggro = true;
+                                floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                                nb->e.rect.x + nb->e.rect.w / 2.0f + 10.0f,
+                                                nb->e.rect.y, (int)fd, false);
+                                float sxp = combat_xp_for_hit(fd, nb->type->level,
+                                                player.skills[SKILL_ECHO].level);
+                                if (skill_add_xp(player.skills, SKILL_ECHO, sxp))
+                                    on_skill_levelup(&player, SKILL_ECHO,
+                                                     &hotbar, floatTexts);
+                                if (nb->e.health <= 0.0f)
+                                    mob_die(nb, mobs, MAX_MOBS, &nextMobId, loots,
+                                            questStatus, floatTexts, &player);
+                            }
+                        }
+                        else if (castSpell == ABILITY_SHADOW_FORM)
+                        {
+                            // GÖLGE FORMU: 5sn algılanmaz + hızlı — kanla öder
+                            player.shadowTimer = 5.0f;
+                            audio_play(SFX_WHISPER);
+                            fx_burst(&weaponFx, pcx, pcy, 22, 120.0f, 150, 90, 220);
+                            SDL_Color vio4 = { 200, 160, 255, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 pcx, player.rect.y - 24.0f,
+                                                 "Gölgeye karıştın.", vio4);
                         }
                         else if (castSpell == ABILITY_SNAKEBITE)
                         {
@@ -6382,6 +6536,21 @@ int main(int argc, char *argv[])
                         }
             }
 
+            // YANKICI gizliliği: ritüel tamamlanana dek skill defterinde yok
+            skill_set_echo_visible(player.storyFlags[SF_YANKICI] == 2);
+
+            // GÖLGE FORMU: kanla ödenen görünmezlik (4 HP/sn; 5 HP'de düşer)
+            if (player.shadowTimer > 0.0f)
+            {
+                player.shadowTimer -= dt;
+                player.health -= 4.0f * dt;
+                if (player.health <= 5.0f)
+                {
+                    player.health = 5.0f;
+                    player.shadowTimer = 0.0f;   // kan bitti — gölge bırakır
+                }
+            }
+
             // AKTİF BLOK (SHIFT): kalkan takılıyken basılı tut — duruş.
             // Gelen hasar -%70 (ağaçla -%80), hız yarıya, auto-attack durur,
             // saniyede 4 stamina; ilk 0.25sn PERFECT penceresi (parry).
@@ -6765,6 +6934,20 @@ int main(int argc, char *argv[])
 
                         hit.damage *= title_damage_mult(&player, target->type,
                                                         gametime_is_night());   // M3
+
+                        // FISILTI KESKİSİ: eksik canın her %10'u +%8 — riskle
+                        // keskinleşir (Yankıcı becerileri can yakar: sinerji)
+                        if (weapon->type == &ITEM_TYPES[ITEM_WHISPER_BLADE])
+                        {
+                            float missing = 1.0f - player.health / player.maxHealth;
+                            hit.damage *= 1.0f + 0.8f * missing;
+                            float exp2 = combat_xp_for_hit(hit.damage,
+                                            target->type->level,
+                                            player.skills[SKILL_ECHO].level);
+                            if (skill_add_xp(player.skills, SKILL_ECHO, exp2 * 0.5f))
+                                on_skill_levelup(&player, SKILL_ECHO,
+                                                 &hotbar, floatTexts);
+                        }
 
                         // Sinsi vuruş: eğilmiş + fark etmemiş — YA DA hedef uyuyor (E2)
                         if ((player.sneaking || target->sleeping) && !target->aggro)
@@ -7239,6 +7422,12 @@ int main(int argc, char *argv[])
                 icetacleFx[q].t += dt;
                 if (icetacleFx[q].t >= 16 * 0.06f) icetacleFx[q].active = false;
             }
+            for (int q = 0; q < MAX_DARKBURST_FX; q++)
+            {
+                if (!darkburstFx[q].active) continue;
+                darkburstFx[q].t += dt;
+                if (darkburstFx[q].t >= 16 * 0.05f) darkburstFx[q].active = false;
+            }
 
             // YILAN ISIRIĞI animasyonu (16 karelik tek atım)
             for (int q = 0; q < MAX_SNAKEBITE_FX; q++)
@@ -7478,11 +7667,13 @@ int main(int argc, char *argv[])
             float detectMul = (gametime_is_night() ? 1.5f * perkFx.nightDetectMult : 1.0f)
                             * perkFx.detectOnPlayerMult    // Hayalet/Hortlak düğümleri
                             * (map_current() == MAP_WORLD
-                               ? weather_percept_mult() : 1.0f);   // sis örter
+                               ? weather_percept_mult() : 1.0f)    // sis örter
+                            * (player.shadowTimer > 0.0f ? 0.05f : 1.0f);  // Gölge Formu
 
             // Hız çarpanı: perk (Çevik/Rüzgar/Uyumlu) × gece (Gölge Adımı) × eğilme.
             // player_update tile hızıyla çarpar (doğrudan speed yazmak eziliyordu — bug'dı)
-            player.speedMult = (player.blocking
+            player.speedMult = (player.shadowTimer > 0.0f ? 1.2f : 1.0f)
+                             * (player.blocking
                                 ? (perkFx.stanceSlowMult < 0.0f ? 1.0f       // FALANKS
                                    : perkFx.stanceSlowMult > 0.0f
                                      ? 1.0f - 0.5f * perkFx.stanceSlowMult   // Kök Salma
@@ -8272,6 +8463,19 @@ int main(int argc, char *argv[])
             r2d_set_blend(renderer, R2D_BLEND_ALPHA);
             r2d_draw_texture(renderer, ftx, &csrc, &cdst);
         }
+        if (darkburstTex != NULL)
+            for (int q = 0; q < MAX_DARKBURST_FX; q++)
+            {
+                if (!darkburstFx[q].active) continue;
+                int fr = (int)(darkburstFx[q].t / 0.05f);
+                if (fr > 15) fr = 15;
+                SDL_FRect csrc = { (float)(fr * 48), 0, 48, 64 };
+                SDL_FRect cdst = world_to_screen(darkburstFx[q].x - 60.0f,
+                                                 darkburstFx[q].y - 110.0f,
+                                                 120.0f, 160.0f, &camera);
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                r2d_draw_texture(renderer, darkburstTex, &csrc, &cdst);
+            }
         if (tornadoTex != NULL)
             for (int q = 0; q < MAX_TORNADOES; q++)
             {
@@ -9401,6 +9605,7 @@ int main(int argc, char *argv[])
     if (clawTex)    r2d_texture_destroy(NULL, clawTex);
     if (icetacleTex) r2d_texture_destroy(NULL, icetacleTex);
     if (tornadoTex) r2d_texture_destroy(NULL, tornadoTex);
+    if (darkburstTex) r2d_texture_destroy(NULL, darkburstTex);
     for (int i = 0; i < 3; i++)
         if (snakebiteTex[i]) r2d_texture_destroy(NULL, snakebiteTex[i]);
     for (int i = 0; i < 4; i++)

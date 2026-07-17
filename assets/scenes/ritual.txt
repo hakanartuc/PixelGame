@@ -1,0 +1,28 @@
+# YANKICI ritüeli (gizli sınıf): taşların eskisi, gece. Fısıltı çağırdı.
+# Kabul = geri dönüşsüz: sınıf + Fısıltı Keskisi açılır (fx ritual 1).
+# Reddet = kapı açık kalır (sonra dönebilirsin).
+
+[giris]
+image: assets/scenes/ritual_1.png
+duck: 0.2
+sfx: whisper
+text: Taşlar yediler. Saymana gerek yok — İÇERİDEN sayılıyorsun zaten. Ay yok; iyi. Halkaya adım attığında hava değişmiyor... SEN değişiyorsun. Göğsündeki mühür, ilk kez, SORU sormuyor.
+opt: (Ortaya yürü.) -> tarti
+opt: (Geri çekil — henüz değil.) -> end
+
+[tarti]
+image: assets/scenes/ritual_2.png
+duck: 0.08
+sfx: heartbeat
+text: Karanlık seni TARTIYOR. Ne kadar aldın, ne kadar verdin, kaç ölünün son anını YUTTUN — hepsi tek tek. Sonra fısıltı, ilk kez bir soru soruyor: "Sesimizi taşır mısın? Bedeli kanındır. Ödülü... duyulmayanı duymak."
+opt: Taşırım. (Kanınla mühürle.) -> kabul
+opt: Hayır. Kendi sesim bana yeter. -> end
+
+[kabul]
+image: assets/scenes/ritual_2.png
+duck: 0.05
+sfx: whisper
+text: Acı yok — EKSİLME var. Sanki kanının bir kısmı artık başka bir yerde de akıyor. Taşların dibinde, toprağın hemen üstünde, mor saplı bir hançer duruyor. Hep oradaymış gibi. Seni bekliyormuş gibi.
+text: (Artık YANKICI'sın. Fısıltı Patlaması ve Gölge Formu'nu biliyorsun — bilmediğin, bunları nereden bildiğin.)
+opt: (Hançeri al.) -> end
+fx: ritual 1

@@ -422,6 +422,15 @@ const ItemType ITEM_TYPES[] = {
     { .name = "Cep Saati", .iconIndex = 0, .maxStack = 10, .value = 150,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/trinkets.png", .iconSrc = { 32, 0, 16, 16 } },
+
+    // YANKICI: Fısıltı Keskisi — unique (satılmaz, craftlanmaz; ritüel taşında).
+    // EKSİK canın her %10'u +%8 hasar (main melee bloğu işler) + Yankı XP akışı.
+    // Kuşanım: ritüel tamamlanmadan tutulamaz ('sapı avucunda ıslanıyor').
+    { .name = "Fısıltı Keskisi", .iconIndex = 4, .maxStack = 1, .value = 0,
+      .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_ONE_HAND,
+      .damage = 16.0f, .attackInterval = 0.7f,
+      .iconSpritePath = "assets/icons/items/whisper_blade.png",
+      .iconSrc = { 0, 0, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

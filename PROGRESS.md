@@ -755,6 +755,33 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - Save v29: ItemStack.stolen (write/read_stack +1 alan) + dirtyGold +
   wellGold/wellDay.
 
+### Faz YK1 — YANKICI: GİZLİ SINIF, PARÇA 1 (v29 uyumlu — storyFlags)
+- **Tamamen gizli**: SKILL_ECHO ("Yankı") skill defterinde/K panelinde ritüel
+  tamamlanana dek YOK (skill_set_echo_visible — satır enum sonunda, Kader
+  eşlemesi korunur). İpucu yok, '???' yok — yalnız fısıltı imaları.
+- **Keşif (üç kapı)**: ① 3 yankı SÖMÜR (Tanık kalan hiç görmez) → fısıltı
+  değişir: "Taşların eskisine gel. Ay görmesin." (JE_ECHO_CALL) ② GİZLİ TAŞ
+  HALKASI: Karanlık Orman derinliği T(108,7) — haritada işaretsiz, prosedürel
+  ritual_stones decor'u ③ GECE taşlarda [E] → RİTÜEL vinyeti (2 panel,
+  kabul/reddet — reddedersen kapı açık kalır). Kabul: SF_YANKICI=2,
+  splash "YANKICI", beceriler açılır, Fısıltı Keskisi taşın dibinde belirir
+  (JE_RITUAL: "yabancı gelmiyor").
+- **FISILTI KESKİSİ** (unique — satılmaz/craftlanmaz): hançer 16 dmg/0.7sn;
+  EKSİK canın her %10'u +%8 hasar (riskle keskinleşir — beceriler can yakar:
+  sinerji); vuruşlar Yankı XP'si de akıtır; ritüelsiz kuşanılamaz ("Sapı
+  avucunda ISLANIYOR sanki").
+- **Beceriler (bedel MANA DEĞİL KAN — AbilityDef.hpFrac)**:
+  - Fısıltı Patlaması (FP, 8sn): max HP %10 → 130px gölge dalgası (taban 30 +
+    Yankı lvl ×%2); dark_burst animasyonu (48×64, 16 kare). "Kanın yetmiyor!"
+    koruması (HP eşiği altında atılmaz).
+  - Gölge Formu (GF, 20sn): 5sn algı ×0.05 + hız +%20; 4 HP/sn yakar,
+    5 HP'de düşer.
+- **F10 test yolu**: sınıfı AÇMAZ — sömürü sayacını 3'e basar, fısıltı çağrısı
+  gelir; taşları bulup ritüeli yine oyuncu yapar (keşif korunur).
+- Save bump YOK: SF_YANKICI storyFlags[7] (v22 bloğu), echoesConsumed zaten
+  kayıtlıydı, shadowTimer runtime. Parça 2 (sonra): Can Emme + Yankı Çağırma
+  + T_ECHO ağacı + Dark VFX bolt.
+
 ### ASSET SIRASI (2026-07-17 — Hakan'ın indirdiği paketler, onaylı işleme sırası)
 İndirilenler (~/Downloads):
 - **Harita**: Free-Undead-Tileset (açık hava lanetli arazi — LANETLİ MEZARLIK
@@ -769,6 +796,11 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   · SATYR · Tiny RPG Demon_A + Blood Monster_A (2 saldırılı — elit/mini-boss)
 - **Müzik**: xDeviruchi 16-bit Fantasy & Adventure (loopable — gerçek müzik seti)
 - **UI**: Pixel UI pack 3 (panel/çerçeve yenileme)
+- **Diğer**: Dimensional_Portal.png (geçit/Perde 2 görseli) · Destructible
+  Objects sheet (kırılabilir varil/kasa — harita fazında loot objesi mekaniği
+  adayı) · Pixel Art Slashes (melee vuruş yayları — VFX cilasında weaponhit
+  ile birlikte) · 'Free' Part 16-23 (renk varyantlı patlamalar) · DG Fire Zone (volkan/ateş
+  bölgesi tile'ları — ileriki ateş biyomu adayı)
 
 ONAYLI SIRA: ① Dünya görsel yenileme (BAŞLADI — keşif bitti) → ② Lanetli
 Mezarlık haritası → ③ VFX his cilası (tüm savaş efektleri) → ④ Müzik seti

@@ -143,6 +143,20 @@ const AbilityDef ABILITIES[ABILITY_COUNT] = {
         .cooldown = 10.0f, .stamina = 20.0f,
     },
 
+    // YANKICI (gizli sınıf): bedel MANA DEĞİL CAN — ritüelle açılır
+    [ABILITY_WHISPER_BURST] = {
+        .name = "Fısıltı Patlaması", .abbrev = "FP",
+        .skill = SKILL_ECHO, .unlockLevel = 1,
+        .damageScale = 30.0f,   // çevresel gölge hasarı (Yankı seviyesi büyütür)
+        .cooldown = 8.0f, .hpFrac = 0.10f,   // bedel: max HP'nin %10'u
+    },
+    [ABILITY_SHADOW_FORM] = {
+        .name = "Gölge Formu", .abbrev = "GF",
+        .skill = SKILL_ECHO, .unlockLevel = 1,
+        .damageScale = 0.0f,    // 5sn algılanmaz + hızlı; 4 HP/sn yakar
+        .cooldown = 20.0f,
+    },
+
     // M4 Conjuration: çağırma büyüleri (köklü cast; rezerve main'de işler)
     [ABILITY_SUMMON_SNAKE] = {
         .name = "Öz Yılanı", .abbrev = "YIL",

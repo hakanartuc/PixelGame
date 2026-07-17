@@ -195,6 +195,18 @@ static void entry_text(const JournalEntry *e, char *out, size_t cap)
                "Kimin saydığını sordum. Yanlış soru, dedi. Hâlâ düşünüyorum: "
                "doğru soru neydi?";
         break;
+    case JE_ECHO_CALL:
+        body = "Üçüncüsünü de çektim içime. Bu kez fısıltı teşekkür etmedi — "
+               "DAVET etti: 'Taşların eskisine gel. Ay görmesin.' Hangi taşlar? "
+               "Bilmiyorum. Ama gözümü kapattığımda... karanlıkta bir halka "
+               "görüyorum. Ağaçların derininde. Sanki hep biliyormuşum.";
+        break;
+    case JE_RITUAL:
+        body = "Artık geri dönüşü olmayan bir şey biliyorum. Taşların ortasında "
+               "tartıldım ve eksik bulunmadım — ya da tam istedikleri kadar "
+               "eksiktim. Kanım artık iki yerde akıyor. Elimde mor saplı bir "
+               "hançer var ve en korkuncu şu: yabancı gelmiyor.";
+        break;
     case JE_GRAVE_RISE:
         body = "Mezarlık gece boyu huzursuzdu; sabaha kadar kimse müdahale "
                "etmedi — ben de etmedim. Ölüler mezarı yeniden yurt edindi. "

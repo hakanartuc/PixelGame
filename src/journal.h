@@ -30,6 +30,8 @@ typedef enum {
     JE_S3_CHOICE,       // S3 kapanış: 2 nöbet devralındı · 3 kayıt kapatıldı
     JE_GRAVE_RISE,      // huzursuz mezarlık: mezar yeniden yuva oldu (WE_GRAVE)
     JE_WELL_INTRO,      // Kör Kuyu: Yabancı anlattı (kim olduğunu sormadım — soramadım)
+    JE_ECHO_CALL,       // YANKICI: fısıltı taşlara çağırdı (3. sömürü)
+    JE_RITUAL,          // YANKICI: ritüel tamamlandı — geri dönüşü yok
 } JournalEvent;
 
 typedef struct {

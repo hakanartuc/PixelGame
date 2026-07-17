@@ -166,6 +166,7 @@ static bool scene_load(const char *path)
             else if (strcmp(v, "essence") == 0) o->fx.essence++;
             else if (strncmp(v, "gold ", 5) == 0) o->fx.gold += atoi(v + 5);
             else if (strncmp(v, "s3 ", 3) == 0)   o->fx.s3 = atoi(v + 3);
+            else if (strncmp(v, "ritual ", 7) == 0) o->fx.ritual = atoi(v + 7);
         }
         else goto fail;
     }

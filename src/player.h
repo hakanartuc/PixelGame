@@ -162,6 +162,7 @@ typedef struct Player {
     bool staffEquipped;  // asa melee'si SLASH değil THRUST oynar (main yazar; Faz 22)
     bool spearEquipped;   // mızrak: thrust anim + uzun menzil (Two-Handed A)
     bool gateStance;      // Kapı Tutucu duruşu: yavaş ama menzile giren saplanır
+    float shadowTimer;    // Gölge Formu kalan süre (YANKICI — algılanmaz + hızlı)
     bool blocking;        // SHIFT aktif blok duruşu (kalkan takılıyken)
     float blockHold;      // duruşun yaşı (sn) — PERFECT penceresi bundan okunur
     bool shooting;       // çekme animasyonu sürüyor
@@ -209,6 +210,7 @@ enum {
     SF_S3_STATE  = 4,   // 0 yok · 1 konak yolu · 2 nöbet DEVRALINDI · 3 kayıt kapatıldı
     SF_S3_HINTS  = 5,   // Zehra ipuçları alındı (1) — Nuh seçeneklerinde işaret
     SF_WELL      = 6,   // Kör Kuyu: 0 bilinmiyor · 1 Yabancı anlattı (kuyu aktif)
+    SF_YANKICI   = 7,   // Gizli sınıf: 0 hiç · 1 fısıltı çağırdı · 2 ritüel tamam
 };
 
 

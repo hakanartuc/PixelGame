@@ -275,6 +275,8 @@ typedef enum {
     ITEM_TRINKET_RING,    // Yüzük (80g)
     ITEM_TRINKET_BROOCH,  // Broş (100g)
     ITEM_TRINKET_WATCH,   // Cep Saati (150g)
+    // YANKICI (gizli sınıf): unique silah — yalnız ritüel taşında bulunur
+    ITEM_WHISPER_BLADE,   // Fısıltı Keskisi: eksik canla keskinleşen hançer
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

@@ -3,6 +3,10 @@
 // Köy evleri — NPC'lerin gece gittiği kapılar bunların önü (npc.c rutinleri)
 #define T(n) ((n) * (float)TILE_SIZE)
 const DecorDef DECORS[] = {
+    // RİTÜEL TAŞLARI (YANKICI — gizli): Karanlık Orman derinliği, işaretsiz.
+    // Uzaktan sıradan kaya kümesi; 3. sömürüden sonra fısıltı buraya çağırır.
+    { .texPath = "assets/decor/ritual_stones.png",
+      .x = T(108), .y = T(7), .scale = 2.0f, .solidBase = false },
     // KÖR KUYU (Kirli Mal & Aklama): köy dışında, yol kıyısında unutulmuş kuyu.
     // Gece kirli malı bırak → şafakta temiz kese (kim aldığını görmezsin).
     { .texPath = "assets/decor/well.png",

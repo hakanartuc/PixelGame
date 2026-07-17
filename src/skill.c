@@ -48,6 +48,12 @@ bool skill_add_xp(Skill *skills, SkillType t, float xp)
     return leveled;
 }
 
+// YANKICI gizliliği: SKILL_ECHO enum sonunda — görünür satır sayısı
+// bayrağa göre 1 eksik (main her kare basar; ritüel öncesi sınıf YOK sayılır)
+static bool echoVisible = false;
+void skill_set_echo_visible(bool v) { echoVisible = v; }
+static int skill_rows(void) { return SKILL_COUNT - (echoVisible ? 0 : 1); }
+
 const char *skill_name(SkillType t)
 {
     switch (t) {
@@ -84,7 +90,7 @@ void skill_panel_render(const Skill *skills, R2D *renderer,
     float pad = SKILL_PANEL_PAD;
     float rowH = SKILL_PANEL_ROW_H;
     float panelW = SKILL_PANEL_W;
-    float panelH = (SKILL_COUNT + 1) * rowH + pad * 2 + SKILL_PANEL_HEADER + 20.0f;   // +Kader satırı + alt ipucu
+    float panelH = (skill_rows() + 1) * rowH + pad * 2 + SKILL_PANEL_HEADER + 20.0f;   // +Kader satırı + alt ipucu
 
     ui_panel(renderer, panelX, panelY, panelW, panelH);
 
@@ -94,7 +100,7 @@ void skill_panel_render(const Skill *skills, R2D *renderer,
     }
 
     float rowY = panelY + pad + 30.0f;
-    for (int i = 0; i < SKILL_COUNT; i++) {
+    for (int i = 0; i < skill_rows(); i++) {
         const Skill *s = &skills[i];
 
         if (font != NULL) {
@@ -145,6 +151,7 @@ int skill_panel_row_at(float x, float y, float panelX, float panelY)
     float gridY = panelY + SKILL_PANEL_PAD + SKILL_PANEL_HEADER;
     if (x < panelX || x > panelX + SKILL_PANEL_W) return -1;
     int row = (int)((y - gridY) / SKILL_PANEL_ROW_H);
-    if (y < gridY || row < 0 || row > SKILL_COUNT) return -1;
-    return row;   // SKILL_COUNT = Kader satırı (özel)
+    if (y < gridY || row < 0 || row > skill_rows()) return -1;
+    if (row == skill_rows()) return SKILL_COUNT;   // Kader satırı (özel — kaysa da anlamı sabit)
+    return row;
 }
