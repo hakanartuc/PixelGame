@@ -3,9 +3,16 @@
 text: Uzak yoldan geliyorum, uzak yola gideceğim. Malım az, nadir ve pahalı — kervan hayatı böyle, kusura bakma. Bak beğen, yolcu.
 opt: Malını göster. -> shop
 opt: Nereden geliyorsun? -> yol
+opt: (Sesini alçalt) El altından iş var, diyorlar. -> elaltindan
 opt: İyi yolculuklar. -> end
 
 [yol]
 text: Güneyden. Kumun ve taşın arasından. Yolda tuhaf şeyler gördüm — taşlar eskisi gibi durmuyor artık, biliyor musun? Neyse. Alışveriş?
 opt: Göster bakalım. -> shop
 opt: Belki sonra. -> end
+
+# Kirli Mal & Aklama: kervancının gizli yüzü — el altından iş
+[elaltindan]
+text: ...Sesini alçalt. Evet, "o işleri" de yaparım — yol uzun, soru soran az. Kesendeki kirliyi temize çeviririm, dörtte birini alırım. Parlak şeyleri de tam değerinden alırım; kimse nereden geldiğini sormaz.
+opt: Anlaştık — hepsini temizle. -> akla:kervan
+opt: Vazgeçtim. -> end

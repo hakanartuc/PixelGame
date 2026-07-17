@@ -21,7 +21,7 @@
 #include "ecology.h"    // yuva durumları (v20)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 28u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+#define SAVE_VERSION 29u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
                           // v12: ilan panosu (gün + slot durum/ilerleme);
                           // v13: skill ağacı maskeleri (perkChoice'un yerini aldı);
                           // v18: özet bloğu (slot kartları) + kişilik sayaçları;
@@ -34,7 +34,8 @@
                           // v25: dünya olayı durumu (worldevent);
                           // v26: hava durumu (weather);
                           // v27: tomarla öğrenilen büyüler (spellsLearned);
-                          // v28: çanta sekmeleri (craftBag + bagUpgrades)
+                          // v28: çanta sekmeleri (craftBag + bagUpgrades);
+                          // v29: kirli mal & aklama (ItemStack.stolen + dirtyGold + kuyu)
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -55,16 +56,17 @@ static bool write_stack(FILE *f, const ItemStack *s)
     bool ok = w32(f, idx) && w32(f, s->count) && w32(f, s->plusLevel);
     ok = ok && w32(f, s->fx)
             && w32(f, s->statType[0]) && w32(f, s->statTier[0])
-            && w32(f, s->statType[1]) && w32(f, s->statTier[1]);
+            && w32(f, s->statType[1]) && w32(f, s->statTier[1])
+            && w32(f, s->stolen);   // v29: çalıntı damgası
     return ok;
 }
 
 static bool read_stack(FILE *f, ItemStack *s)
 {
-    Sint32 idx, count, plus, fx, st0, tr0, st1, tr1;
+    Sint32 idx, count, plus, fx, st0, tr0, st1, tr1, stol;
     if (!r32(f, &idx) || !r32(f, &count) || !r32(f, &plus) ||
         !r32(f, &fx) || !r32(f, &st0) || !r32(f, &tr0) ||
-        !r32(f, &st1) || !r32(f, &tr1))
+        !r32(f, &st1) || !r32(f, &tr1) || !r32(f, &stol))
         return false;
     if (idx < -1 || idx >= ITEM_TYPE_COUNT)
         return false;   // bozuk/eski dosya — indeks tablo dışı
@@ -74,6 +76,7 @@ static bool read_stack(FILE *f, ItemStack *s)
     s->fx = (Sint8)fx;
     s->statType[0] = (Sint8)st0; s->statTier[0] = (Sint8)tr0;
     s->statType[1] = (Sint8)st1; s->statTier[1] = (Sint8)tr1;
+    s->stolen = (Sint8)stol;
     return true;
 }
 
@@ -259,6 +262,9 @@ bool save_game(const char *path, const Player *p,
 
     // Tomarla öğrenilen büyüler (v27): bit maskesi (bit = AbilityId)
     ok = ok && w32(f, (Sint32)p->spellsLearned);
+
+    // Kirli mal & aklama (v29)
+    ok = ok && w32(f, p->dirtyGold) && w32(f, p->wellGold) && w32(f, p->wellDay);
 
     // Çanta sekmeleri (v28): kademeler + Malzeme çantası içeriği
     ok = ok && w32(f, (Sint32)p->bagUpgrades);
@@ -529,6 +535,10 @@ bool load_game(const char *path, Player *p,
         ok = ok && r32(f, &sl);
         tmpP.spellsLearned = (Uint32)sl;
     }
+
+    // Kirli mal & aklama (v29)
+    ok = ok && r32(f, &tmpP.dirtyGold) && r32(f, &tmpP.wellGold)
+            && r32(f, &tmpP.wellDay);
 
     // Çanta sekmeleri (v28) — geçici; başarıda uygulanır
     Inventory tmpCraft = {0};

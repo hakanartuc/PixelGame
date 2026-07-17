@@ -145,6 +145,8 @@ typedef struct {
     Sint8 fx;               // rün efekti (WeaponFxType; türün varsayılanıyla doğar)
     Sint8 statType[2];      // stat slotları (-1 = boş; StatType)
     Sint8 statTier[2];      // kademe 1-3
+    Sint8 stolen;           // ÇALINTI damgası (yankesicilik): kuşanılamaz/satılamaz/
+                            // tüketilemez/craft görmez — yalnız aklayıcı alır (v29)
 } ItemStack;
 
 // Doğru başlatılmış instance üret (fx = türün efekti, stat slotları boş).
@@ -268,6 +270,11 @@ typedef enum {
     // Block hattı (Parça B)
     ITEM_SHIELD_WOOD,     // Tahta Kalkan: def 6 — blok kapısı açılır
     ITEM_SHIELD_IRON,     // Demir Kalkan: def 12 (Smithing 25)
+    // Kirli Mal & Aklama: değerli objeler — YALNIZ çalıntı bulunur,
+    // normal ekonomide yeri yok (vendor almaz), aklayıcı TAM değerden alır
+    ITEM_TRINKET_RING,    // Yüzük (80g)
+    ITEM_TRINKET_BROOCH,  // Broş (100g)
+    ITEM_TRINKET_WATCH,   // Cep Saati (150g)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

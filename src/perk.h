@@ -121,6 +121,14 @@ typedef struct {
     float shieldDefMult;      // kalkan defans çarpanı (0 = 1.0 say)
     float perfectReflectFrac; // SİPER: perfect blokta hasarın bu oranı yansır
     float blockXpMult;        // blok XP çarpanı (0 = 1.0 say)
+    // Pickpocket (mini ağaç)
+    float pickChanceBonus;    // yankesicilik şansına eklenir
+    float pickGoldMult;       // (v29'da boşta — keseler kirli keseye geçti)
+    float pickFenceBonus;     // aklama oranına eklenir (kervan 0.75→0.85, kuyu 0.5→0.6)
+    float pickItemMult;       // kese item şansı çarpanı (0 = 1.0 say)
+    float pickBountyMult;     // yakalanma bounty çarpanı (0 = 1.0 say)
+    bool  pickFirstFailFree;  // GÜNDE BİR ilk başarısızlık fark edilmez
+    bool  pickStealItem;      // GÖLGE ELİ: başarıda ekstra eşya zarı
     float staffSpellBonus;    // asa KUŞANILIYKEN ek büyü çarpanı payı
 
     // Kader Ağacı (karakter-geneli)

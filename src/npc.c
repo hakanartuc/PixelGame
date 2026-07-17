@@ -255,6 +255,12 @@ void npc_update(float dt, float hours)
     }
 }
 
+bool npc_bark_active(int i)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= 12) return false;
+    return npcState[i].barkTimer > 0.0f;
+}
+
 void npc_bark(int i, const char *text, float seconds)
 {
     if (i < 0 || i >= NPC_COUNT || i >= 12) return;
@@ -377,7 +383,8 @@ int npc_nearest_in_range(float px, float py)
 }
 
 void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
-                    const Camera *camera, TTF_Font *font, int nearestIdx)
+                    const Camera *camera, TTF_Font *font, int nearestIdx,
+                    bool sneaking)
 {
     if (!npcActive) return;
     float zoom = camera->zoom;
@@ -419,6 +426,11 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
                 SDL_Color hint = { 255, 230, 80, 255 };
                 draw_text(renderer, font, "[E] Konuş",
                           dst.x + dst.w / 2.0f - 40.0f, dst.y - 40.0f, hint);
+                if (sneaking) {   // yankesicilik daveti (eğilme = niyet)
+                    SDL_Color vio = { 200, 160, 255, 255 };
+                    draw_text(renderer, font, "[P] Yankesicilik",
+                              dst.x + dst.w / 2.0f - 60.0f, dst.y - 60.0f, vio);
+                }
             }
 
             // Bark balonu (D1a): ismin üstünde, son yarım saniyede solar

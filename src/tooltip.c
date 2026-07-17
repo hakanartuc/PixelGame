@@ -74,6 +74,8 @@ void tooltip_render(R2D *renderer, TTF_Font *font,
     else
         tt_add(lines, &n, TT_WHITE, "%s", t->name);
     tt_add(lines, &n, TT_DIM, "%s", tt_kind(t));
+    if (s->stolen)
+        tt_add(lines, &n, TT_RED, "ÇALINTI — aklanmadan kullanılamaz");
 
     // Silah/zırh değerleri (instance: plus dahil) + kuşanılıyla fark
     if (t->weaponType != WEAPON_NONE) {

@@ -860,6 +860,8 @@ int main(int argc, char *argv[])
     int invTab = 0;            // aktif sekme: 0 Eşya / 1 Malzeme (I döngüsü)
     int craftScroll = 0;       // craft paneli kaydırma (tekerlek; satır cinsinden)
     int trashTab = -1, trashSlot = -1;   // çöp onayı bekleyen item (-1 = yok)
+    int pickTries[12] = {0};   // NPC başına BUGÜNKÜ yankesicilik denemesi (-15%/deneme)
+    bool pickFailUsed = false; // Masum Yüz: günde bir affedilen başarısızlık kullanıldı mı
     int dragTab = 0;           // sürükleme HANGİ sekmeden başladı (I ile değişse de doğru)
     g_mainBag = &inventory;    // bag_* yardımcıları (yönlendirme + iki-çanta sayım)
     g_craftBag = &craftBag;
@@ -1694,6 +1696,33 @@ int main(int argc, char *argv[])
                             player.bounty[guardRegion] = 0;
                             catchOpen = false;
                             audio_play(SFX_UI);
+
+                            // MÜSADERE (Kirli Mal): üstündeki kanıt toplanır —
+                            // kirli altın + tüm ÇALINTI eşyalar muhafıza gider
+                            int seized = player.dirtyGold;
+                            player.dirtyGold = 0;
+                            for (int b2 = 0; b2 < 2; b2++)
+                            {
+                                Inventory *bb = (b2 == 0) ? &inventory : &craftBag;
+                                for (int sl2 = 0; sl2 < INVENTORY_SIZE; sl2++)
+                                    if (bb->slots[sl2].type != NULL &&
+                                        bb->slots[sl2].stolen)
+                                    {
+                                        seized += item_value(&bb->slots[sl2])
+                                                * bb->slots[sl2].count / 2;
+                                        bb->slots[sl2] = item_make(NULL, 0, 0);
+                                    }
+                            }
+                            if (seized > 0)
+                            {
+                                char mbuf[FLOAT_TEXT_LEN];
+                                snprintf(mbuf, sizeof(mbuf),
+                                         "Kirli mal müsadere edildi (~%dg)", seized);
+                                SDL_Color red2 = { 255, 120, 100, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 26.0f, mbuf, red2);
+                            }
                             SDL_Color white = { 255, 255, 255, 255 };
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  player.rect.x + player.rect.w / 2.0f,
@@ -1857,6 +1886,50 @@ int main(int argc, char *argv[])
                                         (ShopEntry){ &ITEM_TYPES[TOME_POOL[t2]] };
                                 }
                                 inventoryOpen = true;   // satış için çanta da açık
+                                dialogNpc = -1;
+                            }
+                            else if (strcmp(target, "akla:kervan") == 0)
+                            {
+                                // AKLAMA (kervan): kirli altın ×0.75 (+ağaç) temize;
+                                // çalıntı eşya satılır — obje TAM, diğerleri ×0.6
+                                float rate = 0.75f + perkFx.pickFenceBonus;
+                                if (rate > 0.85f) rate = 0.85f;
+                                int clean = (int)(player.dirtyGold * rate);
+                                int sold = 0;
+                                for (int b2 = 0; b2 < 2; b2++)
+                                {
+                                    Inventory *bb = (b2 == 0) ? &inventory : &craftBag;
+                                    for (int sl2 = 0; sl2 < INVENTORY_SIZE; sl2++)
+                                    {
+                                        ItemStack *ss = &bb->slots[sl2];
+                                        if (ss->type == NULL || !ss->stolen) continue;
+                                        bool trinket =
+                                            ss->type == &ITEM_TYPES[ITEM_TRINKET_RING] ||
+                                            ss->type == &ITEM_TYPES[ITEM_TRINKET_BROOCH] ||
+                                            ss->type == &ITEM_TYPES[ITEM_TRINKET_WATCH];
+                                        sold += (int)(item_value(ss) * ss->count
+                                                      * (trinket ? 1.0f : 0.6f));
+                                        *ss = item_make(NULL, 0, 0);
+                                    }
+                                }
+                                if (clean + sold <= 0 && player.dirtyGold <= 0)
+                                {
+                                    npc_bark(kervanIdx, "Kesen temizmiş, yolcu.", 4.0f);
+                                }
+                                else
+                                {
+                                    player.gold += clean + sold;
+                                    player.dirtyGold = 0;
+                                    audio_play(SFX_LOOT);
+                                    char abuf[FLOAT_TEXT_LEN];
+                                    snprintf(abuf, sizeof(abuf),
+                                             "+%d g (aklandı)", clean + sold);
+                                    SDL_Color vio = { 200, 160, 255, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f, abuf, vio);
+                                    npc_bark(kervanIdx, "Bende kalan bende kalır.", 4.0f);
+                                }
                                 dialogNpc = -1;
                             }
                             else if (strncmp(target, "k9:", 3) == 0)
@@ -2122,6 +2195,52 @@ int main(int argc, char *argv[])
                 {
                     // Diyalog açıkken E: akan metni anında tamamla
                     dialog_type_reveal();
+                }
+                else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
+                         !scene_active() && dialogNpc < 0 &&
+                         map_current() == MAP_WORLD && gametime_is_night() &&
+                         SDL_fabsf(player.rect.x + player.rect.w / 2.0f
+                                   - (26.0f * TILE_SIZE + 32.0f)) < 110.0f &&
+                         SDL_fabsf(player.rect.y + player.rect.h / 2.0f
+                                   - (15.0f * TILE_SIZE + 48.0f)) < 110.0f)
+                {
+                    // KÖR KUYU: kirli her şeyi bırak — şafakta ×0.5 (+ağaç) temiz
+                    // kese belirir. Kim aldığını görmezsin; sadece fısıltı duyarsın.
+                    float rate = 0.50f + perkFx.pickFenceBonus;
+                    if (rate > 0.60f) rate = 0.60f;
+                    int total = player.dirtyGold;
+                    for (int b2 = 0; b2 < 2; b2++)
+                    {
+                        Inventory *bb = (b2 == 0) ? &inventory : &craftBag;
+                        for (int sl2 = 0; sl2 < INVENTORY_SIZE; sl2++)
+                        {
+                            ItemStack *ss = &bb->slots[sl2];
+                            if (ss->type == NULL || !ss->stolen) continue;
+                            total += item_value(ss) * ss->count;
+                            *ss = item_make(NULL, 0, 0);
+                        }
+                    }
+                    if (total <= 0)
+                    {
+                        SDL_Color dim = { 190, 190, 200, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 10.0f,
+                                             "Kuyu boş bakışını yansıtıyor.", dim);
+                    }
+                    else
+                    {
+                        player.wellGold += (int)(total * rate);
+                        player.wellDay = gametime_day();
+                        player.dirtyGold = 0;
+                        audio_play(SFX_WHISPER);
+                        SDL_Color vio = { 200, 160, 255, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 24.0f,
+                                             "Kuyunun dibinden: \"Sayılıyor. Hepsi sayılıyor.\"",
+                                             vio);
+                    }
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
                          dialogNpc < 0 && nearestEcho >= 0)
@@ -2501,6 +2620,122 @@ int main(int argc, char *argv[])
                     if (questLogOpen) { journalTab = 0; journalPage = 0; }
                     audio_play(SFX_UI);
                 }
+                else if (event.key.key == SDLK_P && gameState == GAME_PLAYING &&
+                         !scene_active() && dialogNpc < 0 && !shopOpen &&
+                         map_current() == MAP_WORLD && nearestNpc >= 0 &&
+                         nearestNpc < 12)
+                {
+                    // YANKESİCİLİK: eğilerek yaklaş + P. Zar: taban %35 +
+                    // Pickpocket lvl×0.5 + eğilme +25 + meşgul +15, muhafız -30,
+                    // her deneme (o gün, o NPC) -15. Tavan %90 — garanti yok.
+                    int pv = nearestNpc;
+                    float pnx, pny;
+                    if (npc_visible_pos(pv, &pnx, &pny))
+                    {
+                        float ch = 0.35f
+                                 + (float)player.skills[SKILL_PICKPOCKET].level * 0.005f
+                                 + perkFx.pickChanceBonus
+                                 + (player.sneaking ? 0.25f : 0.0f)
+                                 + (npc_bark_active(pv) ? 0.15f : 0.0f)
+                                 - (NPCS[pv].isGuard ? 0.30f : 0.0f)
+                                 - 0.15f * (float)pickTries[pv];
+                        if (ch > 0.90f) ch = 0.90f;
+                        pickTries[pv]++;
+                        int pRegion = region_of(pnx, pny);
+                        if (ch > 0.0f && randf() < ch)
+                        {
+                            // BAŞARI: kese KİRLİ keseye düşer (harcanamaz —
+                            // aklanmalı); değerli objeler ÇALINTI damgalı
+                            int gMin = 10, gMax = 30, itemId = -1, trinket = -1;
+                            float itemCh = 0.0f, trinketCh = 0.08f;
+                            trinket = ITEM_TRINKET_RING;
+                            if (pv == kervanIdx)
+                            { gMin = 50; gMax = 120; trinket = ITEM_TRINKET_WATCH;
+                              trinketCh = 0.15f; }
+                            else if (NPCS[pv].isVendor)
+                            { gMin = 30; gMax = 80; itemId = ITEM_POTION_HP;
+                              itemCh = 0.20f; trinketCh = 0.15f; }
+                            else if (NPCS[pv].isGuard)
+                            { gMin = 20; gMax = 50; itemId = ITEM_LOCKPICK;
+                              itemCh = 0.25f; trinket = ITEM_TRINKET_BROOCH;
+                              trinketCh = 0.10f; }
+                            else if (pv == nuhIdx || pv == fatmaIdx)
+                            { gMin = 5; gMax = 15; trinketCh = 0.0f; }   // yoksul
+                            int gold = gMin + rand() % (gMax - gMin + 1);
+                            player.dirtyGold += gold;
+                            float im = (perkFx.pickItemMult > 0.0f)
+                                     ? perkFx.pickItemMult : 1.0f;
+                            if (itemId >= 0 && randf() < itemCh * im)
+                            {
+                                ItemStack st2 = item_make(&ITEM_TYPES[itemId], 1, 0);
+                                st2.stolen = 1;
+                                bag_add_stackp(&st2);
+                            }
+                            if (trinketCh > 0.0f && randf() < trinketCh * im)
+                            {
+                                ItemStack st2 = item_make(&ITEM_TYPES[trinket], 1, 0);
+                                st2.stolen = 1;
+                                bag_add_stackp(&st2);
+                            }
+                            if (perkFx.pickStealItem && randf() < 0.35f)   // GÖLGE ELİ
+                            {
+                                ItemStack st2 = item_make(&ITEM_TYPES[ITEM_TRINKET_RING],
+                                                          1, 0);
+                                st2.stolen = 1;
+                                bag_add_stackp(&st2);
+                            }
+                            player.persKetum++;   // kişilik izi: sessiz iş
+                            audio_play(SFX_LOOT);
+                            char buf[FLOAT_TEXT_LEN];
+                            snprintf(buf, sizeof(buf), "+%d KİRLİ altın", gold);
+                            SDL_Color vio = { 200, 160, 255, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f, buf, vio);
+                            if (skill_add_xp(player.skills, SKILL_PICKPOCKET, 25.0f))
+                                on_skill_levelup(&player, SKILL_PICKPOCKET,
+                                                 &hotbar, floatTexts);
+                        }
+                        else if (perkFx.pickFirstFailFree && !pickFailUsed)
+                        {
+                            // MASUM YÜZ: günde bir başarısızlık fark edilmez
+                            pickFailUsed = true;
+                            SDL_Color dim = { 190, 190, 200, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f,
+                                                 "Elin kaydı... kimse görmedi.", dim);
+                            if (skill_add_xp(player.skills, SKILL_PICKPOCKET, 8.0f))
+                                on_skill_levelup(&player, SKILL_PICKPOCKET,
+                                                 &hotbar, floatTexts);
+                        }
+                        else
+                        {
+                            // YAKALANDIN: hedef tanıktır — suç işler
+                            float bm = (perkFx.pickBountyMult > 0.0f)
+                                     ? perkFx.pickBountyMult : 1.0f;
+                            player.bounty[pRegion] += (int)(15.0f * bm);
+                            rep_add(&player.reputation[pRegion], -3.0f);
+                            player.lastCrimeDay = gametime_day();
+                            npc_bark(pv, "Hırsız! HIRSIZ var!", 5.0f);
+                            audio_play(SFX_UI);
+                            SDL_Color red = { 255, 120, 100, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 24.0f,
+                                                 "Yakalandın!", red);
+                            if (NPCS[pv].isGuard)
+                            {
+                                // Muhafızın cebinde yakalanmak: anında hesap sorar
+                                catchOpen = true;
+                                player.autoAttack = false;
+                            }
+                            if (skill_add_xp(player.skills, SKILL_PICKPOCKET, 8.0f))
+                                on_skill_levelup(&player, SKILL_PICKPOCKET,
+                                                 &hotbar, floatTexts);
+                        }
+                    }
+                }
                 else if (event.key.key == SDLK_R && gameState == GAME_PLAYING &&
                          !scene_active() && dialogNpc < 0 &&
                          map_current() == MAP_WORLD && nearestStation >= 0 &&
@@ -2587,7 +2822,7 @@ int main(int argc, char *argv[])
                     // Yayın öncesi kaldırılacak — commit'e girer ama işaretli.
                     // Eğri dik: seviye 25 ≈ 125k, 100 ≈ 4M XP → basış başına 1M
                     // (1 basış ~lv57, 2 ~lv75, 4 = tüm eşikler açık)
-                    SkillType dbg[18] = { SKILL_ONE_HANDED, SKILL_LIGHT_ARMOR,
+                    SkillType dbg[19] = { SKILL_ONE_HANDED, SKILL_LIGHT_ARMOR,
                                           SKILL_MEDIUM_ARMOR, SKILL_HEAVY_ARMOR,
                                           SKILL_SMITHING, SKILL_ALCHEMY, SKILL_MINING,
                                           SKILL_HERBALISM, SKILL_WOODCUTTING,
@@ -2596,8 +2831,9 @@ int main(int argc, char *argv[])
                                           SKILL_DESTRUCTION, SKILL_STAFF,
                                           SKILL_CONJURATION,
                                           SKILL_TWO_HANDED,
-                                          SKILL_BLOCK };   // ağaç testi
-                    for (int d = 0; d < 18; d++)
+                                          SKILL_BLOCK,
+                                          SKILL_PICKPOCKET };   // ağaç testi
+                    for (int d = 0; d < 19; d++)
                         if (skill_add_xp(player.skills, dbg[d], 1000000.0f))
                             on_skill_levelup(&player, dbg[d], &hotbar, floatTexts);
 
@@ -2786,14 +3022,36 @@ int main(int argc, char *argv[])
                         }
                         else if (tEq != EQUIP_NONE && src->type->equipable)
                         {
-                            equip_from_inventory(&equipment, db, dragInvSlot);
-                            audio_play(SFX_UI);
+                            if (src->stolen)
+                            {
+                                SDL_Color red = { 255, 120, 100, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f,
+                                                     "Çalıntı — kuşanılamaz.", red);
+                            }
+                            else
+                            {
+                                equip_from_inventory(&equipment, db, dragInvSlot);
+                                audio_play(SFX_UI);
+                            }
                         }
                         else if (tHb >= 0 &&
                                  (src->type->consumable || src->type->trapItem))
                         {
-                            hotbar_assign_item(&hotbar, src->type);
-                            audio_play(SFX_UI);
+                            if (src->stolen)
+                            {
+                                SDL_Color red = { 255, 120, 100, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y - 10.0f,
+                                                     "Çalıntı — kullanılamaz.", red);
+                            }
+                            else
+                            {
+                                hotbar_assign_item(&hotbar, src->type);
+                                audio_play(SFX_UI);
+                            }
                         }
                     }
                 }
@@ -3740,7 +3998,17 @@ int main(int argc, char *argv[])
                             if (slot >= 0 && slot < ab->cap)
                             {
                                 ItemStack *st = &ab->slots[slot];
-                                if (shopOpen && st->type != NULL)
+                                if (st->type != NULL && st->stolen)
+                                {
+                                    // ÇALINTI: hiçbir kullanım yolu açık değil —
+                                    // önce aklanmalı (kervancı ya da Kör Kuyu)
+                                    SDL_Color red = { 255, 120, 100, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                         player.rect.x + player.rect.w / 2.0f,
+                                                         player.rect.y - 10.0f,
+                                                         "Çalıntı — önce aklanmalı.", red);
+                                }
+                                else if (shopOpen && st->type != NULL)
                                 {
                                     // Dükkan açıkken sağ tık = SAT (alışın yarısı × itibar, plus dahil)
                                     int sellRegion = region_of(player.rect.x, player.rect.y);
@@ -5945,6 +6213,22 @@ int main(int argc, char *argv[])
             if (today != lastSeenDay)
             {
                 lastSeenDay = today;
+                for (int pi = 0; pi < 12; pi++) pickTries[pi] = 0;   // cepler tazelenir
+                pickFailUsed = false;
+
+                // KÖR KUYU teslimi: dün bırakıldıysa temiz kese hazır
+                if (player.wellGold > 0 && today > player.wellDay)
+                {
+                    player.gold += player.wellGold;
+                    char wbuf[FLOAT_TEXT_LEN];
+                    snprintf(wbuf, sizeof(wbuf),
+                             "Kuyu başında temiz bir kese: +%d g", player.wellGold);
+                    SDL_Color vio = { 200, 160, 255, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 36.0f, wbuf, vio);
+                    player.wellGold = 0;
+                }
                 journal_day_tick(today);    // günlük atmosfer satırları (seyrek)
                 resource_daily_respawn();   // doğa tazelenir (cevher/bitki/ağaç)
                 contract_new_day(today);    // pano yenilenir (yarım kontratlar düşer)
@@ -7693,6 +7977,26 @@ int main(int argc, char *argv[])
                                (craftOpen && (craftRecipe >= 0 || plusForge || enchAction > 0))
                                    ? craftStation : -1);
 
+            // KÖR KUYU ipucu: gece, kuyu başında (kirli mal varsa mor vurgu)
+            if (gameFont != NULL && gametime_is_night() && dialogNpc < 0)
+            {
+                float wcx = 26.0f * TILE_SIZE + 32.0f;
+                float wcy = 15.0f * TILE_SIZE + 48.0f;
+                float pdx2 = player.rect.x + player.rect.w / 2.0f - wcx;
+                float pdy2 = player.rect.y + player.rect.h / 2.0f - wcy;
+                if (SDL_fabsf(pdx2) < 110.0f && SDL_fabsf(pdy2) < 110.0f)
+                {
+                    bool hasDirty = player.dirtyGold > 0;
+                    SDL_Color wc = hasDirty ? (SDL_Color){ 200, 160, 255, 255 }
+                                            : (SDL_Color){ 150, 150, 165, 255 };
+                    draw_text(renderer, gameFont,
+                              hasDirty ? "[E] Kuyuya bırak (kirli kese)"
+                                       : "[E] Kuyuya bırak",
+                              (wcx - camera.x) * camera.zoom - 70.0f,
+                              (wcy - 110.0f - camera.y) * camera.zoom, wc);
+                }
+            }
+
             // Dinlenme ipucu: gece, ateş başında (E ipucunun bir üstü)
             if (gameFont != NULL && dialogNpc < 0 && nearestNpc < 0 && !craftOpen &&
                 nearestStation >= 0 &&
@@ -7917,7 +8221,8 @@ int main(int argc, char *argv[])
 
         ally_render(allies, renderer, snakeTex, turtleTex, &camera);   // M4 dostlar
 
-        npc_render_all(renderer, npc_textures, &camera, gameFont, nearestNpc);
+        npc_render_all(renderer, npc_textures, &camera, gameFont, nearestNpc,
+                       player.sneaking);
 
         // Hedeflenen NPC'nin can barı (isim etiketinin üstünde, dünya uzayı)
         if (targetNpc >= 0)
@@ -8409,10 +8714,21 @@ int main(int argc, char *argv[])
         // Altın göstergesi (HP barının altı) + saat (sağ üst)
         if (gameFont != NULL)
         {
-            char goldBuf[32];
+            char goldBuf[48];
             snprintf(goldBuf, sizeof(goldBuf), "Gold %d", player.gold);
             SDL_Color goldCol = { 255, 210, 60, 255 };
             draw_text(renderer, gameFont, goldBuf, 20.0f, 76.0f, goldCol);   // mana/stamina barlarının altı
+            if (player.dirtyGold > 0)
+            {
+                // Kirli kese: harcanamaz — aklayıcıya götür (kırmızı ek)
+                char dirtyBuf[24];
+                snprintf(dirtyBuf, sizeof(dirtyBuf), "(+%d kirli)", player.dirtyGold);
+                int gw2 = 0, gh2 = 0;
+                TTF_GetStringSize(gameFont, goldBuf, 0, &gw2, &gh2);
+                SDL_Color dirtyCol = { 255, 110, 90, 255 };
+                draw_text(renderer, gameFont, dirtyBuf, 26.0f + (float)gw2, 76.0f,
+                          dirtyCol);
+            }
 
             // Bounty + itibar göstergesi (bulunduğun bölgenin değerleri)
             int hudRegion = region_of(player.rect.x + player.rect.w / 2.0f,

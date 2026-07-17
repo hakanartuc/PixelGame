@@ -411,6 +411,17 @@ const ItemType ITEM_TYPES[] = {
       .equipSpritePath = "assets/equipment/shield/round_shield_110.png",
       .equipZ = 110, .equipIdleRow = 8,
       .iconSpritePath = "assets/icons/items/shields.png", .iconSrc = { 16, 0, 16, 16 } },
+
+    // Kirli Mal & Aklama: değerli objeler — yalnız çalıntı; aklayıcı tam değer öder
+    { .name = "Yüzük", .iconIndex = 0, .maxStack = 10, .value = 80,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/trinkets.png", .iconSrc = { 0, 0, 16, 16 } },
+    { .name = "Broş", .iconIndex = 0, .maxStack = 10, .value = 100,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/trinkets.png", .iconSrc = { 16, 0, 16, 16 } },
+    { .name = "Cep Saati", .iconIndex = 0, .maxStack = 10, .value = 150,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/trinkets.png", .iconSrc = { 32, 0, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 
@@ -423,6 +434,7 @@ ItemStack item_make(const ItemType *type, int count, int plusLevel)
     s.fx = (type != NULL) ? (Sint8)type->weaponFx : 0;
     s.statType[0] = s.statType[1] = -1;
     s.statTier[0] = s.statTier[1] = 0;
+    s.stolen = 0;   // temiz doğar — yalnız yankesicilik damgalar
     return s;
 }
 

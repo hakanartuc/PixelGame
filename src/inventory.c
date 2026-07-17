@@ -102,6 +102,7 @@ bool inventory_add_stack(Inventory *inv, const ItemStack *s)
             if (t->type == s->type &&
                 t->plusLevel == s->plusLevel &&
                 t->fx == s->fx &&
+                t->stolen == s->stolen &&   // kirli temizle karışmaz
                 t->statType[0] < 0 && t->statType[1] < 0 &&
                 t->count < s->type->maxStack) {
                 t->count += s->count;
@@ -128,6 +129,7 @@ bool inventory_consume(Inventory *inv, const ItemType *type)
     if (type == NULL) return false;
     for (int i = 0; i < INVENTORY_SIZE; i++) {
         if (inv->slots[i].type != type) continue;
+        if (inv->slots[i].stolen) continue;   // çalıntı: ekonomiye kapalı
         inv->slots[i].count--;
         if (inv->slots[i].count <= 0) {
             inv->slots[i].type = NULL;
@@ -143,8 +145,8 @@ int inventory_count(const Inventory *inv, const ItemType *type)
     if (type == NULL) return 0;
     int total = 0;
     for (int i = 0; i < INVENTORY_SIZE; i++)
-        if (inv->slots[i].type == type)
-            total += inv->slots[i].count;
+        if (inv->slots[i].type == type && !inv->slots[i].stolen)
+            total += inv->slots[i].count;   // çalıntı sayılmaz (aklanmalı)
     return total;
 }
 

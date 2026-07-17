@@ -3,6 +3,10 @@
 // Köy evleri — NPC'lerin gece gittiği kapılar bunların önü (npc.c rutinleri)
 #define T(n) ((n) * (float)TILE_SIZE)
 const DecorDef DECORS[] = {
+    // KÖR KUYU (Kirli Mal & Aklama): köy dışında, yol kıyısında unutulmuş kuyu.
+    // Gece kirli malı bırak → şafakta temiz kese (kim aldığını görmezsin).
+    { .texPath = "assets/decor/well.png",
+      .x = T(26), .y = T(15), .scale = 2.0f, .solidBase = true },
     { .texPath = "assets/buildings/House_1_Limestone_Base_Red.png",
       .x = T(10), .y = T(4),  .scale = 1.6f, .solidBase = true },   // Baran'ın evi (dükkanın arkası)
     { .texPath = "assets/buildings/House_2_Limestone_Base_Blue.png",

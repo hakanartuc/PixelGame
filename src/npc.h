@@ -50,8 +50,10 @@ void npc_update(float dt, float hours);
 
 // Tüm NPC'leri çiz (idle animasyon + isim; en yakındakine E prompt'u).
 // nearestIdx: npc_nearest_in_range sonucu (-1 = prompt yok).
+// sneaking: eğilmişken menzildeki NPC'de '[P] Yankesicilik' ipucu da çıkar
 void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
-                    const Camera *camera, TTF_Font *font, int nearestIdx);
+                    const Camera *camera, TTF_Font *font, int nearestIdx,
+                    bool sneaking);
 
 // Oyuncuya NPC_INTERACT_RANGE içindeki en yakın KONUŞULABILIR NPC (-1 = yok).
 // İçerideki (indoors) NPC seçilmez — gece dükkan da böyle kapanır.
@@ -71,6 +73,7 @@ void npc_set_talking(int i);
 // --- Sahne araçları (D1a) ---
 // Bark: NPC başının üstünde kısa konuşma balonu (süreli; yenisi eskisini ezer)
 void npc_bark(int i, const char *text, float seconds);
+bool npc_bark_active(int i);   // baş üstü balonu açık mı (yankesicilik: meşgul +%15)
 // Yürütme scripti: rutini geçersiz kıl, noktaya yürü (varınca bitir).
 // Dönen (npc_walk_done): hedefe vardı mı — sahne akışı bekleyebilsin.
 void npc_walk_to(int i, float x, float y);

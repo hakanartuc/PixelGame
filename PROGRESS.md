@@ -714,6 +714,47 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   - Kule Kalkanı: kalkan slot defansına çarpan (equipment_total_defense).
   - F10: Demir Kalkan + Block ağacı puanı. İkon atlası 23→24.
 
+### Faz PP — PICKPOCKET: GÖLGE ELİ (v28 uyumlu; son mekanik paket)
+- **Etkileşim**: C eğil + NPC'ye yaklaş + [P] (eğilmişken '[P] Yankesicilik'
+  ipucu). Zar: taban %35 + Pickpocket lvl×0.5 + ağaç; eğilme +%25, hedef
+  bark'ta (meşgul) +%15, muhafız -%30; AYNI NPC'de her deneme (o gün) -%15
+  — sınırsız ama hızla imkansızlaşır (şafakta sıfırlanır). Tavan %90.
+- **Keseler** (role göre): Kervancı 25-60g +%20 öz · vendor 15-40g +%20
+  iksir · muhafız 10-25g +%25 Maymuncuk (ironik) · Nuh/Fatma 3-8g (vicdan
+  testi) · köylü 5-15g. Başarı persKetum +1 (kişilik izi) + 25 XP (sessiz).
+- **Yakalanma**: hedef tanıktır — bounty +15 (ağaçla -%50) + itibar -3 +
+  'Hırsız! HIRSIZ var!' bark'ı + lastCrimeDay; MUHAFIZIN cebinde yakalanmak
+  = anında yakalama paneli. Başarısızlık da 8 XP (denemek öğretir).
+- **T_PICKPOCKET mini ağacı** (10 düğüm): Şans (+%3/+%5/+%5/+%10) · Kese
+  (altın +%25×2, item şansı 2x) · Sessizlik (bounty -%50, MASUM YÜZ: günde
+  bir başarısızlık fark edilmez) · keystone GÖLGE ELİ (başarıda hedefin
+  eşyası da çalınır — ek zar). F10 Pickpocket puanı basar.
+- MEKANİK PAKETLER TAMAM: roadmap'in savaş/yaşam eksenindeki tüm onaylı
+  sistemler oyunda (M1-M4, Dünya Olayları+hava, Büyü D2, çanta, TH+Block, PP).
+
+### Faz KM — KİRLİ MAL & AKLAMA (save v29)
+- **Kirli kese**: yankesicilik altını `player.dirtyGold`'a düşer — HARCANAMAZ
+  (HUD'da altının yanında kırmızı "(+N kirli)"). Çalıntı eşyalar
+  `ItemStack.stolen` damgalı (tooltip kırmızı ÇALINTI satırı): kuşanılamaz,
+  satılamaz, tüketilemez, craft/kontrat SAYMAZ (inventory_count/consume
+  çalıntıyı atlar; kirli-temiz aynı yığına girmez).
+- **Keseler ×2 + değerli objeler**: Kervancı 50-120g (%15 Cep Saati 150g) ·
+  vendor 30-80g (%20 iksir, %15 Yüzük 80g) · muhafız 20-50g (%25 Maymuncuk,
+  %10 Broş 100g) · köylü 10-30g (%8 Yüzük) · Nuh/Fatma 5-15g. Objeler
+  YALNIZ çalıntı bulunur — normal ekonomide yeri yok, aklayıcı tam öder.
+- **MÜSADERE**: yakalama panelinde ceza ödersen kirli altın + tüm çalıntılar
+  da gider ("kanıt") — biriktirme gerilimi (push your luck).
+- **AKLAMA — iki kanal**:
+  - Kervancı Selim "el altından" (kervan günleri, diyalog): kirli altın
+    ×0.75, çalıntı eşya ×0.6, DEĞERLİ OBJE ×1.0 — sabırlının kanalı.
+  - KÖR KUYU (köy dışı T26,15 — Well.png decor): yalnız GECE [E] — hepsi
+    kuyuya, şafakta ×0.5 temiz kese ("Sayılıyor. Hepsi sayılıyor." fısıltısı).
+    Aceleci kanal; kim aldığı İLERİDE: yeraltı örgütünün tohumu.
+  - Ağaç: Keseci/Güvenilir El düğümleri artık AKLAMA kesintisini düşürür
+    (kervan 0.75→0.85, kuyu 0.50→0.60).
+- Save v29: ItemStack.stolen (write/read_stack +1 alan) + dirtyGold +
+  wellGold/wellDay.
+
 ### YAKIN — "oyun gibi hissettir" (his + rol)
 1. ~~CİLA PAKETİ~~ TAMAM (2026-07-14 — bkz. Faz CİLA bölümü); kalan küçük
    UX borcu: speech zar kilidi save'i (uygun faza serpilir)
@@ -749,7 +790,7 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
    (boss scroll/taş dropları burada anlam kazanır)
 8. **Kalan sistemler**: Two-Handed hattı (spear — asset:
    `~/Downloads/lpc_male_item_animations_2026-07-11T13-46-16`; Block/kalkan aynı aile),
-   Pickpocket (mini ağaç + suç bağı), Büyü dalgası 2 ~~parça 1 (pençe/diken/hortum + tomar)~~ TAMAM (bkz. Faz BD2a) — kalan parça 2 (magic_pack kalanları:
+   ~~Pickpocket~~ TAMAM (bkz. Faz PP), Büyü dalgası 2 ~~parça 1 (pençe/diken/hortum + tomar)~~ TAMAM (bkz. Faz BD2a) — ~~kalan parça 2~~ TAMAM (magic_pack kalanları:
    tornado/firelion/icetacle/lightningclaw/snakebite), kalan saga'lar + finale bağları
 9. **YAYIN HAZIRLIĞI**: F10 söküm, CREDITS lisans teyitleri, Vulkan/SPIR-V,
    mobil build (SDL_GPU→Metal/Vulkan), harita editörü akışı

@@ -144,6 +144,16 @@ S15 / Gezgin S40), Malzeme 25→55 (Kese S10 / Usta S35) — üretilince OTOMAT�
 takılır, İp yeni ara malzeme (2 Ayotu, kamp ateşi). Player.bagUpgrades +
 craftBag save v28; Inventory.cap dinamik; MAX_RECIPES 48. DİKKAT: yeni item
 eklerken MAX_ITEM_TYPES (96) tavanına bak — 64 taşması crash yaratmıştı.
+**KİRLİ MAL & AKLAMA TAMAM (save v29)**: çalıntı damgası (kullanım/satış/
+craft kilitli, tooltip ÇALINTI) + dirtyGold (HUD kırmızı) + keseler ×2 +
+değerli objeler (Yüzük/Broş/Cep Saati — yalnız çalıntı) + MÜSADERE (ceza
+ödemede kirli mal gider) + iki aklama kanalı: Kervancı 'el altından' (×0.75,
+obje tam) / KÖR KUYU gece bırak → şafak ×0.5 ("Sayılıyor" fısıltısı — yeraltı
+örgütü tohumu). Ağaç Keseci düğümleri komisyon düşürür.
+**PICKPOCKET TAMAM (v28 uyumlu) — MEKANİK PAKETLER KAPANDI**: C eğil + [P]
+(zar %35 + lvl×0.5 + eğilme %25 - deneme×%15/gün); keseler role göre;
+yakalanma = suç (bounty 15, itibar -3, bark; muhafızda direkt panel);
+T_PICKPOCKET 10 düğüm + GÖLGE ELİ keystone; persKetum izi; F10 puan basar.
 **TWO-HANDED PARÇA A TAMAM (v28 uyumlu)**: Mızrak (menzil 130/tempo 1.5/
 taban 34, delme %25→%40, hat vuruşu %60→%75 +hedef; craft S20 ya da 260g;
 thrustOversize katmanı — salt thrust'ta çizilir) + T_TWOHAND ağacı (18 düğüm;

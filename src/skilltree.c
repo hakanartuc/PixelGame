@@ -76,6 +76,23 @@ static const TreeNode T_TWOHAND[] = {
     N_ACT("Süpürme",       "AKTİF: ön yay x1.0 + yavaşlatma (12 sn, 35 stamina)", 7, 2, 3, ABILITY_SWEEP),
 };
 
+// --- PICKPOCKET: "Gölge Eli" — Şans / Kese / Sessizlik mini ağacı ---
+static const TreeNode T_PICKPOCKET[] = {
+    N_ROOT("Hafif Parmaklar", "Yankesicilik şansı +%3"),
+    N_MIN("El Çabukluğu",  "Yankesicilik şansı +%5",           0, 1, 1),
+    N_MIN("Soğukkanlılık", "Yankesicilik şansı +%5",           1, 1, 2),
+    N_NOT("Usta Eller",    "Yankesicilik şansı +%10",          2, 1, 3),
+
+    N_MIN("Keseci",        "Aklama kesintisi -%5",             0, 3, 1),
+    N_MIN("Güvenilir El",  "Aklama kesintisi -%5 daha",        4, 3, 2),
+    N_NOT("Seçici Göz",    "Keseden item çıkma şansı 2x",      5, 3, 3),
+
+    N_MIN("Sessiz Adım",   "Yakalanmada bounty -%50",          0, 5, 1),
+    N_NOT("Masum Yüz",     "GÜNDE BİR: ilk başarısızlık fark edilmez", 7, 5, 2),
+
+    N_KEY("GÖLGE ELİ",     "Başarılı hırsızlıkta hedefin EŞYASI da çalınır (ek zar)", 3, 8, 2),
+};
+
 // --- BLOCK: "Kalkan Yolu" — Şans / Duruş / Emilim (aktif yok: SHIFT duruşu) ---
 static const TreeNode T_BLOCK[] = {
     N_ROOT("Kalkan Eğitimi", "Blok şansı +%2"),
@@ -452,6 +469,7 @@ static const SkillTreeDef TREES[] = {
     TREE_DEF(SKILL_ONE_HANDED,   T_ONEHAND),
     TREE_DEF(SKILL_TWO_HANDED,   T_TWOHAND),
     TREE_DEF(SKILL_BLOCK,        T_BLOCK),
+    TREE_DEF(SKILL_PICKPOCKET,   T_PICKPOCKET),
     TREE_DEF(SKILL_ARCHERY,      T_ARCHERY),
     TREE_DEF(SKILL_LIGHT_ARMOR,  T_LIGHT),
     TREE_DEF(SKILL_MEDIUM_ARMOR, T_MEDIUM),
@@ -619,6 +637,21 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         if (ON(T, 13)) fx->sweepSlowMult = 1.5f;
         if (ON(T, 14)) fx->kbDealtMult *= 1.5f;
         // 15 KAPI TUTUCU: grantAbility (duruş) — pasif etki yok
+    }
+
+    // --- Pickpocket (Gölge Eli) ---
+    {
+        const int T = SKILL_PICKPOCKET;
+        if (ON(T, 0))  fx->pickChanceBonus += 0.03f;
+        if (ON(T, 1))  fx->pickChanceBonus += 0.05f;
+        if (ON(T, 2))  fx->pickChanceBonus += 0.05f;
+        if (ON(T, 3))  fx->pickChanceBonus += 0.10f;
+        if (ON(T, 4))  fx->pickFenceBonus += 0.05f;
+        if (ON(T, 5))  fx->pickFenceBonus += 0.05f;
+        if (ON(T, 6))  fx->pickItemMult = 2.0f;
+        if (ON(T, 7))  fx->pickBountyMult = 0.5f;
+        if (ON(T, 8))  fx->pickFirstFailFree = true;
+        if (ON(T, 9))  fx->pickStealItem = true;   // GÖLGE ELİ
     }
 
     // --- Block (Kalkan Yolu) ---
