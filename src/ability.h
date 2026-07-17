@@ -25,6 +25,10 @@ typedef enum {
     ABILITY_SPIKES,         // Toprak Dikenleri: çevrende diken patlaması + yavaşlatma
     ABILITY_SUMMON_SNAKE,   // Öz Yılanı çağır (M4 — bootstrap: herkese açık)
     ABILITY_SUMMON_TURTLE,  // Öz Kabuğu çağır (M4 — ağaçtan)
+    // Büyü dalgası 2 (tomar ekonomisi — dünyada bulunan kayıp büyüler)
+    ABILITY_LIGHTNING_CLAW, // Yıldırım Pençesi: yakın koni — büyücünün panik butonu
+    ABILITY_ICETACLE,       // Buz Dikenleri: hedef alanda yerden buz + güçlü yavaş
+    ABILITY_TORNADO,        // Hortum: ileri süzülen alan — tick hasarı + yavaşlatma
     ABILITY_COUNT,
 } AbilityId;
 

@@ -5,7 +5,9 @@
 #include "common.h"
 #include "fx.h"   // WeaponFxType
 
-#define MAX_ITEM_TYPES 64   // ITEM_TYPES kapasitesi (paralel diziler icin sabit boyut)
+#define MAX_ITEM_TYPES 96   // ITEM_TYPES kapasitesi (paralel diziler icin sabit boyut)
+                            // DİKKAT: tablo 65'e çıkınca 64 taşmıştı (tomar crash'i) —
+                            // yeni item eklerken bu tavana bakılmaz, bol tutuldu + load klampli
 
 // Ekipman slotları (KO düzeni)
 typedef enum {
@@ -85,6 +87,10 @@ typedef struct {
     // --- Kullanılabilir parşömenler (envanterde sağ tık) ---
     int scrollSkill;             // öğretici parşömen: hangi skill (scrollXp > 0 ise geçerli)
     float scrollXp;              // kullanınca verilen XP (0 = parşömen değil)
+
+    // --- Büyü tomarları (Büyü dalgası 2): sağ tık = oku → büyü KALICI açılır ---
+    int tomeAbility;             // öğretilen AbilityId (0 = tomar değil)
+    int tomeReqLevel;            // okumak için gereken Destruction seviyesi
 
     // --- Yemek (Faz 6 — av): iksirden farklı, YAVAŞ ama toplamı yüksek yenilenme ---
     float foodRegen;             // saniyede yenilenen can (>0 = yemek)
@@ -236,6 +242,10 @@ typedef enum {
     ITEM_STEW,            // Avcı Yahnisi (M2: 180sn hasar +%8)
     ITEM_SOUP,            // Ot Çorbası (M2: 180sn mana rejeni ×1.5)
     ITEM_KAVURMA,         // Gezgin Kavurması (M2: 180sn stamina ×1.6 + hız +%5)
+    // Büyü dalgası 2: kayıp büyü tomarları (kervan/zindan — okuyunca öğrenilir)
+    ITEM_TOME_CLAW,       // Tomar: Yıldırım Pençesi (Yıkım 15)
+    ITEM_TOME_ICETACLE,   // Tomar: Buz Dikenleri (Yıkım 30)
+    ITEM_TOME_TORNADO,    // Tomar: Hortum (Yıkım 40 — yalnız zindan USTA sandığı)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

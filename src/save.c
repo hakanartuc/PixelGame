@@ -21,7 +21,7 @@
 #include "ecology.h"    // yuva durumları (v20)
 
 #define SAVE_MAGIC "PIXE"
-#define SAVE_VERSION 26u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
+#define SAVE_VERSION 27u  // ...; v11: ItemStack instance (fx/rün + stat slotları);
                           // v12: ilan panosu (gün + slot durum/ilerleme);
                           // v13: skill ağacı maskeleri (perkChoice'un yerini aldı);
                           // v18: özet bloğu (slot kartları) + kişilik sayaçları;
@@ -32,7 +32,8 @@
                           // v23: davranış ünvanları (titleStats + carriedTitle);
                           // v24: karakter adı/ten/geçmiş (özet bloğuna isim);
                           // v25: dünya olayı durumu (worldevent);
-                          // v26: hava durumu (weather)
+                          // v26: hava durumu (weather);
+                          // v27: tomarla öğrenilen büyüler (spellsLearned)
 
 // Bit-paketli keşif matrisi tamponu (256×256 tavan → 8KB)
 #define EXPLORED_BUF_CAP ((MAP_W_MAX * MAP_H_MAX + 7) / 8)
@@ -253,6 +254,9 @@ bool save_game(const char *path, const Player *p,
 
     // Karakter kimliği (v24): ten + geçmiş (isim özet bloğunda)
     ok = ok && w32(f, p->skinTone) && w32(f, p->background);
+
+    // Tomarla öğrenilen büyüler (v27): bit maskesi (bit = AbilityId)
+    ok = ok && w32(f, (Sint32)p->spellsLearned);
 
     // Dünya olayı durumu (v25): aktif olay + başlangıç günü + son olay
     {
@@ -508,6 +512,13 @@ bool load_game(const char *path, Player *p,
         tmpP.skinTone = (Sint8)skin;
         tmpP.background = (Sint8)bg;
         memcpy(tmpP.name, sumName, sizeof(tmpP.name));
+    }
+
+    // Tomarla öğrenilen büyüler (v27)
+    {
+        Sint32 sl = 0;
+        ok = ok && r32(f, &sl);
+        tmpP.spellsLearned = (Uint32)sl;
     }
 
     // Dünya olayı durumu (v25) — geçici; başarıda uygulanır

@@ -99,6 +99,7 @@ typedef struct Player {
     // barlar şimdiden HUD'da (stat basma da bu havuzları büyütecek, Faz 4)
     float mana, maxMana;
     float manaReservedFrac;   // M4: dost rezervi (0..1) — bar kilitli bölme çizer
+    Uint32 spellsLearned;     // tomarla öğrenilen büyüler (bit = AbilityId; v27)
     float stamina, maxStamina;
 
     // Süreli tüketilebilir etkileri (Faz 3)

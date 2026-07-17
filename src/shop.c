@@ -36,6 +36,10 @@ const ShopEntry CARAVAN_STOCK[] = {
     { &ITEM_TYPES[ITEM_ESSENCE_TOXIC] },
     { &ITEM_TYPES[ITEM_ARROW] },
     { &ITEM_TYPES[ITEM_POTION_MANA] },
+    // Büyü dalgası 2: kayıp tomarlar — kervanın asıl hazinesi (Hortum yalnız
+    // zindanda; parça 2'de havuz büyüyünce buradaki ikili rastgeleleşecek)
+    { &ITEM_TYPES[ITEM_TOME_CLAW] },
+    { &ITEM_TYPES[ITEM_TOME_ICETACLE] },
 };
 const int CARAVAN_STOCK_COUNT = (int)(sizeof(CARAVAN_STOCK) / sizeof(CARAVAN_STOCK[0]));
 

@@ -619,6 +619,27 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   kapalı gökyüzü karartması; Osman kar sohbeti; F8 döngüsünde kar da var.
   Save v26 UYUMLU (enum sona eklendi — bump yok).
 
+### Faz BD2a — BÜYÜ DALGASI 2, PARÇA 1: TOMAR EKONOMİSİ + 3 BÜYÜ (save v27)
+- **Tomar ekonomisi**: kayıp büyü tomarları — envanterde sağ tık = oku →
+  büyü KALICI açılır (Yıkım seviyesi yetmiyorsa tomar durur, yanmaz; "Harfler
+  kayıyor..."). `Player.spellsLearned` bit maskesi (v27); ağaçtan bağımsız —
+  tree_compute_effects sonrası her yerde `spells_apply_learned` köprüsü
+  (yoksa hotbar_purge_closed öğrenilmiş büyüyü sökerdi). Yeni oyunda sıfırlanır.
+- **3 yeni büyü** (magic_pack sheet'leri — 4×4 grid 128px, 16 kare):
+  - **Yıldırım Pençesi** (YP, 35 taban/18 mana/5sn): bakış yönüne 110px koni —
+    büyücünün panik butonu. Islakta +%20 (bolt mult). Tomar: Yıkım 15, 350g.
+  - **Buz Dikenleri** (BD, 26/24/8sn): hedef alanda (100px) yerden buz —
+    hasar + %50 yavaş 3sn. Karda +%20 ve yavaş ×1.5. Tomar: Yıkım 30, 550g.
+  - **Hortum** (HO, 8×tick/35/14sn): bakış yönüne süzülen alan (65px/sn, 4sn) —
+    0.5sn'de bir tick + %30 yavaş; kalkış karelerinde yerinde döner, son 0.4sn
+    dağılır. Fırtınada tick ×1.2 + ömür 5sn. Tomar: Yıkım 40, 650g.
+- **Kaynaklar**: kervan özel stoğuna Pençe+Diken tomarları (parça 2'de havuz
+  rastgeleleşecek); Hortum tomarı YALNIZ zindan USTA sandığı (%25). F10 dev
+  seti 3 tomarı çantaya basar.
+- İkon atlası 15→18 hücre (gen_ability_icons.py — sheet karelerinden indirme).
+- Parça 2 (sonraki): Ateş Aslanı + Yılan Isırığı (yönlü sheet'ler) + kervan
+  tomar havuzu rastgeleleşmesi.
+
 ### YAKIN — "oyun gibi hissettir" (his + rol)
 1. ~~CİLA PAKETİ~~ TAMAM (2026-07-14 — bkz. Faz CİLA bölümü); kalan küçük
    UX borcu: speech zar kilidi save'i (uygun faza serpilir)
@@ -654,7 +675,7 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
    (boss scroll/taş dropları burada anlam kazanır)
 8. **Kalan sistemler**: Two-Handed hattı (spear — asset:
    `~/Downloads/lpc_male_item_animations_2026-07-11T13-46-16`; Block/kalkan aynı aile),
-   Pickpocket (mini ağaç + suç bağı), Büyü dalgası 2 (magic_pack kalanları:
+   Pickpocket (mini ağaç + suç bağı), Büyü dalgası 2 ~~parça 1 (pençe/diken/hortum + tomar)~~ TAMAM (bkz. Faz BD2a) — kalan parça 2 (magic_pack kalanları:
    tornado/firelion/icetacle/lightningclaw/snakebite), kalan saga'lar + finale bağları
 9. **YAYIN HAZIRLIĞI**: F10 söküm, CREDITS lisans teyitleri, Vulkan/SPIR-V,
    mobil build (SDL_GPU→Metal/Vulkan), harita editörü akışı

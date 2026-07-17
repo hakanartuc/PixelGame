@@ -51,7 +51,7 @@ def save_png(path, W, H, img):
     png += chunk(b'IEND', b'')
     open(path, 'wb').write(png)
 
-N = 15; CELL = 32
+N = 18; CELL = 32
 W, H = N * CELL, CELL
 px = bytearray(W * H * 4)
 
@@ -172,5 +172,20 @@ quarter_blit(SNAKE, 128, 256, 13)
 frame(14, (46, 78, 40))
 quarter_blit(TURTLE, 128, 256, 14)
 
+# Büyü dalgası 2 (tomar büyüleri): sheet karelerinden 32'ye indirme
+CLAW = load_png('assets/fx/lightningclaw.png')
+ICET = load_png('assets/fx/icetacle.png')
+TORN = load_png('assets/fx/tornado.png')
+
+# 15 LIGHTNING_CLAW — dolu pençe karesi (satır 2, kare 2 → 128,256... grid 4x4)
+frame(15, (70, 54, 30))
+quarter_blit(CLAW, 128, 256, 15)
+# 16 ICETACLE — dolu diken karesi (satır 1, kare 3 → 384,128)
+frame(16, (40, 62, 84))
+quarter_blit(ICET, 384, 128, 16)
+# 17 TORNADO — gövde karesi (satır 1, kare 1 → 128,128)
+frame(17, (58, 66, 48))
+quarter_blit(TORN, 128, 128, 17)
+
 save_png('assets/icons/abilities.png', W, H, px)
-print("OK assets/icons/abilities.png (15 hücre 32x32)")
+print("OK assets/icons/abilities.png (18 hücre 32x32)")

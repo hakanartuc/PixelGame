@@ -123,6 +123,13 @@ damla+sis+şimşek+amb_rain/thunder (gen_weather_audio.py). WE_GRAVE Huzursuz
 Mezarlık (gece 3 iskelet, şafakta 2+ sağsa mezar yuva olur); MOB_SEARCH (leash
 sonrası 8sn bakınma); haber ağı diyalogda (event/hava değişkenleri, gizlenen
 seçenekler; Kemal/Osman/Baran satırları).
+**BÜYÜ DALGASI 2 PARÇA 1 TAMAM (save v27)**: tomar ekonomisi (sağ tık oku →
+spellsLearned bit maskesi; Yıkım seviye şartı; spells_apply_learned köprüsü
+HER tree_compute_effects sonrası şart) + 3 büyü: Yıldırım Pençesi (koni,
+ıslakta +%20), Buz Dikenleri (hedef alan, karda +%20 & yavaş ×1.5), Hortum
+(süzülen alan, fırtınada güçlü). Kaynak: kervan (Pençe+Diken) + zindan USTA
+sandık %25 (Hortum). F10 3 tomar basar. KALAN parça 2: Ateş Aslanı + Yılan
+Isırığı (yönlü sheet'ler) + kervan tomar havuzu rastgeleleşmesi.
 **KAR (soğuk cephe, v26 uyumlu)**: havuz %50/22/13/10(KAR)/5; buz +%20 +
 yavaşlatma ×1.5 + herkes %12 yavaş (av +%15); zemin beyazlar (snowCover),
 sürü büzüşür, su donar, ot yarıya, ateş ömrü 12 saat, karda İZ SÜRME (arama

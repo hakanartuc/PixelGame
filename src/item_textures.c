@@ -9,8 +9,12 @@ void item_textures_load(ItemTextures *t, R2D *r)
         t->equipTexBack[i] = NULL;   // ← EKLE
         t->iconTex[i]  = NULL;
     }
-    // ITEM_TYPES'i gez, her item kendi yolunu soyluyor
-    for (int i = 0; i < ITEM_TYPE_COUNT; i++) {
+    // ITEM_TYPES'i gez, her item kendi yolunu soyluyor.
+    // Klamp: tablo tavanı aşarsa sessiz taşma yerine yüksek sesle logla
+    if (ITEM_TYPE_COUNT > MAX_ITEM_TYPES)
+        SDL_Log("UYARI: ITEM_TYPE_COUNT (%d) > MAX_ITEM_TYPES (%d) — tavani buyut!",
+                ITEM_TYPE_COUNT, MAX_ITEM_TYPES);
+    for (int i = 0; i < ITEM_TYPE_COUNT && i < MAX_ITEM_TYPES; i++) {
         const ItemType *it = &ITEM_TYPES[i];
         if (it->equipable && it->equipSpritePath != NULL) {
             t->equipTex[i] = load_texture(r, it->equipSpritePath);
@@ -44,7 +48,7 @@ static int item_index(const ItemType *type)
 {
     if (type == NULL) return -1;
     int idx = (int)(type - ITEM_TYPES);
-    if (idx < 0 || idx >= ITEM_TYPE_COUNT) return -1;
+    if (idx < 0 || idx >= ITEM_TYPE_COUNT || idx >= MAX_ITEM_TYPES) return -1;
     return idx;
 }
 

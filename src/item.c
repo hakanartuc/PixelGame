@@ -1,4 +1,5 @@
 #include "item.h"
+#include "ability.h"   // tomeAbility (Büyü dalgası 2)
 #include "skill.h"   // parşömen skill sabitleri (SKILL_MINING vb.)
 
 // idle-down karesi: LPC satir 24 (idle 22 + DIR_DOWN 2), kare yuksekligi 64 → y=1536.
@@ -341,6 +342,21 @@ const ItemType ITEM_TYPES[] = {
       .foodBuffType = FB_STA_SPEED, .foodBuffPower = 1.6f, .foodBuffDur = 180.0f,
       .iconSpritePath = "assets/icons/items/food.png",
       .iconSrc = { 64, 16, 16, 16 } },
+
+    // Büyü dalgası 2: kayıp büyü tomarları — sağ tık = oku (Yıkım seviyesi
+    // yetiyorsa büyü KALICI açılır, tomar tükenir). Kaynak: kervan/zindan.
+    { .name = "Tomar: Yıldırım Pençesi", .iconIndex = 0, .maxStack = 1, .value = 350,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .tomeAbility = ABILITY_LIGHTNING_CLAW, .tomeReqLevel = 15,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+    { .name = "Tomar: Buz Dikenleri", .iconIndex = 0, .maxStack = 1, .value = 550,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .tomeAbility = ABILITY_ICETACLE, .tomeReqLevel = 30,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+    { .name = "Tomar: Hortum", .iconIndex = 0, .maxStack = 1, .value = 650,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .tomeAbility = ABILITY_TORNADO, .tomeReqLevel = 40,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

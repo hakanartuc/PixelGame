@@ -81,6 +81,28 @@ const AbilityDef ABILITIES[ABILITY_COUNT] = {
         .damageScale = 20.0f,   // büyü taban hasarı
         .cooldown = 10.0f, .mana = 22.0f,
     },
+    // Büyü dalgası 2: tomarla öğrenilir (ağaç değil — kayıp bilgi dünyada).
+    // Hava sinerjileri main'de: pençe ıslakta +%20, diken karda +%20 & yavaş
+    // ×1.5, hortum fırtınada tick +%20 & +1 sn.
+    [ABILITY_LIGHTNING_CLAW] = {
+        .name = "Yıldırım Pençesi", .abbrev = "YP",
+        .skill = SKILL_DESTRUCTION, .unlockLevel = 1,
+        .damageScale = 35.0f,   // yakın koni (90px) — riskli mesafenin ödülü
+        .cooldown = 5.0f, .mana = 18.0f,
+    },
+    [ABILITY_ICETACLE] = {
+        .name = "Buz Dikenleri", .abbrev = "BD",
+        .skill = SKILL_DESTRUCTION, .unlockLevel = 1,
+        .damageScale = 26.0f,   // hedef alan (100px) + %50 yavaş 3sn
+        .cooldown = 8.0f, .mana = 24.0f,
+    },
+    [ABILITY_TORNADO] = {
+        .name = "Hortum", .abbrev = "HO",
+        .skill = SKILL_DESTRUCTION, .unlockLevel = 1,
+        .damageScale = 8.0f,    // TICK başına (0.5sn × 4sn ömür = ~64 toplam)
+        .cooldown = 14.0f, .mana = 35.0f,
+    },
+
     // M4 Conjuration: çağırma büyüleri (köklü cast; rezerve main'de işler)
     [ABILITY_SUMMON_SNAKE] = {
         .name = "Öz Yılanı", .abbrev = "YIL",
