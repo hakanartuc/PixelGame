@@ -755,6 +755,26 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - Save v29: ItemStack.stolen (write/read_stack +1 alan) + dirtyGold +
   wellGold/wellDay.
 
+### ASSET SIRASI (2026-07-17 — Hakan'ın indirdiği paketler, onaylı işleme sırası)
+İndirilenler (~/Downloads):
+- **Harita**: Free-Undead-Tileset (açık hava lanetli arazi — LANETLİ MEZARLIK
+  haritası onaylı) + Cute Fantasy tile/dekor (dünya görsel yenileme ONAYLI:
+  autotile geçişler + varyant + doku + dekor serpiştirme)
+- **VFX**: Super Pixel Effects Gigapack (Lightning/Bursts/Spells/Explosions/
+  Impacts) + Free Pixel Effects Pack (20 sheet: weaponhit/magickahit/freezing/
+  felspell/phantom/flamelash...) + Brackeys VFX + Pixel Fire v1.2 + Ice Effect
+  01 + Warped Shooting FX + Holy VFX 01-02 + Dark VFX 01-02 (Yankıcı'da kısmen
+  kullanılıyor)
+- **Mob/Boss**: Skeleton enemy · Evil Wizard 2 · Bringer-of-Death (boss adayı)
+  · SATYR · Tiny RPG Demon_A + Blood Monster_A (2 saldırılı — elit/mini-boss)
+- **Müzik**: xDeviruchi 16-bit Fantasy & Adventure (loopable — gerçek müzik seti)
+- **UI**: Pixel UI pack 3 (panel/çerçeve yenileme)
+
+ONAYLI SIRA: ① Dünya görsel yenileme (BAŞLADI — keşif bitti) → ② Lanetli
+Mezarlık haritası → ③ VFX his cilası (tüm savaş efektleri) → ④ Müzik seti
+değişimi → ⑤ Yeni mob dalgası + boss → ⑥ Kutsal hattı (Holy) → UI yenileme
+uygun araya. YANKICI Parça 1 iskeleti kodda (tamamlanacak).
+
 ### YAKIN — "oyun gibi hissettir" (his + rol)
 1. ~~CİLA PAKETİ~~ TAMAM (2026-07-14 — bkz. Faz CİLA bölümü); kalan küçük
    UX borcu: speech zar kilidi save'i (uygun faza serpilir)
