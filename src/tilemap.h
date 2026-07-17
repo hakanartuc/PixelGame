@@ -41,6 +41,16 @@ void tilemap_set_tile(int col, int row, int id);
 
 void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *camera);
 
+// Harita görsel yenileme: çimen varyantları + kenar kaplamaları (main init'te
+// bir kez — modül kendi detay dokularını yükler/yıkar)
+void tilemap_load_details(R2D *renderer);
+void tilemap_free_details(void);
+
+// Süs serpiştirmesi: çimen çiçekleri + yol kenarı taşları + su sazları —
+// deterministik hash (save'e girmez), çarpışmasız, YALNIZ dünya haritasında
+// (main harita kontrolüyle çağırır — tilemap_render'dan hemen sonra)
+void tilemap_render_scatter(R2D *renderer, const Camera *camera);
+
 int  tile_at_point(float worldX, float worldY);
 bool box_hits_solid(SDL_FRect box);
 SDL_FRect feet_box(float rectX, float rectY, float rectW, float rectH);

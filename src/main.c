@@ -1281,6 +1281,7 @@ int main(int argc, char *argv[])
             // not: yüklenemezse NULL kalır, render renk fallback'ine düşer — oyunu çökertme
         }
     }
+    tilemap_load_details(renderer);   // çimen varyantları + kenar kaplamaları
 
     bool inventoryOpen = false;
     bool skillsOpen = false;
@@ -8224,6 +8225,8 @@ int main(int argc, char *argv[])
         if (!r2d_begin_frame(renderer, 155, 155, 155))
             continue;
         tilemap_render(renderer, tile_textures, &camera);     // haritayı çiz
+        if (map_current() == MAP_WORLD)
+            tilemap_render_scatter(renderer, &camera);         // süs serpiştirmesi
         decor_render_all(renderer, decor_textures, &camera);  // evler (zemin üstü, entity altı)
         if (map_is_dungeon(map_current()))
             trap_render(renderer, map_current(), &camera);   // dikenler/plaka/arbalet (zemin)
@@ -9567,6 +9570,7 @@ int main(int argc, char *argv[])
         if (tile_textures[i])
             r2d_texture_destroy(NULL, tile_textures[i]); // NULL olanları atla
     }
+    tilemap_free_details();
 
     for (int i = 0; i < MOB_TYPE_COUNT; i++)
     {

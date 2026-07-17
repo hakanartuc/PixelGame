@@ -22,6 +22,19 @@ const DecorDef DECORS[] = {
     { .texPath = "assets/buildings/Inn_Red.png",
       .x = T(17), .y = T(10), .scale = 0.8f, .solidBase = true },
 
+    // KÖY DETAYLARI (harita görsel yenileme): el yerleşimi — rutin yollarının
+    // dışında, meydanı çerçeveleyen küçük yaşam izleri
+    { .texPath = "assets/decor/barrels.png",
+      .x = T(9.2f), .y = T(5.8f), .scale = 1.2f, .solidBase = true },   // Baran'ın dükkan yanı
+    { .texPath = "assets/decor/Benches.png",
+      .x = T(12.3f), .y = T(8.3f), .scale = 1.2f, .solidBase = false }, // meydan bankı
+    { .texPath = "assets/decor/barrels.png",
+      .x = T(18.6f), .y = T(11.4f), .scale = 1.1f, .solidBase = true }, // han önü fıçılar
+    { .texPath = "assets/decor/Stone_Fence_Big.png",
+      .x = T(7.5f), .y = T(8.6f), .scale = 1.2f, .solidBase = true },   // ocak arkası çit
+    { .texPath = "assets/decor/Benches.png",
+      .x = T(14.6f), .y = T(10.8f), .scale = 1.2f, .solidBase = false },// güney yolu bankı
+
     // Ağaçlar: köy çevresi + goblin kampına giden yol (siper/LoS oyunu için)
     { .texPath = "assets/decor/oak_big.png",    .x = T(18), .y = T(8),  .scale = 1.6f, .solidBase = true },
     { .texPath = "assets/decor/oak_medium.png", .x = T(19), .y = T(12), .scale = 1.6f, .solidBase = true },

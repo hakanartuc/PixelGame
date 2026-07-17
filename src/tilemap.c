@@ -10,9 +10,9 @@ const TileType TILE_TYPES[] = {
     [0] = { .solid = false, .r = 50,  .g = 200, .b = 50,  .texturePath = "assets/tiles/Grass/Grass_1_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f, .conceals = true }, // çimen — eğilince içine girilir
     [1] = { .solid = false, .r = 150, .g = 100, .b = 50,  .texturePath = "assets/tiles/Grass/Path_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // yol
     [2] = { .solid = true,  .r = 50,  .g = 50,  .b = 200, .texturePath = "assets/tiles/Water/Water_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // su
-    [3] = { .solid = true,  .r = 110, .g = 110, .b = 120, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // taş: şimdilik renk
-    [4] = { .solid = false, .r = 90, .g = 110, .b = 70, .texturePath = NULL, .speedMultiplier = 0.4f, .damage = 0.0f },  // bataklık: yavaşlatır
-    [5] = { .solid = false, .r = 200, .g = 60, .b = 40, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 20.0f },  // diken: saniyede 20 hasar
+    [3] = { .solid = true,  .r = 110, .g = 110, .b = 120, .texturePath = "assets/tiles/terrain/stone.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // taş
+    [4] = { .solid = false, .r = 90, .g = 110, .b = 70, .texturePath = "assets/tiles/terrain/swamp.png", .speedMultiplier = 0.4f, .damage = 0.0f },  // bataklık: yavaşlatır
+    [5] = { .solid = false, .r = 200, .g = 60, .b = 40, .texturePath = "assets/tiles/terrain/thorns.png", .speedMultiplier = 1.0f, .damage = 20.0f },  // diken: saniyede 20 hasar
 
     // --- Zindan tile'lari (Cute_Fantasy Dungeons, 16px kirpimlar) ---
     [6] = { .solid = false, .r = 60,  .g = 62,  .b = 88,  .texturePath = "assets/tiles/dungeon/d1_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // K1 doseme
@@ -211,6 +211,65 @@ SDL_FRect feet_box(float rectX, float rectY, float rectW, float rectH)
     return f;
 }
 
+// --- Harita görsel yenileme: çimen varyantları + kenar kaplamaları ---
+// Çimen "taşar": çimen olmayan komşu tile'ın kenarına dalgalı çimen dili
+// çizilir (grass_edges.png atlası — 12 hücre: N,S,W,E, 4 dış köşe, 4 iç köşe).
+// Yalnız DÜNYA tile'larına taşar (yol/su/bataklık/diken) — zindan dokunulmaz.
+static R2DTexture *grassVar[4] = {0};   // [0] ana doku (tileTextures'tan gelmez — kendi kopyası)
+static R2DTexture *edgeTex = NULL;
+static R2DTexture *flowerTex = NULL;    // flowers.png (160×160 — 10×10 hücre 16px)
+static R2DTexture *pathDecTex = NULL;   // Path_Decoration.png (3 hücre 16px)
+static R2DTexture *waterDecTex = NULL;  // Water_Decoration.png (3 hücre 16px)
+
+void tilemap_load_details(R2D *renderer)
+{
+    extern R2DTexture *load_texture(R2D *r, const char *path);   // main yardımcısı
+    grassVar[0] = load_texture(renderer, "assets/tiles/Grass/Grass_1_Middle.png");
+    grassVar[1] = load_texture(renderer, "assets/tiles/Grass/Grass_2_Middle.png");
+    grassVar[2] = load_texture(renderer, "assets/tiles/Grass/Grass_3_Middle.png");
+    grassVar[3] = load_texture(renderer, "assets/tiles/Grass/Grass_4_Middle.png");
+    edgeTex = load_texture(renderer, "assets/tiles/Grass/grass_edges.png");
+    flowerTex = load_texture(renderer, "assets/decor/flowers.png");
+    pathDecTex = load_texture(renderer, "assets/tiles/Grass/Path_Decoration.png");
+    waterDecTex = load_texture(renderer, "assets/tiles/Water/Water_Decoration.png");
+}
+
+void tilemap_free_details(void)
+{
+    for (int i = 0; i < 4; i++)
+        if (grassVar[i]) { r2d_texture_destroy(NULL, grassVar[i]); grassVar[i] = NULL; }
+    if (edgeTex) { r2d_texture_destroy(NULL, edgeTex); edgeTex = NULL; }
+    if (flowerTex) { r2d_texture_destroy(NULL, flowerTex); flowerTex = NULL; }
+    if (pathDecTex) { r2d_texture_destroy(NULL, pathDecTex); pathDecTex = NULL; }
+    if (waterDecTex) { r2d_texture_destroy(NULL, waterDecTex); waterDecTex = NULL; }
+}
+
+// Deterministik varyant: hash(col,row) — save'e girmez, hep aynı görünür
+static inline int grass_variant(int col, int row)
+{
+    unsigned v = (unsigned)(col * 73856093u ^ row * 19349663u);
+    v = (v >> 13) ^ v;
+    return (int)(v % 4u);
+}
+
+static inline bool is_grass(int col, int row)
+{
+    if (col < 0 || col >= mapW || row < 0 || row >= mapH) return false;
+    return tilemap[row][col] == 0;
+}
+
+// Çimenin taşabileceği taban mı? (dünya dış mekan tile'ları — zindan HARİÇ)
+static inline bool grass_bleeds_onto(int id)
+{
+    return id == 1 || id == 2 || id == 4 || id == 5;
+}
+
+static void edge_cell_draw(R2D *renderer, int cell, const SDL_FRect *dst)
+{
+    SDL_FRect src = { (float)(cell * 16), 0, 16, 16 };
+    r2d_draw_texture(renderer, edgeTex, &src, dst);
+}
+
 void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *camera)
 {
     float zoom = camera->zoom;
@@ -238,7 +297,97 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
                 TILE_SIZE * zoom,
                 TILE_SIZE * zoom
             };
-            tile_draw(renderer, tileTextures, tileID, dst);
+
+            // Çimen: 4 varyanttan hash ile seç (tekdüzelik kırılır)
+            if (tileID == 0 && grassVar[0] != NULL)
+            {
+                R2DTexture *gv = grassVar[grass_variant(col, row)];
+                if (gv != NULL) { r2d_draw_texture(renderer, gv, NULL, &dst); }
+                else            tile_draw(renderer, tileTextures, tileID, dst);
+            }
+            else
+                tile_draw(renderer, tileTextures, tileID, dst);
+
+            // KENAR KAPLAMALARI: çimen komşu tabana taşar (yumuşak geçiş)
+            if (edgeTex != NULL && grass_bleeds_onto(tileID))
+            {
+                bool n = is_grass(col, row - 1), s2 = is_grass(col, row + 1);
+                bool w = is_grass(col - 1, row), e = is_grass(col + 1, row);
+                if (n) edge_cell_draw(renderer, 0, &dst);
+                if (s2) edge_cell_draw(renderer, 1, &dst);
+                if (w) edge_cell_draw(renderer, 2, &dst);
+                if (e) edge_cell_draw(renderer, 3, &dst);
+                // Dış köşeler: yalnız çaprazda çimen (kenarlar boşken)
+                if (!n && !w && is_grass(col - 1, row - 1)) edge_cell_draw(renderer, 4, &dst);
+                if (!n && !e && is_grass(col + 1, row - 1)) edge_cell_draw(renderer, 5, &dst);
+                if (!s2 && !w && is_grass(col - 1, row + 1)) edge_cell_draw(renderer, 6, &dst);
+                if (!s2 && !e && is_grass(col + 1, row + 1)) edge_cell_draw(renderer, 7, &dst);
+                // İç köşeler: iki kenar birleşiyor — köşe boşluğu dolsun
+                if (n && w) edge_cell_draw(renderer, 8, &dst);
+                if (n && e) edge_cell_draw(renderer, 9, &dst);
+                if (s2 && w) edge_cell_draw(renderer, 10, &dst);
+                if (s2 && e) edge_cell_draw(renderer, 11, &dst);
+            }
+        }
+    }
+}
+
+// --- SÜS SERPİŞTİRMESİ: dünya boş hissettirmesin (çarpışmasız, deterministik) ---
+// Kural: hash(col,row) — çimende %6 çiçek/ot, yol KENARINDAKİ çimende %10 taş,
+// su kıyısındaki suda saz. Save'e girmez: aynı koordinat hep aynı süsü taşır.
+void tilemap_render_scatter(R2D *renderer, const Camera *camera)
+{
+    if (flowerTex == NULL) return;
+    float zoom = camera->zoom;
+    int outW = 0, outH = 0;
+    r2d_output_size(renderer, &outW, &outH);
+    int colL = (int)(camera->x / TILE_SIZE) - 1;
+    int rowT = (int)(camera->y / TILE_SIZE) - 1;
+    int colR = (int)((camera->x + outW / zoom) / TILE_SIZE) + 2;
+    int rowB = (int)((camera->y + outH / zoom) / TILE_SIZE) + 2;
+    if (colL < 0) colL = 0;
+    if (rowT < 0) rowT = 0;
+    if (colR > mapW) colR = mapW;
+    if (rowB > mapH) rowB = mapH;
+
+    for (int row = rowT; row < rowB; row++) {
+        for (int col = colL; col < colR; col++) {
+            int id = tilemap[row][col];
+            unsigned h = (unsigned)(col * 2654435761u ^ row * 40503u);
+            h = (h >> 11) ^ h;
+            float dx = (float)((h >> 4) % 40) / 40.0f;   // tile içi kayma
+            float dy = (float)((h >> 9) % 40) / 40.0f;
+            SDL_FRect dst = {
+                (col * TILE_SIZE + dx * (TILE_SIZE - 20) - camera->x) * zoom,
+                (row * TILE_SIZE + dy * (TILE_SIZE - 20) - camera->y) * zoom,
+                20.0f * zoom, 20.0f * zoom };
+
+            if (id == 0) {   // çimen: %6 çiçek/ot tömreği
+                bool nearPath = (col > 0 && tilemap[row][col-1] == 1) ||
+                                (col < mapW-1 && tilemap[row][col+1] == 1) ||
+                                (row > 0 && tilemap[row-1][col] == 1) ||
+                                (row < mapH-1 && tilemap[row+1][col] == 1);
+                if (nearPath && (h % 100) < 10 && pathDecTex != NULL) {
+                    SDL_FRect src = { (float)((h >> 6) % 3) * 16.0f, 0, 16, 16 };
+                    r2d_draw_texture(renderer, pathDecTex, &src, &dst);
+                }
+                else if ((h % 100) < 6) {
+                    // flowers.png: 10×10 hücre — üst 3 satırdan seç (çiçek/ot)
+                    int fc = (int)((h >> 6) % 10), fr = (int)((h >> 13) % 3);
+                    SDL_FRect src = { fc * 16.0f, fr * 16.0f, 16, 16 };
+                    r2d_draw_texture(renderer, flowerTex, &src, &dst);
+                }
+            }
+            else if (id == 2 && waterDecTex != NULL) {   // su: kıyıda %8 saz
+                bool nearLand = (col > 0 && tilemap[row][col-1] != 2) ||
+                                (col < mapW-1 && tilemap[row][col+1] != 2) ||
+                                (row > 0 && tilemap[row-1][col] != 2) ||
+                                (row < mapH-1 && tilemap[row+1][col] != 2);
+                if (nearLand && (h % 100) < 8) {
+                    SDL_FRect src = { (float)((h >> 6) % 3) * 16.0f, 0, 16, 16 };
+                    r2d_draw_texture(renderer, waterDecTex, &src, &dst);
+                }
+            }
         }
     }
 }

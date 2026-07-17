@@ -144,6 +144,10 @@ S15 / Gezgin S40), Malzeme 25→55 (Kese S10 / Usta S35) — üretilince OTOMAT�
 takılır, İp yeni ara malzeme (2 Ayotu, kamp ateşi). Player.bagUpgrades +
 craftBag save v28; Inventory.cap dinamik; MAX_RECIPES 48. DİKKAT: yeni item
 eklerken MAX_ITEM_TYPES (96) tavanına bak — 64 taşması crash yaratmıştı.
+**HARİTA GÖRSEL YENİLEME FAZ A TAMAM**: çimen kenar taşması (12 hücreli
+dalgalı overlay atlası — gen_tile_edges.py), 4 çimen varyantı (hash),
+taş/bataklık/diken dokuları, süs serpiştirmesi (çiçek/taş/saz — deterministik
+çarpışmasız), köy el yerleşimi (fıçı/bank/çit). Faz B: Lanetli Mezarlık.
 **YANKICI GİZLİ SINIF P1 TAMAM (v29 uyumlu)**: skill defterinde görünmez;
 keşif: 3 sömürü → fısıltı çağrısı → gizli taş halkası T(108,7) → gece ritüel
 vinyeti → sınıf + FISILTI KESKİSİ (eksik-can ölçekli unique hançer) + Fısıltı

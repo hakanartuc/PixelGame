@@ -782,6 +782,24 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   kayıtlıydı, shadowTimer runtime. Parça 2 (sonra): Can Emme + Yankı Çağırma
   + T_ECHO ağacı + Dark VFX bolt.
 
+### Faz HG-A — HARİTA GÖRSEL YENİLEME, FAZ A: DÜNYA (v29 uyumlu)
+- **Kenar geçişleri (autotile)**: çimen komşu tabana "TAŞAR" — grass_edges.png
+  atlası (12 hücre: 4 kenar + 4 dış köşe + 4 iç köşe; gen_tile_edges.py
+  Grass_1_Middle'dan DALGALI alpha maskeyle üretir — jilet kenarlar bitti).
+  Render: tile çizilirken 4 komşu + 4 çapraz bakılır; yalnız dünya dış mekan
+  tabanlarına (yol/su/bataklık/diken) taşar — zindan dokunulmaz.
+- **Çimen 4 varyant**: hash(col,row) deterministik — Grass_1..4_Middle
+  serpiştirilir, tekdüzelik kırıldı (save'e girmez, hep aynı görünür).
+- **Eksik dokular**: taş/bataklık/diken düz renkten kurtuldu (prosedürel
+  16px dokular — assets/tiles/terrain/).
+- **Süs serpiştirmesi** (tilemap_render_scatter — çarpışmasız, deterministik):
+  çimende %6 çiçek/ot (flowers.png 10×10), yol kenarı çimende %10 küçük taş
+  (Path_Decoration), su kıyısında %8 saz (Water_Decoration). Tile içi kayma
+  hash'le — grid hissi yok. Yalnız dünya haritası.
+- **Köy el yerleşimi**: fıçı kümeleri (dükkan+han), meydan/yol bankları,
+  ocak arkası taş çit — rutin yollarının dışında.
+- Faz B (sıradaki): LANETLİ MEZARLIK haritası (undead tileset).
+
 ### ASSET SIRASI (2026-07-17 — Hakan'ın indirdiği paketler, onaylı işleme sırası)
 İndirilenler (~/Downloads):
 - **Harita**: Free-Undead-Tileset (açık hava lanetli arazi — LANETLİ MEZARLIK
