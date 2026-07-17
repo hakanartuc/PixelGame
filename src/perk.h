@@ -111,6 +111,16 @@ typedef struct {
     float spearStaminaMult;   // mızrak becerileri stamina çarpanı (0 = 1.0 say)
     float spearRangeBonus;    // mızrak menzili bonusu (px)
     float lineDmgFrac;        // hat vuruşu hasar oranı (0 = 0.60 varsayılan)
+    // Block (Parça B — kalkan)
+    float blockChanceBonus;   // pasif blok şansına eklenir (taban 0.10 + lvl×0.002)
+    float blockAbsorbBonus;   // pasif blok emilimine eklenir (taban 0.60)
+    float perfectWindowBonus; // perfect blok penceresine eklenir (taban 0.25sn)
+    float stanceStaminaMult;  // duruş stamina tüketim çarpanı (0 = 1.0 say)
+    float stanceSlowMult;     // duruş hız cezası çarpanı (0 = 1.0; FALANKS 0 ceza)
+    float stanceDmgCutBonus;  // duruş hasar kesintisine eklenir (taban 0.70)
+    float shieldDefMult;      // kalkan defans çarpanı (0 = 1.0 say)
+    float perfectReflectFrac; // SİPER: perfect blokta hasarın bu oranı yansır
+    float blockXpMult;        // blok XP çarpanı (0 = 1.0 say)
     float staffSpellBonus;    // asa KUŞANILIYKEN ek büyü çarpanı payı
 
     // Kader Ağacı (karakter-geneli)

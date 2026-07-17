@@ -37,9 +37,13 @@ float combat_attack_interval(const ItemStack *weapon, const PerkEffects *fx);
 // Mob'un oyuncuya vereceği hasar: mob hasarı × varyans → oyuncu defansı
 // (perk çarpanları dahil). outDodged: Kaçınma perki tetiklendiyse true (hasar 0).
 // playerIdle: Kule perki (hareketsizken ek koruma). healthRatio: Yaralı Ayı.
+// outBlock: 0 yok / 1 pasif blok / 2 duruş / 3 PERFECT (hasar 0 + sersemletme)
+// blockLevel: Block skill seviyesi; blocking/blockHold: SHIFT duruşu durumu
 float combat_mob_damage(float mobDamage, const Equipment *eq,
                         const PerkEffects *fx, bool playerIdle,
-                        float healthRatio, bool yaraliAyi, bool *outDodged);
+                        float healthRatio, bool yaraliAyi,
+                        int blockLevel, bool blocking, float blockHold,
+                        bool *outDodged, int *outBlock);
 
 // Kuşanılı ekipmanın toplam defansı (sınıf perk çarpanlarıyla).
 float equipment_total_defense(const Equipment *eq, const PerkEffects *fx);

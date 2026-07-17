@@ -480,6 +480,27 @@ static void bags_apply_caps(const Player *p, Inventory *mainInv, Inventory *craf
                   + ((p->bagUpgrades & 8) ? INV_CRAFT_STEP : 0);
 }
 
+// BLOK geri bildirimi (Parça B): blok türüne göre yazı + ses + Block XP.
+// (sersemletme/yansıtma ÇAĞRI YERİNDE — saldırgan pointer'ı orada)
+static void on_skill_levelup(Player *player, SkillType s,
+                             Hotbar *hotbar, FloatText *floatTexts);
+static void block_feedback(int blockKind, Player *p, Hotbar *hb,
+                           FloatText *floatTexts, const PerkEffects *fx)
+{
+    if (blockKind <= 0) return;
+    SDL_Color c = (blockKind == 3) ? (SDL_Color){ 255, 230, 120, 255 }
+                                   : (SDL_Color){ 170, 200, 255, 255 };
+    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                         p->rect.x + p->rect.w / 2.0f, p->rect.y - 24.0f,
+                         (blockKind == 3) ? "PERFECT BLOK!"
+                       : (blockKind == 2) ? "Siper!" : "Blok!", c);
+    audio_play(SFX_REFLECT);
+    float xp = ((blockKind == 3) ? 12.0f : (blockKind == 2) ? 6.0f : 8.0f)
+             * (fx->blockXpMult > 0.0f ? fx->blockXpMult : 1.0f);
+    if (skill_add_xp(p->skills, SKILL_BLOCK, xp))
+        on_skill_levelup(p, SKILL_BLOCK, hb, floatTexts);
+}
+
 // Tomarla öğrenilen büyüler (Büyü dalgası 2): ağaçtan bağımsız kalıcı açılış.
 // tree_compute_effects perkFx'i SIFIRDAN kurar — her çağrının ardından bu da
 // çağrılmalı (yoksa hotbar_purge_closed öğrenilmiş büyüyü söker).
@@ -2566,7 +2587,7 @@ int main(int argc, char *argv[])
                     // Yayın öncesi kaldırılacak — commit'e girer ama işaretli.
                     // Eğri dik: seviye 25 ≈ 125k, 100 ≈ 4M XP → basış başına 1M
                     // (1 basış ~lv57, 2 ~lv75, 4 = tüm eşikler açık)
-                    SkillType dbg[17] = { SKILL_ONE_HANDED, SKILL_LIGHT_ARMOR,
+                    SkillType dbg[18] = { SKILL_ONE_HANDED, SKILL_LIGHT_ARMOR,
                                           SKILL_MEDIUM_ARMOR, SKILL_HEAVY_ARMOR,
                                           SKILL_SMITHING, SKILL_ALCHEMY, SKILL_MINING,
                                           SKILL_HERBALISM, SKILL_WOODCUTTING,
@@ -2574,8 +2595,9 @@ int main(int argc, char *argv[])
                                           SKILL_SNEAK, SKILL_SPEECH,
                                           SKILL_DESTRUCTION, SKILL_STAFF,
                                           SKILL_CONJURATION,
-                                          SKILL_TWO_HANDED };   // ağaç testi
-                    for (int d = 0; d < 17; d++)
+                                          SKILL_TWO_HANDED,
+                                          SKILL_BLOCK };   // ağaç testi
+                    for (int d = 0; d < 18; d++)
                         if (skill_add_xp(player.skills, dbg[d], 1000000.0f))
                             on_skill_levelup(&player, dbg[d], &hotbar, floatTexts);
 
@@ -2597,6 +2619,7 @@ int main(int argc, char *argv[])
                     bag_add(&ITEM_TYPES[ITEM_TOME_SNAKEBITE], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_TOME_FIRELION], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_SPEAR], 1, 0);   // Two-Handed testi
+                    bag_add(&ITEM_TYPES[ITEM_SHIELD_IRON], 1, 0);   // Block testi
                     bag_add(&ITEM_TYPES[ITEM_BP_SWORD_IRON], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_BP_HELMET_IRON], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_BP_POISON_OIL], 1, 0);
@@ -4394,6 +4417,73 @@ int main(int argc, char *argv[])
                                              player.gateStance ? "Kapı tutuluyor."
                                                                : "Duruş bırakıldı.", st2);
                     }
+                    else if (hs->abilityId == ABILITY_SHIELD_BASH &&
+                             !player.attacking && !player.shooting)
+                    {
+                        // KALKAN VURUŞU (Block): kısa menzil tek hedef — asıl iş
+                        // 2sn sersemletme (CC aracı). Kalkan ister.
+                        bool hasSh = equipment.slots[EQUIP_SHIELD].type != NULL &&
+                                     equipment.slots[EQUIP_SHIELD].type->weaponType
+                                         == WEAPON_SHIELD;
+                        Mob *bt = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                        float btd = 1e9f;
+                        if (bt != NULL)
+                        {
+                            float bdx = (bt->e.rect.x + bt->e.rect.w / 2.0f)
+                                      - (player.rect.x + player.rect.w / 2.0f);
+                            float bdy = (bt->e.rect.y + bt->e.rect.h / 2.0f)
+                                      - (player.rect.y + player.rect.h / 2.0f);
+                            btd = SDL_sqrtf(bdx * bdx + bdy * bdy);
+                        }
+                        if (!hasSh)
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f,
+                                                 "Kalkan gerekli!", red);
+                        else if (bt == NULL || btd > PLAYER_ATTACK_RANGE + 10.0f)
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 10.0f,
+                                                 bt == NULL ? "Hedef gerekli!"
+                                                            : "Menzil dışı!", red);
+                        else
+                        {
+                            player.stamina -= ad->stamina;
+                            if (player.stamina < 0.0f) player.stamina = 0.0f;
+                            player.abilityCd[ABILITY_SHIELD_BASH] = ad->cooldown;
+                            const ItemStack *bw = &equipment.slots[EQUIP_WEAPON];
+                            HitResult sh = combat_player_hit(&player, bw,
+                                                             bt->type->defense,
+                                                             ad->damageScale,
+                                                             bt->e.health / bt->e.maxHealth,
+                                                             &perkFx);
+                            bt->e.health -= sh.damage;
+                            bt->e.hitFlash = 0.15f;
+                            bt->aggro = true;
+                            // SERSEMLETME: 2 sn — saldıramaz, sürünür
+                            bt->slowMult = 0.05f;
+                            bt->slowTimer = 2.0f;
+                            bt->attackCooldown = 2.0f;
+                            bt->alertFlash = 0.8f;
+                            audio_play(SFX_REFLECT);
+                            SDL_Color stc = { 255, 230, 120, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 bt->e.rect.x + bt->e.rect.w / 2.0f,
+                                                 bt->e.rect.y - 26.0f,
+                                                 "Sersemledi!", stc);
+                            floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                            bt->e.rect.x + bt->e.rect.w / 2.0f + 10.0f,
+                                            bt->e.rect.y, (int)sh.damage, sh.crit);
+                            float sxp = combat_xp_for_hit(sh.damage, bt->type->level,
+                                            player.skills[SKILL_BLOCK].level);
+                            if (skill_add_xp(player.skills, SKILL_BLOCK, sxp + 6.0f))
+                                on_skill_levelup(&player, SKILL_BLOCK,
+                                                 &hotbar, floatTexts);
+                            if (bt->e.health <= 0.0f)
+                                mob_die(bt, mobs, MAX_MOBS, &nextMobId, loots,
+                                        questStatus, floatTexts, &player);
+                        }
+                    }
                     else if (hs->abilityId == ABILITY_SWEEP &&
                              !player.attacking && !player.shooting)
                     {
@@ -5961,6 +6051,36 @@ int main(int argc, char *argv[])
                         }
             }
 
+            // AKTİF BLOK (SHIFT): kalkan takılıyken basılı tut — duruş.
+            // Gelen hasar -%70 (ağaçla -%80), hız yarıya, auto-attack durur,
+            // saniyede 4 stamina; ilk 0.25sn PERFECT penceresi (parry).
+            {
+                const bool *bkeys = SDL_GetKeyboardState(NULL);
+                bool hasShield = equipment.slots[EQUIP_SHIELD].type != NULL &&
+                                 equipment.slots[EQUIP_SHIELD].type->weaponType
+                                     == WEAPON_SHIELD;
+                bool wantBlock = hasShield && player.stamina > 0.0f &&
+                                 (bkeys[SDL_SCANCODE_LSHIFT] ||
+                                  bkeys[SDL_SCANCODE_RSHIFT]) &&
+                                 dialogNpc < 0 && !scene_active() && !catchOpen;
+                if (wantBlock && !player.blocking)
+                    player.blockHold = 0.0f;   // pencere duruş BAŞLANGICINDA açılır
+                player.blocking = wantBlock;
+                if (player.blocking)
+                {
+                    player.blockHold += dt;
+                    player.stamina -= 4.0f * dt *
+                        (perkFx.stanceStaminaMult > 0.0f
+                         ? perkFx.stanceStaminaMult : 1.0f);
+                    if (player.stamina <= 0.0f)
+                    {
+                        player.stamina = 0.0f;
+                        player.blocking = false;   // nefes bitti — duruş düşer
+                    }
+                    player.autoAttack = false;     // kalkan yukarıdayken vurulmaz
+                }
+            }
+
             // KAPI TUTUCU duruşu: menzile giren en yakın mob otomatik hedef
             // alınır ve KO auto-attack devreye girer (0.8sn iç tempo tavanı)
             if (player.gateStance && !player.attacking)
@@ -6175,10 +6295,15 @@ int main(int argc, char *argv[])
                     // Muhafız vuruşu mob vuruşuyla aynı savunma hattından geçer
                     bool dodged = false;
                     bool yaraliAyi = perkFx.yaraliAyi;
+                    int gBlock = 0;
                     float dmg = combat_mob_damage(gt.attackDamage, &equipment, &perkFx,
                                                   player.state == PLAYER_IDLE,
                                                   player.health / player.maxHealth,
-                                                  yaraliAyi, &dodged);
+                                                  yaraliAyi,
+                                                  player.skills[SKILL_BLOCK].level,
+                                                  player.blocking, player.blockHold,
+                                                  &dodged, &gBlock);
+                    block_feedback(gBlock, &player, &hotbar, floatTexts, &perkFx);
                     if (!dodged)
                         dmg = mana_shield_absorb(&player, dmg, floatTexts);
                     if (!dodged && dmg > 0.0f)
@@ -6939,10 +7064,16 @@ int main(int argc, char *argv[])
                 mobProjs[pj].active = false;
                 bool dodged = false;
                 bool yaraliAyi = perkFx.yaraliAyi;
+                int pBlock = 0;
                 float dmg = combat_mob_damage(mobProjs[pj].dmg, &equipment, &perkFx,
                                               player.state == PLAYER_IDLE,
                                               player.health / player.maxHealth,
-                                              yaraliAyi, &dodged);
+                                              yaraliAyi,
+                                              player.skills[SKILL_BLOCK].level,
+                                              player.blocking, player.blockHold,
+                                              &dodged, &pBlock);
+                block_feedback(pBlock, &player, &hotbar, floatTexts, &perkFx);
+                // (mermide sersemletme/yansıtma yok — atan uzakta)
                 float pcx = player.rect.x + player.rect.w / 2.0f;
                 if (!dodged)
                     dmg = mana_shield_absorb(&player, dmg, floatTexts);
@@ -6998,7 +7129,13 @@ int main(int argc, char *argv[])
 
             // Hız çarpanı: perk (Çevik/Rüzgar/Uyumlu) × gece (Gölge Adımı) × eğilme.
             // player_update tile hızıyla çarpar (doğrudan speed yazmak eziliyordu — bug'dı)
-            player.speedMult = (player.gateStance ? 0.6f : 1.0f) // Kapı Tutucu duruşu
+            player.speedMult = (player.blocking
+                                ? (perkFx.stanceSlowMult < 0.0f ? 1.0f       // FALANKS
+                                   : perkFx.stanceSlowMult > 0.0f
+                                     ? 1.0f - 0.5f * perkFx.stanceSlowMult   // Kök Salma
+                                     : 0.5f)                                 // taban ceza
+                                : 1.0f)
+                             * (player.gateStance ? 0.6f : 1.0f) // Kapı Tutucu duruşu
                              * (map_current() == MAP_WORLD
                                 ? weather_speed_mult() : 1.0f)   // kar bastırıyor
                              * (player.foodBuffType == FB_STA_SPEED ? 1.05f : 1.0f)
@@ -7189,11 +7326,35 @@ int main(int argc, char *argv[])
 
                     bool dodged = false;
                     bool yaraliAyi = perkFx.yaraliAyi;
+                    int mBlock = 0;
                     float dmg = combat_mob_damage(mobs[i].type->damage, &equipment,
                                                   &perkFx,
                                                   player.state == PLAYER_IDLE,
                                                   player.health / player.maxHealth,
-                                                  yaraliAyi, &dodged);
+                                                  yaraliAyi,
+                                                  player.skills[SKILL_BLOCK].level,
+                                                  player.blocking, player.blockHold,
+                                                  &dodged, &mBlock);
+                    block_feedback(mBlock, &player, &hotbar, floatTexts, &perkFx);
+                    if (mBlock == 3)
+                    {
+                        // PERFECT (parry): saldıran 1sn sersemler; SİPER yansıtır
+                        mobs[i].slowMult = 0.05f;
+                        mobs[i].slowTimer = 1.0f;
+                        mobs[i].attackCooldown = 1.0f;
+                        mobs[i].alertFlash = 0.6f;
+                        if (perkFx.perfectReflectFrac > 0.0f)
+                        {
+                            float rf = mobs[i].type->damage * perkFx.perfectReflectFrac;
+                            mobs[i].e.health -= rf;
+                            floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                            mobs[i].e.rect.x + mobs[i].e.rect.w / 2.0f,
+                                            mobs[i].e.rect.y - 10.0f, (int)rf, false);
+                            if (mobs[i].e.health <= 0.0f)
+                                mob_die(&mobs[i], mobs, MAX_MOBS, &nextMobId, loots,
+                                        questStatus, floatTexts, &player);
+                        }
+                    }
                     if (!dodged)
                         dmg = mana_shield_absorb(&player, dmg, floatTexts);
                     if (dodged)

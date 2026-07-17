@@ -265,6 +265,9 @@ typedef enum {
     ITEM_TOME_FIRELION,   // Tomar: Ateş Aslanı (Yıkım 50 — yalnız boss leşi)
     // Two-Handed hattı (Parça A)
     ITEM_SPEAR,           // Mızrak: uzun menzil + yavaş + delici + hat vuruşu
+    // Block hattı (Parça B)
+    ITEM_SHIELD_WOOD,     // Tahta Kalkan: def 6 — blok kapısı açılır
+    ITEM_SHIELD_IRON,     // Demir Kalkan: def 12 (Smithing 25)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

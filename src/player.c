@@ -64,10 +64,6 @@ void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, in
         if (layers[i].smash128 && p->state != PLAYER_SLASH)
             continue;
 
-        // Mizrak katmani (thrustOversize) yalniz saplama sirasinda gorunur
-        if (layers[i].thrustOversize && p->state != PLAYER_THRUST)
-            continue;
-
         SDL_FRect layerSrc = src;    // varsayilan: ortak src (state satiri + currentFrame)
         SDL_FRect layerDst = screen; // varsayilan: ortak dst
         r2d_texture_set_alpha_mod(layers[i].tex, sneakAlpha);
@@ -94,13 +90,13 @@ void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, in
             layerDst.h = screen.h * 2.0f;
         }
 
-        // Mizrak katmani: SALT thrust'ta cizilir — sheet'i salt-thrust blok
-        // (y = yon*192, x = kare*192; LPC yon sirasi UP/LEFT/DOWN/RIGHT)
-        if (layers[i].thrustOversize)
+        // Mizrak katmani: kompozit sheet — thrust'ta oversize bloktan (uzun
+        // erisim gorunur), diger state'lerde standart satirdan (yuruyus vs.)
+        if (p->state == PLAYER_THRUST && layers[i].thrustOversize)
         {
             layerSrc = (SDL_FRect){
                 .x = p->currentFrame * OVERSIZE_FRAME,
-                .y = (int)p->facing * OVERSIZE_FRAME,
+                .y = THRUST_OVERSIZE_Y + (int)p->facing * OVERSIZE_FRAME,
                 .w = OVERSIZE_FRAME,
                 .h = OVERSIZE_FRAME};
             layerDst.x -= screen.w;

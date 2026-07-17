@@ -692,8 +692,27 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   zaten TWO_HANDED eşliyordu — XP otomatik. PerkEffects: twoHandDmgMult /
   pierceBonus / lineTargetBonus / lineDmgFrac / sweepSlowMult /
   spearStaminaMult / spearRangeBonus. İkon atlası 20→23.
-- Parça B (sonraki): kalkan itemleri + Block skill + pasif blok şansı +
-  SHIFT aktif blok + PERFECT BLOCK (parry) + Block ağacı.
+- **Parça B TAMAM — TWO-HANDED + BLOCK PAKETİ KAPANDI**:
+  - Kalkanlar: Tahta (def 6, S10 craft: 4 Odun+1 Bakır Külçe, 120g) + Demir
+    (def 12, S25: 3 Demir Külçe+2 Deri, 300g). Görsel: ULPC round_shield
+    (z110, iki kalkan paylaşır — long_sword deseni). Prosedürel ikonlar.
+  - MIZRAK GÖRSELİ TAM: kompozit sheet (1536×5760) — standart satırlar
+    (yürüyüş/idle'da mızrak GÖRÜNÜR) + thrust-oversize bloğu @ y=4992
+    (long_sword blok düzeni); player.c thrust'ta oversize bloktan örnekler.
+    Eski salt-thrust sheet'leri silindi.
+  - PASİF BLOK (kalkan takılıyken her zaman): şans %10 + Block lvl×0.2 + ağaç
+    (tavan ~%44); blok = hasarın %60'ı emilir (ağaçla %70) + Block XP.
+  - AKTİF BLOK (SHIFT basılı): gelen hasar -%70 (ağaçla -%80), hız yarıya
+    (ağaçla %35 ceza / FALANKS sıfır), auto-attack durur, 4 STA/sn (stamina
+    biterse duruş düşer). PERFECT: duruşun İLK 0.25sn'inde (ağaçla 0.35)
+    gelen vuruş → hasar 0 + melee saldırgan 1sn SERSEMLER (parry); SİPER
+    keystone: hasarın %50'si yansır. Mermide sersemletme/yansıtma yok.
+  - Blok zarı combat_mob_damage'da (tek nokta) — 3 çağrı yeri (mob melee /
+    mermi / muhafız) blok türünü işler; block_feedback ortak (yazı+ses+XP).
+  - T_BLOCK ağacı (16 düğüm): Şans/Duruş/Emilim dalları + SİPER + FALANKS +
+    AKTİF Kalkan Vuruşu (×0.6 + 2sn sersemletme, 10sn/20 STA — CC aracı).
+  - Kule Kalkanı: kalkan slot defansına çarpan (equipment_total_defense).
+  - F10: Demir Kalkan + Block ağacı puanı. İkon atlası 23→24.
 
 ### YAKIN — "oyun gibi hissettir" (his + rol)
 1. ~~CİLA PAKETİ~~ TAMAM (2026-07-14 — bkz. Faz CİLA bölümü); kalan küçük

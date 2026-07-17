@@ -136,6 +136,13 @@ const AbilityDef ABILITIES[ABILITY_COUNT] = {
         .cooldown = 1.0f, .stamina = 0.0f,
     },
 
+    [ABILITY_SHIELD_BASH] = {
+        .name = "Kalkan Vuruşu", .abbrev = "KV",
+        .skill = SKILL_BLOCK, .unlockLevel = 1,
+        .damageScale = 0.6f,    // hasar aracı değil CC aracı: 2sn sersemletme
+        .cooldown = 10.0f, .stamina = 20.0f,
+    },
+
     // M4 Conjuration: çağırma büyüleri (köklü cast; rezerve main'de işler)
     [ABILITY_SUMMON_SNAKE] = {
         .name = "Öz Yılanı", .abbrev = "YIL",

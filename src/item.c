@@ -392,10 +392,25 @@ const ItemType ITEM_TYPES[] = {
     { .name = "Mızrak", .iconIndex = 4, .maxStack = 1, .value = 260,
       .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_TWO_HAND,
       .damage = 34.0f, .attackInterval = 1.5f, .armorPierce = 0.25f,
-      .equipSpritePath     = "assets/equipment/weapon/spear_thrust_150.png",
-      .equipSpritePathBack = "assets/equipment/weapon/spear_thrust_001.png",
-      .equipZ = 150, .equipZBack = 1, .thrustOversize = true,
+      .equipSpritePath     = "assets/equipment/weapon/spear_140_full.png",
+      .equipSpritePathBack = "assets/equipment/weapon/spear_009_full.png",
+      .equipZ = 140, .equipZBack = 9, .equipIdleRow = 8, .thrustOversize = true,
       .iconSpritePath = "assets/icons/items/spear.png", .iconSrc = { 0, 0, 64, 64 } },
+
+    // Block hattı (Parça B): kalkanlar — pasif blok şansı + SHIFT aktif duruş.
+    // Görsel: ULPC round_shield (ikisi de paylaşır — long_sword deseni)
+    { .name = "Tahta Kalkan", .iconIndex = 0, .maxStack = 1, .value = 120,
+      .equipable = true, .equipSlot = EQUIP_SHIELD, .weaponType = WEAPON_SHIELD,
+      .defense = 6.0f,
+      .equipSpritePath = "assets/equipment/shield/round_shield_110.png",
+      .equipZ = 110, .equipIdleRow = 8,
+      .iconSpritePath = "assets/icons/items/shields.png", .iconSrc = { 0, 0, 16, 16 } },
+    { .name = "Demir Kalkan", .iconIndex = 0, .maxStack = 1, .value = 300,
+      .equipable = true, .equipSlot = EQUIP_SHIELD, .weaponType = WEAPON_SHIELD,
+      .defense = 12.0f,
+      .equipSpritePath = "assets/equipment/shield/round_shield_110.png",
+      .equipZ = 110, .equipIdleRow = 8,
+      .iconSpritePath = "assets/icons/items/shields.png", .iconSrc = { 16, 0, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

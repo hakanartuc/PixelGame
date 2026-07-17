@@ -173,6 +173,8 @@ float equipment_total_defense(const Equipment *eq, const PerkEffects *fx)
         float def = item_defense(st);   // boş slot 0 döner
         if (st->type != NULL)
             def *= fx->defMult[st->type->armorClass];   // sınıf perk çarpanı
+        if (s == EQUIP_SHIELD && fx->shieldDefMult > 0.0f)
+            def *= fx->shieldDefMult;   // Bakımlı Kenar / Kule Kalkanı
         total += def;
 
         // Sunak stat basımı: DEF kademesi düz defans (perk çarpanı dışı)
@@ -185,14 +187,41 @@ float equipment_total_defense(const Equipment *eq, const PerkEffects *fx)
 
 float combat_mob_damage(float mobDamage, const Equipment *eq,
                         const PerkEffects *fx, bool playerIdle,
-                        float healthRatio, bool yaraliAyi, bool *outDodged)
+                        float healthRatio, bool yaraliAyi,
+                        int blockLevel, bool blocking, float blockHold,
+                        bool *outDodged, int *outBlock)
 {
     *outDodged = false;
+    *outBlock = 0;
 
     // Perk: Kaçınma/Refleks — hasarı tamamen savuştur
     if (fx->dodgeChance > 0.0f && randf() < fx->dodgeChance) {
         *outDodged = true;
         return 0.0f;
+    }
+
+    // --- BLOK (Parça B): kalkan takılıysa üç kademe ---
+    bool hasShield = eq->slots[EQUIP_SHIELD].type != NULL &&
+                     eq->slots[EQUIP_SHIELD].type->weaponType == WEAPON_SHIELD;
+    float blockCut = 0.0f;
+    if (hasShield) {
+        float perfectWin = 0.25f + fx->perfectWindowBonus;
+        if (blocking && blockHold <= perfectWin) {
+            *outBlock = 3;             // PERFECT: hasar tamamen sıfır (parry)
+            return 0.0f;
+        }
+        if (blocking) {
+            *outBlock = 2;             // duruş: sabit büyük kesinti
+            blockCut = 0.70f + fx->stanceDmgCutBonus;
+        } else {
+            // Pasif blok şansı: taban %10 + Block seviyesi ×0.2 + ağaç
+            float ch = 0.10f + (float)blockLevel * 0.002f + fx->blockChanceBonus;
+            if (randf() < ch) {
+                *outBlock = 1;
+                blockCut = 0.60f + fx->blockAbsorbBonus;
+            }
+        }
+        if (blockCut > 0.95f) blockCut = 0.95f;
     }
 
     float raw = mobDamage * damage_variance();
@@ -206,6 +235,9 @@ float combat_mob_damage(float mobDamage, const Equipment *eq,
         dmg *= 0.80f;                               // Kule
     if (yaraliAyi && healthRatio < 0.30f)
         dmg *= 0.85f;                               // Yaralı Ayı
+
+    if (blockCut > 0.0f)
+        dmg *= 1.0f - blockCut;                     // blok kesintisi (en son)
 
     return dmg;
 }

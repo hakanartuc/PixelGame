@@ -36,6 +36,7 @@ typedef enum {
     ABILITY_SWEEP,          // Süpürme: ön 140° yay ×1.0 + %30 yavaş 2sn
     ABILITY_GATE_STANCE,    // Kapı Tutucu (keystone): duruş AÇ/KAPA —
                             // yavaşlarsın ama menzile giren otomatik saplanır
+    ABILITY_SHIELD_BASH,    // Kalkan Vuruşu (Block): kısa menzil + 2sn sersemletme
     ABILITY_COUNT,
 } AbilityId;
 

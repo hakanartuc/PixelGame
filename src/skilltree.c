@@ -76,6 +76,31 @@ static const TreeNode T_TWOHAND[] = {
     N_ACT("Süpürme",       "AKTİF: ön yay x1.0 + yavaşlatma (12 sn, 35 stamina)", 7, 2, 3, ABILITY_SWEEP),
 };
 
+// --- BLOCK: "Kalkan Yolu" — Şans / Duruş / Emilim (aktif yok: SHIFT duruşu) ---
+static const TreeNode T_BLOCK[] = {
+    N_ROOT("Kalkan Eğitimi", "Blok şansı +%2"),
+    N_MIN("Sağlam Tutuş",  "Blok şansı +%3",                    0, 1, 1),
+    N_MIN("Açı",           "Blok şansı +%3",                    1, 1, 2),
+    N_NOT("Duvar",         "Blok şansı +%6",                    2, 1, 3),
+    N_MIN("Bakımlı Kenar", "Kalkan defansı +%15",               3, 1, 4),
+    N_NOT("Kule Kalkanı",  "Kalkan defansı +%25 daha",          4, 1, 5),
+
+    N_MIN("Nefes Kontrolü","Duruş stamina tüketimi -%25",       0, 3, 1),
+    N_MIN("Kök Salma",     "Duruş hız cezası %50 -> %35",       6, 3, 2),
+    N_NOT("Refleks",       "Perfect blok penceresi 0.25 -> 0.35 sn", 7, 3, 3),
+    N_NOT("Zırh Gibi",     "Duruş hasar kesintisi %70 -> %80",  8, 3, 4),
+
+    N_MIN("Emici Darbe",   "Pasif blok emilimi %60 -> %70",     0, 5, 1),
+    N_MIN("Karşı Duruş",   "Blok edilen vuruş Block XP'sini 2x", 10, 5, 2),
+    N_NOT("Sarsmaz",       "Blokta geri itilme -%50",           11, 5, 3),
+
+    N_KEY("SİPER",         "Perfect blok: hasarın %50'si saldırgana YANSIR", 9, 12, 2),
+    { "FALANKS", "Duruşta hız cezası KALKAR — stamina tüketimi 2x",
+      NODE_KEYSTONE, 7, 9, 4, 6, -1 },
+
+    N_ACT("Kalkan Vuruşu", "AKTİF: x0.6 + 2 sn sersemletme (10 sn, 20 stamina)", 0, 2, 1, ABILITY_SHIELD_BASH),
+};
+
 // --- ARCHERY: "Yay Yolu" — Nişancı / Tempo / Beceri + 5 yay aktifi ---
 static const TreeNode T_ARCHERY[] = {
     N_ROOT("Okçu Eğitimi", "Yay hasarı +%3"),
@@ -426,6 +451,7 @@ static const TreeNode T_ENCHANTING[] = {
 static const SkillTreeDef TREES[] = {
     TREE_DEF(SKILL_ONE_HANDED,   T_ONEHAND),
     TREE_DEF(SKILL_TWO_HANDED,   T_TWOHAND),
+    TREE_DEF(SKILL_BLOCK,        T_BLOCK),
     TREE_DEF(SKILL_ARCHERY,      T_ARCHERY),
     TREE_DEF(SKILL_LIGHT_ARMOR,  T_LIGHT),
     TREE_DEF(SKILL_MEDIUM_ARMOR, T_MEDIUM),
@@ -593,6 +619,29 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         if (ON(T, 13)) fx->sweepSlowMult = 1.5f;
         if (ON(T, 14)) fx->kbDealtMult *= 1.5f;
         // 15 KAPI TUTUCU: grantAbility (duruş) — pasif etki yok
+    }
+
+    // --- Block (Kalkan Yolu) ---
+    {
+        const int T = SKILL_BLOCK;
+        if (ON(T, 0))  fx->blockChanceBonus += 0.02f;
+        if (ON(T, 1))  fx->blockChanceBonus += 0.03f;
+        if (ON(T, 2))  fx->blockChanceBonus += 0.03f;
+        if (ON(T, 3))  fx->blockChanceBonus += 0.06f;
+        if (ON(T, 4))  fx->shieldDefMult = 1.15f;
+        if (ON(T, 5))  fx->shieldDefMult *= 1.25f;
+        if (ON(T, 6))  fx->stanceStaminaMult = 0.75f;
+        if (ON(T, 7))  fx->stanceSlowMult = 0.7f;      // ceza 0.5→0.65 hız (=%35 ceza)
+        if (ON(T, 8))  fx->perfectWindowBonus += 0.10f;
+        if (ON(T, 9))  fx->stanceDmgCutBonus += 0.10f;
+        if (ON(T, 10)) fx->blockAbsorbBonus += 0.10f;
+        if (ON(T, 11)) fx->blockXpMult = 2.0f;
+        if (ON(T, 12)) fx->kbTakenMult *= 0.5f;
+        if (ON(T, 13)) fx->perfectReflectFrac = 0.50f;  // SİPER
+        if (ON(T, 14)) { fx->stanceSlowMult = -1.0f;    // FALANKS: ceza yok (sentinel)
+                         fx->stanceStaminaMult =
+                             (fx->stanceStaminaMult > 0.0f
+                              ? fx->stanceStaminaMult : 1.0f) * 2.0f; }
     }
 
     // --- Archery (Yay Yolu) ---

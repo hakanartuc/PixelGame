@@ -19,7 +19,8 @@ typedef struct Equipment Equipment;   // ← forward decl (pointer için yeter)
 
 // ULPC tam sheet'te oversize bölge: 54 standart satırdan sonra, 192×192 hücreler.
 // Slash bloğu bölgenin ilk 4 satır (yön sırası up/left/down/right, 6 kare).
-#define OVERSIZE_Y 3456      // 54 * 64
+#define OVERSIZE_Y 3456      // 54 * 64 (slash bloğu)
+#define THRUST_OVERSIZE_Y 4992   // thrust bloğu (3456 + 768*2: slash/backslash/thrust)
 #define OVERSIZE_FRAME 192
 
 // LPC Hand Tools "smash" sheet'leri: kendi başına 128px grid — satır = yön
@@ -71,8 +72,9 @@ typedef struct PlayerLayer {
     int idleRowOverride;  // -1 = yok (base satirini kullan), >=0 = idle'da bu satiri ciz
     bool slashOversize;   // slash'ta 64px satir yerine oversize blogu ciz (silah katmanlari)
     bool smash128;        // arac katmani (LPC Hand Tools): YALNIZ slash'ta, kendi 128 grid'i
-    bool thrustOversize;  // mizrak katmani: SALT thrust'ta, kendi 1536×768 sheet'i
-                          // (8 kare × 4 yon, 192px — thrust disinda cizilmez)
+    bool thrustOversize;  // mizrak katmani: KOMPOZIT sheet (1536×5760) — standart
+                          // satirlar + thrust-oversize blogu @ y=4992; thrust'ta
+                          // oversize bloktan, diger state'lerde standart satirdan cizer
 } PlayerLayer;
 
 // Karakterin TÜM kalıcı durumu
@@ -157,6 +159,8 @@ typedef struct Player {
     bool staffEquipped;  // asa melee'si SLASH değil THRUST oynar (main yazar; Faz 22)
     bool spearEquipped;   // mızrak: thrust anim + uzun menzil (Two-Handed A)
     bool gateStance;      // Kapı Tutucu duruşu: yavaş ama menzile giren saplanır
+    bool blocking;        // SHIFT aktif blok duruşu (kalkan takılıyken)
+    float blockHold;      // duruşun yaşı (sn) — PERFECT penceresi bundan okunur
     bool shooting;       // çekme animasyonu sürüyor
     bool shotReleased;   // bu çekmede ok çıktı mı (release karesinde main atar)
     float drawSpeedMult; // çekme süresi çarpanı (ağaç düğümleri — main yazar, <1 hızlı)

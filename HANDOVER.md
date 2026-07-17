@@ -148,8 +148,13 @@ eklerken MAX_ITEM_TYPES (96) tavanına bak — 64 taşması crash yaratmıştı.
 taban 34, delme %25→%40, hat vuruşu %60→%75 +hedef; craft S20 ya da 260g;
 thrustOversize katmanı — salt thrust'ta çizilir) + T_TWOHAND ağacı (18 düğüm;
 Saplama ×2.2, Süpürme 140° yay, keystone KAPI TUTUCU duruşu — otomatik hedef
-+ 0.8sn tempo). KALAN Parça B: kalkan + Block skill + pasif/aktif blok +
-PERFECT BLOCK parry + Block ağacı (onaylı tasarım PROGRESS Faz TH-A sonunda).
++ 0.8sn tempo). **PARÇA B TAMAM — TH+BLOCK PAKETİ KAPANDI**: kalkanlar (Tahta/Demir, craft+
+vendor; görsel ULPC round_shield z110 bağlandı; mızrak kompozit sheet'e
+geçti — yürürken de görünür, thrust bloğu y=4992), pasif blok
+(%10+lvl×0.2, emilim %60), SHIFT duruşu (-%70, yarı hız, 4 STA/sn), PERFECT
+parry (ilk 0.25sn: hasar 0 + 1sn sersemletme; SİPER %50 yansıtma), T_BLOCK
+ağacı (16 düğüm + Kalkan Vuruşu aktifi ×0.6+2sn stun). Blok zarı
+combat_mob_damage'da tek nokta; block_feedback ortak işleyici.
 **KAR (soğuk cephe, v26 uyumlu)**: havuz %50/22/13/10(KAR)/5; buz +%20 +
 yavaşlatma ×1.5 + herkes %12 yavaş (av +%15); zemin beyazlar (snowCover),
 sürü büzüşür, su donar, ot yarıya, ateş ömrü 12 saat, karda İZ SÜRME (arama

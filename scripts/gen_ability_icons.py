@@ -51,7 +51,7 @@ def save_png(path, W, H, img):
     png += chunk(b'IEND', b'')
     open(path, 'wb').write(png)
 
-N = 23; CELL = 32
+N = 24; CELL = 32
 W, H = N * CELL, CELL
 px = bytearray(W * H * 4)
 
@@ -220,5 +220,16 @@ rect(22*CELL + 5, 5, 2, 22, (200, 170, 110))
 rect(22*CELL + 25, 5, 2, 22, (200, 170, 110))
 rect(22*CELL + 5, 5, 22, 2, (200, 170, 110))
 
+# 23 SHIELD_BASH — kalkan + vuruş yıldızı
+frame(23, (60, 66, 80))
+c = 23*CELL
+for y in range(6, 24):                        # kalkan gövdesi
+    w = 7 if y < 15 else 7 - (y - 15)
+    if w < 1: continue
+    rect(c + 15 - w, y, w*2, 1, (150, 155, 165))
+rect(c + 13, 12, 4, 4, (230, 230, 240))       # göbek
+for dx, dy in [(-4, 0), (4, 0), (0, -4), (0, 4)]:
+    rect(c + 24 + dx//2, 10 + dy//2, 2, 2, (255, 220, 90))   # çarpma kıvılcımı
+
 save_png('assets/icons/abilities.png', W, H, px)
-print("OK assets/icons/abilities.png (23 hücre 32x32)")
+print("OK assets/icons/abilities.png (24 hücre 32x32)")
