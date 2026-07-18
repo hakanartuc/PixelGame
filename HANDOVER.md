@@ -165,6 +165,13 @@ DoT/yansıtma hariç); mob_die'da büyük kan + hit-stop (melee 50ms / ok 30ms /
 ölüm 90ms / PERFECT parry 120ms — dünya dt ×0.08, menü gerçek zaman); blok
 kıvılcımı, cast halkası, yöne göre slash yayı. Assetler assets/fx/ +
 CREDITS.md. Sırada: ④ müzik seti (xDeviruchi).
+**MOB DALGASI + ÖLÜM GETİREN TAMAM (⑤)**: 3 tür SONA eklendi (18 Hortlak
+Büyücü / 19 Kan Canavarı / 20 ÖLÜM GETİREN boss lv16); 2 fazlı boss savaşı
+(Kara Patlama telegraph + %50'de hız/çağrı) mezarlıkta T(30,20), haftalık
+diriliş boss2_* — SAVE'e TOLERANSLI KUYRUK deseniyle (dosya sonu, bump'sız);
+İLK ölüm ödülü Ölüm Getiren'in Nişanı (NECKLACE ilk itemi: +%10 hasar +
+öldürmede 8 HP). Yan bakışlı sheet'lerde yön: motor SAĞ bekler (Bringer
+aynalandı). HUD barları: sayısal değer + max ile uzayan genişlik.
 **LANETLİ MEZARLIK TAMAM (HG-B)**: MAP_MEZARLIK 60×45 açık hava zindanı
 (undead palet; mühür dalgası + ambient 0.45); portal Kayalık Geçit T135,88;
 map-bazlı dekor (DecorDef.map) — dev iskelet landmark + mezarlar/ağaçlar;
