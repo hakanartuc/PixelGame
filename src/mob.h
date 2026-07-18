@@ -157,6 +157,9 @@ typedef struct {
 // Ekoloji özel türleri (MOB_TYPES sonuna eklendi — save indeks güvenliği)
 #define MOB_GOBLIN_CHIEF 16   // Goblin Reisi: ölünce kamp çöker
 #define MOB_ORC_TOTEM    17   // Ork Savaş Totemi: yapı — yıkılınca kamp çöker
+#define MOB_GHOUL_WIZARD  18  // Hortlak Büyücü (mezarlık elit caster — Faz MOB-2)
+#define MOB_BLOOD_MONSTER 19  // Kan Canavarı (mezarlık ölü su kıyısı)
+#define MOB_BRINGER       20  // ÖLÜM GETİREN (mezarlık boss'u — haftalık diriliş)
 
 extern const MobType MOB_TYPES[];
 extern const int MOB_TYPE_COUNT;

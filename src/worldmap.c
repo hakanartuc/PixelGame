@@ -108,6 +108,10 @@ static const RegionCamp MZ_CAMPS[] = {
     { .x = T(30), .y = T(18), .radius = T(5), .type = &MOB_TYPES[12], .maxCount = 3 }, // dev iskelet önü
     { .x = T(16), .y = T(12), .radius = T(4), .type = &MOB_TYPES[14], .maxCount = 2 }, // kuzeybatı — büyücüler
     { .x = T(44), .y = T(12), .radius = T(4), .type = &MOB_TYPES[13], .maxCount = 2 }, // kuzeydoğu
+    // Faz MOB-2: mezarlık dalgası
+    { .x = T(50), .y = T(26), .radius = T(4), .type = &MOB_TYPES[MOB_GHOUL_WIZARD],  .maxCount = 1 }, // doğu harabe
+    { .x = T(10), .y = T(22), .radius = T(4), .type = &MOB_TYPES[MOB_GHOUL_WIZARD],  .maxCount = 1 }, // batı sırt
+    { .x = T(34), .y = T(40), .radius = T(5), .type = &MOB_TYPES[MOB_BLOOD_MONSTER], .maxCount = 3 }, // güney ölü su
 };
 static const RegionCamp F2_CAMPS[] = {
     { .x = T(20), .y = T(9),  .radius = T(4), .type = &MOB_TYPES[12], .maxCount = 2 }, // salon
@@ -205,6 +209,13 @@ void chest_set_opened_day(int idx, int day)
 // Boss: haftalık diriliş takibi + benzersiz silah bir kez düşer
 static int bossKillDay = -999;
 static bool bossFirstKill = false;
+
+static int  boss2KillDay = -999;      // Ölüm Getiren (mezarlık)
+static bool boss2FirstKill = false;
+int  boss2_last_kill_day(void)         { return boss2KillDay; }
+void boss2_set_last_kill_day(int day)  { boss2KillDay = day; }
+bool boss2_first_kill_done(void)       { return boss2FirstKill; }
+void boss2_set_first_kill_done(bool d) { boss2FirstKill = d; }
 
 int  boss_last_kill_day(void)          { return bossKillDay; }
 void boss_set_last_kill_day(int day)   { bossKillDay = day; }

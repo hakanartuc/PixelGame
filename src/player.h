@@ -104,6 +104,7 @@ typedef struct Player {
     // barlar şimdiden HUD'da (stat basma da bu havuzları büyütecek, Faz 4)
     float mana, maxMana;
     float manaReservedFrac;   // M4: dost rezervi (0..1) — bar kilitli bölme çizer
+    float trinketDmgMult;     // takı hasar çarpanı (her kare türetilir; save DIŞI)
     Uint32 spellsLearned;     // tomarla öğrenilen büyüler (bit = AbilityId; v27)
     Uint8 bagUpgrades;        // çanta kademeleri (bit0/1 Eşya +10, bit2/3 Malzeme +15; v28)
     int dirtyGold;            // KİRLİ altın (yankesicilik) — harcanamaz, aklanmalı (v29)
@@ -217,7 +218,9 @@ enum {
 
 void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera);
 void player_update(Player *p, const bool *keys, bool attackPressed, float dt, ParticleSystem *fx);
-void health_bar_render(const Player *p, R2D *renderer);
+// HUD barları: genişlik MAX değerle büyür (takı/taş görünür etki) +
+// sayısal değerler (font NULL ise yalnız bar)
+void health_bar_render(const Player *p, R2D *renderer, TTF_Font *font);
 
 
 // Oyuncunun cizilecek katmanlarini olusturur: base (body/head/face) + giyili ekipman.

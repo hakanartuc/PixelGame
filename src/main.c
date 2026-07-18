@@ -267,6 +267,7 @@ static R2DTexture *g_hitWeaponTex = NULL, *g_hitMagicTex = NULL,
                   *g_splatSmallTex = NULL, *g_splatBigTex = NULL,
                   *g_sparkTex = NULL;
 static float g_hitStop = 0.0f;   // kalan donma süresi (dünya dt'si kısılır)
+static const Equipment *g_eqBridge = NULL;   // mob_die Nişan kontrolü için
 static void hitstop(float s) { if (s > g_hitStop) g_hitStop = s; }
 
 // İsabet efekti: silah patlaması / büyü çarpması + küçük kan + hit-stop.
@@ -339,27 +340,60 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
                         target->type->lootTable, target->type->lootTableCount,
                         target->type->goldMin, target->type->goldMax);
 
-    // BOSS ölümü: haftalık diriliş kaydı + İLK ödül (Lord'un Kılıcı +2)
+    // BOSS ölümü: haftalık diriliş kaydı + İLK ödül (boss'a göre ayrışır)
     if (target->type->isBoss)
     {
-        boss_set_last_kill_day(gametime_day());
         journal_add_unique(JE_BOSS_KILL, 0);
-        if (!boss_first_kill_done() && li >= 0 &&
-            loots[li].itemCount < MAX_LOOT_ITEMS)
-        {
-            loots[li].items[loots[li].itemCount++] =
-                item_make(&ITEM_TYPES[ITEM_SWORD_LORD], 1, 2);   // +2 hazır düşer
-            boss_set_first_kill_done(true);
-        }
-        // Ateş Aslanı tomarı: türün TEK kaynağı boss leşi (%35 — haftalık kural)
-        if (li >= 0 && loots[li].itemCount < MAX_LOOT_ITEMS && randf() < 0.35f)
-            loots[li].items[loots[li].itemCount++] =
-                item_make(&ITEM_TYPES[ITEM_TOME_FIRELION], 1, 0);
         SDL_Color gold = { 255, 210, 60, 255 };
+        if (target->type == &MOB_TYPES[MOB_BRINGER])
+        {
+            // ÖLÜM GETİREN (mezarlık): İLK ölümde Nişan garanti düşer
+            boss2_set_last_kill_day(gametime_day());
+            if (!boss2_first_kill_done() && li >= 0 &&
+                loots[li].itemCount < MAX_LOOT_ITEMS)
+            {
+                loots[li].items[loots[li].itemCount++] =
+                    item_make(&ITEM_TYPES[ITEM_DEATH_SIGIL], 1, 0);
+                boss2_set_first_kill_done(true);
+            }
+            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                 player->rect.x + player->rect.w / 2.0f,
+                                 player->rect.y - 50.0f,
+                                 "Ölüm Getiren dağıldı!", gold);
+        }
+        else
+        {
+            // İSKELET LORDU (K2)
+            boss_set_last_kill_day(gametime_day());
+            if (!boss_first_kill_done() && li >= 0 &&
+                loots[li].itemCount < MAX_LOOT_ITEMS)
+            {
+                loots[li].items[loots[li].itemCount++] =
+                    item_make(&ITEM_TYPES[ITEM_SWORD_LORD], 1, 2);   // +2 hazır düşer
+                boss_set_first_kill_done(true);
+            }
+            // Ateş Aslanı tomarı: türün TEK kaynağı Lord leşi (%35 — haftalık kural)
+            if (li >= 0 && loots[li].itemCount < MAX_LOOT_ITEMS && randf() < 0.35f)
+                loots[li].items[loots[li].itemCount++] =
+                    item_make(&ITEM_TYPES[ITEM_TOME_FIRELION], 1, 0);
+            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                 player->rect.x + player->rect.w / 2.0f,
+                                 player->rect.y - 50.0f,
+                                 "İskelet Lordu devrildi!", gold);
+        }
+    }
+
+    // ÖLÜM GETİREN'İN NİŞANI: kuşanılıysa her öldürme 8 HP geri verir
+    if (g_eqBridge != NULL &&
+        g_eqBridge->slots[EQUIP_NECKLACE].type == &ITEM_TYPES[ITEM_DEATH_SIGIL] &&
+        player->health > 0.0f)
+    {
+        player->health += 8.0f;
+        if (player->health > player->maxHealth) player->health = player->maxHealth;
+        SDL_Color lifered = { 255, 90, 120, 255 };
         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                              player->rect.x + player->rect.w / 2.0f,
-                             player->rect.y - 50.0f,
-                             "İskelet Lordu devrildi!", gold);
+                             player->rect.y - 24.0f, "+8", lifered);
     }
 
     // Ok geri kazanımı: saplanan okların her biri %30 şansla leşten çıkar
@@ -921,6 +955,7 @@ int main(int argc, char *argv[])
     craftBag.cap = INV_CRAFT_BASE;    // kademeler yükleme/craft'ta işlenir)
 
     Equipment equipment = {0}; // tüm slotlar boş başlar
+    g_eqBridge = &equipment;   // mob_die Nişan kill-heal kontrolü
 
     ItemTextures itemTex;
     item_textures_load(&itemTex, renderer);
@@ -1420,6 +1455,8 @@ int main(int argc, char *argv[])
     int nearestRitual = -1;  // menzildeki ritüel yuvası (gölcük kurut / mezar mühürle)
     int activeEcho = -1;     // şu an yaşanan yankı (seçim yapılınca done işaretlenir)
     bool arenaClosed = false;   // boss arena kapısı (tile duvarı) indi mi
+    // Ölüm Getiren: Kara Patlama telegraph'ları (1 sn büyür → patlar)
+    struct { bool on; float x, y, t; } deathBlast[4] = {{0}};
     #define T_BOSS_X (22.0f * TILE_SIZE)
     #define T_BOSS_Y (23.0f * TILE_SIZE)
 
@@ -3460,6 +3497,8 @@ int main(int argc, char *argv[])
                             for (int i = 0; i < ECHO_COUNT; i++) echo_set_done(i, false);
                             boss_set_last_kill_day(-999);
                             boss_set_first_kill_done(false);
+                            boss2_set_last_kill_day(-999);
+                            boss2_set_first_kill_done(false);
                             for (int i = 0; i < CHEST_COUNT; i++)
                                 chest_set_opened_day(i, -999);
                             if (guardIdx >= 0) guard_init(guardIdx);
@@ -4627,6 +4666,20 @@ int main(int argc, char *argv[])
                     if (b != NULL) b->bossPhase = 1;
                 }
 
+                // ÖLÜM GETİREN: mezarlık boss'u — dev iskelet kalıntısının önü;
+                // haftalık diriliş (boss2_* toleranslı save kuyruğu)
+                if (to == MAP_MEZARLIK &&
+                    (boss2_last_kill_day() <= -999 ||
+                     gametime_day() - boss2_last_kill_day() >= 7))
+                {
+                    int bid2 = mob_spawn(mobs, MAX_MOBS, &nextMobId,
+                                         &MOB_TYPES[MOB_BRINGER],
+                                         30.5f * TILE_SIZE, 20.0f * TILE_SIZE, -1);
+                    Mob *b2 = mob_find_by_id(mobs, MAX_MOBS, bid2);
+                    if (b2 != NULL) { b2->bossPhase = 1; b2->bossTimer = 4.0f; }
+                    for (int q = 0; q < 4; q++) deathBlast[q].on = false;
+                }
+
                 // 4) Oyuncu geçit hedefine düşer (yüklemede pos zaten save'den geldi)
                 if (pendingPortal >= 0)
                 {
@@ -4797,6 +4850,98 @@ int main(int argc, char *argv[])
                     tilemap_set_tile(20, 18, 8);   // duvar → zemin (koridor açılır)
                     tilemap_set_tile(21, 18, 8);
                     arenaClosed = false;
+                }
+            }
+
+            // --- ÖLÜM GETİREN (mezarlık boss'u): 2 fazlı savaş ---
+            // Faz 1: tırpan + 4 sn'de bir Kara Patlama (1 sn telegraph, kaçılır)
+            // Faz 2 (%50): hızlanır + BİR KEZ 2 iskelet çağırır + patlama çift
+            if (map_current() == MAP_MEZARLIK)
+            {
+                Mob *b2 = NULL;
+                for (int i = 0; i < MAX_MOBS; i++)
+                    if (mobs[i].e.alive && mobs[i].type == &MOB_TYPES[MOB_BRINGER])
+                        { b2 = &mobs[i]; break; }
+
+                float pcx2 = player.rect.x + player.rect.w / 2.0f;
+                float pcy2 = player.rect.y + player.rect.h / 2.0f;
+
+                if (b2 != NULL && b2->aggro)
+                {
+                    if (b2->bossPhase == 1 &&
+                        b2->e.health < b2->e.maxHealth * 0.5f)
+                    {
+                        b2->bossPhase = 2;
+                        b2->bossTimer = 1.0f;
+                        SDL_Color purple = { 200, 140, 255, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             b2->e.rect.x + b2->e.rect.w / 2.0f,
+                                             b2->e.rect.y - 50.0f,
+                                             "\"Ölüm... hızlanır.\"", purple);
+                    }
+                    if (b2->bossPhase == 2)
+                    {
+                        // Hız buff'ı: slow kanalı hızlandırıcı olarak (her kare tazelenir)
+                        b2->slowMult = 1.35f;
+                        b2->slowTimer = 0.2f;
+                        if (!b2->bossSummoned)
+                        {
+                            b2->bossSummoned = true;
+                            for (int k = 0; k < 2; k++)
+                            {
+                                int sid = mob_spawn(mobs, MAX_MOBS, &nextMobId,
+                                                    &MOB_TYPES[12],
+                                                    b2->e.rect.x + (k ? 90.0f : -90.0f),
+                                                    b2->e.rect.y, -1);
+                                Mob *sm = mob_find_by_id(mobs, MAX_MOBS, sid);
+                                if (sm != NULL) { sm->aggro = true; sm->suspicion = 1.0f; }
+                            }
+                        }
+                    }
+                    // Kara Patlama: oyuncunun altına telegraph bırak
+                    b2->bossTimer -= dt;
+                    if (b2->bossTimer <= 0.0f)
+                    {
+                        b2->bossTimer = (b2->bossPhase == 2) ? 3.2f : 4.0f;
+                        int placed = 0;
+                        for (int q = 0; q < 4 && placed < (b2->bossPhase == 2 ? 2 : 1); q++)
+                        {
+                            if (deathBlast[q].on) continue;
+                            deathBlast[q].on = true;
+                            deathBlast[q].t = 0.0f;
+                            if (placed == 0) { deathBlast[q].x = pcx2; deathBlast[q].y = pcy2; }
+                            else {   // faz 2 ikinci halka: kaçış yönünü kirletir
+                                deathBlast[q].x = pcx2 + (randf() - 0.5f) * 220.0f;
+                                deathBlast[q].y = pcy2 + (randf() - 0.5f) * 220.0f;
+                            }
+                            placed++;
+                        }
+                        audio_play(SFX_REFLECT);
+                    }
+                }
+                // Telegraph'lar ilerler (boss ölse de aktif olanlar patlar)
+                for (int q = 0; q < 4; q++)
+                {
+                    if (!deathBlast[q].on) continue;
+                    deathBlast[q].t += dt;
+                    if (deathBlast[q].t < 1.0f) continue;
+                    deathBlast[q].on = false;
+                    if (g_animFx != NULL)
+                        animfx_spawn(g_animFx, darkburstTex, 16, 16, 48.0f, 64.0f,
+                                     deathBlast[q].x, deathBlast[q].y - 16.0f,
+                                     24.0f, 2.2f);
+                    audio_play(SFX_THUNDER);
+                    float bdx = pcx2 - deathBlast[q].x;
+                    float bdy = pcy2 - deathBlast[q].y;
+                    if (bdx * bdx + bdy * bdy <= 75.0f * 75.0f)
+                    {
+                        player.health -= 45.0f;
+                        player.gaziTimer = 5.0f;
+                        SDL_Color dark = { 190, 120, 255, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, pcx2,
+                                             player.rect.y - 24.0f,
+                                             "Karanlık seni yuttu!", dark);
+                    }
                 }
             }
 
@@ -6430,6 +6575,10 @@ int main(int argc, char *argv[])
                 }
                 player.maxStamina = 100.0f + (float)gearStat[STAT_STA]
                                   + perkFx.maxStaminaBonus;
+                // Takı hasar çarpanı: Ölüm Getiren'in Nişanı +%10 (melee+büyü)
+                player.trinketDmgMult =
+                    (equipment.slots[EQUIP_NECKLACE].type ==
+                     &ITEM_TYPES[ITEM_DEATH_SIGIL]) ? 1.10f : 1.0f;
                 // (DEF ekipmanı equipment_total_defense içinde toplanır)
             }
 
@@ -8919,6 +9068,29 @@ int main(int argc, char *argv[])
         }
 
         // Partiküller dünya varlıklarının ÜSTÜNDE (kan damlası mobun önünde görünsün)
+        // Kara Patlama telegraph'ları: büyüyen karanlık halka (kaç!)
+        if (map_current() == MAP_MEZARLIK && castCircleTex != NULL)
+        {
+            for (int q = 0; q < 4; q++)
+            {
+                if (!deathBlast[q].on) continue;
+                float bt = deathBlast[q].t;
+                int bfr = (int)(bt * 45.0f) % 81;
+                SDL_FRect bsrc = { (float)(bfr % 9) * 100.0f,
+                                   (float)(bfr / 9) * 100.0f, 100.0f, 100.0f };
+                float bw = (40.0f + bt * 110.0f);   // 1 sn'de 40→150px çap
+                SDL_FRect bdst = {
+                    (deathBlast[q].x - bw / 2.0f - camera.x) * camera.zoom,
+                    (deathBlast[q].y - bw / 2.0f - camera.y) * camera.zoom,
+                    bw * camera.zoom, bw * camera.zoom,
+                };
+                r2d_texture_set_color_mod(castCircleTex, 120, 40, 160);
+                r2d_texture_set_alpha_mod(castCircleTex, (Uint8)(120 + bt * 120.0f));
+                r2d_draw_texture(renderer, castCircleTex, &bsrc, &bdst);
+            }
+            r2d_texture_set_color_mod(castCircleTex, 255, 255, 255);
+            r2d_texture_set_alpha_mod(castCircleTex, 255);
+        }
         fx_render(&weaponFx, renderer, glowTex, &camera);
         animfx_render(animFxPool, renderer, &camera);
 
@@ -9245,7 +9417,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        health_bar_render(&player, renderer);
+        health_bar_render(&player, renderer, gameFont);
 
         // Altın göstergesi (HP barının altı) + saat (sağ üst)
         if (gameFont != NULL)

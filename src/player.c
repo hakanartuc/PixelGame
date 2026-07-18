@@ -6,6 +6,8 @@
 #include "player.h"
 #include "equipment.h" // ← EKLE: Equipment tam tanim + EQUIP_SLOT_COUNT + EquipSlot + slot_zorder
 #include "item.h"      // ← EKLE: ItemStack + ITEM_TYPES
+#include "font.h"      // HUD bar değer yazıları (draw_text)
+#include <stdio.h>     // snprintf (bar değerleri)
 
 // 0.0..1.0 arasi rastgele float
 // LPC animasyon tanımı: her durum için başlangıç satırı + kare sayısı
@@ -385,11 +387,16 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
 }
 
 // Can barını ekranın köşesine çizer. Ekran-uzayına bağlıdır, kamera hareketinden etkilenmez.
-void health_bar_render(const Player *p, R2D *renderer)
+void health_bar_render(const Player *p, R2D *renderer, TTF_Font *font)
 {
-    // Bar ölçüleri (ekran pikseli - doğrudan, kamera yok)
+    // Bar ölçüleri (ekran pikseli - doğrudan, kamera yok).
+    // GENİŞLİK max değerle büyür: takı/stat taşı takınca bar UZAR (görünür
+    // geri bildirim — Hakan isteği); taban 200px, tavan 340px.
     float barX = 20.0f, barY = 20.0f;  // sol üst köşeden offset
-    float barW = 200.0f, barH = 24.0f; // tam barın boyutu
+    float barW = 200.0f + (p->maxHealth - 100.0f) * 0.6f;
+    float barH = 24.0f;
+    if (barW < 200.0f) barW = 200.0f;
+    if (barW > 340.0f) barW = 340.0f;
 
     // 1) Arka plan (boş bar) - koy kırmızı/gri
     SDL_FRect bg = {barX, barY, barW, barH};
@@ -412,6 +419,18 @@ void health_bar_render(const Player *p, R2D *renderer)
     r2d_set_color(renderer, 255, 255, 255, 255);
     r2d_rect(renderer, &bg);
 
+    // 3b) Sayısal değer: "87 / 120" bar içinde ortalanır
+    if (font != NULL) {
+        char buf[24];
+        snprintf(buf, sizeof(buf), "%d / %d", (int)p->health, (int)p->maxHealth);
+        int tw = 0, th = 0;
+        TTF_GetStringSize(font, buf, 0, &tw, &th);
+        SDL_Color white = { 255, 255, 255, 255 };
+        draw_text(renderer, font, buf,
+                  barX + (barW - (float)tw) / 2.0f,
+                  barY + (barH - (float)th) / 2.0f, white);
+    }
+
     // 4) Mana (mavi) + Stamina (sari) — ince barlar HP'nin altinda.
     //    Tuketen sistemler gelecekte; stat basma havuzlari buyutecek (Faz 4)
     float mRatio = (p->maxMana > 0.0f) ? p->mana / p->maxMana : 0.0f;
@@ -419,26 +438,47 @@ void health_bar_render(const Player *p, R2D *renderer)
     if (mRatio > 1.0f) mRatio = 1.0f;
     if (sRatio > 1.0f) sRatio = 1.0f;
 
-    SDL_FRect mBg = { barX, barY + barH + 4.0f, barW, 8.0f };
+    float mBarW = 200.0f + (p->maxMana - 50.0f) * 0.6f;
+    if (mBarW < 120.0f) mBarW = 120.0f;
+    if (mBarW > 340.0f) mBarW = 340.0f;
+    SDL_FRect mBg = { barX, barY + barH + 4.0f, mBarW, 8.0f };
     r2d_set_color(renderer, 20, 25, 55, 255);
     r2d_fill_rect(renderer, &mBg);
     // M4: dost rezervi — barın sonu KİLİTLİ bölme (mor); dolum kalan bölgeye
-    float usableW = barW * (1.0f - p->manaReservedFrac);
+    float usableW = mBarW * (1.0f - p->manaReservedFrac);
     SDL_FRect mFill = { mBg.x, mBg.y, usableW * mRatio, mBg.h };
     r2d_set_color(renderer, 70, 120, 255, 255);
     r2d_fill_rect(renderer, &mFill);
     if (p->manaReservedFrac > 0.0f) {
-        SDL_FRect mLock = { mBg.x + usableW, mBg.y, barW - usableW, mBg.h };
+        SDL_FRect mLock = { mBg.x + usableW, mBg.y, mBarW - usableW, mBg.h };
         r2d_set_color(renderer, 110, 70, 160, 255);   // öz bağının rengi
         r2d_fill_rect(renderer, &mLock);
     }
 
-    SDL_FRect sBg = { barX, mBg.y + 12.0f, barW, 8.0f };
+    // Mana değeri: barın sağında küçük yazı
+    if (font != NULL) {
+        char mbuf[24];
+        snprintf(mbuf, sizeof(mbuf), "%d/%d", (int)p->mana, (int)p->maxMana);
+        SDL_Color mcol = { 150, 185, 255, 255 };
+        draw_text(renderer, font, mbuf, mBg.x + mBarW + 6.0f, mBg.y - 4.0f, mcol);
+    }
+
+    float sBarW = 200.0f + (p->maxStamina - 100.0f) * 0.6f;
+    if (sBarW < 120.0f) sBarW = 120.0f;
+    if (sBarW > 340.0f) sBarW = 340.0f;
+    SDL_FRect sBg = { barX, mBg.y + 12.0f, sBarW, 8.0f };
     r2d_set_color(renderer, 50, 45, 15, 255);
     r2d_fill_rect(renderer, &sBg);
-    SDL_FRect sFill = { sBg.x, sBg.y, barW * sRatio, sBg.h };
+    SDL_FRect sFill = { sBg.x, sBg.y, sBarW * sRatio, sBg.h };
     r2d_set_color(renderer, 235, 200, 60, 255);
     r2d_fill_rect(renderer, &sFill);
+    // Stamina değeri: barın sağında küçük yazı
+    if (font != NULL) {
+        char sbuf[24];
+        snprintf(sbuf, sizeof(sbuf), "%d/%d", (int)p->stamina, (int)p->maxStamina);
+        SDL_Color scol = { 235, 210, 130, 255 };
+        draw_text(renderer, font, sbuf, sBg.x + sBarW + 6.0f, sBg.y - 4.0f, scol);
+    }
 }
 
 int build_player_layers(const PlayerLayer *base, int baseCount,

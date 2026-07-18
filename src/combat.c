@@ -103,6 +103,10 @@ HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
     float raw = base * strScale * skillScale * perkScale
               * abilityScale * damage_variance();
 
+    // Takı: Ölüm Getiren'in Nişanı +%10 (main her kare türetir; 0 = eski init)
+    if (p->trinketDmgMult > 0.0f)
+        raw *= p->trinketDmgMult;
+
     // Sunak rünü: Pembe Rün basılı silah +%8 hasar
     if (armed && weapon->fx == WEAPON_FX_PINK)
         raw *= 1.08f;
@@ -151,6 +155,8 @@ HitResult combat_spell_hit(const struct Player *p, const ItemStack *weapon,
 
     float raw = baseDamage * intScale * skillScale * weaponScale
               * fx->spellDmgMult * damage_variance();
+    if (p->trinketDmgMult > 0.0f)
+        raw *= p->trinketDmgMult;   // Nişan büyüye de işler
 
     // Kritik: DEX + ağaç bonusları (silah vuruşuyla aynı kural)
     float critChance = CRIT_BASE_CHANCE

@@ -873,6 +873,27 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   oyun kredilerine girecek (CREDITS.md'de hazır).
 - 8 OGG ~37MB; crossfade/duck/volume mevcut sistemden aynen çalışır.
 
+### Faz MOB-2 — MOB DALGASI + ÖLÜM GETİREN (onaylı sıra ⑤)
+- **3 yeni tür (SONA — 21/24 MAX_MOB_TYPES)**: [18] Hortlak Büyücü (Evil
+  Wizard 2 — mezarlık eliti, ATTACK_MAGIC 30 dmg), [19] Kan Canavarı (Blood
+  Monster — ölü su, hızlı melee sürüsü), [20] ÖLÜM GETİREN (Bringer —
+  isBoss, lv16 HP1600). Yan görünüşlü kompozit sheet'ler (3 yön aynı klip,
+  flip motorda); Wizard kareleri aynalandı.
+- **Boss savaşı (Hakan onayı — 2 fazlı)**: dev iskelet kalıntısı önünde
+  T(30,20); Faz 1 tırpan + 4sn'de bir KARA PATLAMA (oyuncu altında 1sn
+  büyüyen mor halka telegraph → 45 hasar, kaçılabilir); Faz 2 (%50) hız
+  ×1.35 (slow kanalı ters kullanım) + BİR KEZ 2 İskelet Savaşçı + çift
+  halka. Haftalık diriliş. MOOD_BOSS müziği otomatik.
+- **Ödül**: İLK ölümde ÖLÜM GETİREN'İN NİŞANI garanti (unique kolye,
+  EQUIP_NECKLACE ilk kullanımı): +%10 hasar (trinketDmgMult — melee+büyü,
+  combat.c) + her öldürmede 8 HP (mob_die, g_eqBridge köprüsü). Sonraki
+  ölümler: kemik+HP taşı+soluk öz garantili, tomar %60.
+- **SAVE: toleranslı kuyruk deseni (YENİ)**: boss2 diriliş kaydı dosya
+  SONUNA eklendi — eski v29 save'ler varsayılanla açılır, sürüm bump'sız.
+  mob_die boss bloğu Lord/Bringer ayrımına bölündü.
+- MZ_CAMPS +3 (2 Hortlak kampı + güney ölü su Kan Canavarı yuvası).
+- SATYR + Demon_A sonraki dalgaya kaldı (backlog).
+
 ### ASSET SIRASI (2026-07-17 — Hakan'ın indirdiği paketler, onaylı işleme sırası)
 İndirilenler (~/Downloads):
 - **Harita**: Free-Undead-Tileset (açık hava lanetli arazi — LANETLİ MEZARLIK

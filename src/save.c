@@ -297,6 +297,12 @@ bool save_game(const char *path, const Player *p,
           && w32(f, ns->colonizedDay);
     }
 
+    // TOLERANSLI KUYRUK: yeni alanlar dosya SONUNA eklenir — eski okuyucu
+    // zaten durur, yeni okuyucu yoksa varsayılan kullanır (sürüm bump'sız).
+    // Boss 2: Ölüm Getiren (mezarlık) diriliş kaydı
+    ok = ok && w32(f, boss2_last_kill_day())
+            && w32(f, boss2_first_kill_done() ? 1 : 0);
+
     fclose(f);
     if (!ok)
         SDL_Log("Save yazilamadi (disk dolu?): %s", path);
@@ -574,6 +580,12 @@ bool load_game(const char *path, Player *p,
           && r32(f, &nsP0[i]) && r32(f, &nsP1[i]) && r32(f, &nsP2[i])
           && r32(f, &nsDay[i]) && r32(f, &nsMig[i]) && r32(f, &nsColD[i]);
 
+    // TOLERANSLI KUYRUK (v29 sonrası eklenen alanlar — eski save'de yoksa
+    // varsayılan): boss 2 (Ölüm Getiren) diriliş kaydı
+    Sint32 b2Day = -999, b2First = 0;
+    if (ok && !r32(f, &b2Day)) { b2Day = -999; b2First = 0; }
+    else if (ok && !r32(f, &b2First)) b2First = 0;
+
     fclose(f);
     if (!ok) {
         SDL_Log("Save okunamadi (bozuk dosya): %s", path);
@@ -595,6 +607,8 @@ bool load_game(const char *path, Player *p,
         chest_set_opened_day(i, chestDays[i]);
     boss_set_last_kill_day(bossDay);
     boss_set_first_kill_done(bossFirst != 0);
+    boss2_set_last_kill_day(b2Day);
+    boss2_set_first_kill_done(b2First != 0);
     for (int i = 0; i < nEcho && i < ECHO_COUNT; i++)
         echo_set_done(i, echoFlag[i] != 0);
     journal_reset();

@@ -83,6 +83,12 @@ void chest_set_opened_day(int idx, int day);
 // Boss durumu (save v16): haftalık diriliş + benzersiz ilk-ödül
 int  boss_last_kill_day(void);               // -999 = hiç ölmedi
 void boss_set_last_kill_day(int day);
+// İkinci boss (Ölüm Getiren — mezarlık): save'e TOLERANSLI KUYRUK olarak
+// yazılır (eski save'lerde alan yok → varsayılanla açılır, sürüm bump'sız)
+int  boss2_last_kill_day(void);
+void boss2_set_last_kill_day(int day);
+bool boss2_first_kill_done(void);
+void boss2_set_first_kill_done(bool done);
 bool boss_first_kill_done(void);
 void boss_set_first_kill_done(bool done);
 

@@ -104,6 +104,25 @@ static const LootEntry BOAR_LOOT[] = {
 };
 #define LOOT_COUNT(t) ((int)(sizeof(t) / sizeof((t)[0])))
 
+// Faz MOB-2 — mezarlık dalgası: Hortlak Büyücü / Kan Canavarı / Ölüm Getiren
+static const LootEntry GHOUL_LOOT[] = {
+    { &ITEM_TYPES[ITEM_BONE],           0.50f, 0 },
+    { &ITEM_TYPES[ITEM_ESSENCE_PALE],   0.30f, 0 },   // sunağın zengin kaynağı
+    { &ITEM_TYPES[ITEM_SCROLL_ENCHANT], 0.06f, 0 },
+    { &ITEM_TYPES[ITEM_STONE_INT],      0.05f, 0 },
+};
+static const LootEntry BLOOD_LOOT[] = {
+    { &ITEM_TYPES[ITEM_MEAT],           0.60f, 0 },   // etobur yığın — 'taze' et
+    { &ITEM_TYPES[ITEM_POTION_HP],      0.35f, 0 },
+    { &ITEM_TYPES[ITEM_ESSENCE_TOXIC],  0.15f, 0 },
+};
+static const LootEntry BRINGER_LOOT[] = {
+    { &ITEM_TYPES[ITEM_BONE],           1.00f, 0 },
+    { &ITEM_TYPES[ITEM_STONE_HP],       1.00f, 0 },
+    { &ITEM_TYPES[ITEM_ESSENCE_PALE],   1.00f, 0 },
+    { &ITEM_TYPES[ITEM_SCROLL_ENCHANT], 0.60f, 0 },
+};
+
 static const LootEntry SKEL_LORD_LOOT[] = {
     { &ITEM_TYPES[ITEM_BONE],           1.00f, 0 },
     { &ITEM_TYPES[ITEM_BONE],           1.00f, 0 },
@@ -663,6 +682,117 @@ const MobType MOB_TYPES[] = {
             { TOTEM_CLIP, TOTEM_CLIP, TOTEM_CLIP },
             { TOTEM_CLIP, TOTEM_CLIP, TOTEM_CLIP },
             { TOTEM_CLIP, TOTEM_CLIP, TOTEM_CLIP },
+        },
+    },
+
+    // --- Faz MOB-2: Mezarlık dalgası (SONA eklendi — indeks disiplini) ---
+    // Yan görünüşlü sheet'ler (kompozit PIL ile üretildi; satırlar
+    // idle/yürüme/saldırı/ölüm): 3 yön de aynı klip, sol bakış motor
+    // flip'iyle çözülür (facingLeft).
+
+    // [18] HORTLAK BÜYÜCÜ — mezarlık eliti: yavaş, az ama SERT büyü mermisi.
+    // 250px kare (figür ~95px); asa savurması kare 5'te fırlatır.
+    {
+        .name = "Hortlak Büyücü",
+        .texturePath = "assets/characters/mobs/Ghoul_Wizard.png",
+        .level = 9, .maxHealth = 260.0f, .speed = 150.0f,
+        .attackRange = 260.0f, .detectRange = 340.0f, .damage = 30.0f, .defense = 6.0f,
+        .attackType = ATTACK_MAGIC, .attackHitFrame = 5, .attackRecover = 2.2f,
+        .projSpeed = 260.0f,
+        .lootTable = GHOUL_LOOT, .lootTableCount = LOOT_COUNT(GHOUL_LOOT),
+        .goldMin = 60, .goldMax = 100,
+        .bodyW = 44.0f, .bodyH = 52.0f, .drawScale = 1.5f,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.14f, .feetY=167 },
+                { .x=0, .y=0,   .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.14f, .feetY=167 },
+                { .x=0, .y=0,   .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.14f, .feetY=167 },
+            },
+            {
+                { .x=0, .y=250, .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.11f, .feetY=167 },
+                { .x=0, .y=250, .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.11f, .feetY=167 },
+                { .x=0, .y=250, .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.11f, .feetY=167 },
+            },
+            {
+                { .x=0, .y=500, .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.11f, .feetY=167 },
+                { .x=0, .y=500, .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.11f, .feetY=167 },
+                { .x=0, .y=500, .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.11f, .feetY=167 },
+            },
+            {
+                { .x=0, .y=750, .frameW=250, .frameH=250, .frameCount=7, .frameDuration=0.13f, .feetY=167 },
+                { .x=0, .y=750, .frameW=250, .frameH=250, .frameCount=7, .frameDuration=0.13f, .feetY=167 },
+                { .x=0, .y=750, .frameW=250, .frameH=250, .frameCount=7, .frameDuration=0.13f, .feetY=167 },
+            },
+        },
+    },
+    // [19] KAN CANAVARI — ölü su kıyısının hızlı eti: sürü baskısı, kısa menzil.
+    // Minik gövde (100px karede ~20px) — drawScale 3.0 ile ürkütücü yumru.
+    {
+        .name = "Kan Canavarı",
+        .texturePath = "assets/characters/mobs/Blood_Monster.png",
+        .level = 8, .maxHealth = 320.0f, .speed = 210.0f,
+        .attackRange = 55.0f, .detectRange = 300.0f, .damage = 18.0f, .defense = 10.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 4, .attackRecover = 0.7f,
+        .lootTable = BLOOD_LOOT, .lootTableCount = LOOT_COUNT(BLOOD_LOOT),
+        .goldMin = 40, .goldMax = 70,
+        .bodyW = 40.0f, .bodyH = 30.0f, .drawScale = 3.0f,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=58 },
+                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=58 },
+                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=58 },
+            },
+            {
+                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=58 },
+                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=58 },
+                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=58 },
+            },
+            {
+                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.09f, .feetY=58 },
+                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.09f, .feetY=58 },
+                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.09f, .feetY=58 },
+            },
+            {
+                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=58 },
+                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=58 },
+                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=58 },
+            },
+        },
+    },
+    // [20] ÖLÜM GETİREN — mezarlık boss'u (dev iskelet kalıntısının bekçisi).
+    // 2 fazlı savaş main'de: tırpan + telegraph'lı Kara Patlama; %50'de
+    // hızlanır + 2 iskelet çağırır. Haftalık diriliş (boss2_* save kuyruğu).
+    {
+        .name = "Ölüm Getiren",
+        .texturePath = "assets/characters/mobs/Bringer_of_Death.png",
+        .level = 16, .maxHealth = 1600.0f, .speed = 160.0f,
+        .attackRange = 95.0f, .detectRange = 460.0f, .damage = 34.0f, .defense = 24.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 5, .attackRecover = 1.0f,
+        .lootTable = BRINGER_LOOT, .lootTableCount = LOOT_COUNT(BRINGER_LOOT),
+        .goldMin = 400, .goldMax = 600,
+        .bodyW = 90.0f, .bodyH = 60.0f, .drawScale = 2.6f,
+        .isBoss = true,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=140, .frameH=93, .frameCount=8, .frameDuration=0.13f, .feetY=92 },
+                { .x=0, .y=0,   .frameW=140, .frameH=93, .frameCount=8, .frameDuration=0.13f, .feetY=92 },
+                { .x=0, .y=0,   .frameW=140, .frameH=93, .frameCount=8, .frameDuration=0.13f, .feetY=92 },
+            },
+            {
+                { .x=0, .y=93,  .frameW=140, .frameH=93, .frameCount=8, .frameDuration=0.11f, .feetY=92 },
+                { .x=0, .y=93,  .frameW=140, .frameH=93, .frameCount=8, .frameDuration=0.11f, .feetY=92 },
+                { .x=0, .y=93,  .frameW=140, .frameH=93, .frameCount=8, .frameDuration=0.11f, .feetY=92 },
+            },
+            {
+                { .x=0, .y=186, .frameW=140, .frameH=93, .frameCount=10, .frameDuration=0.09f, .feetY=92 },
+                { .x=0, .y=186, .frameW=140, .frameH=93, .frameCount=10, .frameDuration=0.09f, .feetY=92 },
+                { .x=0, .y=186, .frameW=140, .frameH=93, .frameCount=10, .frameDuration=0.09f, .feetY=92 },
+            },
+            {
+                { .x=0, .y=279, .frameW=140, .frameH=93, .frameCount=10, .frameDuration=0.13f, .feetY=92 },
+                { .x=0, .y=279, .frameW=140, .frameH=93, .frameCount=10, .frameDuration=0.13f, .feetY=92 },
+                { .x=0, .y=279, .frameW=140, .frameH=93, .frameCount=10, .frameDuration=0.13f, .feetY=92 },
+            },
         },
     },
 };

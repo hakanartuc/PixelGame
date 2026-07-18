@@ -431,6 +431,13 @@ const ItemType ITEM_TYPES[] = {
       .damage = 16.0f, .attackInterval = 0.7f,
       .iconSpritePath = "assets/icons/items/whisper_blade.png",
       .iconSrc = { 0, 0, 16, 16 } },
+
+    // BOSS ödülü: Ölüm Getiren'in Nişanı — unique kolye (İLK ölümde garanti).
+    // +%10 hasar (trinketDmgMult — melee+büyü) + öldürmede 8 HP (mob_die işler).
+    { .name = "Ölüm Getiren'in Nişanı", .iconIndex = 0, .maxStack = 1, .value = 0,
+      .equipable = true, .equipSlot = EQUIP_NECKLACE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/death_sigil.png",
+      .iconSrc = { 0, 0, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

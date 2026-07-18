@@ -113,3 +113,16 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
   dosyaların yeniden dağıtımı/satışı yasak). Loop noktaları dokümandaki
   tablodan music.c'ye işlendi (LOOPSTART).
 - `src/stb_vorbis.c` — Sean Barrett, public domain (OGG decoder, vendored).
+
+## Mob/Boss sprite'ları (Faz MOB-2, 2026-07-18)
+- `assets/characters/mobs/Bringer_of_Death.png` — **Bringer of Death**
+  (Clembod, itch.io). Lisans: ticari kullanım serbest, yeniden dağıtım/satış
+  yasak (paketteki License.txt). Kompozit sheet Individual Sprite'lardan
+  PIL ile üretildi (idle/walk/attack/death satırları); kareler AYNALANDI
+  (doğal bakış sol → motor sağ bekler).
+- `assets/characters/mobs/Ghoul_Wizard.png` — **Evil Wizard 2** (LuizMelo,
+  itch.io; CC0 — License.txt teyitli). Doğal bakış zaten sağ — aynasız.
+- `assets/characters/mobs/Blood_Monster.png` — **Tiny RPG Character Asset
+  Pack 02** (Blood Monster_A; itch.io ücretsiz sürüm). TODO: yazar adı +
+  lisans sayfası teyidi.
+- `assets/icons/items/death_sigil.png` — prosedürel üretildi (Nişan ikonu).

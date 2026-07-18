@@ -277,6 +277,7 @@ typedef enum {
     ITEM_TRINKET_WATCH,   // Cep Saati (150g)
     // YANKICI (gizli sınıf): unique silah — yalnız ritüel taşında bulunur
     ITEM_WHISPER_BLADE,   // Fısıltı Keskisi: eksik canla keskinleşen hançer
+    ITEM_DEATH_SIGIL,     // Ölüm Getiren'in Nişanı: unique kolye (boss ilk ölüm)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];
