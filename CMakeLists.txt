@@ -66,7 +66,11 @@ add_executable(game
     src/trap.c
     src/scene.c
     src/r2d.c
+    src/stb_vorbis.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c
+
+# Vendored decoder: kendi uyarıları bizi ilgilendirmez (-Wall/-Wextra dışı)
+set_source_files_properties(src/stb_vorbis.c PROPERTIES COMPILE_OPTIONS "-w")
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle
 target_link_libraries(game PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)   # ← SDL3_ttf
 

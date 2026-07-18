@@ -8278,10 +8278,11 @@ int main(int argc, char *argv[])
             // Minimap keşfi (fog of war): oyuncunun çevresini aç
             minimap_reveal(renderer, px, py);
 
-            // --- MÜZİK MOOD'U: savaş > bölge; gece açık arazi tekinsizleşir ---
+            // --- MÜZİK MOOD'U: boss > savaş > bölge; gece açık arazi tekinsiz ---
             // Savaş: yakında seni kovalayan/sana saldıran mob var mı?
-            bool inCombat = false;
-            for (int i = 0; i < mobCount && !inCombat; i++)
+            // (boss bulunana dek tarar — boss müziği sıradan savaşı ezer)
+            bool inCombat = false, bossCombat = false;
+            for (int i = 0; i < mobCount && !bossCombat; i++)
             {
                 if (!mobs[i].e.alive) continue;
                 if (!mobs[i].aggro) continue;   // devriye/su ziyareti CHASE clip'i kullanır — savaş değil
@@ -8289,13 +8290,16 @@ int main(int argc, char *argv[])
                 float mdx = (mobs[i].e.rect.x + mobs[i].e.rect.w / 2.0f) - px;
                 float mdy = (mobs[i].e.rect.y + mobs[i].e.rect.h / 2.0f) - py;
                 if (mdx * mdx + mdy * mdy < 500.0f * 500.0f)
+                {
                     inCombat = true;
+                    if (mobs[i].type->isBoss) bossCombat = true;
+                }
             }
 
             MusicMood mood;
             if (inCombat)
             {
-                mood = MOOD_COMBAT;
+                mood = bossCombat ? MOOD_BOSS : MOOD_COMBAT;
             }
             else if (map_current() != MAP_WORLD)
             {

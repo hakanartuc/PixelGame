@@ -858,6 +858,21 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   uyarısında bırakıyordu — artık kayıt slotu ekranını doğrudan açar (seçilen
   slot aktif olur); F9 slotsuz durumda bildirim basar.
 
+### Faz MÜZİK — GERÇEK MÜZİK SETİ (xDeviruchi, onaylı sıra ④)
+- **stb_vorbis vendored** (src/stb_vorbis.c, public domain; CMake'te -w —
+  vendored uyarıları bize sayılmaz). music.c önce assets/audio/music/*.ogg
+  dener, yoksa eski prosedürel WAV'lara düşer (bozulmaz).
+- **Eşleme (Hakan onayı)**: MENÜ=Title Theme · KÖY=Definitely Our Town ·
+  KIR=Where The Winds Roam · GECE=Silent Forest · TEHLİKE=Calm Before The
+  Storm · ZİNDAN/MEZARLIK=Lost Shrine · SAVAŞ=Battle 1 · BOSS=Decisive
+  Battle 1 (YENİ MOOD_BOSS — aggro boss COMBAT'ı ezer, enum SONA eklendi).
+- **LOOPSTART desteği**: intro'lar loop dışı (dokümandaki tablo) — ilk besleme
+  intro dahil, sonraki beslemeler LOOPSTART byte ofsetinden; mood'a her
+  girişte intro yeniden çalar (savaş girişi vurgulu).
+- Lisans: atıf ZORUNLU — "Original music by Marllon Silva (xDeviruchi)"
+  oyun kredilerine girecek (CREDITS.md'de hazır).
+- 8 OGG ~37MB; crossfade/duck/volume mevcut sistemden aynen çalışır.
+
 ### ASSET SIRASI (2026-07-17 — Hakan'ın indirdiği paketler, onaylı işleme sırası)
 İndirilenler (~/Downloads):
 - **Harita**: Free-Undead-Tileset (açık hava lanetli arazi — LANETLİ MEZARLIK

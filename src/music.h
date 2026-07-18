@@ -3,7 +3,9 @@
 #include <stdbool.h>
 
 // Arka plan müziği — ruh hali (mood) sistemine göre parça seçer, yumuşak
-// crossfade ile geçer. Parçalar prosedürel üretildi (assets/audio/music_*.wav).
+// crossfade ile geçer. Parçalar xDeviruchi "16-bit Fantasy & Adventure"
+// loop'ları (assets/audio/music/*.ogg — stb_vorbis ile açılır); OGG yoksa
+// eski prosedürel WAV'lara (assets/audio/music_*.wav) düşülür.
 // audio.c gibi saf SDL3 stream: her parça kendi stream'inde, gain ile fade.
 //
 // Mood kaynakları (main karar verir):
@@ -20,6 +22,7 @@ typedef enum {
     MOOD_DUNGEON,   // zindan katları — derin dron (Cila)
     MOOD_NIGHT,     // açık arazi gecesi — koyu pad (DANGER'dan ayrıştı)
     MOOD_MENU,      // başlık + ana menü — mühür nabzı
+    MOOD_BOSS,      // boss savaşı — COMBAT'tan ayrışan kader müziği (Müzik fazı)
     MOOD_COUNT,
 } MusicMood;
 

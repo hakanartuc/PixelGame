@@ -102,3 +102,14 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
   sheet'inden yön varyantları üretildi (90° döndürme/ayna). Lisans:
   paketteki Frostwindz Asset License Agreement (ticari kullanım serbest,
   yeniden satış yasak).
+
+## Müzik (Müzik fazı, 2026-07-18)
+- `assets/audio/music/*.ogg` (8 parça: menu/town/wild/night/danger/dungeon/
+  combat/boss) — **"16-Bit Fantasy & Adventure Music (2025)"**.
+  **Original music by Marllon Silva (xDeviruchi)** —
+  https://www.youtube.com/@xDeviruchi
+  Lisans: pakete dahil non-exclusive lisans (ticari kullanım serbest, atıf
+  ZORUNLU — oyun kredilerinde yukarıdaki ibare kullanılacak; orijinal
+  dosyaların yeniden dağıtımı/satışı yasak). Loop noktaları dokümandaki
+  tablodan music.c'ye işlendi (LOOPSTART).
+- `src/stb_vorbis.c` — Sean Barrett, public domain (OGG decoder, vendored).
