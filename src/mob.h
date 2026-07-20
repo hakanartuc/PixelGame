@@ -116,6 +116,7 @@ typedef struct {
     float poisonDps, poisonTime; // Zehir DoT'u (rün/kaplama) — kanamayla AYRI kanal,
                                  // ÜST ÜSTE biner (tam DoT build'i meşru)
     float burnDps, burnTime;     // Yanma DoT'u (Ateş Topu) — 3. bağımsız kanal (Faz 22)
+    float drainDps, drainTime;   // Can Emme (Yankıcı P2) — emilen oyuncuya AKAR
     int arrowsHit;        // saplanan ok sayısı — ölünce ~%30'u lootta geri (Faz 5)
     Sint8 bossPhase;      // boss: 1 kılıç / 2 ok yağmuru+çağrı (faz mantığı main'de)
     float bossTimer;      // boss: yağmur sayacı

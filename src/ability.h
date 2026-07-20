@@ -44,7 +44,11 @@ typedef enum {
     ABILITY_HEAL_LIGHT,     // Şifa Nuru: kendini iyileştir (mana → HP)
     ABILITY_HOLY_BEAM,      // Kutsal Hüzme: hedefe ışık — undead ×1.6
     ABILITY_HOLY_ZONE,      // Kutsal Alan: 6sn ışık çemberi — undead yavaş + tick
-    ABILITY_COUNT,          // DİKKAT: spellsLearned Uint32 — 32 beceri TAVANI (29/32)
+    // YANKICI P2 (bedel yine CAN)
+    ABILITY_LIFE_DRAIN,     // Can Emme: hedefte 4sn emiş DoT'u — çalınan sana akar
+    ABILITY_ECHO_CALL,      // Yankı Çağırma: 12sn gölge kopya — hasarının %35'i
+    ABILITY_COUNT,          // spellsLearned artık Uint64 (Faz TB64) — 64 tavan
+
 } AbilityId;
 
 typedef struct {

@@ -583,7 +583,7 @@ static void block_feedback(int blockKind, Player *p, Hotbar *hb,
 static void spells_apply_learned(const Player *p, PerkEffects *fx)
 {
     for (int a = 0; a < ABILITY_COUNT; a++)
-        if (p->spellsLearned & (1u << a))
+        if (p->spellsLearned & (1ull << a))
             fx->abilityOpen[a] = true;
 }
 
@@ -595,6 +595,8 @@ static void echo_apply_unlocks(const Player *p, PerkEffects *fx)
     {
         fx->abilityOpen[ABILITY_WHISPER_BURST] = true;
         fx->abilityOpen[ABILITY_SHADOW_FORM] = true;
+        fx->abilityOpen[ABILITY_LIFE_DRAIN] = true;    // P2
+        fx->abilityOpen[ABILITY_ECHO_CALL] = true;
     }
 }
 
@@ -1084,6 +1086,7 @@ int main(int argc, char *argv[])
     R2DTexture *castCircleTex = load_texture(renderer, "assets/fx/cast_circle.png"); // 9×9 @100
     R2DTexture *holyBurstTex  = load_texture(renderer, "assets/fx/holy_burst.png");   // 16 @48
     R2DTexture *holyImpactTex = load_texture(renderer, "assets/fx/holy_impact.png");  // 7 @32
+    R2DTexture *echoWispTex   = load_texture(renderer, "assets/fx/echo_wisp.png");     // 10×2 @40×32
     R2DTexture *slashArcTex[4] = {   // facing sırası: UP, LEFT, DOWN, RIGHT
         load_texture(renderer, "assets/fx/slash_up.png"),
         load_texture(renderer, "assets/fx/slash_left.png"),
@@ -1464,6 +1467,8 @@ int main(int argc, char *argv[])
     struct { bool on; float x, y, t; } deathBlast[4] = {{0}};
     // Kutsal Alan (Faz HOLY): tek aktif çember — 6sn, undead yavaş + tick
     struct { bool on; float x, y, t, tick, r; } holyZone = {0};
+    // Yankı Çağırma (P2): gölge kopya — hedefinin yanında süzülür, %35 vurur
+    struct { bool on; float t, atkT, x, y; bool facingLeft; } echoShadow = {0};
     #define T_BOSS_X (22.0f * TILE_SIZE)
     #define T_BOSS_Y (23.0f * TILE_SIZE)
 
@@ -4412,7 +4417,7 @@ int main(int argc, char *argv[])
                                     // Yıkım seviyesi yetmiyorsa tomar DURUR (yanmaz).
                                     int ta = st->type->tomeAbility;
                                     SDL_Color red2 = { 255, 120, 100, 255 };
-                                    if (player.spellsLearned & (1u << ta))
+                                    if (player.spellsLearned & (1ull << ta))
                                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                              player.rect.x + player.rect.w / 2.0f,
                                                              player.rect.y - 10.0f,
@@ -4436,7 +4441,7 @@ int main(int argc, char *argv[])
                                         const ItemType *tt = st->type;
                                         if (bag_consume(tt))
                                         {
-                                            player.spellsLearned |= (1u << ta);
+                                            player.spellsLearned |= (1ull << ta);
                                             perkFx.abilityOpen[ta] = true;
                                             hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
                                             audio_play(SFX_PERK);   // törensel — yeni güç
@@ -5037,6 +5042,65 @@ int main(int argc, char *argv[])
                 }
             }
 
+            // YANKI KOPYASI (P2): hedefin yanında süzülür, 1.2sn'de bir
+            // senin vuruşunun %35'iyle vurur; süre bitince dağılır
+            if (echoShadow.on)
+            {
+                echoShadow.t -= dt;
+                if (echoShadow.t <= 0.0f)
+                {
+                    echoShadow.on = false;
+                    fx_burst(&weaponFx, echoShadow.x, echoShadow.y,
+                             14, 90.0f, 150, 90, 220);   // dağılma
+                }
+                else
+                {
+                    Mob *et = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                    float gx, gy;
+                    if (et != NULL)
+                    {
+                        gx = et->e.rect.x + et->e.rect.w / 2.0f - 46.0f;
+                        gy = et->e.rect.y + et->e.rect.h / 2.0f - 14.0f;
+                    }
+                    else
+                    {
+                        gx = player.rect.x + player.rect.w / 2.0f - 42.0f;
+                        gy = player.rect.y + player.rect.h / 2.0f - 12.0f;
+                    }
+                    echoShadow.facingLeft = (gx > echoShadow.x + 2.0f) ? false
+                                          : (gx < echoShadow.x - 2.0f) ? true
+                                          : echoShadow.facingLeft;
+                    echoShadow.x += (gx - echoShadow.x) * SDL_min(1.0f, dt * 4.0f);
+                    echoShadow.y += (gy - echoShadow.y) * SDL_min(1.0f, dt * 4.0f);
+
+                    echoShadow.atkT -= dt;
+                    if (et != NULL && echoShadow.atkT <= 0.0f)
+                    {
+                        echoShadow.atkT = 1.2f;
+                        HitResult eh = combat_player_hit(&player,
+                            &equipment.slots[EQUIP_WEAPON], et->type->defense,
+                            ABILITIES[ABILITY_ECHO_CALL].damageScale
+                                * perkFx.echoDmgMult,
+                            et->e.health / et->e.maxHealth, &perkFx);
+                        et->e.health -= eh.damage;
+                        strike_fx_mob(et, true, 0.0f);
+                        et->e.hitFlash = 0.15f;
+                        et->aggro = true;
+                        floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                        et->e.rect.x + et->e.rect.w / 2.0f - 12.0f,
+                                        et->e.rect.y, (int)eh.damage, eh.crit);
+                        float sxp = combat_xp_for_hit(eh.damage, et->type->level,
+                                        player.skills[SKILL_ECHO].level);
+                        if (skill_add_xp(player.skills, SKILL_ECHO, sxp))
+                            on_skill_levelup(&player, SKILL_ECHO,
+                                             &hotbar, floatTexts);
+                        if (et->e.health <= 0.0f)
+                            mob_die(et, mobs, MAX_MOBS, &nextMobId, loots,
+                                    questStatus, floatTexts, &player);
+                    }
+                }
+            }
+
             // Kilit minigame'i imleci
             lockpick_update(dt, &perkFx);
 
@@ -5130,7 +5194,8 @@ int main(int argc, char *argv[])
                                    * (isSummon ? perkFx.summonCostMult : 1.0f)
                                    * (ad->skill == SKILL_LIGHT
                                       ? perkFx.holyManaMult : 1.0f);
-                        bool needTarget = (hs->abilityId == ABILITY_HOLY_BEAM ||
+                        bool needTarget = (hs->abilityId == ABILITY_LIFE_DRAIN ||
+                                           hs->abilityId == ABILITY_HOLY_BEAM ||
                                            hs->abilityId == ABILITY_FIREBOLT ||
                                            hs->abilityId == ABILITY_LIGHTNING ||
                                            hs->abilityId == ABILITY_ICETACLE ||
@@ -5149,7 +5214,8 @@ int main(int argc, char *argv[])
                         if (player.abilityCd[hs->abilityId] > 0.0f)
                             ;   // CD sürüyor — bar perdesi gösteriyor
                         else if (ad->hpFrac > 0.0f &&
-                                 player.health <= player.maxHealth * ad->hpFrac + 5.0f)
+                                 player.health <= player.maxHealth * ad->hpFrac
+                                                  * perkFx.echoCostMult + 5.0f)
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  player.rect.x + player.rect.w / 2.0f,
                                                  player.rect.y - 10.0f,
@@ -5974,7 +6040,8 @@ int main(int argc, char *argv[])
                         {
                             // FISILTI PATLAMASI: bedel KAN (max HP %10) —
                             // çevrene gölge dalgası; Yankı seviyesi büyütür
-                            float hpCost = player.maxHealth * sd->hpFrac;
+                            float hpCost = player.maxHealth * sd->hpFrac
+                                         * perkFx.echoCostMult;
                             player.health -= hpCost;
                             if (player.health < 1.0f) player.health = 1.0f;
                             for (int q = 0; q < MAX_DARKBURST_FX; q++)
@@ -5984,9 +6051,10 @@ int main(int argc, char *argv[])
                                     break;
                                 }
                             audio_play(SFX_WHISPER);
-                            float wbR = 130.0f;
+                            float wbR = 130.0f + perkFx.whisperRadiusBonus;
                             float wbDmg = sd->damageScale
-                                        * (1.0f + (float)player.skills[SKILL_ECHO].level * 0.02f);
+                                        * (1.0f + (float)player.skills[SKILL_ECHO].level * 0.02f)
+                                        * perkFx.echoDmgMult;
                             for (int m2 = 0; m2 < mobCount; m2++)
                             {
                                 Mob *nb = &mobs[m2];
@@ -6015,13 +6083,64 @@ int main(int argc, char *argv[])
                         else if (castSpell == ABILITY_SHADOW_FORM)
                         {
                             // GÖLGE FORMU: 5sn algılanmaz + hızlı — kanla öder
-                            player.shadowTimer = 5.0f;
+                            player.shadowTimer = 5.0f + perkFx.shadowDurBonus;
                             audio_play(SFX_WHISPER);
                             fx_burst(&weaponFx, pcx, pcy, 22, 120.0f, 150, 90, 220);
                             SDL_Color vio4 = { 200, 160, 255, 255 };
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  pcx, player.rect.y - 24.0f,
                                                  "Gölgeye karıştın.", vio4);
+                        }
+                        else if (castSpell == ABILITY_LIFE_DRAIN)
+                        {
+                            // CAN EMME (P2): hedefe 4sn emiş DoT'u — çalınan
+                            // her tik SANA akar (DoT bölümü işler)
+                            Mob *dt2 = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                            if (dt2 != NULL)
+                            {
+                                float hpCost = player.maxHealth * sd->hpFrac
+                                             * perkFx.echoCostMult;
+                                player.health -= hpCost;
+                                if (player.health < 1.0f) player.health = 1.0f;
+                                dt2->drainDps = sd->damageScale
+                                    * (1.0f + (float)player.skills[SKILL_ECHO].level * 0.02f)
+                                    * perkFx.drainMult * perkFx.echoDmgMult;
+                                dt2->drainTime = 4.0f + perkFx.drainDurBonus;
+                                dt2->aggro = true;
+                                mob_alert_camp(mobs, mobCount, dt2);
+                                if (g_animFx != NULL)
+                                    animfx_spawn(g_animFx, darkburstTex, 16, 16,
+                                                 48.0f, 64.0f,
+                                                 dt2->e.rect.x + dt2->e.rect.w / 2.0f,
+                                                 dt2->e.rect.y + dt2->e.rect.h / 2.0f,
+                                                 20.0f, 1.2f);
+                                audio_play(SFX_WHISPER);
+                                SDL_Color vio5 = { 200, 160, 255, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                    dt2->e.rect.x + dt2->e.rect.w / 2.0f,
+                                    dt2->e.rect.y - 24.0f, "Damar açıldı.", vio5);
+                            }
+                        }
+                        else if (castSpell == ABILITY_ECHO_CALL)
+                        {
+                            // YANKI ÇAĞIRMA (P2): gölge kopyan belirir —
+                            // hedefinin yanında süzülür, vuruşunun %35'iyle vurur
+                            float hpCost = player.maxHealth * sd->hpFrac
+                                         * perkFx.echoCostMult;
+                            player.health -= hpCost;
+                            if (player.health < 1.0f) player.health = 1.0f;
+                            echoShadow.on = true;
+                            echoShadow.t = 12.0f + perkFx.echoCallDurBonus;
+                            echoShadow.atkT = 0.8f;
+                            echoShadow.x = pcx - 40.0f;
+                            echoShadow.y = pcy - 10.0f;
+                            audio_play(SFX_WHISPER);
+                            fx_burst(&weaponFx, echoShadow.x, echoShadow.y,
+                                     18, 100.0f, 150, 90, 220);
+                            SDL_Color vio6 = { 200, 160, 255, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, pcx,
+                                                 player.rect.y - 24.0f,
+                                                 "Yankın bedenlendi.", vio6);
                         }
                         else if (castSpell == ABILITY_HEAL_LIGHT)
                         {
@@ -6750,7 +6869,8 @@ int main(int argc, char *argv[])
                 }
 
                 // Max can: artış kadar iyileş (perk/gear takınca), azalışta kırp
-                float newMaxHp = BASE_MAX_HP + perkFx.maxHpBonus + (float)gearStat[STAT_HP];
+                float newMaxHp = (BASE_MAX_HP + perkFx.maxHpBonus
+                                  + (float)gearStat[STAT_HP]) * perkFx.echoHpMult;
                 if (newMaxHp > player.maxHealth)
                     player.health += newMaxHp - player.maxHealth;
                 player.maxHealth = newMaxHp;
@@ -7086,7 +7206,7 @@ int main(int argc, char *argv[])
             if (player.shadowTimer > 0.0f)
             {
                 player.shadowTimer -= dt;
-                player.health -= 4.0f * dt;
+                player.health -= (4.0f - perkFx.shadowDrainCut) * dt;
                 if (player.health <= 5.0f)
                 {
                     player.health = 5.0f;
@@ -8250,7 +8370,8 @@ int main(int argc, char *argv[])
 
             // Hız çarpanı: perk (Çevik/Rüzgar/Uyumlu) × gece (Gölge Adımı) × eğilme.
             // player_update tile hızıyla çarpar (doğrudan speed yazmak eziliyordu — bug'dı)
-            player.speedMult = (player.shadowTimer > 0.0f ? 1.2f : 1.0f)
+            player.speedMult = (player.shadowTimer > 0.0f
+                                ? 1.2f + perkFx.shadowSpeedBonus : 1.0f)
                              * (player.blocking
                                 ? (perkFx.stanceSlowMult < 0.0f ? 1.0f       // FALANKS
                                    : perkFx.stanceSlowMult > 0.0f
@@ -8383,6 +8504,37 @@ int main(int argc, char *argv[])
                                  0.4f, 6.0f + randf() * 6.0f, 255, 150, 50,
                                  WEAPON_FX_NONE);
                 }
+                // CAN EMME (Yankıcı P2): emilen HP oyuncuya AKAR (mor sızıntı)
+                if (mobs[i].drainTime > 0.0f && mobs[i].e.alive)
+                {
+                    mobs[i].drainTime -= dt;
+                    float drained = mobs[i].drainDps * dt;
+                    mobs[i].e.health -= drained;
+                    if (player.health > 0.0f)
+                    {
+                        player.health += drained;
+                        if (player.health > player.maxHealth)
+                            player.health = player.maxHealth;
+                    }
+                    if (randf() < dt * 6.0f)
+                        fx_spawn(&weaponFx,
+                                 mobs[i].e.rect.x + mobs[i].e.rect.w / 2.0f
+                                     + (randf() - 0.5f) * 20.0f,
+                                 mobs[i].e.rect.y + mobs[i].e.rect.h / 2.0f,
+                                 (randf() - 0.5f) * 30.0f, -40.0f - randf() * 30.0f,
+                                 0.5f, 4.0f + randf() * 4.0f, 170, 100, 230,
+                                 WEAPON_FX_NONE);
+                    // Emiş XP'si: tik başına (küçük ama sürekli)
+                    float sxp = combat_xp_for_hit(drained,
+                                    mobs[i].type->level,
+                                    player.skills[SKILL_ECHO].level);
+                    if (skill_add_xp(player.skills, SKILL_ECHO, sxp))
+                        on_skill_levelup(&player, SKILL_ECHO, &hotbar, floatTexts);
+                    if (mobs[i].e.health <= 0.0f && mobs[i].e.alive)
+                        mob_die(&mobs[i], mobs, MAX_MOBS, &nextMobId, loots,
+                                questStatus, floatTexts, &player);
+                }
+
                 // Zehir: kanamadan AYRI kanal — ikisi birden akar (tam DoT build'i)
                 if (mobs[i].poisonTime > 0.0f && mobs[i].e.alive)
                 {
@@ -9329,6 +9481,23 @@ int main(int argc, char *argv[])
             }
             r2d_texture_set_color_mod(castCircleTex, 255, 255, 255);
             r2d_texture_set_alpha_mod(castCircleTex, 255);
+        }
+        // Yankı kopyası: mor tayf (bob salınımı + yön flip'i)
+        if (echoShadow.on && echoWispTex != NULL)
+        {
+            int wfr = (int)(echoShadow.t * 12.0f) % 20;
+            SDL_FRect wsrc = { (float)(wfr % 10) * 40.0f,
+                               (float)(wfr / 10) * 32.0f, 40.0f, 32.0f };
+            float bob = SDL_sinf(echoShadow.t * 3.0f) * 4.0f;
+            SDL_FRect wdst = {
+                (echoShadow.x - 40.0f - camera.x) * camera.zoom,
+                (echoShadow.y - 32.0f + bob - camera.y) * camera.zoom,
+                80.0f * camera.zoom, 64.0f * camera.zoom,
+            };
+            r2d_texture_set_alpha_mod(echoWispTex, 215);
+            r2d_draw_texture_flip(renderer, echoWispTex, &wsrc, &wdst,
+                                  echoShadow.facingLeft);
+            r2d_texture_set_alpha_mod(echoWispTex, 255);
         }
         fx_render(&weaponFx, renderer, glowTex, &camera);
         animfx_render(animFxPool, renderer, &camera);
@@ -10307,6 +10476,7 @@ int main(int argc, char *argv[])
     if (castCircleTex) r2d_texture_destroy(NULL, castCircleTex);
     if (holyBurstTex)  r2d_texture_destroy(NULL, holyBurstTex);
     if (holyImpactTex) r2d_texture_destroy(NULL, holyImpactTex);
+    if (echoWispTex)   r2d_texture_destroy(NULL, echoWispTex);
     for (int i = 0; i < 4; i++)
         if (slashArcTex[i]) r2d_texture_destroy(NULL, slashArcTex[i]);
     for (int i = 0; i < 3; i++)

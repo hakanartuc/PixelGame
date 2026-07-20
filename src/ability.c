@@ -158,6 +158,18 @@ const AbilityDef ABILITIES[ABILITY_COUNT] = {
     },
 
     // KUTSAL okulu (Faz HOLY): şifa + undead avcılığı — XP şifa/kutsal hasardan
+    [ABILITY_LIFE_DRAIN] = {
+        .name = "Can Emme", .abbrev = "CE",
+        .skill = SKILL_ECHO, .unlockLevel = 1,
+        .damageScale = 8.0f,    // saniyede emilen HP (4sn — sana akar)
+        .cooldown = 10.0f, .hpFrac = 0.08f,
+    },
+    [ABILITY_ECHO_CALL] = {
+        .name = "Yankı Çağırma", .abbrev = "YÇ",
+        .skill = SKILL_ECHO, .unlockLevel = 1,
+        .damageScale = 0.35f,   // kopyanın vuruş oranı (senin vuruşunun %35'i)
+        .cooldown = 30.0f, .hpFrac = 0.12f,
+    },
     [ABILITY_HEAL_LIGHT] = {
         .name = "Şifa Nuru", .abbrev = "ŞN",
         .skill = SKILL_LIGHT, .unlockLevel = 1,

@@ -922,6 +922,85 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - İkon atlası 24→29 hücre (gen_ability_icons.py — Yankıcı 24-25 boşluğu da
   dolduruldu) · Holy VFX sheet'leri assets/fx/ · F10 kitine 3 tomar.
 
+### Faz YP2+TB64 — YANKICI PARÇA 2 + spellsLearned 64-bit (2026-07-20)
+- **TB64 (teknik borç)**: Player.spellsLearned Uint32→Uint64; save v27 alanı
+  ALT 32 bit olarak yerinde kalır, ÜST 32 bit toleranslı kuyruğa (boss2'den
+  sonra) — eski save'ler bozulmaz. Tüm bit işlemleri 1ull.
+- **CAN EMME** (hedefli): bedel max HP %8; hedefe 4sn emiş DoT'u (8/sn taban,
+  Yankı sev. + ağaç ölçekler) — emilen her tik OYUNCUYA AKAR (mor sızıntı FX,
+  Mob.drainDps/drainTime yeni kanal, tik başına Yankı XP).
+- **YANKI ÇAĞIRMA**: bedel max HP %12; 12sn gölge kopya (echo_wisp 20 kare,
+  bob+flip) — hedefinin yanında süzülür, 1.2sn'de bir SENİN vuruşunun %35'i
+  (combat_player_hit ile — silah/perk/crit işler). Hedef yoksa yanında bekler.
+- **T_ECHO "Fısıltı Yolu" ağacı (16 düğüm)**: Sömürü (bedel -%5/-%5/-%15,
+  emiş +%10, +2sn) · Gölge (form +1/+2sn, hız +%10, bedel 4→2 HP/sn) ·
+  Fısıltı (yarıçap +20px, hasar +%5/+%12, kopya +4sn) + keystone AÇ GÖLGE
+  (Yankı +%25, max HP -%10). PerkEffects +10 alan; P1 büyüleri de kablolandı
+  (whisper yarıçap/hasar/bedel, form süre/hız/bedel, maxHP çarpanı).
+- İkon atlası 29→31; ritüel unlocks P2 büyülerini de açar (echo_apply_unlocks).
+- TEST NOTU: P1 ritüeli HÂLÂ TEST EDİLMEDİ — P1+P2 tek turda test edilebilir
+  (F10 → taş halkası T108,7 → gece [E] → ritüel → 4 büyü + K'da Yankı ağacı).
+
+### PLAN — SUİKASTÇİ SINIFI: "SESSİZ EL LOCASI" (2026-07-20 Hakan onayları)
+**Konsept**: 2. gizli sınıf. Yankıcı = mistik/bedel-CAN büyücüsü; SUİKASTÇİ =
+FİZİKSEL gölge savaşçısı (stamina + zehir + pozisyon + patlama hasarı).
+Keşif davranıştan doğar (tasarım felsefesi) — anlatım ESO standardında.
+
+**KEŞİF + AÇILIŞ (onaylı)**: Kör Kuyu'nun DİBİ = locanın kapısı. Kirli Mal
+sistemiyle organik bağ: toplam aklanan altın eşiği aşınca (öneri: 500g+)
+bir gece kuyudan İP sarkar — "seni izliyorduk". İnen oyuncu SESSİZ EL
+locasını bulur (yeni yer altı haritası: MAP_LOCA — kuyu dibi + kaçakçı
+tünelleri). Sınıf, 5 görevlik zincir TAMAMLANINCA açılır.
+
+**GÖREV ZİNCİRİ (5 görev, WoW yapısı — ardışık, her adım öncekini okur;
+anlatım ESO: zengin diyalog, seçenekli sorgulama, kişilikli NPC ağzı)**:
+1. SINAV — "Görülmeden": loca ustası (adı sonra) köyden bir eşyayı TANIKSIZ
+   çalmani ister (sneak+pickpocket sınavı; yakalanırsan görev sıfırlanır)
+2. TAKİP — "Gölge Ol": bir NPC'yi gün boyu takip et, 3 durağını rapor et
+   (rutin sistemi zaten saat bazlı — takip mesafesi + görülmeme koşulu)
+3. TEDARİK — "Dilsiz Şişe": zehir hammaddesi topla + simya kazanında kaynat
+   (Alchemy sinerjisi; tarif locadan)
+4. SAHTE ÖLÜM — "Ölmeden Öl": locanın sahnelediği ölümde figüran ol (vinyet
+   + karar: tanığı sustur / rüşvet / bırak — kişilik sayaçlarına işler)
+5. BÜYÜK HEDEF — "İlk İmza": gerçek suikast (aşağıdaki kontrat kurallarıyla).
+   Tamamlanınca: SINIF AÇILIR + Suikastçi silahı (özel hançer — Yankıcı
+   kuralı gibi: keşiften önce HİÇBİR kaynaktan düşmez)
+
+**BECERİLER (onaylı 5'li — SKILL_ASSASSIN yeni okul, XP: gizli öldürme +
+sırttan hasar; ağaç sonra ayrı fazda)**:
+- SIRTTAN BIÇAK (KO Backstab): arkadan ×3.0 — pozisyon oyunu
+- GÖLGE ADIMI (WoW Shadowstep): hedefin arkasına ışınlan + garantili kritik
+- DUMAN PERDESİ (Vanish): anında görünmez + aggro sıfır, 3sn
+- ZEHİR SÜRME: 60sn silaha zehir DoT (Alchemy iksirinden üretim)
+- KİRİŞ KESME: kanatma + %40 yavaş 4sn (kaçanı yakalar)
+
+**LONCA KONTRAT SİSTEMİ + RÜTBE (Hakan ek isteği 2026-07-20)**:
+- Loca ARA ARA görev/suikast ister (pano deseni: contract.c benzeri ama
+  locaya özel — hedef gerçek NPC ya da adlı mob; rastgele değil KURGULU havuz)
+- RÜTBE: kontrat tamamladıkça yükselir (Çırak → El → Bıçak → Gölge → Usta El)
+- DÜNYAYA ETKİ (zorunlu tasarım kuralı):
+  · Öldürülen NPC DÜNYADAN KALKAR (npc_set_alive kalıcı) — dükkanı kapanır,
+    diyalogları/görevleri ölür, köy ekonomisi etkilenir (fiyat/stok)
+  · TANIK varsa suç sistemi işler: bounty + bölge itibarı düşer; temiz iş
+    = loca övgüsü + ekstra ödeme
+  · Haber ağı: ertesi şafak NPC'ler cinayeti konuşur (worldevent haber deseni)
+  · Rütbe etkileri: loca dükkanı kademeli açılır (zehirler/suikast ekipmanı),
+    kuyu aklama oranı rütbeyle iyileşir (0.5 → 0.65), yüksek rütbede gece
+    sokakta loca selamı (bazı NPC'ler farklı konuşur), muhafız şüphesi artar
+- Kontrat REDDİ de kimlik: art arda ret → loca soğur, kontratlar seyrekleşir
+
+**ANLATIM STANDARDI (bundan sonra TÜM görevlerde — ESO tarzı, ses yok)**:
+görev veren kişilikli anlatır (kısa değil, dünyasını açar); oyuncuya
+SORGULAMA seçenekleri (görevi almadan "neden ben?", "kim bu adam?" dalları);
+görev metni günlüğe NPC'nin ağzından düşer; tamamlama diyaloğu sonucu okur
+(nasıl yaptıysan ona göre tepki). Eski görevler dokunulmaz, zamanla elden geçer.
+
+**TEKNİK NOTLAR**: MAP_LOCA enum SONA; skill/ability enum SONA (spellsLearned
+64-bit'e genişletildi — bkz. Faz TB64); loca NPC'leri npcState tavanına DİKKAT
+(11/12 dolu — tavan büyütme gerekecek); rütbe+kontrat durumu save'e toleranslı
+kuyrukla. Sıralama önerisi: P1 harita+keşif+zincir 1-2 → P2 zincir 3-5 +
+sınıf+beceriler → P3 kontrat sistemi+rütbe+dünya etkileri.
+
 ### ASSET SIRASI (2026-07-17 — Hakan'ın indirdiği paketler, onaylı işleme sırası)
 İndirilenler (~/Downloads):
 - **Harita**: Free-Undead-Tileset (açık hava lanetli arazi — LANETLİ MEZARLIK

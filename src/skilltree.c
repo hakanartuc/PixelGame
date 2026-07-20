@@ -464,6 +464,30 @@ static const TreeNode T_ENCHANTING[] = {
     M_KEY("RÜN HAKİMİ",    "Rün şansı +%15 — törenler %30 yavaş"),
 };
 
+// --- YANKI: "Fısıltı Yolu" (T_ECHO — Yankıcı P2). Sınıf gizli: satır
+// ritüele dek görünmez, ağaç da ancak o zaman açılır. Bedel hep CAN.
+static const TreeNode T_ECHOTREE[] = {
+    N_ROOT("Fısıltı Kulağı", "Yankı hasarı +%3"),
+    N_MIN("Pazarlık",       "Kan bedeli -%5",                   0, 1, 1),
+    N_MIN("Kanın Aklı",     "Kan bedeli -%5",                   1, 1, 2),
+    N_NOT("Ucuz Bedel",     "Kan bedeli -%15",                  2, 1, 3),
+    N_MIN("Aç Damar",       "Can Emme gücü +%10",               3, 1, 4),
+    N_NOT("Uzun Emiş",      "Can Emme süresi +2sn",             4, 1, 5),
+
+    N_MIN("Sessiz Adım",    "Gölge Formu +1sn",                 0, 3, 1),
+    N_MIN("Akan Karanlık",  "Formda hız +%10 daha",             6, 3, 2),
+    N_NOT("Derin Gölge",    "Form bedeli 4 -> 2 HP/sn",         7, 3, 3),
+    N_MIN("Soğuk Nefes",    "Yankı hasarı +%4",                 8, 3, 4),
+    N_NOT("Gölgede Yaşayan","Gölge Formu +2sn daha",            9, 3, 5),
+
+    N_MIN("Geniş Fısıltı",  "Patlama yarıçapı +20px",           0, 5, 1),
+    N_MIN("Keskin Fısıltı", "Yankı hasarı +%5",                11, 5, 2),
+    N_NOT("Çığlık",         "Yankı hasarı +%12",               12, 5, 3),
+    N_NOT("Kalıcı Yankı",   "Yankı Çağırma +4sn",              13, 5, 4),
+
+    N_KEY("AÇ GÖLGE",       "Yankı büyüleri +%25 — max HP -%10", 5, 13, 3),
+};
+
 // --- KUTSAL: "Nur Yolu" — Şifa / Işık / Koruma + 2 bedelli keystone.
 // Aktif büyüler AĞAÇTA DEĞİL (tomarla öğrenilir — Faz HOLY); ağaç pasif güçtür.
 static const TreeNode T_HOLYTREE[] = {
@@ -512,6 +536,7 @@ static const SkillTreeDef TREES[] = {
     TREE_DEF(SKILL_STAFF,        T_STAFFTREE),
     TREE_DEF(SKILL_CONJURATION,  T_CONJURATION),
     TREE_DEF(SKILL_LIGHT,        T_HOLYTREE),
+    TREE_DEF(SKILL_ECHO,         T_ECHOTREE),
     TREE_DEF(TREE_FATE,          T_FATE),
 };
 static const int TREE_COUNT = (int)(sizeof(TREES) / sizeof(TREES[0]));
@@ -601,6 +626,8 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         .spellDmgMult = 1.0f, .manaCostMult = 1.0f, .castSpeedMult = 1.0f,
         .holyDmgMult = 1.0f, .healMult = 1.0f, .holyManaMult = 1.0f,
         .holyZoneTickMult = 1.0f,
+        .echoDmgMult = 1.0f, .echoCostMult = 1.0f, .drainMult = 1.0f,
+        .echoHpMult = 1.0f,
         .staffDmgMult = 1.0f,
         .twoHandDmgMult = 1.0f, .sweepSlowMult = 1.0f,
         .summonDmgMult = 1.0f, .summonHpMult = 1.0f, .summonReserve = 0.25f,
@@ -690,6 +717,28 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         if (ON(T, 16)) { fx->holyZoneSelfHeal += 4.0f;                      // IŞIK TAŞIYICISI
                          fx->holyZoneBlockCut = 0.20f;
                          fx->holyZoneCdPenalty = 6.0f; }
+    }
+
+    // --- Yankı (Fısıltı Yolu — Yankıcı P2) ---
+    {
+        const int T = SKILL_ECHO;
+        if (ON(T, 0))  fx->echoDmgMult *= 1.03f;
+        if (ON(T, 1))  fx->echoCostMult *= 0.95f;
+        if (ON(T, 2))  fx->echoCostMult *= 0.95f;
+        if (ON(T, 3))  fx->echoCostMult *= 0.85f;
+        if (ON(T, 4))  fx->drainMult *= 1.10f;
+        if (ON(T, 5))  fx->drainDurBonus += 2.0f;
+        if (ON(T, 6))  fx->shadowDurBonus += 1.0f;
+        if (ON(T, 7))  fx->shadowSpeedBonus += 0.10f;
+        if (ON(T, 8))  fx->shadowDrainCut += 2.0f;
+        if (ON(T, 9))  fx->echoDmgMult *= 1.04f;
+        if (ON(T, 10)) fx->shadowDurBonus += 2.0f;
+        if (ON(T, 11)) fx->whisperRadiusBonus += 20.0f;
+        if (ON(T, 12)) fx->echoDmgMult *= 1.05f;
+        if (ON(T, 13)) fx->echoDmgMult *= 1.12f;
+        if (ON(T, 14)) fx->echoCallDurBonus += 4.0f;
+        if (ON(T, 15)) { fx->echoDmgMult *= 1.25f;    // AÇ GÖLGE
+                         fx->echoHpMult *= 0.90f; }
     }
 
     // --- Pickpocket (Gölge Eli) ---

@@ -144,6 +144,18 @@ typedef struct {
     float holyZoneBlockCut;   // Alan içinde blokta ek hasar kesintisi (0..1)
     float holyZoneCdPenalty;  // IŞIK TAŞIYICISI bedeli: Alan CD'sine eklenen sn
 
+    // Yankı — T_ECHO ağacı (Yankıcı P2)
+    float echoDmgMult;        // Yankı büyüleri hasar çarpanı (0 = 1.0 say)
+    float echoCostMult;       // bedel-CAN çarpanı (<1 ucuz; 0 = 1.0 say)
+    float drainMult;          // Can Emme emiş gücü çarpanı (0 = 1.0 say)
+    float drainDurBonus;      // Can Emme süresine eklenen sn (taban 4)
+    float shadowDurBonus;     // Gölge Formu süresine eklenen sn (taban 5)
+    float shadowSpeedBonus;   // Gölge Formu hız çarpanına eklenir (taban 1.2)
+    float shadowDrainCut;     // Formun HP/sn bedelinden düşülen (taban 4)
+    float whisperRadiusBonus; // Fısıltı Patlaması yarıçapına eklenen px (taban 130)
+    float echoCallDurBonus;   // Yankı Çağırma süresine eklenen sn (taban 12)
+    float echoHpMult;         // AÇ GÖLGE bedeli: max HP çarpanı (0 = 1.0 say)
+
     // Kader Ağacı (karakter-geneli)
     float maxStaminaBonus, maxManaBonus;
     float stamRegenMult, manaRegenMult;

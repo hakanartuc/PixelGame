@@ -51,7 +51,7 @@ def save_png(path, W, H, img):
     png += chunk(b'IEND', b'')
     open(path, 'wb').write(png)
 
-N = 29; CELL = 32   # 24-25 Yankıcı, 26-28 Kutsal (Faz HOLY)
+N = 31; CELL = 32   # 24-25 Yankıcı, 26-28 Kutsal, 29-30 Yankıcı P2
 W, H = N * CELL, CELL
 px = bytearray(W * H * 4)
 
@@ -283,5 +283,26 @@ for a_ in range(0, 360, 6):
 rect(c + 14, 8, 4, 8, (255, 250, 220))        # merkez ışık süzmesi
 rect(c + 15, 6, 2, 12, (255, 240, 170))
 
+# 29 LIFE_DRAIN — kan damlası + emiş oku (Yankıcı P2)
+frame(29, (52, 38, 66))
+c = 29*CELL
+for y_ in range(8, 18):                        # damla gövdesi
+    w_ = min(y_ - 6, 5)
+    rect(c + 16 - w_ // 1, y_, w_*2, 1, (200, 50, 70))
+rect(c + 14, 12, 4, 6, (255, 120, 140))       # damla parlaması
+for i in range(4):                             # yukarı emiş okları (mor)
+    rect(c + 10 + i*4, 22 - (i % 2)*2, 2, 4, (170, 100, 230))
+    rect(c + 9 + i*4, 24 - (i % 2)*2, 4, 2, (140, 80, 200))
+
+# 30 ECHO_CALL — ikiz silüet (asıl + mor kopya)
+frame(30, (52, 38, 66))
+c = 30*CELL
+rect(c + 9, 8, 5, 5, (220, 210, 230))         # asıl: baş
+rect(c + 8, 13, 7, 10, (200, 190, 215))       # asıl: gövde
+rect(c + 18, 10, 5, 5, (120, 80, 190), 220)   # kopya: baş (mor, saydam his)
+rect(c + 17, 15, 7, 10, (100, 65, 165), 220)  # kopya: gövde
+for i in range(3):                             # arada yankı çizgileri
+    put(c + 15, 12 + i*4, (180, 140, 240))
+
 save_png('assets/icons/abilities.png', W, H, px)
-print("OK assets/icons/abilities.png (29 hücre 32x32)")
+print("OK assets/icons/abilities.png (31 hücre 32x32)")

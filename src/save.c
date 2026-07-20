@@ -261,7 +261,7 @@ bool save_game(const char *path, const Player *p,
     ok = ok && w32(f, p->skinTone) && w32(f, p->background);
 
     // Tomarla öğrenilen büyüler (v27): bit maskesi (bit = AbilityId)
-    ok = ok && w32(f, (Sint32)p->spellsLearned);
+    ok = ok && w32(f, (Sint32)(Uint32)(p->spellsLearned & 0xFFFFFFFFull));   // alt 32 (v27 yeri)
 
     // Kirli mal & aklama (v29)
     ok = ok && w32(f, p->dirtyGold) && w32(f, p->wellGold) && w32(f, p->wellDay);
@@ -302,6 +302,8 @@ bool save_game(const char *path, const Player *p,
     // Boss 2: Ölüm Getiren (mezarlık) diriliş kaydı
     ok = ok && w32(f, boss2_last_kill_day())
             && w32(f, boss2_first_kill_done() ? 1 : 0);
+    // spellsLearned ÜST 32 bit (Faz TB64 — alt 32 v27 yerinde durur)
+    ok = ok && w32(f, (Sint32)(Uint32)(p->spellsLearned >> 32));
 
     fclose(f);
     if (!ok)
@@ -539,7 +541,7 @@ bool load_game(const char *path, Player *p,
     {
         Sint32 sl = 0;
         ok = ok && r32(f, &sl);
-        tmpP.spellsLearned = (Uint32)sl;
+        tmpP.spellsLearned = (Uint64)(Uint32)sl;   // alt 32 — üst 32 kuyruktan
     }
 
     // Kirli mal & aklama (v29)
@@ -582,9 +584,10 @@ bool load_game(const char *path, Player *p,
 
     // TOLERANSLI KUYRUK (v29 sonrası eklenen alanlar — eski save'de yoksa
     // varsayılan): boss 2 (Ölüm Getiren) diriliş kaydı
-    Sint32 b2Day = -999, b2First = 0;
+    Sint32 b2Day = -999, b2First = 0, slHi = 0;
     if (ok && !r32(f, &b2Day)) { b2Day = -999; b2First = 0; }
     else if (ok && !r32(f, &b2First)) b2First = 0;
+    if (ok && !r32(f, &slHi)) slHi = 0;   // eski save: üst bitler yok
 
     fclose(f);
     if (!ok) {
