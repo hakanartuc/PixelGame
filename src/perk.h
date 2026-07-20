@@ -131,6 +131,19 @@ typedef struct {
     bool  pickStealItem;      // GÖLGE ELİ: başarıda ekstra eşya zarı
     float staffSpellBonus;    // asa KUŞANILIYKEN ek büyü çarpanı payı
 
+    // Kutsal — Nur Yolu ağacı (Faz HOLY)
+    float holyDmgMult;        // kutsal büyü hasar çarpanı (0 = 1.0 say)
+    float healMult;           // Şifa Nuru gücü çarpanı (0 = 1.0 say)
+    float holyManaMult;       // Kutsal büyü mana çarpanı (0 = 1.0 say)
+    float healCdCut;          // Şifa Nuru CD'sinden düşülen sn (Rahibe)
+    float holyUndeadBonus;    // undead çarpanına eklenir (taban 1.6)
+    float holyZoneRadius;     // Kutsal Alan yarıçapına eklenen px (taban 120)
+    float holyZoneDur;        // Kutsal Alan süresine eklenen sn (taban 6)
+    float holyZoneTickMult;   // Alan tick hasarı çarpanı (0 = 1.0 say)
+    float holyZoneSelfHeal;   // Alanda dururken oyuncuya HP/sn (Sığınak+keystone)
+    float holyZoneBlockCut;   // Alan içinde blokta ek hasar kesintisi (0..1)
+    float holyZoneCdPenalty;  // IŞIK TAŞIYICISI bedeli: Alan CD'sine eklenen sn
+
     // Kader Ağacı (karakter-geneli)
     float maxStaminaBonus, maxManaBonus;
     float stamRegenMult, manaRegenMult;

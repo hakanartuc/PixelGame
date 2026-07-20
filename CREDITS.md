@@ -126,3 +126,8 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
   Pack 02** (Blood Monster_A; itch.io ücretsiz sürüm). TODO: yazar adı +
   lisans sayfası teyidi.
 - `assets/icons/items/death_sigil.png` — prosedürel üretildi (Nişan ikonu).
+
+## Kutsal VFX (Faz HOLY, 2026-07-18)
+- `assets/fx/holy_burst.png` (16 kare @48), `holy_impact.png` (7 @32),
+  `holy_beam_init.png`, `holy_beam_mid.png` — **Holy VFX 01-02** (itch.io).
+  TODO: yazar sayfası + lisans teyidi (paket arşivinde lisans dosyası yok).

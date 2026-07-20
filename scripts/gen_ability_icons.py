@@ -51,7 +51,7 @@ def save_png(path, W, H, img):
     png += chunk(b'IEND', b'')
     open(path, 'wb').write(png)
 
-N = 24; CELL = 32
+N = 29; CELL = 32   # 24-25 Yankıcı, 26-28 Kutsal (Faz HOLY)
 W, H = N * CELL, CELL
 px = bytearray(W * H * 4)
 
@@ -231,5 +231,57 @@ rect(c + 13, 12, 4, 4, (230, 230, 240))       # göbek
 for dx, dy in [(-4, 0), (4, 0), (0, -4), (0, 4)]:
     rect(c + 24 + dx//2, 10 + dy//2, 2, 2, (255, 220, 90))   # çarpma kıvılcımı
 
+# 24 WHISPER_BURST — mor gölge patlaması (Yankıcı)
+frame(24, (52, 38, 66))
+c = 24*CELL
+for r_ in range(4, 12, 3):                     # eşmerkezli mor halkalar
+    for a_ in range(0, 360, 12):
+        import math
+        x = int(16 + r_ * math.cos(math.radians(a_)))
+        y = int(16 + r_ * math.sin(math.radians(a_)))
+        put(c + x, y, (150 + r_*6, 90, 210))
+rect(c + 14, 14, 4, 4, (235, 210, 255))       # çekirdek
+
+# 25 SHADOW_FORM — koyu silüet (Yankıcı)
+frame(25, (40, 36, 52))
+c = 25*CELL
+rect(c + 13, 7, 6, 6, (25, 22, 36))           # baş
+rect(c + 11, 13, 10, 12, (25, 22, 36))        # gövde
+for i in range(5):                             # dağılan etek
+    rect(c + 11 + i*2, 25 + (i % 2), 2, 2, (45, 40, 66))
+rect(c + 14, 9, 2, 2, (140, 110, 200))        # göz parıltısı
+
+# 26 HEAL_LIGHT — altın artı + ışıma (Kutsal)
+frame(26, (96, 84, 46))
+c = 26*CELL
+rect(c + 13, 7, 6, 18, (255, 232, 150))       # dik kol
+rect(c + 7, 13, 18, 6, (255, 232, 150))       # yatay kol
+rect(c + 14, 8, 4, 16, (255, 250, 220))       # iç parlaklık
+rect(c + 8, 14, 16, 4, (255, 250, 220))
+for x_, y_ in [(6, 6), (25, 6), (6, 25), (25, 25)]:
+    put(c + x_, y_, (255, 240, 180))           # köşe kıvılcımları
+
+# 27 HOLY_BEAM — gökten inen hüzme (Kutsal)
+frame(27, (96, 84, 46))
+c = 27*CELL
+for y_ in range(5, 24):                        # daralan ışık sütunu
+    w_ = 8 - y_ // 5
+    rect(c + 16 - w_ // 2, y_, w_, 1, (255, 240, 170))
+rect(c + 15, 5, 2, 19, (255, 252, 230))       # çekirdek çizgi
+for i in range(6):                             # zemin ışıması
+    rect(c + 10 + i*2, 25, 2, 2, (255, 225, 140) if i % 2 else (255, 245, 200))
+
+# 28 HOLY_ZONE — altın çember (Kutsal)
+frame(28, (96, 84, 46))
+c = 28*CELL
+import math
+for a_ in range(0, 360, 6):
+    x = int(16 + 10 * math.cos(math.radians(a_)))
+    y = int(20 + 5 * math.sin(math.radians(a_)))   # perspektifli elips
+    put(c + x, y, (255, 232, 150))
+    put(c + x, y - 1, (255, 245, 200))
+rect(c + 14, 8, 4, 8, (255, 250, 220))        # merkez ışık süzmesi
+rect(c + 15, 6, 2, 12, (255, 240, 170))
+
 save_png('assets/icons/abilities.png', W, H, px)
-print("OK assets/icons/abilities.png (24 hücre 32x32)")
+print("OK assets/icons/abilities.png (29 hücre 32x32)")

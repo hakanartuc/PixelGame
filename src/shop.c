@@ -11,6 +11,7 @@
 const ShopEntry SHOP_STOCK[] = {
     { &ITEM_TYPES[ITEM_POTION_HP] },
     { &ITEM_TYPES[ITEM_POTION_MANA] },
+    { &ITEM_TYPES[ITEM_TOME_HEAL] },      // Kutsal giriş kapısı (Faz HOLY — sabit)
     { &ITEM_TYPES[ITEM_TORCH] },       // gece hazirligi: envanterdeyken isik verir
     { &ITEM_TYPES[ITEM_LOCKPICK] },    // zindan hazirligi: kilitli sandiklar
     { &ITEM_TYPES[ITEM_PICKAXE] },     // madencilik araci
@@ -38,6 +39,7 @@ const ShopEntry CARAVAN_STOCK[] = {
     { &ITEM_TYPES[ITEM_ESSENCE_TOXIC] },
     { &ITEM_TYPES[ITEM_ARROW] },
     { &ITEM_TYPES[ITEM_POTION_MANA] },
+    { &ITEM_TYPES[ITEM_TOME_HEAL] },      // Kutsal giriş kapısı (Faz HOLY — sabit)
     // Tomarlar SABİT DEĞİL: her kervanda havuzdan 2 rastgele tomar bulunur —
     // aktif stok main'de kurulur (CARAVAN_STOCK + 2 tomar; startDay tohumlu)
 };

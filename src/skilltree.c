@@ -464,6 +464,31 @@ static const TreeNode T_ENCHANTING[] = {
     M_KEY("RÜN HAKİMİ",    "Rün şansı +%15 — törenler %30 yavaş"),
 };
 
+// --- KUTSAL: "Nur Yolu" — Şifa / Işık / Koruma + 2 bedelli keystone.
+// Aktif büyüler AĞAÇTA DEĞİL (tomarla öğrenilir — Faz HOLY); ağaç pasif güçtür.
+static const TreeNode T_HOLYTREE[] = {
+    N_ROOT("İlk Nur",       "Kutsal hasar +%3"),
+    N_MIN("Merhem",         "Şifa gücü +%5",                    0, 1, 1),
+    N_MIN("Şefkat",         "Şifa gücü +%5",                    1, 1, 2),
+    N_NOT("Adak",           "Şifa gücü +%15",                   2, 1, 3),
+    N_MIN("Dua Akışı",      "Kutsal büyü manası -%5",           3, 1, 4),
+    N_NOT("Rahibe",         "Şifa Nuru bekleme 8 -> 6 sn",      4, 1, 5),
+
+    N_MIN("Kıvılcım",       "Kutsal hasar +%3",                 0, 3, 1),
+    N_MIN("Parıltı",        "Kutsal hasar +%4",                 6, 3, 2),
+    N_NOT("Arınma",         "Undead çarpanı x1.6 -> x1.8",      7, 3, 3),
+    N_MIN("Gün Işığı",      "Kritik şansı +%3",                 8, 3, 4),
+    N_NOT("Kıyamet",        "Kutsal hasar +%10",                9, 3, 5),
+
+    N_MIN("Geniş Çember",   "Kutsal Alan yarıçapı +25px",       0, 5, 1),
+    N_MIN("Uzun Nöbet",     "Kutsal Alan süresi +2sn",         11, 5, 2),
+    N_NOT("Yakıcı Nur",     "Alan tick hasarı +%30",           12, 5, 3),
+    N_NOT("Sığınak",        "Alanda dururken SANA 2 HP/sn",    13, 5, 4),
+
+    N_KEY("AZİZ",           "Şifa +%30, kutsal hasar +%15 — max stamina -15", 5, 10, 2),
+    N_KEY("IŞIK TAŞIYICISI","Alan seni 4 HP/sn iyileştirir + alanda blok %20 güçlü — Alan CD +6sn", 10, 14, 4),
+};
+
 #define TREE_DEF(id, tbl) { id, tbl, (int)(sizeof(tbl) / sizeof((tbl)[0])) }
 static const SkillTreeDef TREES[] = {
     TREE_DEF(SKILL_ONE_HANDED,   T_ONEHAND),
@@ -486,6 +511,7 @@ static const SkillTreeDef TREES[] = {
     TREE_DEF(SKILL_DESTRUCTION,  T_DESTRUCTION),
     TREE_DEF(SKILL_STAFF,        T_STAFFTREE),
     TREE_DEF(SKILL_CONJURATION,  T_CONJURATION),
+    TREE_DEF(SKILL_LIGHT,        T_HOLYTREE),
     TREE_DEF(TREE_FATE,          T_FATE),
 };
 static const int TREE_COUNT = (int)(sizeof(TREES) / sizeof(TREES[0]));
@@ -573,6 +599,8 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         .stamRegenMult = 1.0f, .manaRegenMult = 1.0f,
         .xpGainMult = 1.0f, .goldFindMult = 1.0f,
         .spellDmgMult = 1.0f, .manaCostMult = 1.0f, .castSpeedMult = 1.0f,
+        .holyDmgMult = 1.0f, .healMult = 1.0f, .holyManaMult = 1.0f,
+        .holyZoneTickMult = 1.0f,
         .staffDmgMult = 1.0f,
         .twoHandDmgMult = 1.0f, .sweepSlowMult = 1.0f,
         .summonDmgMult = 1.0f, .summonHpMult = 1.0f, .summonReserve = 0.25f,
@@ -637,6 +665,31 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         if (ON(T, 13)) fx->sweepSlowMult = 1.5f;
         if (ON(T, 14)) fx->kbDealtMult *= 1.5f;
         // 15 KAPI TUTUCU: grantAbility (duruş) — pasif etki yok
+    }
+
+    // --- Kutsal (Nur Yolu — Faz HOLY) ---
+    {
+        const int T = SKILL_LIGHT;
+        if (ON(T, 0))  fx->holyDmgMult *= 1.03f;
+        if (ON(T, 1))  fx->healMult *= 1.05f;
+        if (ON(T, 2))  fx->healMult *= 1.05f;
+        if (ON(T, 3))  fx->healMult *= 1.15f;
+        if (ON(T, 4))  fx->holyManaMult *= 0.95f;
+        if (ON(T, 5))  fx->healCdCut += 2.0f;
+        if (ON(T, 6))  fx->holyDmgMult *= 1.03f;
+        if (ON(T, 7))  fx->holyDmgMult *= 1.04f;
+        if (ON(T, 8))  fx->holyUndeadBonus += 0.2f;
+        if (ON(T, 9))  fx->critChanceBonus += 0.03f;
+        if (ON(T, 10)) fx->holyDmgMult *= 1.10f;
+        if (ON(T, 11)) fx->holyZoneRadius += 25.0f;
+        if (ON(T, 12)) fx->holyZoneDur += 2.0f;
+        if (ON(T, 13)) fx->holyZoneTickMult *= 1.30f;
+        if (ON(T, 14)) fx->holyZoneSelfHeal += 2.0f;
+        if (ON(T, 15)) { fx->healMult *= 1.30f; fx->holyDmgMult *= 1.15f;   // AZİZ
+                         fx->maxStaminaBonus -= 15.0f; }
+        if (ON(T, 16)) { fx->holyZoneSelfHeal += 4.0f;                      // IŞIK TAŞIYICISI
+                         fx->holyZoneBlockCut = 0.20f;
+                         fx->holyZoneCdPenalty = 6.0f; }
     }
 
     // --- Pickpocket (Gölge Eli) ---

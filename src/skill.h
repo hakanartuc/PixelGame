@@ -33,6 +33,7 @@ typedef enum {
     SKILL_STAFF,
     SKILL_CONJURATION,   // dostların verdiği hasarla gelişir (M4)          // asa (asa vuruşu + tam-büyücü silah ağacı)
     SKILL_ECHO,           // Yankı: fısıltı becerileri (Sömüren hattı — bedel CAN)
+    SKILL_LIGHT,          // Kutsal: şifa + ışık büyüleri (XP = şifa + kutsal hasar)
     SKILL_COUNT,
     SKILL_NONE = -1,      // skill'e bağlı olmayan eylem (örn. silahsız vuruş)
 } SkillType;

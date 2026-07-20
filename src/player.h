@@ -212,6 +212,7 @@ enum {
     SF_S3_HINTS  = 5,   // Zehra ipuçları alındı (1) — Nuh seçeneklerinde işaret
     SF_WELL      = 6,   // Kör Kuyu: 0 bilinmiyor · 1 Yabancı anlattı (kuyu aktif)
     SF_YANKICI   = 7,   // Gizli sınıf: 0 hiç · 1 fısıltı çağırdı · 2 ritüel tamam
+    SF_K9_TOME   = 8,   // Fatma'nın hediyesi (Şifa Nuru tomarı) verildi (Faz HOLY)
 };
 
 

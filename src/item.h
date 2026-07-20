@@ -278,6 +278,10 @@ typedef enum {
     // YANKICI (gizli sınıf): unique silah — yalnız ritüel taşında bulunur
     ITEM_WHISPER_BLADE,   // Fısıltı Keskisi: eksik canla keskinleşen hançer
     ITEM_DEATH_SIGIL,     // Ölüm Getiren'in Nişanı: unique kolye (boss ilk ölüm)
+    // KUTSAL okulu tomarları (Faz HOLY)
+    ITEM_TOME_HEAL,       // Tomar: Şifa Nuru (kervan sabit + Fatma hediyesi)
+    ITEM_TOME_HOLYBEAM,   // Tomar: Kutsal Hüzme (Kutsal 5 — Hortlak %8 + USTA sandık)
+    ITEM_TOME_HOLYZONE,   // Tomar: Kutsal Alan (Kutsal 15 — Hortlak %6 + USTA sandık)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

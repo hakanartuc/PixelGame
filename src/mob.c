@@ -110,6 +110,8 @@ static const LootEntry GHOUL_LOOT[] = {
     { &ITEM_TYPES[ITEM_ESSENCE_PALE],   0.30f, 0 },   // sunağın zengin kaynağı
     { &ITEM_TYPES[ITEM_SCROLL_ENCHANT], 0.06f, 0 },
     { &ITEM_TYPES[ITEM_STONE_INT],      0.05f, 0 },
+    { &ITEM_TYPES[ITEM_TOME_HOLYBEAM],  0.08f, 0 },   // Kutsal kaynakları (HOLY):
+    { &ITEM_TYPES[ITEM_TOME_HOLYZONE],  0.06f, 0 },   // ölüye kutsalı yine ölü taşır
 };
 static const LootEntry BLOOD_LOOT[] = {
     { &ITEM_TYPES[ITEM_MEAT],           0.60f, 0 },   // etobur yığın — 'taze' et
@@ -480,6 +482,7 @@ const MobType MOB_TYPES[] = {
     // [12] İskelet Savaşçı — melee: hızlı, orta dayanıklı; saldırı 64×64 kılıç savurması
     {
         .name = "İskelet Savaşçı",
+        .undead = true,
         .texturePath = "assets/characters/mobs/Skeleton_Swordman.png",
         .level = 4, .maxHealth = 140.0f, .speed = 180.0f,
         .attackRange = 65.0f, .detectRange = 300.0f, .damage = 12.0f, .defense = 8.0f,
@@ -513,6 +516,7 @@ const MobType MOB_TYPES[] = {
     // Menzili (280) oyuncu yayından (340) kısa — açılışta oyuncu hep önde
     {
         .name = "İskelet Okçu",
+        .undead = true,
         .texturePath = "assets/characters/mobs/Skeleton_Bowman.png",
         .level = 4, .maxHealth = 90.0f, .speed = 150.0f,
         .attackRange = 280.0f, .detectRange = 320.0f, .damage = 14.0f, .defense = 3.0f,
@@ -546,6 +550,7 @@ const MobType MOB_TYPES[] = {
     // [14] İskelet Büyücü — cam top: az can, sert ve yavaş büyü mermisi
     {
         .name = "İskelet Büyücü",
+        .undead = true,
         .texturePath = "assets/characters/mobs/Skeleton_Mage.png",
         .level = 5, .maxHealth = 70.0f, .speed = 140.0f,
         .attackRange = 240.0f, .detectRange = 300.0f, .damage = 22.0f, .defense = 0.0f,
@@ -580,6 +585,7 @@ const MobType MOB_TYPES[] = {
     // koyu-mor tonlu hali; faz mantığı main'de (yağmur + çağrı), leash yok.
     {
         .name = "İskelet Lordu",
+        .undead = true,
         .texturePath = "assets/characters/mobs/Skeleton_Swordman.png",
         .level = 12, .maxHealth = 900.0f, .speed = 150.0f,
         .attackRange = 85.0f, .detectRange = 420.0f, .damage = 28.0f, .defense = 20.0f,
@@ -694,6 +700,7 @@ const MobType MOB_TYPES[] = {
     // 250px kare (figür ~95px); asa savurması kare 5'te fırlatır.
     {
         .name = "Hortlak Büyücü",
+        .undead = true,
         .texturePath = "assets/characters/mobs/Ghoul_Wizard.png",
         .level = 9, .maxHealth = 260.0f, .speed = 150.0f,
         .attackRange = 260.0f, .detectRange = 340.0f, .damage = 30.0f, .defense = 6.0f,
@@ -764,6 +771,7 @@ const MobType MOB_TYPES[] = {
     // hızlanır + 2 iskelet çağırır. Haftalık diriliş (boss2_* save kuyruğu).
     {
         .name = "Ölüm Getiren",
+        .undead = true,
         .texturePath = "assets/characters/mobs/Bringer_of_Death.png",
         .level = 16, .maxHealth = 1600.0f, .speed = 160.0f,
         .attackRange = 95.0f, .detectRange = 460.0f, .damage = 34.0f, .defense = 24.0f,

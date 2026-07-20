@@ -53,6 +53,13 @@ bool skill_add_xp(Skill *skills, SkillType t, float xp)
 static bool echoVisible = false;
 void skill_set_echo_visible(bool v) { echoVisible = v; }
 static int skill_rows(void) { return SKILL_COUNT - (echoVisible ? 0 : 1); }
+// Panel satırı → SkillType: Yankı gizliyken ATLANIR (ECHO artık son eleman
+// değil — LIGHT sonra geldi; eski "son satırı kes" varsayımı kırılırdı)
+static SkillType row_skill(int row)
+{
+    if (!echoVisible && row >= (int)SKILL_ECHO) return (SkillType)(row + 1);
+    return (SkillType)row;
+}
 
 const char *skill_name(SkillType t)
 {
@@ -78,6 +85,7 @@ const char *skill_name(SkillType t)
         case SKILL_STAFF:        return "Staff";
         case SKILL_CONJURATION:  return "Conjuration";
         case SKILL_ECHO:         return "Yankı";
+        case SKILL_LIGHT:        return "Kutsal";
         default:                 return "?";
     }
 }
@@ -101,11 +109,12 @@ void skill_panel_render(const Skill *skills, R2D *renderer,
 
     float rowY = panelY + pad + 30.0f;
     for (int i = 0; i < skill_rows(); i++) {
-        const Skill *s = &skills[i];
+        SkillType si = row_skill(i);
+        const Skill *s = &skills[si];
 
         if (font != NULL) {
             char buf[48];
-            snprintf(buf, sizeof(buf), "%-13s %3d", skill_name((SkillType)i), s->level);
+            snprintf(buf, sizeof(buf), "%-13s %3d", skill_name(si), s->level);
             SDL_Color gray = { 210, 210, 220, 255 };
             draw_text(renderer, font, buf, panelX + pad, rowY, gray);
         }
@@ -153,5 +162,5 @@ int skill_panel_row_at(float x, float y, float panelX, float panelY)
     int row = (int)((y - gridY) / SKILL_PANEL_ROW_H);
     if (y < gridY || row < 0 || row > skill_rows()) return -1;
     if (row == skill_rows()) return SKILL_COUNT;   // Kader satırı (özel — kaysa da anlamı sabit)
-    return row;
+    return (int)row_skill(row);
 }

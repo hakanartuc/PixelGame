@@ -894,6 +894,34 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - MZ_CAMPS +3 (2 Hortlak kampı + güney ölü su Kan Canavarı yuvası).
 - SATYR + Demon_A sonraki dalgaya kaldı (backlog).
 
+### Faz HOLY-2 — NUR YOLU AĞACI (Hakan onayı — tam 18 düğüm)
+- T_HOLYTREE + TREE_DEF(SKILL_LIGHT): Şifa / Işık / Koruma şeritleri + AZİZ
+  (şifa+%30, hasar+%15, stamina -15) ve IŞIK TAŞIYICISI (alan 4 HP/sn +
+  alanda blok %20 güçlü, Alan CD +6sn) keystone'ları.
+- PerkEffects +11 alan (holyDmgMult/healMult/holyManaMult/healCdCut/
+  holyUndeadBonus/holyZone* — nötr init'e mult'lar eklendi).
+- Uygulama noktaları: mana maliyeti (2 yer), CD ayarı (Rahibe/bedel), şifa
+  gücü, hüzme çarpanları (undead 1.6+bonus), alan yarıçap/süre/tick/self-heal
+  (holyZone.r alanı), 3 blok noktasında alan-blok sinerjisi.
+
+### Faz HOLY — KUTSAL HATTI (onaylı sıra ⑥, Hakan onayları: 3 büyü + tomar/tapınak + denge)
+- **SKILL_LIGHT "Kutsal"** (enum sona): XP = şifa ×1.2 + kutsal hasar.
+  Panel satır eşlemesi düzeltildi (row_skill — ECHO gizliyken atlanır; eski
+  "son satırı kes" varsayımı LIGHT eklenince kırılıyordu).
+- **3 büyü** (ABILITY enum sona — spellsLearned 29/32 bit DOLULUK UYARISI):
+  ŞİFA NURU (30 mana → 35 HP taban, INT+Kutsal ölçekler, CD 8sn) ·
+  KUTSAL HÜZME (25 mana, 26 taban, UNDEAD ×1.6, CD 5sn, hedefli) ·
+  KUTSAL ALAN (40 mana, CD 20sn; 6sn/120px çember — undead %25 yavaş +
+  7/sn tick; tek çember, yeniden atım taşır).
+- **MobType.undead** alanı: iskelet ailesi + Lord + Hortlak + Bringer işaretli.
+- **Tomar gate GENELLEŞTİ**: okuma koşulu ABILITIES[ta].skill seviyesine bakar
+  (eskiden Yıkım'a sabitti) — mevcut tomarlar etkilenmez (hepsi Yıkım).
+- **Kaynaklar**: Şifa Nuru = kervan SABİT stok + FATMA HEDİYESİ (K9 tapınak
+  kararı verenlere son1_tomar düğümü, SF_K9_TOME ile bir kez; çanta doluysa
+  bayrak yanmaz) · Hüzme/Alan = Hortlak Büyücü %8/%6 + USTA sandık %15 havuzu.
+- İkon atlası 24→29 hücre (gen_ability_icons.py — Yankıcı 24-25 boşluğu da
+  dolduruldu) · Holy VFX sheet'leri assets/fx/ · F10 kitine 3 tomar.
+
 ### ASSET SIRASI (2026-07-17 — Hakan'ın indirdiği paketler, onaylı işleme sırası)
 İndirilenler (~/Downloads):
 - **Harita**: Free-Undead-Tileset (açık hava lanetli arazi — LANETLİ MEZARLIK

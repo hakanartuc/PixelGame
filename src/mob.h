@@ -88,6 +88,7 @@ typedef struct {
     float drawScale;         // çizim ölçeği (0 = varsayılan 2.0 — boss büyük çizilir)
     Uint8 tintR, tintG, tintB; // tür rengi (0,0,0 = boyama yok — boss koyu/mor)
     bool isBoss;             // boss: leash yok, faz mantığı main'de, tepe HP barı
+    bool undead;          // kutsal hasar ×1.6 (Faz HOLY — iskelet/hortlak)
     bool isStructure;        // yapı-mob (ork totemi): kımıldamaz, saldırmaz, kaçmaz
     float hitPoisonDps;      // vuruşu oyuncuyu zehirler: sn başına hasar (0 = yok)
     float hitPoisonTime;     // zehir süresi (sn)

@@ -33,6 +33,11 @@ opt: (Sessizce ayrıl.) -> k9:3
 text: Ateş büyüdükçe içim ısınıyor, yolcu. Oğlum kapıyı içeriden tutuyor, ben dışarıdan. Aile işi.
 opt: Nöbetin kolay gelsin. -> end
 
+[son1_tomar]
+text: Dur, gitme. Nöbeti tutarken eski şeyleri karıştırdım... Kerem'in babaannesinin duası. Kağıt eskidi ama ışığı eskimez. Kapıyı tutanlara nur gerek — sen de tutanlardansın artık.
+opt: (Tomarı al.) -> k9:tomar
+opt: Bende kalmasın, sende dursun. -> son1
+
 [son2]
 text: Ev sessiz. Ama huzurlu sessiz — eskisi gibi bekleyen sessiz değil. Sağ ol.
 opt: İyi günler, Fatma ana. -> end

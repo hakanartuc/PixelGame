@@ -157,6 +157,26 @@ const AbilityDef ABILITIES[ABILITY_COUNT] = {
         .cooldown = 20.0f,
     },
 
+    // KUTSAL okulu (Faz HOLY): şifa + undead avcılığı — XP şifa/kutsal hasardan
+    [ABILITY_HEAL_LIGHT] = {
+        .name = "Şifa Nuru", .abbrev = "ŞN",
+        .skill = SKILL_LIGHT, .unlockLevel = 1,
+        .damageScale = 35.0f,   // taban ŞİFA miktarı (INT + Kutsal ölçekler)
+        .cooldown = 8.0f, .mana = 30.0f,
+    },
+    [ABILITY_HOLY_BEAM] = {
+        .name = "Kutsal Hüzme", .abbrev = "KH",
+        .skill = SKILL_LIGHT, .unlockLevel = 1,
+        .damageScale = 26.0f,   // taban hasar — undead'e ×1.6 (main işler)
+        .cooldown = 5.0f, .mana = 25.0f,
+    },
+    [ABILITY_HOLY_ZONE] = {
+        .name = "Kutsal Alan", .abbrev = "KA",
+        .skill = SKILL_LIGHT, .unlockLevel = 1,
+        .damageScale = 7.0f,    // saniye başına tick hasarı (yalnız undead)
+        .cooldown = 20.0f, .mana = 40.0f,
+    },
+
     // M4 Conjuration: çağırma büyüleri (köklü cast; rezerve main'de işler)
     [ABILITY_SUMMON_SNAKE] = {
         .name = "Öz Yılanı", .abbrev = "YIL",

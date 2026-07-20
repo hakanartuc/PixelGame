@@ -438,6 +438,21 @@ const ItemType ITEM_TYPES[] = {
       .equipable = true, .equipSlot = EQUIP_NECKLACE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/death_sigil.png",
       .iconSrc = { 0, 0, 16, 16 } },
+
+    // KUTSAL okulu tomarları (Faz HOLY): gate ABILITIES[ta].skill seviyesine
+    // bakar (tomar okuma kodu genelleştirildi — Yıkım'a sabit değil artık)
+    { .name = "Tomar: Şifa Nuru", .iconIndex = 0, .maxStack = 1, .value = 300,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .tomeAbility = ABILITY_HEAL_LIGHT, .tomeReqLevel = 0,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+    { .name = "Tomar: Kutsal Hüzme", .iconIndex = 0, .maxStack = 1, .value = 500,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .tomeAbility = ABILITY_HOLY_BEAM, .tomeReqLevel = 5,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+    { .name = "Tomar: Kutsal Alan", .iconIndex = 0, .maxStack = 1, .value = 700,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .tomeAbility = ABILITY_HOLY_ZONE, .tomeReqLevel = 15,
+      .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

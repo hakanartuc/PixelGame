@@ -40,7 +40,11 @@ typedef enum {
     // YANKICI (Sömüren hattı): bedel MANA DEĞİL CAN — fısıltıyla pazarlık
     ABILITY_WHISPER_BURST,  // Fısıltı Patlaması: max HP %10 → çevresel gölge hasarı
     ABILITY_SHADOW_FORM,    // Gölge Formu: 5sn algılanmaz + hızlı, 4 HP/sn
-    ABILITY_COUNT,
+    // KUTSAL (Faz HOLY — ışık okulu; undead'e ekstra işler)
+    ABILITY_HEAL_LIGHT,     // Şifa Nuru: kendini iyileştir (mana → HP)
+    ABILITY_HOLY_BEAM,      // Kutsal Hüzme: hedefe ışık — undead ×1.6
+    ABILITY_HOLY_ZONE,      // Kutsal Alan: 6sn ışık çemberi — undead yavaş + tick
+    ABILITY_COUNT,          // DİKKAT: spellsLearned Uint32 — 32 beceri TAVANI (29/32)
 } AbilityId;
 
 typedef struct {

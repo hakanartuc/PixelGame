@@ -153,6 +153,9 @@ static void chest_fill(Loot *l, int tier, int today)
                                                     : ITEM_SCROLL_ENCHANT], 1, 0);
         if (randf() < 0.25f)   // Hortum tomarı: türün tek kaynağı (Büyü dalgası 2)
             l->items[n++] = item_make(&ITEM_TYPES[ITEM_TOME_TORNADO], 1, 0);
+        if (randf() < 0.15f)   // Kutsal tomarları (Faz HOLY) — USTA havuzu
+            l->items[n++] = item_make(&ITEM_TYPES[(rand() % 2)
+                                ? ITEM_TOME_HOLYBEAM : ITEM_TOME_HOLYZONE], 1, 0);
         l->items[n++] = item_make(&ITEM_TYPES[ITEM_INGOT_IRON], 1 + rand() % 2, 0);
         if (randf() < 0.5f)
             l->items[n++] = item_make(&ITEM_TYPES[ITEM_STONE_HP], 1, 0);
@@ -1079,6 +1082,8 @@ int main(int argc, char *argv[])
     R2DTexture *splatBigTex   = load_texture(renderer, "assets/fx/splat_big.png");   // 10 @64
     R2DTexture *sparkBlockTex = load_texture(renderer, "assets/fx/spark_block.png"); // 7 @48
     R2DTexture *castCircleTex = load_texture(renderer, "assets/fx/cast_circle.png"); // 9×9 @100
+    R2DTexture *holyBurstTex  = load_texture(renderer, "assets/fx/holy_burst.png");   // 16 @48
+    R2DTexture *holyImpactTex = load_texture(renderer, "assets/fx/holy_impact.png");  // 7 @32
     R2DTexture *slashArcTex[4] = {   // facing sırası: UP, LEFT, DOWN, RIGHT
         load_texture(renderer, "assets/fx/slash_up.png"),
         load_texture(renderer, "assets/fx/slash_left.png"),
@@ -1457,6 +1462,8 @@ int main(int argc, char *argv[])
     bool arenaClosed = false;   // boss arena kapısı (tile duvarı) indi mi
     // Ölüm Getiren: Kara Patlama telegraph'ları (1 sn büyür → patlar)
     struct { bool on; float x, y, t; } deathBlast[4] = {{0}};
+    // Kutsal Alan (Faz HOLY): tek aktif çember — 6sn, undead yavaş + tick
+    struct { bool on; float x, y, t, tick, r; } holyZone = {0};
     #define T_BOSS_X (22.0f * TILE_SIZE)
     #define T_BOSS_Y (23.0f * TILE_SIZE)
 
@@ -2098,6 +2105,28 @@ int main(int argc, char *argv[])
                                 }
                                 dialogNpc = -1;
                             }
+                            else if (strcmp(target, "k9:tomar") == 0)
+                            {
+                                // FATMA'NIN HEDİYESİ (Faz HOLY): tapınak kararının
+                                // geç ödülü — Şifa Nuru tomarı, BİR KEZ. Çanta
+                                // doluysa bayrak yanmaz (sonra tekrar dener).
+                                ItemStack ts2 = item_make(&ITEM_TYPES[ITEM_TOME_HEAL], 1, 0);
+                                if (bag_add_stackp(&ts2))
+                                {
+                                    player.storyFlags[SF_K9_TOME] = 1;
+                                    audio_play(SFX_PERK);
+                                    npc_bark(fatmaIdx,
+                                             "Kerem'in nöbetine ışık gerek. Al.", 5.0f);
+                                    SDL_Color hgold2 = { 255, 235, 150, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                        player.rect.x + player.rect.w / 2.0f,
+                                        player.rect.y - 10.0f,
+                                        "Tomar: Şifa Nuru alındı", hgold2);
+                                }
+                                else
+                                    npc_bark(fatmaIdx, "Önce çantanda yer aç, evlat.", 4.0f);
+                                dialogNpc = -1;
+                            }
                             else if (strncmp(target, "k9:", 3) == 0)
                             {
                                 // K9 Kandil kararı (D1a): bayrak + günlük + sahne
@@ -2637,7 +2666,8 @@ int main(int argc, char *argv[])
                             // K9 Kandil: yankı görüldüyse karar diyaloğu; karar
                             // verildiyse kalıcı kapanış düğümü (flag'e göre)
                             Uint8 k9 = player.storyFlags[SF_K9_KANDIL];
-                            if (k9 == 1)      entry = "son1";
+                            if (k9 == 1)      entry = (player.storyFlags[SF_K9_TOME]
+                                                       ? "son1" : "son1_tomar");
                             else if (k9 == 2) entry = "son2";
                             else if (k9 == 3) entry = "son3";
                             else if (echo_done(ECHO_K9)) entry = "bilgi";
@@ -3090,6 +3120,10 @@ int main(int argc, char *argv[])
                     bag_add(&ITEM_TYPES[ITEM_TOME_TORNADO], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_TOME_SNAKEBITE], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_TOME_FIRELION], 1, 0);
+                    // Kutsal testi (Faz HOLY): 3 tomar
+                    bag_add(&ITEM_TYPES[ITEM_TOME_HEAL], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_TOME_HOLYBEAM], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_TOME_HOLYZONE], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_SPEAR], 1, 0);   // Two-Handed testi
                     bag_add(&ITEM_TYPES[ITEM_SHIELD_IRON], 1, 0);   // Block testi
                     // YANKICI test yolu: sayaç basılır ama sınıf keşifle açılır
@@ -4383,12 +4417,15 @@ int main(int argc, char *argv[])
                                                              player.rect.x + player.rect.w / 2.0f,
                                                              player.rect.y - 10.0f,
                                                              "Bu büyüyü zaten biliyorsun.", red2);
-                                    else if (player.skills[SKILL_DESTRUCTION].level
+                                    else if (player.skills[ABILITIES[ta].skill].level
                                              < st->type->tomeReqLevel)
                                     {
+                                        // Gate tomarın KENDİ okuluna bakar (Kutsal
+                                        // tomarı Yıkım istemez — Faz HOLY geneli)
                                         char buf[FLOAT_TEXT_LEN];
                                         snprintf(buf, sizeof(buf),
-                                                 "Harfler kayıyor... (Yıkım %d gerek)",
+                                                 "Harfler kayıyor... (%s %d gerek)",
+                                                 skill_name(ABILITIES[ta].skill),
                                                  st->type->tomeReqLevel);
                                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                              player.rect.x + player.rect.w / 2.0f,
@@ -4945,6 +4982,61 @@ int main(int argc, char *argv[])
                 }
             }
 
+            // KUTSAL ALAN (Faz HOLY): çember yaşar — undead içindeyse yavaş +
+            // saniyede bir ışık tick'i (yalnız undead yanar; canlılara nur zararsız)
+            if (holyZone.on)
+            {
+                holyZone.t -= dt;
+                holyZone.tick -= dt;
+                if (holyZone.t <= 0.0f) holyZone.on = false;
+                bool zoneTick = (holyZone.tick <= 0.0f);
+                if (zoneTick) holyZone.tick = 1.0f;
+                // Sığınak/IŞIK TAŞIYICISI: alanda duran oyuncuya nur damlar
+                if (holyZone.on && perkFx.holyZoneSelfHeal > 0.0f)
+                {
+                    float sdx = (player.rect.x + player.rect.w / 2.0f) - holyZone.x;
+                    float sdy = (player.rect.y + player.rect.h / 2.0f) - holyZone.y;
+                    if (sdx * sdx + sdy * sdy <= holyZone.r * holyZone.r)
+                    {
+                        player.health += perkFx.holyZoneSelfHeal * dt;
+                        if (player.health > player.maxHealth)
+                            player.health = player.maxHealth;
+                    }
+                }
+                for (int i = 0; i < mobCount && holyZone.on; i++)
+                {
+                    Mob *zm = &mobs[i];
+                    if (!zm->e.alive || !zm->type->undead) continue;
+                    float zdx = (zm->e.rect.x + zm->e.rect.w / 2.0f) - holyZone.x;
+                    float zdy = (zm->e.rect.y + zm->e.rect.h / 2.0f) - holyZone.y;
+                    if (zdx * zdx + zdy * zdy > holyZone.r * holyZone.r) continue;
+                    zm->slowMult = 0.75f;   // nur bacaklara dolanır
+                    zm->slowTimer = 0.4f;
+                    if (!zoneTick) continue;
+                    float td = ABILITIES[ABILITY_HOLY_ZONE].damageScale
+                        * (1.0f + (float)(player.intelligence - 10) * 0.02f)
+                        * (1.0f + (float)(player.skills[SKILL_LIGHT].level - 1) * 0.01f)
+                        * perkFx.holyZoneTickMult * perkFx.holyDmgMult;
+                    zm->e.health -= td;
+                    zm->e.hitFlash = 0.12f;
+                    zm->aggro = true;
+                    floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                    zm->e.rect.x + zm->e.rect.w / 2.0f,
+                                    zm->e.rect.y - 10.0f, (int)td, false);
+                    if (g_animFx != NULL)
+                        animfx_spawn(g_animFx, holyImpactTex, 7, 7, 32.0f, 32.0f,
+                                     zm->e.rect.x + zm->e.rect.w / 2.0f,
+                                     zm->e.rect.y + zm->e.rect.h / 2.0f, 24.0f, 1.2f);
+                    float sxp = combat_xp_for_hit(td, zm->type->level,
+                                    player.skills[SKILL_LIGHT].level);
+                    if (skill_add_xp(player.skills, SKILL_LIGHT, sxp))
+                        on_skill_levelup(&player, SKILL_LIGHT, &hotbar, floatTexts);
+                    if (zm->e.health <= 0.0f)
+                        mob_die(zm, mobs, MAX_MOBS, &nextMobId, loots,
+                                questStatus, floatTexts, &player);
+                }
+            }
+
             // Kilit minigame'i imleci
             lockpick_update(dt, &perkFx);
 
@@ -5011,7 +5103,8 @@ int main(int argc, char *argv[])
                     bool needSpear = (ad->skill == SKILL_TWO_HANDED);
                     bool isSpell = (ad->skill == SKILL_DESTRUCTION ||
                                     ad->skill == SKILL_CONJURATION ||
-                                    ad->skill == SKILL_ECHO);
+                                    ad->skill == SKILL_ECHO ||
+                                    ad->skill == SKILL_LIGHT);
                     bool isSummon = (hs->abilityId == ABILITY_SUMMON_SNAKE ||
                                      hs->abilityId == ABILITY_SUMMON_TURTLE);
                     AllyKind sumKind = (hs->abilityId == ABILITY_SUMMON_TURTLE)
@@ -5034,8 +5127,11 @@ int main(int argc, char *argv[])
                     {
                         // BÜYÜ: silahtan bağımsız (battlemage özgürlüğü) — mana + hedef
                         float cost = ad->mana * perkFx.manaCostMult
-                                   * (isSummon ? perkFx.summonCostMult : 1.0f);
-                        bool needTarget = (hs->abilityId == ABILITY_FIREBOLT ||
+                                   * (isSummon ? perkFx.summonCostMult : 1.0f)
+                                   * (ad->skill == SKILL_LIGHT
+                                      ? perkFx.holyManaMult : 1.0f);
+                        bool needTarget = (hs->abilityId == ABILITY_HOLY_BEAM ||
+                                           hs->abilityId == ABILITY_FIREBOLT ||
                                            hs->abilityId == ABILITY_LIGHTNING ||
                                            hs->abilityId == ABILITY_ICETACLE ||
                                            hs->abilityId == ABILITY_SNAKEBITE);
@@ -5514,7 +5610,9 @@ int main(int argc, char *argv[])
                         float cost = sd->mana * perkFx.manaCostMult
                                    * ((castSpell == ABILITY_SUMMON_SNAKE ||
                                        castSpell == ABILITY_SUMMON_TURTLE)
-                                      ? perkFx.summonCostMult : 1.0f);
+                                      ? perkFx.summonCostMult : 1.0f)
+                                   * (sd->skill == SKILL_LIGHT
+                                      ? perkFx.holyManaMult : 1.0f);
                         const ItemStack *wpn = &equipment.slots[EQUIP_WEAPON];
                         float pcx = player.rect.x + player.rect.w / 2.0f;
                         float pcy = player.rect.y + player.rect.h / 2.0f;
@@ -5522,6 +5620,11 @@ int main(int argc, char *argv[])
                         player.mana -= cost;
                         if (player.mana < 0.0f) player.mana = 0.0f;
                         player.abilityCd[castSpell] = sd->cooldown;
+                        // Nur Yolu CD ayarları: Rahibe kısar, IŞIK TAŞIYICISI bedeli
+                        if (castSpell == ABILITY_HEAL_LIGHT)
+                            player.abilityCd[castSpell] -= perkFx.healCdCut;
+                        if (castSpell == ABILITY_HOLY_ZONE)
+                            player.abilityCd[castSpell] += perkFx.holyZoneCdPenalty;
                         for (int b = 0; b < MAX_BURSTS; b++)
                             if (!bursts[b].active)
                             {
@@ -5919,6 +6022,99 @@ int main(int argc, char *argv[])
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  pcx, player.rect.y - 24.0f,
                                                  "Gölgeye karıştın.", vio4);
+                        }
+                        else if (castSpell == ABILITY_HEAL_LIGHT)
+                        {
+                            // ŞİFA NURU: kendini iyileştir — INT + Kutsal ölçekler.
+                            // XP = şifa edilen HP ×1.2 (taşan kısım saymaz)
+                            float healBase = sd->damageScale
+                                * (1.0f + (float)(player.intelligence - 10) * 0.02f)
+                                * (1.0f + (float)(player.skills[SKILL_LIGHT].level - 1)
+                                          * 0.01f)
+                                * perkFx.healMult;
+                            float before = player.health;
+                            player.health += healBase;
+                            if (player.health > player.maxHealth)
+                                player.health = player.maxHealth;
+                            float healed = player.health - before;
+                            if (g_animFx != NULL)
+                                animfx_spawn(g_animFx, holyBurstTex, 16, 16,
+                                             48.0f, 48.0f,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y + player.rect.h / 2.0f,
+                                             24.0f, 1.6f);
+                            audio_play(SFX_POTION);
+                            SDL_Color hgold = { 255, 235, 150, 255 };
+                            char hbuf[24];
+                            snprintf(hbuf, sizeof(hbuf), "+%d", (int)healed);
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 player.rect.x + player.rect.w / 2.0f,
+                                                 player.rect.y - 16.0f, hbuf, hgold);
+                            if (healed > 0.5f &&
+                                skill_add_xp(player.skills, SKILL_LIGHT, healed * 1.2f))
+                                on_skill_levelup(&player, SKILL_LIGHT,
+                                                 &hotbar, floatTexts);
+                        }
+                        else if (castSpell == ABILITY_HOLY_BEAM)
+                        {
+                            // KUTSAL HÜZME: gökten inen ışık — undead'e ×1.6
+                            Mob *ht = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                            if (ht != NULL)
+                            {
+                                float tx = ht->e.rect.x + ht->e.rect.w / 2.0f;
+                                float ty = ht->e.rect.y + ht->e.rect.h / 2.0f;
+                                HitResult sh = combat_spell_hit(&player, wpn,
+                                                                sd->damageScale,
+                                                                ht->type->defense, &perkFx);
+                                sh.damage *= title_damage_mult(&player, ht->type,
+                                                               gametime_is_night());
+                                sh.damage *= perkFx.holyDmgMult;
+                                if (ht->type->undead)
+                                    sh.damage *= 1.6f + perkFx.holyUndeadBonus;
+                                ht->e.health -= sh.damage;
+                                strike_fx_mob(ht, true, 0.0f);
+                                ht->e.hitFlash = 0.2f;
+                                ht->aggro = true;
+                                mob_alert_camp(mobs, mobCount, ht);
+                                if (g_animFx != NULL)
+                                {
+                                    animfx_spawn(g_animFx, holyBurstTex, 16, 16,
+                                                 48.0f, 48.0f, tx, ty - 12.0f,
+                                                 30.0f, 2.2f);   // ışık sütunu
+                                    animfx_spawn(g_animFx, holyImpactTex, 7, 7,
+                                                 32.0f, 32.0f, tx, ty, 24.0f, 1.6f);
+                                }
+                                audio_play(SFX_CRIT);
+                                floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                                tx + 10.0f, ht->e.rect.y,
+                                                (int)sh.damage, sh.crit);
+                                float sxp = combat_xp_for_hit(sh.damage,
+                                                ht->type->level,
+                                                player.skills[SKILL_LIGHT].level);
+                                if (skill_add_xp(player.skills, SKILL_LIGHT, sxp))
+                                    on_skill_levelup(&player, SKILL_LIGHT,
+                                                     &hotbar, floatTexts);
+                                if (ht->e.health <= 0.0f)
+                                    mob_die(ht, mobs, MAX_MOBS, &nextMobId, loots,
+                                            questStatus, floatTexts, &player);
+                            }
+                        }
+                        else if (castSpell == ABILITY_HOLY_ZONE)
+                        {
+                            // KUTSAL ALAN: ayakların altında 6sn ışık çemberi —
+                            // içindeki undead yavaşlar + saniyede tick yer.
+                            // Tek çember: yeniden atım eskisini taşır.
+                            holyZone.on = true;
+                            holyZone.x = player.rect.x + player.rect.w / 2.0f;
+                            holyZone.y = player.rect.y + player.rect.h / 2.0f;
+                            holyZone.t = 6.0f + perkFx.holyZoneDur;
+                            holyZone.tick = 1.0f;
+                            holyZone.r = 120.0f + perkFx.holyZoneRadius;
+                            if (g_animFx != NULL)
+                                animfx_spawn(g_animFx, holyBurstTex, 16, 16,
+                                             48.0f, 48.0f, holyZone.x, holyZone.y,
+                                             24.0f, 2.6f);
+                            audio_play(SFX_PERK);
                         }
                         else if (castSpell == ABILITY_SNAKEBITE)
                         {
@@ -7180,6 +7376,14 @@ int main(int argc, char *argv[])
                                      player.rect.y + player.rect.h * 0.45f,
                                      30.0f, 1.2f);
                     if (gBlock == 3) hitstop(0.12f);   // PERFECT parry donması
+                    // IŞIK TAŞIYICISI: kendi Kutsal Alanında blok %20 güçlü
+                    if (gBlock > 0 && holyZone.on && perkFx.holyZoneBlockCut > 0.0f)
+                    {
+                        float hzdx = (player.rect.x + player.rect.w / 2.0f) - holyZone.x;
+                        float hzdy = (player.rect.y + player.rect.h / 2.0f) - holyZone.y;
+                        if (hzdx * hzdx + hzdy * hzdy <= holyZone.r * holyZone.r)
+                            dmg *= 1.0f - perkFx.holyZoneBlockCut;
+                    }
                     if (!dodged)
                         dmg = mana_shield_absorb(&player, dmg, floatTexts);
                     if (!dodged && dmg > 0.0f)
@@ -7981,6 +8185,14 @@ int main(int argc, char *argv[])
                                  player.rect.y + player.rect.h * 0.45f,
                                  30.0f, 1.2f);
                 if (pBlock == 3) hitstop(0.12f);   // PERFECT parry donması
+                // IŞIK TAŞIYICISI: kendi Kutsal Alanında blok %20 güçlü
+                if (pBlock > 0 && holyZone.on && perkFx.holyZoneBlockCut > 0.0f)
+                {
+                    float hzdx = (player.rect.x + player.rect.w / 2.0f) - holyZone.x;
+                    float hzdy = (player.rect.y + player.rect.h / 2.0f) - holyZone.y;
+                    if (hzdx * hzdx + hzdy * hzdy <= holyZone.r * holyZone.r)
+                        dmg *= 1.0f - perkFx.holyZoneBlockCut;
+                }
                 // (mermide sersemletme/yansıtma yok — atan uzakta)
                 float pcx = player.rect.x + player.rect.w / 2.0f;
                 if (!dodged)
@@ -8252,6 +8464,14 @@ int main(int argc, char *argv[])
                                      player.rect.y + player.rect.h * 0.45f,
                                      30.0f, 1.2f);
                     if (mBlock == 3) hitstop(0.12f);   // PERFECT parry donması
+                    // IŞIK TAŞIYICISI: kendi Kutsal Alanında blok %20 güçlü
+                    if (mBlock > 0 && holyZone.on && perkFx.holyZoneBlockCut > 0.0f)
+                    {
+                        float hzdx = (player.rect.x + player.rect.w / 2.0f) - holyZone.x;
+                        float hzdy = (player.rect.y + player.rect.h / 2.0f) - holyZone.y;
+                        if (hzdx * hzdx + hzdy * hzdy <= holyZone.r * holyZone.r)
+                            dmg *= 1.0f - perkFx.holyZoneBlockCut;
+                    }
                     if (mBlock == 3)
                     {
                         // PERFECT (parry): saldıran 1sn sersemler; SİPER yansıtır
@@ -9068,6 +9288,25 @@ int main(int argc, char *argv[])
         }
 
         // Partiküller dünya varlıklarının ÜSTÜNDE (kan damlası mobun önünde görünsün)
+        // KUTSAL ALAN çemberi: altın halka (undead'e karşı güvenli bölge)
+        if (holyZone.on && castCircleTex != NULL)
+        {
+            int zfr = (int)((6.0f - holyZone.t) * 45.0f) % 81;
+            SDL_FRect zsrc = { (float)(zfr % 9) * 100.0f,
+                               (float)(zfr / 9) * 100.0f, 100.0f, 100.0f };
+            float zw = holyZone.r * 2.0f;
+            SDL_FRect zdst = {
+                (holyZone.x - zw / 2.0f - camera.x) * camera.zoom,
+                (holyZone.y - zw / 2.0f - camera.y) * camera.zoom,
+                zw * camera.zoom, zw * camera.zoom,
+            };
+            Uint8 za = (holyZone.t < 1.0f) ? (Uint8)(200.0f * holyZone.t) : 200;
+            r2d_texture_set_color_mod(castCircleTex, 255, 220, 130);
+            r2d_texture_set_alpha_mod(castCircleTex, za);
+            r2d_draw_texture(renderer, castCircleTex, &zsrc, &zdst);
+            r2d_texture_set_color_mod(castCircleTex, 255, 255, 255);
+            r2d_texture_set_alpha_mod(castCircleTex, 255);
+        }
         // Kara Patlama telegraph'ları: büyüyen karanlık halka (kaç!)
         if (map_current() == MAP_MEZARLIK && castCircleTex != NULL)
         {
@@ -9498,7 +9737,8 @@ int main(int argc, char *argv[])
             {
                 const AbilityDef *ad = &ABILITIES[ai];
                 if (ad->skill == SKILL_DESTRUCTION ||
-                    ad->skill == SKILL_CONJURATION || ad->skill == SKILL_ECHO)
+                    ad->skill == SKILL_CONJURATION || ad->skill == SKILL_ECHO ||
+                    ad->skill == SKILL_LIGHT)
                     abilityUsable[ai] = true;   // büyü silahtan bağımsız
                 else if (ai == ABILITY_SHIELD_BASH)
                     abilityUsable[ai] = hbSh;
@@ -10065,6 +10305,8 @@ int main(int argc, char *argv[])
     if (splatBigTex)   r2d_texture_destroy(NULL, splatBigTex);
     if (sparkBlockTex) r2d_texture_destroy(NULL, sparkBlockTex);
     if (castCircleTex) r2d_texture_destroy(NULL, castCircleTex);
+    if (holyBurstTex)  r2d_texture_destroy(NULL, holyBurstTex);
+    if (holyImpactTex) r2d_texture_destroy(NULL, holyImpactTex);
     for (int i = 0; i < 4; i++)
         if (slashArcTex[i]) r2d_texture_destroy(NULL, slashArcTex[i]);
     for (int i = 0; i < 3; i++)
