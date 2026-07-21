@@ -1,0 +1,24 @@
+# Şifacı Ela — REVİR (Faz REVIR). ESO anlatım standardı: kişilikli,
+# sorgulanabilir. Giriş: yatan varsa main "yatan" düğümünü seçer.
+
+[start]
+text: Otları güneşte kurutuyorum. Taze yara mı, eski ağrı mı? Yoksa sadece meraklı bir yolcu musun? Üçüne de ilacım var ama fiyatları farklı.
+opt: Yaralarım var. Tedavi et. (60 altın) -> sifa:tedavi
+opt: Bu yataklar ne için? -> yataklar
+opt: Sadece bakıyordum. -> end
+
+[yataklar]
+text: Köy küçük ama öfkesi büyük. Kavga, dayak, ayı pençesi... Kim düşerse buraya taşınır. Ben ayağa kaldırırım — ama otlar bedava büyümüyor, yolcu. Masrafı DÜŞENİ DÖVEN öder. Adalet mi? Bilmem. Ama defterim öyle yazıyor.
+opt: Anladım. -> start
+
+[yatan]
+text: Sessiz konuş. Yatanlar var — ve defterimde senin adın geçiyor, yolcu. Her gün yattıkça masraf büyür; otlar, et suyu, temiz bez... Ödersen bugün ayağa kalkarlar. Ödemezsen... köy bir gün toplar ama kimse unutmaz.
+opt: Masrafı ödeyeceğim. -> sifa:ode
+opt: Ne kadar birikti? -> defter
+opt: Kendi yaralarıma bak. (60 altın) -> sifa:tedavi
+opt: Şimdi değil. -> end
+
+[defter]
+text: Defterime göre gün geçtikçe kabarıyor — ilk gün ikiyüz, sonra her gün dörtte biri üstüne biner. Dükkan sahibiyse bir buçuk katı: köy onların tezgahıyla dönüyor çünkü. Aynı adamı İKİNCİ kez yatıran... İki kat öder. Defter acımaz.
+opt: Ödeyeceğim. -> sifa:ode
+opt: Düşüneyim. -> end

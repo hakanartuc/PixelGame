@@ -34,6 +34,13 @@ const DecorDef DECORS[] = {
       .x = T(18.6f), .y = T(11.4f), .scale = 1.1f, .solidBase = true }, // han önü fıçılar
     { .texPath = "assets/decor/Stone_Fence_Big.png",
       .x = T(7.5f), .y = T(8.6f), .scale = 1.2f, .solidBase = true },   // ocak arkası çit
+    // REVİR (Faz REVIR): köy KB köşesi — 3 yatak, Şifacı Ela başında
+    { .texPath = "assets/decor/bed_single.png",
+      .x = T(3.6f), .y = T(6.2f), .scale = 1.6f, .solidBase = false },
+    { .texPath = "assets/decor/bed_single.png",
+      .x = T(4.5f), .y = T(6.2f), .scale = 1.6f, .solidBase = false },
+    { .texPath = "assets/decor/bed_single.png",
+      .x = T(5.4f), .y = T(6.2f), .scale = 1.6f, .solidBase = false },
     { .texPath = "assets/decor/Benches.png",
       .x = T(14.6f), .y = T(10.8f), .scale = 1.2f, .solidBase = false },// güney yolu bankı
 

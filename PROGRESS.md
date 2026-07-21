@@ -941,6 +941,59 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - TEST NOTU: P1 ritüeli HÂLÂ TEST EDİLMEDİ — P1+P2 tek turda test edilebilir
   (F10 → taş halkası T108,7 → gece [E] → ritüel → 4 büyü + K'da Yankı ağacı).
 
+### Faz REVIR — NPC ŞİDDETİ + REVİR TAMAM (2026-07-20; plan bölümü uygulandı)
+- npc_damage: SİVİL 1 canda kilitlenir ("0 ölüm demek" — Hakan); yalnız
+  muhafız ölür. 1 canda main bayıltır: npc_send_infirmary (hidden + yatış
+  günü + beatCount++). NPC saldırı/suç sistemi ZATEN VARDI — üstüne oturdu.
+- ŞİFACI ELA (yeni NPC — npcState tavanı 12→16, NPC_COUNT 13): revir köy
+  KB'sinde (3 yatak dekoru T3.6-5.4,6.2); yatanlar yataklarda SOLUK çizilir
+  (npc_render_infirmary) + "(yatıyor)" etiketi.
+- MASRAF: infirmary_cost — 200g × 1.25^gün × (önemli NPC 1.5) × yatışSayısı;
+  ödeme sifaci.txt diyaloğundan ("sifa:ode" TÜM yatanları tek seferde
+  taburcu eder); "sifa:tedavi" 60g tam can (oyuncu hizmeti — bonus).
+- 30 GÜN ödenmezse şafakta köy toplar: NPC döner ama GRUDGE kalıcı —
+  diyalog soğuk (bark), dükkan fiyatı sana +%25 (shopVendorIdx okur),
+  köy itibarı düşer.
+- sifaci.txt ESO anlatım standardının İLK örneği (kişilikli, sorgulanabilir,
+  "defter" metaforu). Save: revir durumu toleranslı kuyrukta (NPC başına
+  yatış/gün/sayı/kırgınlık — eski save'de herkes ayakta).
+
+### PLAN — REVİR SİSTEMİ: NPC ŞİDDETİ + HASTANE (2026-07-20 Hakan onayları)
+**Konsept**: Suikast kontratları DIŞINDA da NPC'lere saldırılabilir; köy
+NPC'sinin canı 0'A DÜŞMEZ — 1 CANDA KİLİTLENİR ve bayılır (Hakan netleşmesi
+2026-07-20: "0 ölüm demek" — köylüde ölüm eşiğine hiç inilmez), REVİRE
+taşınır. Suikast hedefleri ise gerçekten 0'a iner ve ölür (loca zehri) —
+sıradan şiddet ile suikastın kurgusal ve MEKANİK ayrımı net.
+
+**ÖNKOŞUL**: NPC'lere saldırı mekaniği (şu an yok) — NPC canı + oyuncu
+vuruşu + TANIK entegrasyonu (tanıklı saldırı = mevcut suç sistemi: bounty +
+bölge itibarı; hastane masrafı buna EK cezadır).
+
+**REVİR DÖNGÜSÜ**:
+- Yaralanan NPC revire taşınır: dükkanı/görevleri/diyalogları KAPALI —
+  masraf ödenene kadar dünya gerçekten aksar (asıl ceza bu).
+- MASRAF (onaylı): taban 200g + günlük +%25 BİLEŞİK artış
+  (3. gün ~312g, 7. gün ~763g, 10. gün ~1490g); önemli NPC (dükkancı/görev
+  taşıyan) ×1.5. Ödeme Şifacı'ya yapılır; ödenince NPC ertesi şafak döner.
+- ÖDENMEZSE (onaylı — "30 günde köy toplar, ama..."): 30. gün köylüler
+  aralarında toplar, NPC döner AMA AFFETMEZ: diyalogları kalıcı soğur
+  (yeni kırgın diyalog varyantları), fiyatları oyuncuya kalıcı zamlı
+  (+%25), köy itibarı düşer. Ekonomik ceza sosyal cezaya dönüşür.
+- Aynı NPC'ye tekrarlanan şiddet: masraf çarpanı katlanır (×2, ×3...) —
+  seri dayakçılık ekonomik olarak imkânsızlaşır.
+
+**ŞİFACI + REVİR (onaylı — yeni kurum)**:
+- Köye küçük REVİR binası + ŞİFACI NPC (yeni — npcState tavanı 12→16
+  BÜYÜTÜLECEK, paralel-dizi dersi!). Masraf ödeme diyaloğu onda.
+- Bonus derinlik: Şifacı oyuncuya da paralı tedavi satar (anında tam can /
+  zehir-kanama temizliği); ileride iksir stoku. Yatan NPC'ler revirde
+  YATAKTA GÖRÜNÜR (görsel geri bildirim — kim yatıyorsa görürsün).
+
+**SAVE**: revir durumu (yatan NPC'ler + yatış günü + ödenmemiş masraf +
+kırgınlık bayrakları) toleranslı kuyruk deseniyle.
+**SIRALAMA**: Suikastçi P1'den ÖNCE ya da birlikte yapılabilir — NPC
+saldırı mekaniği suikast kontratlarının da önkoşulu (ortak altyapı).
+
 ### PLAN — SUİKASTÇİ SINIFI: "SESSİZ EL LOCASI" (2026-07-20 Hakan onayları)
 **Konsept**: 2. gizli sınıf. Yankıcı = mistik/bedel-CAN büyücüsü; SUİKASTÇİ =
 FİZİKSEL gölge savaşçısı (stamina + zehir + pozisyon + patlama hasarı).
@@ -978,6 +1031,26 @@ sırttan hasar; ağaç sonra ayrı fazda)**:
 - Loca ARA ARA görev/suikast ister (pano deseni: contract.c benzeri ama
   locaya özel — hedef gerçek NPC ya da adlı mob; rastgele değil KURGULU havuz)
 - RÜTBE: kontrat tamamladıkça yükselir (Çırak → El → Bıçak → Gölge → Usta El)
+- **HEDEF MERDİVENİ (onaylı 2026-07-20 — rütbe + dünya büyümesi birlikte;
+  "en başından kral öldüremezsin")**:
+  · K1 ÇIRAK/EL "ısınma işleri": dünyaya OLAY olarak doğan hedefler — haydut
+    elebaşıları, göç kolonisi reisleri (ekoloji), kervana sızmış dolandırıcı.
+    Köy dokusu bozulmaz; etki bölge güvenliği/ekolojide.
+  · K2 BIÇAK "ağ savaşı": gezgin tüccarlar + RAKİP AKLAMA AĞI "KIZIL KANCA"
+    (onaylı): kervan yollarında adamları belirir (worldevent deseni);
+    kontratlarla zayıflar → aklama oranı + loca fiyatları iyileşir, yol
+    güvenliği artar. MİSİLLEME: rakip sana suikastçi yollar (gece pusuları)
+    — dünya iki yönlü yaşar.
+  · K3 GÖLGE "şehrin içi" (İKİNCİ YERLEŞİM önkoşul): yeni yerleşimin ileri
+    gelenleri — lonca ustası, tefeci, yozlaşmış yargıç; ölümleri o yerleşimin
+    ekonomisini/diyaloglarını/görevlerini KALICI değiştirir.
+  · K4 USTA EL "tahtın gölgesi" (PERDE 2 kale/krallık önkoşul): muhafız
+    komutanı, vezir, taht hattı — çok aşamalı BÜYÜK AV kontratları (keşif →
+    takip → zehir → infaz tek kontratta). KRAL = finale adayı.
+  · Kademeler hem rütbe hem İÇERİK kapısı: coğrafya büyüdükçe loca büyür.
+- **YUVADA AVLANMAZ (onaylı)**: köy NPC'lerine kontrat ÇIKMAZ — loca kuralı
+  kurguya yazılır (köy locanın gölgesi; Morag Tong ilkeselliği). Köy içeriği
+  korunur, loca karakter kazanır.
 - DÜNYAYA ETKİ (zorunlu tasarım kuralı):
   · Öldürülen NPC DÜNYADAN KALKAR (npc_set_alive kalıcı) — dükkanı kapanır,
     diyalogları/görevleri ölür, köy ekonomisi etkilenir (fiyat/stok)

@@ -121,6 +121,17 @@ const NpcDef NPCS[] = {
           { .hour = 0.0f, .x = T(9), .y = T(11), .indoors = false },  // meydan güneyi
       }, .stopCount = 1,
       .frameSize = 32, .drawScale = 2.8f },
+
+    // ŞİFACI (Faz REVIR): revirin sahibi — yaralı köylüler ona yatar,
+    // masraf ödemesi + oyuncuya paralı tedavi. Revir köy kuzeybatısında.
+    { .name = "Şifacı Ela",
+      .sheetPath = "assets/characters/npcs/Healer_Witch.png",
+      .dialogFile = "assets/dialogs/sifaci.txt",
+      .isVendor = false, .questId = NULL,
+      .schedule = {
+          { .hour = 0.0f, .x = T(4.5f), .y = T(6.5f), .indoors = false },  // revir başı
+      }, .stopCount = 1,
+      .frameSize = 32, .drawScale = 2.8f },
 };
 const int NPC_COUNT = (int)(sizeof(NPCS) / sizeof(NPCS[0]));
 
@@ -147,15 +158,25 @@ typedef struct {
     bool scriptWalk;  // sahne yürütmesi aktif (rutini ezer)
     float scriptX, scriptY;
     bool forceHidden; // olay NPC'si (kervan): main görünürlüğü yönetir
+    // REVİR (Faz REVIR): sivil 0'a düşmez — 1 canda bayılır, revire yatar
+    bool infirm;      // revirde yatıyor (hidden gibi davranır)
+    int  infirmDay;   // yatış günü (masraf bileşik artar)
+    int  beatCount;   // kaçıncı yatış (masraf çarpanı — seri dayak caydırma)
+    bool grudge;      // köy topladı ama AFFETMEDİ (soğuk diyalog + kalıcı zam)
 } NpcState;
-static NpcState npcState[12];  // NPC_COUNT tavanı (dizi statik kalsın diye bolca)
+#define NPC_STATE_CAP 16   // NPC_COUNT tavanı (12'de doluydu — Şifacı ile büyüdü)
+static NpcState npcState[NPC_STATE_CAP];
 
 void npc_reset(void)
 {
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < NPC_STATE_CAP; i++) {
         npcState[i].alive = true;
         npcState[i].health = (i < NPC_COUNT) ? npc_max_health(i) : NPC_MAX_HEALTH;
         npcState[i].hitFlash = 0.0f;
+        npcState[i].infirm = false;
+        npcState[i].infirmDay = 0;
+        npcState[i].beatCount = 0;
+        npcState[i].grudge = false;
         npcState[i].initialized = false;   // konumlar rutinden yeniden kurulur
     }
 }
@@ -186,7 +207,7 @@ void npc_set_shelter(bool s, int exemptIdx)
 
 void npc_force_hidden(int i, bool hidden)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 12) return;
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return;
     npcState[i].forceHidden = hidden;
     if (hidden) npcState[i].hidden = true;
 }
@@ -196,9 +217,10 @@ void npc_set_active(bool active) { npcActive = active; }
 void npc_update(float dt, float hours)
 {
     if (!npcActive) return;
-    for (int i = 0; i < NPC_COUNT && i < 12; i++) {
+    for (int i = 0; i < NPC_COUNT && i < NPC_STATE_CAP; i++) {
         NpcState *st = &npcState[i];
         if (!st->alive) continue;   // ölü NPC rutin yürümez
+        if (st->infirm) { st->hidden = true; st->walking = false; continue; }
         if (st->hitFlash > 0.0f) st->hitFlash -= dt;
         if (!st->initialized) {
             const NpcStop *s0 = current_stop(&NPCS[i], hours);
@@ -268,20 +290,20 @@ void npc_update(float dt, float hours)
 
 bool npc_bark_active(int i)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 12) return false;
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return false;
     return npcState[i].barkTimer > 0.0f;
 }
 
 void npc_bark(int i, const char *text, float seconds)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 12) return;
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return;
     SDL_strlcpy(npcState[i].bark, text, sizeof(npcState[i].bark));
     npcState[i].barkTimer = seconds;
 }
 
 void npc_walk_to(int i, float x, float y)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 12) return;
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return;
     npcState[i].scriptWalk = true;
     npcState[i].scriptX = x;
     npcState[i].scriptY = y;
@@ -289,7 +311,7 @@ void npc_walk_to(int i, float x, float y)
 
 bool npc_walk_done(int i)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 12) return true;
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return true;
     if (!npcState[i].scriptWalk) return true;
     float dx = npcState[i].scriptX - npcState[i].x;
     float dy = npcState[i].scriptY - npcState[i].y;
@@ -298,14 +320,14 @@ bool npc_walk_done(int i)
 
 void npc_walk_cancel(int i)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 12) return;
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return;
     npcState[i].scriptWalk = false;
 }
 
 bool npc_visible_pos(int i, float *x, float *y)
 {
     if (!npcActive) return false;
-    if (i < 0 || i >= NPC_COUNT || i >= 12 ||
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP ||
         npcState[i].hidden || !npcState[i].alive)
         return false;
     *x = npcState[i].x;
@@ -315,7 +337,7 @@ bool npc_visible_pos(int i, float *x, float *y)
 
 int npc_at_point(float wx, float wy)
 {
-    for (int i = 0; i < NPC_COUNT && i < 12; i++) {
+    for (int i = 0; i < NPC_COUNT && i < NPC_STATE_CAP; i++) {
         float nx, ny;
         if (!npc_visible_pos(i, &nx, &ny)) continue;
         // Çizim kutusu (render ile aynı hiza: x,y = ayak noktası)
@@ -329,10 +351,16 @@ int npc_at_point(float wx, float wy)
 
 bool npc_damage(int i, float dmg)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 12 || !npcState[i].alive)
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP || !npcState[i].alive)
         return false;
     npcState[i].health -= dmg;
     npcState[i].hitFlash = 0.15f;
+    // REVİR: sivilin canı 0'A İNMEZ — 1'de kilitlenir (0 = ölüm, o yalnız
+    // muhafızda/suikastta). Bayıltma kararını main verir (npc_send_infirmary).
+    if (!NPCS[i].isGuard && npcState[i].health < 1.0f) {
+        npcState[i].health = 1.0f;
+        return false;
+    }
     if (npcState[i].health <= 0.0f) {
         npcState[i].health = 0.0f;
         npcState[i].alive = false;   // kalıcı — npc_reset/save dışında geri gelmez
@@ -343,25 +371,25 @@ bool npc_damage(int i, float dmg)
 
 bool npc_is_alive(int i)
 {
-    return i >= 0 && i < NPC_COUNT && i < 12 && npcState[i].alive;
+    return i >= 0 && i < NPC_COUNT && i < NPC_STATE_CAP && npcState[i].alive;
 }
 
 float npc_health(int i)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 12) return 0.0f;
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return 0.0f;
     return npcState[i].health;
 }
 
 void npc_set_alive(int i, bool alive)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 12) return;
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return;
     npcState[i].alive = alive;
     npcState[i].health = alive ? npc_max_health(i) : 0.0f;
 }
 
 bool npc_pos(int i, float *x, float *y)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 12 || !npcState[i].initialized)
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP || !npcState[i].initialized)
         return false;
     *x = npcState[i].x;
     *y = npcState[i].y;
@@ -370,7 +398,7 @@ bool npc_pos(int i, float *x, float *y)
 
 void npc_set_pos(int i, float x, float y)
 {
-    if (i < 0 || i >= NPC_COUNT || i >= 12) return;
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return;
     npcState[i].x = x;
     npcState[i].y = y;
 }
@@ -380,7 +408,7 @@ int npc_nearest_in_range(float px, float py)
     if (!npcActive) return -1;
     int best = -1;
     float bestDist = NPC_INTERACT_RANGE;
-    for (int i = 0; i < NPC_COUNT && i < 12; i++) {
+    for (int i = 0; i < NPC_COUNT && i < NPC_STATE_CAP; i++) {
         if (npcState[i].hidden || !npcState[i].alive) continue;   // içeride/ölü konuşulamaz
         float dx = npcState[i].x - px;
         float dy = npcState[i].y - py;
@@ -402,7 +430,7 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
     // Tüm NPC'ler aynı ritimde soluk alır — NPC başına sayaç tutmaya değmez
     int frame = (int)(SDL_GetTicks() / NPC_IDLE_SPEED_MS) % NPC_IDLE_FRAMES;
 
-    for (int i = 0; i < NPC_COUNT && i < 12; i++) {
+    for (int i = 0; i < NPC_COUNT && i < NPC_STATE_CAP; i++) {
         if (npcTextures[i] == NULL || npcState[i].hidden || !npcState[i].alive)
             continue;
 
@@ -460,5 +488,104 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
                 draw_text(renderer, font, npcState[i].bark, bx, by, bc);
             }
         }
+    }
+}
+
+// --- REVİR (Faz REVIR): bayılma + yatış + taburcu + kırgınlık ---
+
+bool npc_infirm(int i)
+{
+    return i >= 0 && i < NPC_COUNT && i < NPC_STATE_CAP && npcState[i].infirm;
+}
+
+int npc_infirm_day(int i)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return 0;
+    return npcState[i].infirmDay;
+}
+
+int npc_beat_count(int i)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return 0;
+    return npcState[i].beatCount;
+}
+
+bool npc_grudge(int i)
+{
+    return i >= 0 && i < NPC_COUNT && i < NPC_STATE_CAP && npcState[i].grudge;
+}
+
+void npc_send_infirmary(int i, int day)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return;
+    npcState[i].infirm = true;
+    npcState[i].infirmDay = day;
+    npcState[i].beatCount++;
+    npcState[i].hidden = true;   // dünyadan çekilir (revirde yatar)
+}
+
+void npc_infirmary_discharge(int i, bool grudge)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return;
+    npcState[i].infirm = false;
+    npcState[i].hidden = false;      // rutin bir sonraki update'te konumlar
+    npcState[i].health = npc_max_health(i);
+    if (grudge) npcState[i].grudge = true;
+}
+
+// Save köprüsü: yatış durumu toleranslı kuyruktan gelir/gider
+void npc_infirm_state_get(int i, int *infirm, int *day, int *beats, int *grudge)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) {
+        *infirm = 0; *day = 0; *beats = 0; *grudge = 0; return;
+    }
+    *infirm = npcState[i].infirm ? 1 : 0;
+    *day = npcState[i].infirmDay;
+    *beats = npcState[i].beatCount;
+    *grudge = npcState[i].grudge ? 1 : 0;
+}
+
+void npc_infirm_state_set(int i, int infirm, int day, int beats, int grudge)
+{
+    if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP) return;
+    npcState[i].infirm = infirm != 0;
+    npcState[i].infirmDay = day;
+    npcState[i].beatCount = beats;
+    npcState[i].grudge = grudge != 0;
+    if (npcState[i].infirm) npcState[i].hidden = true;
+}
+
+// Revirde yatanları çiz: yatak pozisyonlarında soluk siluet + isim
+// (bedX/bedY: ilk yatağın dünya konumu; yataklar yatay dizilir)
+void npc_render_infirmary(R2D *renderer, R2DTexture **npcTextures,
+                          const Camera *camera, TTF_Font *font,
+                          float bedX, float bedY)
+{
+    if (!npcActive) return;
+    int bed = 0;
+    for (int i = 0; i < NPC_COUNT && i < NPC_STATE_CAP; i++) {
+        if (!npcState[i].infirm || npcTextures[i] == NULL) continue;
+        float bx = bedX + (float)bed * 56.0f;
+        int fr = def_frame(i);
+        float sc = def_scale(i) * 0.9f;
+        SDL_FRect src = { 0, 0, (float)fr, (float)fr };   // idle ilk kare
+        SDL_FRect dst = {
+            (bx - fr * sc / 2.0f - camera->x) * camera->zoom,
+            (bedY - fr * sc + 10.0f - camera->y) * camera->zoom,
+            fr * sc * camera->zoom, fr * sc * camera->zoom,
+        };
+        r2d_texture_set_alpha_mod(npcTextures[i], 150);   // baygın soluk
+        r2d_draw_texture(renderer, npcTextures[i], &src, &dst);
+        r2d_texture_set_alpha_mod(npcTextures[i], 255);
+        if (font != NULL) {
+            char lbl[48];
+            SDL_snprintf(lbl, sizeof(lbl), "%s (yatıyor)", NPCS[i].name);
+            SDL_Color dim = { 200, 190, 200, 255 };
+            draw_text(renderer, font, lbl,
+                      (bx - 30.0f - camera->x) * camera->zoom,
+                      (bedY + 14.0f - camera->y) * camera->zoom, dim);
+        }
+        bed++;
+        if (bed >= 4) break;   // 4 yatak — fazlası kuyrukta (görünmez ama yatar)
     }
 }

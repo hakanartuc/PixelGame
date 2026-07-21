@@ -93,6 +93,19 @@ int npc_at_point(float wx, float wy);
 // Hasar uygula. Dönen: bu vuruşla öldü mü. Ölüm kalıcıdır (save'e yazılır).
 bool npc_damage(int i, float dmg);
 
+// --- REVİR (Faz REVIR): sivil 0'a inmez, 1 canda bayılır → revire yatar ---
+bool npc_infirm(int i);
+int  npc_infirm_day(int i);
+int  npc_beat_count(int i);
+bool npc_grudge(int i);
+void npc_send_infirmary(int i, int day);
+void npc_infirmary_discharge(int i, bool grudge);
+void npc_infirm_state_get(int i, int *infirm, int *day, int *beats, int *grudge);
+void npc_infirm_state_set(int i, int infirm, int day, int beats, int grudge);
+void npc_render_infirmary(R2D *renderer, R2DTexture **npcTextures,
+                          const Camera *camera, TTF_Font *font,
+                          float bedX, float bedY);
+
 bool  npc_is_alive(int i);
 float npc_health(int i);
 float npc_max_health(int i);       // def'ten (0 ise NPC_MAX_HEALTH)

@@ -263,6 +263,22 @@ static void title_notify(int idx, Player *p, FloatText *floatTexts)
                          p->rect.y - 40.0f, buf, gold);
 }
 
+// REVİR masrafı (Faz REVIR): taban 200g + günlük %25 BİLEŞİK; önemli NPC
+// (dükkancı/görev taşıyan) ×1.5; tekrarlanan yatış ×yatışSayısı — seri
+// dayakçılık ekonomik olarak imkânsızlaşır (Hakan onaylı model)
+static int infirmary_cost(int i, int today)
+{
+    int days = today - npc_infirm_day(i);
+    if (days < 0) days = 0;
+    if (days > 40) days = 40;   // taşma sigortası (30. günde köy zaten toplar)
+    float c = 200.0f;
+    for (int d = 0; d < days; d++) c *= 1.25f;
+    if (NPCS[i].isVendor || NPCS[i].questId != NULL) c *= 1.5f;
+    int beats = npc_beat_count(i);
+    if (beats > 1) c *= (float)beats;
+    return (int)c;
+}
+
 // --- VFX HİS CİLASI köprüsü: isabet/ölüm/blok efektleri + hit-stop ---
 // (g_fx deseni — imza şişirmeden derin çağrı yerlerinden erişim)
 static AnimFx *g_animFx = NULL;
@@ -1172,8 +1188,12 @@ int main(int argc, char *argv[])
     for (int i = 0; i < NPC_COUNT; i++)
         if (NPCS[i].isGuard) { guardIdx = i; break; }
     int fatmaIdx = -1;   // K9 Kandil (D1a)
+    int sifaciIdx = -1;  // Revir (Faz REVIR)
+    int shopVendorIdx = -1;   // açık dükkanın sahibi (kırgınlık zammı okur)
     for (int i = 0; i < NPC_COUNT; i++)
         if (SDL_strcmp(NPCS[i].name, "Fatma") == 0) { fatmaIdx = i; break; }
+    for (int i = 0; i < NPC_COUNT; i++)
+        if (SDL_strcmp(NPCS[i].name, "Şifacı Ela") == 0) { sifaciIdx = i; break; }
     int nazifeIdx = -1;  // K2 Son Müşteri (D1b)
     for (int i = 0; i < NPC_COUNT; i++)
         if (SDL_strcmp(NPCS[i].name, "Nazife") == 0) { nazifeIdx = i; break; }
@@ -2034,6 +2054,7 @@ int main(int argc, char *argv[])
                             {
                                 shopOpen = true;
                                 shopCaravan = (dialogNpc == kervanIdx);
+                                shopVendorIdx = dialogNpc;   // kırgınlık zammı için
                                 if (shopCaravan)
                                 {
                                     // Kervan stoğu: sabitler + havuzdan 2 FARKLI tomar.
@@ -2064,6 +2085,73 @@ int main(int argc, char *argv[])
                                 if (yabanciIdx >= 0)
                                     npc_force_hidden(yabanciIdx, true);   // hiç olmadı
                                 journal_add(JE_WELL_INTRO, 0);
+                                dialogNpc = -1;
+                            }
+                            else if (strcmp(target, "sifa:ode") == 0)
+                            {
+                                // REVİR ödemesi: TÜM yatanların masrafı tek seferde
+                                int total = 0, cnt = 0;
+                                for (int ni2 = 0; ni2 < NPC_COUNT; ni2++)
+                                    if (npc_infirm(ni2))
+                                    { total += infirmary_cost(ni2, gametime_day()); cnt++; }
+                                SDL_Color hgold3 = { 255, 235, 150, 255 };
+                                SDL_Color red3 = { 255, 120, 100, 255 };
+                                char obuf[FLOAT_TEXT_LEN];
+                                if (cnt == 0)
+                                    npc_bark(sifaciIdx, "Yataklar boş. Böyle kalsın.", 4.0f);
+                                else if (player.gold < total)
+                                {
+                                    snprintf(obuf, sizeof(obuf),
+                                             "Altının yetmiyor (%d gerek)", total);
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                        player.rect.x + player.rect.w / 2.0f,
+                                        player.rect.y - 10.0f, obuf, red3);
+                                }
+                                else
+                                {
+                                    player.gold -= total;
+                                    for (int ni2 = 0; ni2 < NPC_COUNT; ni2++)
+                                        if (npc_infirm(ni2))
+                                            npc_infirmary_discharge(ni2, false);
+                                    snprintf(obuf, sizeof(obuf),
+                                             "-%d g — yaralılar ayağa kalktı", total);
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                        player.rect.x + player.rect.w / 2.0f,
+                                        player.rect.y - 10.0f, obuf, hgold3);
+                                    audio_play(SFX_PERK);
+                                    npc_bark(sifaciIdx,
+                                             "Parayla vicdan alınmaz ama yatak boşalır.", 5.0f);
+                                }
+                                dialogNpc = -1;
+                            }
+                            else if (strcmp(target, "sifa:tedavi") == 0)
+                            {
+                                // Şifacı tedavisi: 60g — tam can (oyuncu hizmeti)
+                                SDL_Color red4 = { 255, 120, 100, 255 };
+                                if (player.gold < 60)
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                        player.rect.x + player.rect.w / 2.0f,
+                                        player.rect.y - 10.0f,
+                                        "Altının yetmiyor (60 gerek)", red4);
+                                else if (player.health >= player.maxHealth)
+                                    npc_bark(sifaciIdx, "Sapasağlamsın. Git işine.", 4.0f);
+                                else
+                                {
+                                    player.gold -= 60;
+                                    player.health = player.maxHealth;
+                                    audio_play(SFX_POTION);
+                                    if (g_animFx != NULL)
+                                        animfx_spawn(g_animFx, g_hitMagicTex, 49, 7,
+                                                     100.0f, 100.0f,
+                                                     player.rect.x + player.rect.w / 2.0f,
+                                                     player.rect.y + player.rect.h / 2.0f,
+                                                     70.0f, 0.8f);
+                                    SDL_Color grn2 = { 150, 255, 150, 255 };
+                                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                        player.rect.x + player.rect.w / 2.0f,
+                                        player.rect.y - 10.0f,
+                                        "-60 g — yaraların sarıldı", grn2);
+                                }
                                 dialogNpc = -1;
                             }
                             else if (strcmp(target, "akla:kervan") == 0)
@@ -2665,6 +2753,14 @@ int main(int argc, char *argv[])
                         {
                             entry = "karsilama";
                             player.guardGreeted = true;   // bir kez yaşanır
+                        }
+                        else if (nearestNpc == sifaciIdx)
+                        {
+                            // Şifacı: yatan varsa doğrudan hasta düğümü
+                            bool anyInf = false;
+                            for (int ni4 = 0; ni4 < NPC_COUNT; ni4++)
+                                if (npc_infirm(ni4)) { anyInf = true; break; }
+                            if (anyInf) entry = "yatan";
                         }
                         else if (nearestNpc == fatmaIdx)
                         {
@@ -3956,7 +4052,9 @@ int main(int argc, char *argv[])
                             int buyPrice = (int)(it->value *
                                                  rep_buy_mult(player.reputation[shopRegion]) *
                                                  perkFx.shopBuyMult *
-                                                 (shopCaravan ? 1.15f : 1.0f));
+                                                 (shopCaravan ? 1.15f : 1.0f) *
+                                                 (npc_grudge(shopVendorIdx)
+                                                  ? 1.25f : 1.0f));   // REVİR kırgınlığı
                             if (player.gold >= buyPrice &&
                                 bag_add(it, 1, 0))
                             {
@@ -7093,6 +7191,25 @@ int main(int argc, char *argv[])
                 for (int pi = 0; pi < 12; pi++) pickTries[pi] = 0;   // cepler tazelenir
                 pickFailUsed = false;
 
+                // REVİR: 30 gün ödenmeyen yatış — köylüler toplar, NPC döner
+                // ama AFFETMEZ (kalıcı kırgınlık: soğuk selam + %25 zam) + itibar
+                for (int ni3 = 0; ni3 < NPC_COUNT; ni3++)
+                {
+                    if (!npc_infirm(ni3) ||
+                        today - npc_infirm_day(ni3) < 30) continue;
+                    npc_infirmary_discharge(ni3, true);
+                    int vilReg = region_of(12.0f * TILE_SIZE, 8.0f * TILE_SIZE);
+                    rep_add(&player.reputation[vilReg], REP_HIT);
+                    char mbuf2[FLOAT_TEXT_LEN];
+                    snprintf(mbuf2, sizeof(mbuf2),
+                             "%s ayağa kalktı — ama masrafı köy topladı...",
+                             NPCS[ni3].name);
+                    SDL_Color cold = { 180, 180, 210, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                        player.rect.x + player.rect.w / 2.0f,
+                        player.rect.y - 44.0f, mbuf2, cold);
+                }
+
                 journal_day_tick(today);    // günlük atmosfer satırları (seyrek)
                 resource_daily_respawn();   // doğa tazelenir (cevher/bitki/ağaç)
                 contract_new_day(today);    // pano yenilenir (yarım kontratlar düşer)
@@ -7827,6 +7944,25 @@ int main(int argc, char *argv[])
                                 floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 24.0f, buf, red);
+                            }
+                            // REVİR (Faz REVIR): sivil 1 canda BAYILIR — revire
+                            // taşınır (öldü sayılmaz; masraf sayacı bugün başlar)
+                            if (!isGuardVictim && !died &&
+                                npc_health(victim) <= 1.01f && !npc_infirm(victim))
+                            {
+                                npc_send_infirmary(victim, gametime_day());
+                                if (victim == targetNpc) targetNpc = -1;
+                                char fbuf[FLOAT_TEXT_LEN];
+                                snprintf(fbuf, sizeof(fbuf),
+                                         "%s bayıldı — revire taşındı",
+                                         NPCS[victim].name);
+                                SDL_Color or2 = { 255, 180, 90, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                    player.rect.x + player.rect.w / 2.0f,
+                                    player.rect.y - 40.0f, fbuf, or2);
+                                if (sifaciIdx >= 0)
+                                    npc_bark(sifaciIdx,
+                                             "Bir yaralı daha... Getirin şunu.", 5.0f);
                             }
                             else if (died && player.sneaking)
                             {
@@ -9277,6 +9413,8 @@ int main(int argc, char *argv[])
 
         ally_render(allies, renderer, snakeTex, turtleTex, &camera);   // M4 dostlar
 
+        npc_render_infirmary(renderer, npc_textures, &camera, gameFont,
+                             3.6f * TILE_SIZE, 6.2f * TILE_SIZE);
         npc_render_all(renderer, npc_textures, &camera, gameFont, nearestNpc,
                        player.sneaking);
 
@@ -10107,7 +10245,8 @@ int main(int argc, char *argv[])
         if (shopOpen)
             shop_render(renderer, gameFont, itemIconTex, &itemTex, player.gold,
                         rep_buy_mult(player.reputation[region_of(player.rect.x, player.rect.y)])
-                            * (shopCaravan ? 1.15f : 1.0f),
+                            * (shopCaravan ? 1.15f : 1.0f)
+                            * (npc_grudge(shopVendorIdx) ? 1.25f : 1.0f),
                         40.0f, 40.0f,
                         shopCaravan ? caravanStock : NULL,
                         shopCaravan ? caravanStockN : 0);
