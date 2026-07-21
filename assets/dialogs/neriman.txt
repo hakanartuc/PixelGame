@@ -1,0 +1,43 @@
+# 'Dilsiz' Neriman — Sessiz El ustası (Suikastçi P1). ESO standardı:
+# az ama ağır konuşur; giriş düğümünü main aşamaya göre seçer.
+
+[tanisma]
+text: ...Aklayıcı. Kuyuya beş yüz altın döktün, hiç sormadın kimin elini yıkadığını. Sormamak. İşte bu yüzden ipi sarkıttık. Otur. Ben Neriman. Bana Dilsiz derler — konuşmadığım için değil. Konuşturmadığım için.
+opt: Burası ne? Siz kimsiniz? -> kimsiniz
+opt: Bana ne istediğinizi söyle. -> sinav_brief
+opt: (Sessizce dinle.) -> sinav_brief
+
+[kimsiniz]
+text: Sessiz El. Kuyunun dibinde yaşarız çünkü yukarısı gürültülü. Kimin kesesi kimde, kimin borcu kime — biz biliriz. Bazen bilmek yetmez; el gerekir. Sessiz bir el. Belki seninki. Belki değil. Onu şimdi öğreneceğiz.
+opt: Nasıl? -> sinav_brief
+opt: Ya reddedersem? -> ret
+
+[ret]
+text: O zaman ipten çıkar, kuyudan uzak durursun. Kimse seni tutmaz — ama kimse keseni de yıkamaz artık. Kapımız bir kez çalınır, yolcu.
+opt: ...Dinliyorum. -> sinav_brief
+opt: (Ayrıl.) -> end
+
+[sinav_brief]
+text: Sınav basit. Baran'ın tezgahının arkasında mühürlü bir kutu durur. Gece git. Al. Kimse görmesin — TANIK, başarısızlıktır. Kutuyu bana getir. İçinde ne var diye sorma; mühür, merakından değerlidir.
+opt: Kutu bu gece sende olur. -> as1:ver
+opt: Düşüneyim. -> end
+
+[sinav_bekle]
+text: Kutu hâlâ orada, sen hâlâ buradasın. Gece uzun değildir, yolcu.
+opt: Gidiyorum. -> end
+
+[kutu]
+text: ...Mühür sağlam. Görülmedin. İyi. Demek elin sessiz olabiliyor. Şimdi gözünü sınayalım: Yaşlı Kemal. Zararsız görünür, değil mi? Belki de öyledir. Gün boyu gölgesi ol — durduğu ÜÇ yeri işaretle, bana getir. Yaklaşma. Görünme. Gölge merak edilmez.
+opt: (Kutuyu uzat.) -> as1:teslim
+
+[takip_bekle]
+text: Kemal hâlâ yürüyor. Sen hâlâ buradasın. Gölge bedenden önce yorulmaz, yolcu.
+opt: İşteyim. -> end
+
+[rapor]
+text: Üç durak. Meydan, han, tarla... Evet. Doğru. Kemal'in günü buymuş — ve sen görünmeden gördün. Sessiz El'in sana borcu olsun. Şimdilik altın; yakında... daha fazlası.
+opt: (Raporu ver.) -> as2:teslim
+
+[bekle]
+text: Sabır, yolcu. Büyük işler sessiz hazırlanır. Vakti gelince ip sana gelir — hep geldiği gibi.
+opt: Bekliyorum. -> end

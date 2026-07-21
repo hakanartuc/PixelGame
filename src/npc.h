@@ -32,6 +32,8 @@ typedef struct {
     int stopCount;            // en az 1 (ilk durak = başlangıç konumu)
 
     // Sheet/görünüm farkları (0 = varsayılan: 64px hücre, 1.5x, NPC_MAX_HEALTH)
+    int map;                  // yaşadığı harita (0 = dünya; 5 = MAP_LOCA — literal,
+                              // include döngüsünden kaçınma: decor.c DM_ deseni)
     int frameSize;            // hücre boyutu (Knights sheet'leri 48)
     float drawScale;
     float maxHealth;
@@ -44,6 +46,8 @@ extern const int NPC_COUNT;
 // Harita geçişi: dünyada değilken NPC'ler tamamen devre dışı
 // (update/render/nearest/visible hepsi boş döner)
 void npc_set_active(bool active);
+// Aktif harita (decor_set_map deseni): yalnız bu haritanın NPC'leri işler
+void npc_set_map(int mapId);
 
 // Rutin: saate göre hedef durak seç, oraya yürü, indoors'ta gizlen.
 void npc_update(float dt, float hours);
@@ -102,6 +106,7 @@ void npc_send_infirmary(int i, int day);
 void npc_infirmary_discharge(int i, bool grudge);
 void npc_infirm_state_get(int i, int *infirm, int *day, int *beats, int *grudge);
 void npc_infirm_state_set(int i, int infirm, int day, int beats, int grudge);
+int npc_current_stop_index(int i, float hours);   // Takip görevi (P1)
 void npc_render_infirmary(R2D *renderer, R2DTexture **npcTextures,
                           const Camera *camera, TTF_Font *font,
                           float bedX, float bedY);

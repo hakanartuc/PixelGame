@@ -282,6 +282,7 @@ typedef enum {
     ITEM_TOME_HEAL,       // Tomar: Şifa Nuru (kervan sabit + Fatma hediyesi)
     ITEM_TOME_HOLYBEAM,   // Tomar: Kutsal Hüzme (Kutsal 5 — Hortlak %8 + USTA sandık)
     ITEM_TOME_HOLYZONE,   // Tomar: Kutsal Alan (Kutsal 15 — Hortlak %6 + USTA sandık)
+    ITEM_SEALED_BOX,      // Mühürlü Kutu (Suikastçi P1 sınavı — görev eşyası)
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

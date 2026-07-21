@@ -38,6 +38,12 @@ const MapDef MAPS[MAP_COUNT] = {
         .mood = MOOD_DUNGEON,
         .ambient = 0.45f,       // kalıcı alacakaranlık (açık hava ama lanetli)
     },
+    [MAP_LOCA] = {
+        .name = "Kuyunun Dibi",
+        .csvPath = "assets/maps/loca.csv",
+        .mood = MOOD_DUNGEON,
+        .ambient = 0.30f,   // meşale loşluğu — ama zindan DEĞİL (dalga/mob yok)
+    },
 };
 
 // ---------------------------------------------------------------------------
@@ -45,6 +51,15 @@ const MapDef MAPS[MAP_COUNT] = {
 // (assets/maps/dungeon_f*.csv scripts/gen_dungeon.py'den; oda düzeni orada)
 // ---------------------------------------------------------------------------
 const MapPortal PORTALS[] = {
+    // SUİKASTÇİ P1: Kör Kuyu'nun dibi — ip yalnız koşul sağlanınca görünür
+    // (main: gece + 500g aklama YA DA loca zaten keşfedilmiş)
+    { .from = MAP_WORLD, .x = T(26), .y = T(15), .radius = 60.0f,
+      .to = MAP_LOCA, .tx = T(5.5f), .ty = T(5.5f),
+      .label = "[R] İpten aşağı in", .decorTex = NULL },
+    { .from = MAP_LOCA, .x = T(5.5f), .y = T(4.2f), .radius = 60.0f,
+      .to = MAP_WORLD, .tx = T(26), .ty = T(16.2f),
+      .label = "[E] İpten yukarı çık", .decorTex = NULL },
+
     // S3: Eşikçi Konağı — kuzeydoğu tepe eteği (harabe kapısı)
     { .from = MAP_WORLD, .x = T(168), .y = T(45), .radius = 80.0f,
       .to = MAP_KONAK, .tx = T(4), .ty = T(10),

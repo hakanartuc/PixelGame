@@ -453,6 +453,12 @@ const ItemType ITEM_TYPES[] = {
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .tomeAbility = ABILITY_HOLY_ZONE, .tomeReqLevel = 15,
       .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
+
+    // SUİKASTÇİ P1: sınav eşyası — satılmaz, mühürü Neriman'dan başkası açamaz
+    { .name = "Mühürlü Kutu", .iconIndex = 0, .maxStack = 1, .value = 0,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/trinkets.png",
+      .iconSrc = { 16, 0, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

@@ -43,7 +43,7 @@ Cute_Fantasy paketleri (`/Users/hakanartuc/Cute Fantasy` — NPC, ev, düşman, 
 WASD hareket · Space auto-attack toggle · TAB hedef (Z KALDIRILDI) · 1-8 hotbar
 (WoW düzeni 32 yuva: 2 ana bar 8×1 alt alta [1-8 / Shift+1-8] + sağ dikey 2×4
 [Alt+1-8] + sol dikey 2×4 tuşsuz; hepsi hep görünür) · SHIFT aktif blok (kalkanla) ·
-P yankesicilik (eğilmişken) · R dinlen (gece ateş başında) · E konuş/istasyon/
+P yankesicilik (eğilmişken) · R dinlen (ateş başı) / kuyuda İPTEN İN (loca) · E konuş/istasyon/
 topla/kuyu · I envanter (TAB Eşya↔Malzeme) · K skill/ağaç (alınmış aktif düğümü
 hotbara SÜRÜKLE) · J Yolculuk günlüğü (Tab sekme, ←→ yaprak) · F8 hava döngüsü (dev)
 Hotbar: düz TIK = becerine bas (click-to-cast); SHIFT+sürükle = taşı/takas;
@@ -165,6 +165,22 @@ DoT/yansıtma hariç); mob_die'da büyük kan + hit-stop (melee 50ms / ok 30ms /
 ölüm 90ms / PERFECT parry 120ms — dünya dt ×0.08, menü gerçek zaman); blok
 kıvılcımı, cast halkası, yöne göre slash yayı. Assetler assets/fx/ +
 CREDITS.md. Sırada: ④ müzik seti (xDeviruchi).
+**SUİKASTÇİ P1 TAMAM (Sessiz El)**: MAP_LOCA "Kuyunun Dibi" (36×26; kuyu↔loca
+portal — iniş [R], aklama [E] ayrımı); keşif: launderedTotal≥500 + GECE;
+kadro Neriman/Çelme/İğne (NpcDef.map harita farkındalığı — npcState 16/16
+DOLU, sıradaki NPC'de 20'ye büyüt!); görev 1 SINAV (gece Mühürlü Kutu,
+crime_witnessed victimAlive=false — true geçmek "hep görüldü" bug'ıydı) +
+görev 2 TAKİP (Kemal 4 durak, 100-400px bandı, 3 uyarı kuralı); muhafız
+GECE DEVRİYESİ (sabit rota, dükkan önünden geçer — hırsızlık penceresi);
+ESO sunum v1 (bant+takipçi — Hakan: YETERSİZ, yeniden çalışılacak).
+**REVİR TAMAM**: sivil NPC 1 canda bayılır (0 = ölüm yok) → revire yatar;
+Şifacı Ela; masraf 200g×1.25^gün×önem×tekrar; 30 günde köy toplar ama
+kırgınlık kalıcı (+%25 zam). sifaci.txt = ESO anlatım ilk örneği.
+**KITA VİZYONU SABİT (PROGRESS "VİZYON — KITA PLANI")**: Doğu/Batı blokları
+(içlerinde çok krallık/beylik + birer imparatorluk), bağımsız bölge = köy,
+bölge haritaları modeli, ilk genişleme DOĞU çöl sultanlığı, olay tabanlı
+siyaset, bölgesel gündoğumu + mevsim notu. Kapsam disiplini: fazlar bu
+belgeye referansla açılır.
 **MOB DALGASI + ÖLÜM GETİREN TAMAM (⑤)**: 3 tür SONA eklendi (18 Hortlak
 Büyücü / 19 Kan Canavarı / 20 ÖLÜM GETİREN boss lv16); 2 fazlı boss savaşı
 (Kara Patlama telegraph + %50'de hız/çağrı) mezarlıkta T(30,20), haftalık

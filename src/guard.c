@@ -47,6 +47,21 @@ static float step_towards(float *x, float *y, float tx, float ty, float step)
     return dist - step;
 }
 
+// GECE DEVRİYESİ (Suikastçi P1 — Hakan isteği): muhafız gece köy içinde
+// tur atar; dükkan önünden GEÇER ama sürekli orada durmaz — hırsızın
+// penceresi, rotayı okuyan oyuncunun ödülüdür
+static const struct { float x, y; } NIGHT_PATROL[] = {
+    { 21.0f * 64.0f, 12.0f * 64.0f },   // nöbet noktası (köy kenarı)
+    { 14.0f * 64.0f,  9.0f * 64.0f },   // meydan güneyi
+    { 10.5f * 64.0f,  6.5f * 64.0f },   // DÜKKAN ÖNÜ — tezgaha bakar (tehlike)
+    { 14.5f * 64.0f, 11.0f * 64.0f },   // han yolu
+};
+#define NIGHT_PATROL_N ((int)(sizeof(NIGHT_PATROL) / sizeof(NIGHT_PATROL[0])))
+#define PATROL_WAIT 7.0f     // durak başı bekleme (sn) — okunabilir ritim
+#define PATROL_SPEED_MULT 0.6f
+static int patrolIdx = 0;
+static float patrolWait = 0.0f;
+
 GuardTick guard_update(float dt, float px, float py, int bounty, bool uiFrozen)
 {
     GuardTick out = { false, 0.0f };
@@ -76,7 +91,24 @@ GuardTick guard_update(float dt, float px, float py, int bounty, bool uiFrozen)
     switch (gState) {
     case GUARD_POST:
         if (bounty > 0 && playerDist <= GUARD_SIGHT)
-            gState = GUARD_APPROACH;
+        { gState = GUARD_APPROACH; break; }
+        // Gece: köy içi devriye (rota sabit — oyuncu ezberleyebilir);
+        // gündüz: nöbet noktasına döner, orada durur
+        if (gametime_is_night()) {
+            float wx2 = NIGHT_PATROL[patrolIdx].x;
+            float wy2 = NIGHT_PATROL[patrolIdx].y;
+            if (patrolWait > 0.0f) {
+                patrolWait -= dt;
+            } else if (step_towards(&gx, &gy, wx2, wy2,
+                                    GUARD_SPEED * PATROL_SPEED_MULT * dt) <= 1.0f) {
+                patrolWait = PATROL_WAIT;
+                patrolIdx = (patrolIdx + 1) % NIGHT_PATROL_N;
+            }
+            npc_set_pos(gIdx, gx, gy);
+        } else if (postDist > 1.0f) {
+            step_towards(&gx, &gy, postX, postY, GUARD_SPEED * PATROL_SPEED_MULT * dt);
+            npc_set_pos(gIdx, gx, gy);
+        }
         break;
 
     case GUARD_APPROACH:

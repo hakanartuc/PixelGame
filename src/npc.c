@@ -28,9 +28,11 @@ const NpcDef NPCS[] = {
       .dialogFile = "assets/dialogs/elder.txt",
       .isVendor = false, .questId = "goblin_derdi",
       .schedule = {
-          { .hour =  7.0f, .x = T(13),   .y = T(7),    .indoors = false }, // meydan
-          { .hour = 21.0f, .x = T(14),   .y = T(6.2f), .indoors = true },
-      }, .stopCount = 2 },
+          { .hour =  7.0f, .x = T(13),    .y = T(7),     .indoors = false }, // meydan
+          { .hour = 12.0f, .x = T(17.5f), .y = T(11.5f), .indoors = false }, // han önü (Nazife ziyareti)
+          { .hour = 16.0f, .x = T(7),     .y = T(12),    .indoors = false }, // tarla kıyısı
+          { .hour = 21.0f, .x = T(14),    .y = T(6.2f),  .indoors = true },
+      }, .stopCount = 4 },
     { .name = "Köylü Osman",
       .sheetPath = "assets/characters/npcs/Farmer_Buba.png",
       .dialogFile = "assets/dialogs/villager.txt",
@@ -122,6 +124,34 @@ const NpcDef NPCS[] = {
       }, .stopCount = 1,
       .frameSize = 32, .drawScale = 2.8f },
 
+    // --- SESSİZ EL LOCASI (Suikastçi P1 — map 5 = MAP_LOCA) ---
+    // Usta: az konuşur, görevleri verir. Eski saray celladı — ESO derinliği
+    // diyalogda (neriman.txt).
+    { .name = "'Dilsiz' Neriman",
+      .sheetPath = "assets/characters/npcs/Pharaoh.png",
+      .dialogFile = "assets/dialogs/neriman.txt",
+      .isVendor = false, .questId = NULL,
+      .schedule = {
+          { .hour = 0.0f, .x = T(28), .y = T(14), .indoors = false },  // salon başköşe
+      }, .stopCount = 1,
+      .map = 5, .frameSize = 32, .drawScale = 2.8f },
+    { .name = "Gözcü Çelme",
+      .sheetPath = "assets/characters/npcs/Desert_Person_1.png",
+      .dialogFile = "assets/dialogs/celme.txt",
+      .isVendor = false, .questId = NULL,
+      .schedule = {
+          { .hour = 0.0f, .x = T(21), .y = T(12), .indoors = false },  // tünel ağzı
+      }, .stopCount = 1,
+      .map = 5, .frameSize = 32, .drawScale = 2.8f },
+    { .name = "Zehirci İğne",
+      .sheetPath = "assets/characters/npcs/Desert_Person_4.png",
+      .dialogFile = "assets/dialogs/igne.txt",
+      .isVendor = false, .questId = NULL,
+      .schedule = {
+          { .hour = 0.0f, .x = T(27), .y = T(22), .indoors = false },  // zehir hücresi
+      }, .stopCount = 1,
+      .map = 5, .frameSize = 32, .drawScale = 2.8f },
+
     // ŞİFACI (Faz REVIR): revirin sahibi — yaralı köylüler ona yatar,
     // masraf ödemesi + oyuncuya paralı tedavi. Revir köy kuzeybatısında.
     { .name = "Şifacı Ela",
@@ -193,6 +223,9 @@ static const NpcStop *current_stop(const NpcDef *def, float hours)
 }
 
 static bool npcActive = true;   // dünyada mıyız (zindanda NPC işlemez)
+static int npcMap = 0;            // aktif harita — NPCS[i].map eşleşmeli
+void npc_set_map(int mapId) { npcMap = mapId; }
+#define NPC_ON_MAP(i) (NPCS[i].map == npcMap)
 static int talkingIdx = -1;       // diyalogdaki NPC — hareketi durur
 static bool shelter = false;      // yağmur sığınması (main basar)
 static int shelterExempt = -1;    // sığınmayan NPC (kervancı — gölgelik)
@@ -219,6 +252,7 @@ void npc_update(float dt, float hours)
     if (!npcActive) return;
     for (int i = 0; i < NPC_COUNT && i < NPC_STATE_CAP; i++) {
         NpcState *st = &npcState[i];
+        if (!NPC_ON_MAP(i)) continue;   // başka haritanın NPC'si (loca vs dünya)
         if (!st->alive) continue;   // ölü NPC rutin yürümez
         if (st->infirm) { st->hidden = true; st->walking = false; continue; }
         if (st->hitFlash > 0.0f) st->hitFlash -= dt;
@@ -261,8 +295,9 @@ void npc_update(float dt, float hours)
 
         if (NPCS[i].isGuard) continue;   // muhafızı guard.c beyni yürütür
 
-        // Yağmur sığınması: köylü evine çekilir (rutin beklemede kalır)
-        if (shelter && i != shelterExempt) {
+        // Yağmur sığınması: köylü evine çekilir (yalnız DÜNYA sakinleri —
+        // loca yeraltıdır, yağmur işlemez)
+        if (shelter && NPCS[i].map == 0 && i != shelterExempt) {
             st->hidden = true;
             st->walking = false;
             continue;
@@ -328,7 +363,7 @@ bool npc_visible_pos(int i, float *x, float *y)
 {
     if (!npcActive) return false;
     if (i < 0 || i >= NPC_COUNT || i >= NPC_STATE_CAP ||
-        npcState[i].hidden || !npcState[i].alive)
+        !NPC_ON_MAP(i) || npcState[i].hidden || !npcState[i].alive)
         return false;
     *x = npcState[i].x;
     *y = npcState[i].y;
@@ -409,6 +444,7 @@ int npc_nearest_in_range(float px, float py)
     int best = -1;
     float bestDist = NPC_INTERACT_RANGE;
     for (int i = 0; i < NPC_COUNT && i < NPC_STATE_CAP; i++) {
+        if (!NPC_ON_MAP(i)) continue;
         if (npcState[i].hidden || !npcState[i].alive) continue;   // içeride/ölü konuşulamaz
         float dx = npcState[i].x - px;
         float dy = npcState[i].y - py;
@@ -431,6 +467,7 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
     int frame = (int)(SDL_GetTicks() / NPC_IDLE_SPEED_MS) % NPC_IDLE_FRAMES;
 
     for (int i = 0; i < NPC_COUNT && i < NPC_STATE_CAP; i++) {
+        if (!NPC_ON_MAP(i)) continue;
         if (npcTextures[i] == NULL || npcState[i].hidden || !npcState[i].alive)
             continue;
 
@@ -588,4 +625,14 @@ void npc_render_infirmary(R2D *renderer, R2DTexture **npcTextures,
         bed++;
         if (bed >= 4) break;   // 4 yatak — fazlası kuyrukta (görünmez ama yatar)
     }
+}
+
+// Takip görevi (Suikastçi P1): NPC'nin şu anki durak indeksi (rapor bitmask'i)
+int npc_current_stop_index(int i, float hours)
+{
+    if (i < 0 || i >= NPC_COUNT) return -1;
+    int best = NPCS[i].stopCount - 1;
+    for (int s2 = 0; s2 < NPCS[i].stopCount; s2++)
+        if (hours >= NPCS[i].schedule[s2].hour) best = s2;
+    return best;
 }

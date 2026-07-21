@@ -941,6 +941,35 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - TEST NOTU: P1 ritüeli HÂLÂ TEST EDİLMEDİ — P1+P2 tek turda test edilebilir
   (F10 → taş halkası T108,7 → gece [E] → ritüel → 4 büyü + K'da Yankı ağacı).
 
+### Faz SUIKAST-P1 — SESSİZ EL LOCASI: KEŞİF + İLK 2 GÖREV (2026-07-20)
+- **MAP_LOCA "Kuyunun Dibi"** (36×26, gen tarifi scripts/gen_loca.py): kuyu
+  dibi odası → kıvrımlı tünel → loca salonu + zehir hücresi; MOOD_DUNGEON
+  ambient 0.30 ama zindan DEĞİL (dalga/mob yok). Portal çifti kuyu↔loca.
+- **KEŞİF (onaylı)**: launderedTotal (Player alanı — kervan+kuyu aklamaları
+  sayar, save kuyruğunda) ≥500g VE GECE → kuyuda "[E] İpten aşağı in"
+  belirir (nearPortal keşiften önce gizlenir — etiket sızmaz). İlk inişte
+  SF_ASSASSIN=1 + Çelme: "Seni izliyorduk, aklayıcı."
+- **NPC HARİTA FARKINDALIĞI (altyapı)**: NpcDef.map + npc_set_map (decor
+  deseni) — update/render/nearest/visible_pos filtreli; npcState tavanı
+  16→20 değil 16'da (13+3=16 TAM DOLU — sıradaki NPC'de 20'ye büyüt!).
+- **KADRO (onaylı)**: 'Dilsiz' Neriman (usta — Pharaoh sheet), Gözcü Çelme
+  (Desert_Person_1), Zehirci İğne (Desert_Person_4; dükkanı P3 rütbesiyle).
+- **GÖREV 1 SINAV "Görülmeden" (onaylı)**: gece Baran'ın tezgahından Mühürlü
+  Kutu (ITEM_SEALED_BOX) — crime_witnessed ile TANIK kontrolü: görülürsen
+  bounty + görev durur (yeniden dene); tanıksız → SF=3 → Neriman'a teslim.
+- **GÖREV 2 TAKİP "Gölge Ol" (onaylı)**: Kemal rutini 2→4 durağa zenginleşti
+  (meydan/han önü/tarla/ev); 100-400px bandında [E] "Rapor işaretle" (durak
+  bitmask SF_TAIL_MARK); <100px'te 1.5sn oyalanma = uyarı (sneak/gölge formu
+  muaf), 3 uyarı = raporlar silinir; 3 durak → Neriman'a rapor → +150g,
+  SF=6 (P1 SONU — P2: görev 3-5 + sınıf açılışı).
+- Diyaloglar ESO standardı: neriman.txt (sorgulanabilir, ret dalı bedelli),
+  celme.txt, igne.txt. SF_ASSASSIN/SF_TAIL_MARK storyFlags'te (v22 alanı).
+- ESO SUNUM v1: görev bandı (kabul/aşama duyurusu) + sağ üst takipçi
+  (canlı hedef metni). HAKAN: HÂLÂ YETERSİZ (2026-07-20) — sunum yeniden
+  çalışılacak (muhtemel eksikler: diyalog EKRANI sunumu, görev günlüğü
+  sekmesi, vurgulu anahtar kelimeler — Hakan'a soruldu).
+- TB64 FIX: yüklemede spellsLearned üst 32 bit UYGULANMIYORDU — birleştirildi.
+
 ### Faz REVIR — NPC ŞİDDETİ + REVİR TAMAM (2026-07-20; plan bölümü uygulandı)
 - npc_damage: SİVİL 1 canda kilitlenir ("0 ölüm demek" — Hakan); yalnız
   muhafız ölür. 1 canda main bayıltır: npc_send_infirmary (hidden + yatış
@@ -957,6 +986,55 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - sifaci.txt ESO anlatım standardının İLK örneği (kişilikli, sorgulanabilir,
   "defter" metaforu). Save: revir durumu toleranslı kuyrukta (NPC başına
   yatış/gün/sayı/kırgınlık — eski save'de herkes ayakta).
+
+### VİZYON — KITA PLANI: DOĞU & BATI (2026-07-20, Hakan kararlarıyla SABİTLENDİ)
+**Büyük resim (Hakan)**: Kıta ölçekli dünya — DOĞU ve BATI blokları + ortada
+BAĞIMSIZ BÖLGE (mevcut köy = başlangıç). Oyuncu istediği tarafa hizmet/ihanet
+eder, İKİLİ AJANLIK oynayabilir, köy hayatında kalabilir, siyasete hiç
+karışmayabilir. İstihbarat + suikast birimleri her blokta; kanunsuzlar
+(Sessiz El bu eksenin tohumu). Biyomlar: çöl, kar, akarsular, kurak
+topraklar, tekinsiz bölgeler, taht toprakları.
+
+**ONAYLI KARARLAR (2026-07-20)**:
+1. **Harita modeli: BÖLGE HARİTALARI** — kıta, sınır geçişleriyle bağlı
+   bölge haritalarından oluşur (her biri ~mevcut dünya boyutunda; portal/
+   sınır geçişi mevcut harita altyapısıyla). Faz faz büyür.
+2. **İlk genişleme: DOĞU (çöl sultanlığı)** — Cute Fantasy Desert hazır
+   (Pharaoh/çöl halkı/Mummy ekolojisi). İkinci yerleşim = DOĞU SINIR
+   KASABASI (kervan yolunun ucu — Kervancı Selim'in geldiği yer; mevcut
+   kervan olayı bu yola bağlanır).
+3. **Hizip modeli (Hakan genişletti)**: Doğu ve Batı BLOKLARI; her blok
+   İÇİNDE BİRDEN FAZLA krallık/beylik/sultanlık + muhtemelen her blokta
+   BİRER İMPARATORLUK (blokun ağırlık merkezi). Çekişme HER DÜZEYDE:
+   bloklar arası + blok İÇİ (beylikler birbirine entrika çevirir,
+   imparatorluğa diş biler). "Çok zengin evren" — itibar çok katmanlı:
+   blok itibarı + tekil güç itibarları (bölgesel itibar sistemi genişler).
+4. **Siyaset: OLAY TABANLI GERİLİM** — sınır gerginliği worldevent
+   sistemiyle yaşar (baskın/elçi/ambargo/suçlama); BÜYÜK kırılmalar
+   (savaş/barış) hikaye fazlarıyla. Oyuncu görevleri teraziyi OYNATIR
+   (istihbarat/suikast sonuçları olaylara işler).
+
+**MEVCUT SİSTEMLERLE BAĞ**: bağımsız bölge = mevcut köy (retrofit yok);
+Perde 2 kalesi → Batı'nın sınır kalesi olarak konumlanabilir; Suikastçi
+K3/K4 hedef kademeleri bu güçlerin figürlerine bağlanır; Kızıl Kanca rakip
+ağı bloklar arası kaçakçılıkla anlam kazanır; ünvan/kişilik/itibar
+diyaloglara blok algısı ekler ("Doğulu tüccar sana farklı fiyat verir").
+
+**EK NOT (Hakan, 2026-07-20) — BÖLGESEL GÖKYÜZÜ + MEVSİMLER**:
+· Doğu ve Batı'da GÜN DOĞUMU/BATIMI FARKLI olmalı (kıta genişliği hissi:
+  Doğu'da güneş erken doğar, Batı'da geç batar) — bölge haritası başına
+  gün eğrisi ofseti (gametime/light sistemine bölgesel parametre).
+· MEVSİM SİSTEMİ: gün doğumu/batımı mevsime göre de kayar (kış geç doğar
+  erken batar, yaz tersi). Mevsim; hava zarlarını (kar kışın sık), doğa
+  kaynaklarını (ot mevsimi) ve ileride ekonomiyi (hasat) de besleyebilir.
+· Teknik çapa: gametime'a SEASON katmanı (gün sayısından türetilir,
+  örn. 30 günlük 4 mevsim) + MapDef/bölgeye sunriseOffset alanı; ambient
+  ışık eğrisi bu ikisinden hesaplanır. Üretimi Doğu bölgesi fazına bağla.
+
+**ÜRETİM İLKESİ**: vizyon sabit, üretim FAZ FAZ — sıradaki somut adım:
+Doğu sınır kasabası (bölge haritası + sultanlık ilk teması + ticaret
+ekonomisi). Batı, Perde 2 ile açılır. Hiçbir faz bu belgeye referanssız
+"büyük dünya işi" diye açılmaz (kapsam disiplini).
 
 ### PLAN — REVİR SİSTEMİ: NPC ŞİDDETİ + HASTANE (2026-07-20 Hakan onayları)
 **Konsept**: Suikast kontratları DIŞINDA da NPC'lere saldırılabilir; köy

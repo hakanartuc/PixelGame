@@ -106,6 +106,7 @@ typedef struct Player {
     float manaReservedFrac;   // M4: dost rezervi (0..1) — bar kilitli bölme çizer
     float trinketDmgMult;     // takı hasar çarpanı (her kare türetilir; save DIŞI)
     Uint64 spellsLearned;     // tomarla öğrenilen büyüler (bit = AbilityId; v27 alt 32 + kuyrukta üst 32 — Faz TB64)
+    int launderedTotal;       // toplam AKLANAN altın (loca keşif eşiği; kuyrukta)
     Uint8 bagUpgrades;        // çanta kademeleri (bit0/1 Eşya +10, bit2/3 Malzeme +15; v28)
     int dirtyGold;            // KİRLİ altın (yankesicilik) — harcanamaz, aklanmalı (v29)
     int wellGold;             // Kör Kuyu'ya bırakılan (temiz karşılığı) — şafakta teslim
@@ -213,6 +214,9 @@ enum {
     SF_WELL      = 6,   // Kör Kuyu: 0 bilinmiyor · 1 Yabancı anlattı (kuyu aktif)
     SF_YANKICI   = 7,   // Gizli sınıf: 0 hiç · 1 fısıltı çağırdı · 2 ritüel tamam
     SF_K9_TOME   = 8,   // Fatma'nın hediyesi (Şifa Nuru tomarı) verildi (Faz HOLY)
+    SF_ASSASSIN  = 9,   // Sessiz El: 0 yok · 1 indi · 2 sınav verildi · 3 kutu
+                        // alındı · 4 takip verildi · 5 takip tamam · 6 P1 bitti
+    SF_TAIL_MARK = 10,  // Takip görevi: işaretlenen durak bitmask'i (bit 0-3)
 };
 
 

@@ -1190,10 +1190,20 @@ int main(int argc, char *argv[])
     int fatmaIdx = -1;   // K9 Kandil (D1a)
     int sifaciIdx = -1;  // Revir (Faz REVIR)
     int shopVendorIdx = -1;   // açık dükkanın sahibi (kırgınlık zammı okur)
+    int nerimanIdx = -1, kemalIdx = -1;   // Suikastçi P1 (loca ustası + takip hedefi)
+    float tailNearTimer = 0.0f;   // takipte <100px yakınlık süresi (uyarı sayacı)
+    int tailWarnings = 0;         // 3 uyarı = rapor sıfırlanır
+    // ESO görev sunumu: kabul/aşama değişiminde ekran üstünde büyük bant
+    const char *questBannerTitle = NULL, *questBannerSub = NULL;
+    float questBannerTimer = 0.0f;
     for (int i = 0; i < NPC_COUNT; i++)
         if (SDL_strcmp(NPCS[i].name, "Fatma") == 0) { fatmaIdx = i; break; }
     for (int i = 0; i < NPC_COUNT; i++)
         if (SDL_strcmp(NPCS[i].name, "Şifacı Ela") == 0) { sifaciIdx = i; break; }
+    for (int i = 0; i < NPC_COUNT; i++)
+        if (SDL_strcmp(NPCS[i].name, "'Dilsiz' Neriman") == 0) { nerimanIdx = i; break; }
+    for (int i = 0; i < NPC_COUNT; i++)
+        if (SDL_strcmp(NPCS[i].name, "Yaşlı Kemal") == 0) { kemalIdx = i; break; }
     int nazifeIdx = -1;  // K2 Son Müşteri (D1b)
     for (int i = 0; i < NPC_COUNT; i++)
         if (SDL_strcmp(NPCS[i].name, "Nazife") == 0) { nazifeIdx = i; break; }
@@ -2087,6 +2097,53 @@ int main(int argc, char *argv[])
                                 journal_add(JE_WELL_INTRO, 0);
                                 dialogNpc = -1;
                             }
+                            else if (strcmp(target, "as1:ver") == 0)
+                            {
+                                // SINAV verildi: gece Baran'ın tezgahından
+                                // Mühürlü Kutu — TANIKSIZ
+                                player.storyFlags[SF_ASSASSIN] = 2;
+                                dialogNpc = -1;
+                                npc_bark(nerimanIdx, "Kutu. Tanıksız. Git.", 4.0f);
+                                questBannerTitle = "SINAV: GÖRÜLMEDEN";
+                                questBannerSub =
+                                    "Gece, Baran'ın tezgahından Mühürlü Kutu'yu al — tanıksız";
+                                questBannerTimer = 5.0f;
+                                audio_play(SFX_PERK);
+                            }
+                            else if (strcmp(target, "as1:teslim") == 0)
+                            {
+                                if (bag_consume(&ITEM_TYPES[ITEM_SEALED_BOX]))
+                                {
+                                    player.storyFlags[SF_ASSASSIN] = 4;
+                                    player.storyFlags[SF_TAIL_MARK] = 0;
+                                    tailWarnings = 0;
+                                    audio_play(SFX_PERK);
+                                    npc_bark(nerimanIdx,
+                                             "Temiz iş. Şimdi: Kemal. Gölge ol.", 5.0f);
+                                    questBannerTitle = "GÖLGE OL";
+                                    questBannerSub =
+                                        "Kemal'i gün boyu izle — üç durağını işaretle, görünme";
+                                    questBannerTimer = 5.0f;
+                                }
+                                dialogNpc = -1;
+                            }
+                            else if (strcmp(target, "as2:teslim") == 0)
+                            {
+                                player.storyFlags[SF_ASSASSIN] = 6;
+                                player.gold += 150;
+                                questBannerTitle = "GÖREV TAMAMLANDI";
+                                questBannerSub = "Sessiz El'in güveni — locayı kazandın";
+                                questBannerTimer = 5.0f;
+                                audio_play(SFX_PERK);
+                                SDL_Color hgold4 = { 255, 235, 150, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                    player.rect.x + player.rect.w / 2.0f,
+                                    player.rect.y - 10.0f,
+                                    "+150 g — Sessiz El'in güveni", hgold4);
+                                npc_bark(nerimanIdx,
+                                         "Gözün var. Sıradaki iş... hazırlanıyor.", 5.0f);
+                                dialogNpc = -1;
+                            }
                             else if (strcmp(target, "sifa:ode") == 0)
                             {
                                 // REVİR ödemesi: TÜM yatanların masrafı tek seferde
@@ -2161,6 +2218,7 @@ int main(int argc, char *argv[])
                                 float rate = 0.75f + perkFx.pickFenceBonus;
                                 if (rate > 0.85f) rate = 0.85f;
                                 int clean = (int)(player.dirtyGold * rate);
+                                player.launderedTotal += clean;   // loca eşiği sayar
                                 int sold = 0;
                                 for (int b2 = 0; b2 < 2; b2++)
                                 {
@@ -2514,6 +2572,7 @@ int main(int argc, char *argv[])
                         if (ready)
                         {
                             player.gold += player.wellGold;
+                            player.launderedTotal += player.wellGold;   // loca eşiği
                             char wbuf[FLOAT_TEXT_LEN];
                             snprintf(wbuf, sizeof(wbuf),
                                      "Kuyu başında temiz bir kese: +%d g",
@@ -2676,9 +2735,111 @@ int main(int argc, char *argv[])
                     }
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
-                         dialogNpc < 0 && nearPortal >= 0)
+                         !scene_active() && dialogNpc < 0 &&
+                         map_current() == MAP_WORLD &&
+                         player.storyFlags[SF_ASSASSIN] == 2 &&
+                         gametime_is_night() &&
+                         SDL_fabsf(player.rect.x + player.rect.w / 2.0f
+                                   - 10.2f * TILE_SIZE) < 80.0f &&
+                         SDL_fabsf(player.rect.y + player.rect.h / 2.0f
+                                   - 5.0f * TILE_SIZE) < 80.0f)
                 {
-                    // Geçit kullan (kapı/merdiven) — asıl geçiş update başında yapılır
+                    // SINAV (Suikastçi P1): Mühürlü Kutu — TANIKSIZ alınmalı
+                    float bx3 = 10.2f * TILE_SIZE, by3 = 5.0f * TILE_SIZE;
+                    // victimAlive=FALSE: kurban yok — yalnız GERÇEK tanıklar
+                    // sayılır (true geçmek "hep görüldü" bug'ıydı)
+                    if (crime_witnessed(bx3, by3, -1, false,
+                                        player.sneaking ? SNEAK_WITNESS_RANGE
+                                                        : CRIME_WITNESS_RANGE))
+                    {
+                        int cr2 = region_of(bx3, by3);
+                        player.bounty[cr2] += CRIME_BOUNTY_HIT;
+                        player.lastCrimeDay = gametime_day();
+                        rep_add(&player.reputation[cr2], REP_HIT);
+                        SDL_Color red5 = { 255, 80, 80, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                            player.rect.x + player.rect.w / 2.0f,
+                            player.rect.y - 24.0f,
+                            "Görüldün! Usta bunu duymamalı...", red5);
+                    }
+                    else
+                    {
+                        ItemStack bx4 = item_make(&ITEM_TYPES[ITEM_SEALED_BOX], 1, 0);
+                        if (bag_add_stackp(&bx4))
+                        {
+                            player.storyFlags[SF_ASSASSIN] = 3;
+                            audio_play(SFX_UI);
+                            questBannerTitle = "GÖREV GÜNCELLENDİ";
+                            questBannerSub = "Mühürlü Kutu'yu Neriman'a götür";
+                            questBannerTimer = 4.0f;
+                            SDL_Color vio7 = { 200, 160, 255, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                player.rect.x + player.rect.w / 2.0f,
+                                player.rect.y - 24.0f,
+                                "Kutu sende. Kimse görmedi.", vio7);
+                        }
+                    }
+                }
+                else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
+                         !scene_active() && dialogNpc < 0 && nearestNpc < 0 &&
+                         map_current() == MAP_WORLD &&
+                         player.storyFlags[SF_ASSASSIN] == 4 && kemalIdx >= 0)
+                {
+                    // TAKİP raporu: 100-400px bandında işaretle (durak başına bir)
+                    float knx2, kny2;
+                    if (npc_visible_pos(kemalIdx, &knx2, &kny2))
+                    {
+                        float kdx2 = (player.rect.x + player.rect.w / 2.0f) - knx2;
+                        float kdy2 = (player.rect.y + player.rect.h / 2.0f) - kny2;
+                        float kd2 = SDL_sqrtf(kdx2 * kdx2 + kdy2 * kdy2);
+                        int kday; float khrs;
+                        gametime_get(&kday, &khrs);
+                        int stopIdx = npc_current_stop_index(kemalIdx, khrs);
+                        if (kd2 >= 100.0f && kd2 <= 400.0f && stopIdx >= 0)
+                        {
+                            Uint8 marks = player.storyFlags[SF_TAIL_MARK];
+                            if (marks & (1u << stopIdx))
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                    player.rect.x + player.rect.w / 2.0f,
+                                    player.rect.y - 24.0f,
+                                    "Bu durağı zaten işaretledin.",
+                                    (SDL_Color){ 170, 170, 190, 255 });
+                            else
+                            {
+                                marks |= (Uint8)(1u << stopIdx);
+                                player.storyFlags[SF_TAIL_MARK] = marks;
+                                int cnt2 = 0;
+                                for (int b2 = 0; b2 < 4; b2++)
+                                    if (marks & (1u << b2)) cnt2++;
+                                audio_play(SFX_UI);
+                                char rbuf[FLOAT_TEXT_LEN];
+                                if (cnt2 >= 3)
+                                {
+                                    player.storyFlags[SF_ASSASSIN] = 5;
+                                    snprintf(rbuf, sizeof(rbuf),
+                                             "Rapor tamam — locaya dön.");
+                                    questBannerTitle = "GÖREV GÜNCELLENDİ";
+                                    questBannerSub = "Neriman'a raporu götür";
+                                    questBannerTimer = 4.0f;
+                                }
+                                else
+                                    snprintf(rbuf, sizeof(rbuf),
+                                             "Rapor işaretlendi (%d/3)", cnt2);
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                    player.rect.x + player.rect.w / 2.0f,
+                                    player.rect.y - 24.0f, rbuf,
+                                    (SDL_Color){ 200, 160, 255, 255 });
+                            }
+                        }
+                    }
+                }
+                else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
+                         dialogNpc < 0 && nearPortal >= 0 &&
+                         PORTALS[nearPortal].to != MAP_LOCA)
+                {
+                    // Geçit kullan (kapı/merdiven) — asıl geçiş update başında
+                    // yapılır. Locaya İNİŞ hariç: kuyuda E aklamanın, R ipin
+                    // (etiketler ayrışır — E çakışması fix'i)
                     pendingPortal = nearPortal;
                     audio_play(SFX_UI);
                 }
@@ -2715,9 +2876,11 @@ int main(int argc, char *argv[])
                     }
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
-                         dialogNpc < 0 && map_current() != MAP_WORLD)
+                         dialogNpc < 0 && map_current() != MAP_WORLD &&
+                         map_current() != MAP_LOCA)
                 {
-                    // Zindanda E başka işe bakmaz (NPC/istasyon/pano dünyada)
+                    // Zindanda E başka işe bakmaz (NPC/istasyon/pano dünyada;
+                    // LOCA hariç — orada NPC'lerle konuşulur)
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
                          dialogNpc < 0)
@@ -2728,14 +2891,17 @@ int main(int argc, char *argv[])
                     if (nearestNpc >= 0 && npc_visible_pos(nearestNpc, &npx, &npy))
                         npcRegion = region_of(npx, npy);
 
-                    if (nearestNpc >= 0 && player.bounty[npcRegion] > 0)
+                    // LOCA kanun tanımaz: bounty/itibar kapısı orada işlemez
+                    // (kanunsuzun kapısını kanun kilitleyemez)
+                    bool lawless = (map_current() == MAP_LOCA);
+                    if (nearestNpc >= 0 && !lawless && player.bounty[npcRegion] > 0)
                     {
                         SDL_Color red = { 255, 120, 100, 255 };
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              npx, npy - 100.0f,
                                              "Önce cezanı öde!", red);
                     }
-                    else if (nearestNpc >= 0 &&
+                    else if (nearestNpc >= 0 && !lawless &&
                              player.reputation[npcRegion] <= REP_TALK_REFUSE)
                     {
                         // Ceza ödense bile toplum unutmaz — katil damgası
@@ -2753,6 +2919,17 @@ int main(int argc, char *argv[])
                         {
                             entry = "karsilama";
                             player.guardGreeted = true;   // bir kez yaşanır
+                        }
+                        else if (nearestNpc == nerimanIdx)
+                        {
+                            // Sessiz El zinciri: aşamaya göre düğüm (ESO akışı)
+                            Uint8 as2 = player.storyFlags[SF_ASSASSIN];
+                            if (as2 <= 1)      entry = "tanisma";
+                            else if (as2 == 2) entry = "sinav_bekle";
+                            else if (as2 == 3) entry = "kutu";
+                            else if (as2 == 4) entry = "takip_bekle";
+                            else if (as2 == 5) entry = "rapor";
+                            else               entry = "bekle";
                         }
                         else if (nearestNpc == sifaciIdx)
                         {
@@ -3102,6 +3279,15 @@ int main(int argc, char *argv[])
                                                  &hotbar, floatTexts);
                         }
                     }
+                }
+                else if (event.key.key == SDLK_R && gameState == GAME_PLAYING &&
+                         !scene_active() && dialogNpc < 0 && nearPortal >= 0 &&
+                         PORTALS[nearPortal].to == MAP_LOCA)
+                {
+                    // SESSİZ EL inişi: kuyu E'yi aklamaya bırakır, ip R'dedir
+                    // (Hakan raporu: E çakışması — kuyuya bırakma hep kazanıyordu)
+                    pendingPortal = nearPortal;
+                    audio_play(SFX_UI);
                 }
                 else if (event.key.key == SDLK_R && gameState == GAME_PLAYING &&
                          !scene_active() && dialogNpc < 0 &&
@@ -4806,6 +4992,19 @@ int main(int argc, char *argv[])
                     if (b != NULL) b->bossPhase = 1;
                 }
 
+                // SESSİZ EL (Suikastçi P1): ilk iniş — loca seni bekliyordu
+                if (to == MAP_LOCA && player.storyFlags[SF_ASSASSIN] == 0)
+                {
+                    player.storyFlags[SF_ASSASSIN] = 1;
+                    int celmeIdx2 = -1;
+                    for (int ci = 0; ci < NPC_COUNT; ci++)
+                        if (SDL_strcmp(NPCS[ci].name, "Gözcü Çelme") == 0)
+                        { celmeIdx2 = ci; break; }
+                    if (celmeIdx2 >= 0)
+                        npc_bark(celmeIdx2,
+                                 "Sonunda. Seni izliyorduk, aklayıcı.", 6.0f);
+                }
+
                 // ÖLÜM GETİREN: mezarlık boss'u — dev iskelet kalıntısının önü;
                 // haftalık diriliş (boss2_* toleranslı save kuyruğu)
                 if (to == MAP_MEZARLIK &&
@@ -4831,7 +5030,8 @@ int main(int argc, char *argv[])
                 player.knockbackX = player.knockbackY = 0.0f;
 
                 // 5) Dünya-özel sistemler kapanır/açılır + ambiyans
-                npc_set_active(to == MAP_WORLD);
+                npc_set_active(to == MAP_WORLD || to == MAP_LOCA);
+                npc_set_map((int)to);
                 decor_set_active(to == MAP_WORLD || to == MAP_MEZARLIK);
                 decor_set_map((int)to);
                 map_set_current(to);
@@ -4866,6 +5066,12 @@ int main(int argc, char *argv[])
             // Menzildeki geçit ([E] etiketi + kullanım için)
             nearPortal = map_portal_near(player.rect.x + player.rect.w / 2.0f,
                                          player.rect.y + player.rect.h / 2.0f);
+            // SESSİZ EL kapısı: kuyudaki ip keşiften önce GİZLİ — koşul
+            // (gece + 500g aklanmış) ya da loca zaten biliniyor
+            if (nearPortal >= 0 && PORTALS[nearPortal].to == MAP_LOCA &&
+                player.storyFlags[SF_ASSASSIN] == 0 &&
+                !(gametime_is_night() && player.launderedTotal >= 500))
+                nearPortal = -1;   // etiket de çıkmaz, E de işlemez
 
             // Menzildeki kapalı sandık ([E] ipucu + E ile açma)
             nearestChest = -1;
@@ -5196,6 +5402,44 @@ int main(int argc, char *argv[])
                             mob_die(et, mobs, MAX_MOBS, &nextMobId, loots,
                                     questStatus, floatTexts, &player);
                     }
+                }
+            }
+
+            // TAKİP uyarısı (Suikastçi P1): <100px'te oyalanırsan Kemal
+            // şüphelenir — 3 uyarıda raporlar silinir (yeniden başlarsın)
+            if (player.storyFlags[SF_ASSASSIN] == 4 &&
+                map_current() == MAP_WORLD && kemalIdx >= 0)
+            {
+                float knx3, kny3;
+                if (npc_visible_pos(kemalIdx, &knx3, &kny3))
+                {
+                    float kdx3 = (player.rect.x + player.rect.w / 2.0f) - knx3;
+                    float kdy3 = (player.rect.y + player.rect.h / 2.0f) - kny3;
+                    if (kdx3 * kdx3 + kdy3 * kdy3 < 100.0f * 100.0f &&
+                        !player.sneaking && player.shadowTimer <= 0.0f)
+                    {
+                        tailNearTimer += dt;
+                        if (tailNearTimer > 1.5f)
+                        {
+                            tailNearTimer = 0.0f;
+                            tailWarnings++;
+                            npc_bark(kemalIdx, tailWarnings >= 3
+                                     ? "Sen... beni mi izliyorsun?!"
+                                     : "Hep sen mi çıkıyorsun karşıma?", 4.0f);
+                            if (tailWarnings >= 3)
+                            {
+                                tailWarnings = 0;
+                                player.storyFlags[SF_TAIL_MARK] = 0;
+                                SDL_Color red6 = { 255, 120, 100, 255 };
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                    player.rect.x + player.rect.w / 2.0f,
+                                    player.rect.y - 24.0f,
+                                    "Takip bozuldu — raporlar silindi.", red6);
+                            }
+                        }
+                    }
+                    else if (tailNearTimer > 0.0f)
+                        tailNearTimer -= dt * 0.5f;
                 }
             }
 
@@ -7179,8 +7423,8 @@ int main(int argc, char *argv[])
 
             gametime_update(dt);                      // dünya saati
             npc_set_talking(dialogNpc);               // konuşan NPC yerinde durur
-            if (map_current() == MAP_WORLD)
-                npc_update(dt, gametime_hours());     // NPC rutinleri (yürü/eve gir)
+            if (map_current() == MAP_WORLD || map_current() == MAP_LOCA)
+                npc_update(dt, gametime_hours());     // NPC rutinleri (loca dahil)
 
             // Günlük itibar toparlanması: suçsuz geçen gün, negatif itibar 0'a doğru +1
             // (pozitif itibar zamanla artmaz — güven kazanmak iş ister)
@@ -9159,6 +9403,40 @@ int main(int argc, char *argv[])
                 }
             }
 
+            // SUİKASTÇİ P1 ipuçları: sınav kutusu (gece) + takip rapor bandı
+            if (gameFont != NULL && map_current() == MAP_WORLD)
+            {
+                if (player.storyFlags[SF_ASSASSIN] == 2 && gametime_is_night())
+                {
+                    float bx2 = 10.2f * TILE_SIZE, by2 = 5.0f * TILE_SIZE;
+                    float bdx2 = (player.rect.x + player.rect.w / 2.0f) - bx2;
+                    float bdy2 = (player.rect.y + player.rect.h / 2.0f) - by2;
+                    if (bdx2 * bdx2 + bdy2 * bdy2 < 80.0f * 80.0f)
+                        draw_text(renderer, gameFont, "[E] Mühürlü Kutu'yu al",
+                                  (bx2 - camera.x) * camera.zoom - 80.0f,
+                                  (by2 - 60.0f - camera.y) * camera.zoom,
+                                  (SDL_Color){ 200, 160, 255, 255 });
+                }
+                if (player.storyFlags[SF_ASSASSIN] == 4 && kemalIdx >= 0)
+                {
+                    float knx, kny;
+                    if (npc_visible_pos(kemalIdx, &knx, &kny))
+                    {
+                        float kdx = (player.rect.x + player.rect.w / 2.0f) - knx;
+                        float kdy = (player.rect.y + player.rect.h / 2.0f) - kny;
+                        float kd = SDL_sqrtf(kdx * kdx + kdy * kdy);
+                        if (kd >= 100.0f && kd <= 400.0f)
+                            draw_text(renderer, gameFont, "[E] Rapor işaretle",
+                                      20.0f, 160.0f,
+                                      (SDL_Color){ 200, 160, 255, 255 });
+                        else if (kd < 100.0f)
+                            draw_text(renderer, gameFont, "Çok yakınsın!",
+                                      20.0f, 160.0f,
+                                      (SDL_Color){ 255, 120, 100, 255 });
+                    }
+                }
+            }
+
             // Dinlenme ipucu: gece, ateş başında (E ipucunun bir üstü)
             if (gameFont != NULL && dialogNpc < 0 && nearestNpc < 0 && !craftOpen &&
                 nearestStation >= 0 &&
@@ -10020,6 +10298,77 @@ int main(int argc, char *argv[])
             int tw = 0, th = 0;
             TTF_GetStringSize(gameFont, clockBuf, 0, &tw, &th);
             draw_text(renderer, gameFont, clockBuf, winW - tw - 20.0f, 20.0f, clockCol);
+
+            // ESO GÖREV TAKİPÇİSİ (sağ üst, saatin altı): aktif hedef hep görünür
+            {
+                const char *qtTitle = NULL;
+                char qtObj[96] = {0};
+                Uint8 asq = player.storyFlags[SF_ASSASSIN];
+                if (asq == 2) {
+                    qtTitle = "Sınav: Görülmeden";
+                    snprintf(qtObj, sizeof(qtObj),
+                             "%s", gametime_is_night()
+                                   ? "Baran'ın tezgahından kutuyu al (tanıksız)"
+                                   : "Geceyi bekle — kutu gece alınır");
+                }
+                else if (asq == 3) {
+                    qtTitle = "Sınav: Görülmeden";
+                    snprintf(qtObj, sizeof(qtObj), "Kutuyu Neriman'a götür");
+                }
+                else if (asq == 4) {
+                    int qm = 0;
+                    for (int b3 = 0; b3 < 4; b3++)
+                        if (player.storyFlags[SF_TAIL_MARK] & (1u << b3)) qm++;
+                    qtTitle = "Gölge Ol";
+                    snprintf(qtObj, sizeof(qtObj),
+                             "Kemal'in duraklarını işaretle (%d/3) — görünme", qm);
+                }
+                else if (asq == 5) {
+                    qtTitle = "Gölge Ol";
+                    snprintf(qtObj, sizeof(qtObj), "Neriman'a rapor ver");
+                }
+                if (qtTitle != NULL) {
+                    SDL_Color qgold = { 255, 210, 60, 255 };
+                    SDL_Color qwhite = { 225, 225, 235, 255 };
+                    int qw = 0, qh = 0;
+                    TTF_GetStringSize(gameFont, qtTitle, 0, &qw, &qh);
+                    draw_text(renderer, gameFont, qtTitle,
+                              winW - (float)qw - 20.0f, 48.0f, qgold);
+                    TTF_GetStringSize(gameFont, qtObj, 0, &qw, &qh);
+                    draw_text(renderer, gameFont, qtObj,
+                              winW - (float)qw - 20.0f, 70.0f, qwhite);
+                }
+            }
+
+            // ESO GÖREV BANDI: kabul/aşama değişiminde ekran üstü büyük duyuru
+            if (questBannerTimer > 0.0f && questBannerTitle != NULL)
+            {
+                questBannerTimer -= dt;
+                float qa = questBannerTimer > 4.0f ? (5.0f - questBannerTimer)
+                         : questBannerTimer < 1.0f ? questBannerTimer : 1.0f;
+                if (qa < 0.0f) qa = 0.0f;
+                if (qa > 1.0f) qa = 1.0f;
+                Uint8 qalpha = (Uint8)(qa * 255.0f);
+                int bw = 0, bh = 0;
+                TTF_GetStringSize(gameFont, questBannerTitle, 0, &bw, &bh);
+                SDL_Color bgold = { 255, 210, 60, qalpha };
+                draw_text(renderer, gameFont, questBannerTitle,
+                          (winW - (float)bw) / 2.0f, 90.0f, bgold);
+                // süs çizgileri (ESO dokusu)
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                r2d_set_color(renderer, 255, 210, 60, (Uint8)(qalpha / 2));
+                SDL_FRect ql = { (winW - (float)bw) / 2.0f - 60.0f, 99.0f, 50.0f, 2.0f };
+                SDL_FRect qr = { (winW + (float)bw) / 2.0f + 10.0f, 99.0f, 50.0f, 2.0f };
+                r2d_fill_rect(renderer, &ql);
+                r2d_fill_rect(renderer, &qr);
+                if (questBannerSub != NULL)
+                {
+                    TTF_GetStringSize(gameFont, questBannerSub, 0, &bw, &bh);
+                    SDL_Color bwhite = { 230, 230, 240, qalpha };
+                    draw_text(renderer, gameFont, questBannerSub,
+                              (winW - (float)bw) / 2.0f, 116.0f, bwhite);
+                }
+            }
         }
 
         // Hotbar (alt-orta): skill CD'leri + pot adetleri

@@ -1,0 +1,10 @@
+# Gözcü Çelme — tünel ağzı (Suikastçi P1)
+
+[start]
+text: Yavaş. Buranın tek kuralı: Usta konuşurken dinlersin, Usta susarken de dinlersin. Salon ileride. Ayakların sessizse sorun çıkmaz.
+opt: Sen kimsin? -> kim
+opt: (Geç.) -> end
+
+[kim]
+text: Çelme. Kapıyı ben tutarım. İsmimin hikayesini sorma — düşen hatırlar, ben unutmam.
+opt: (Başınla selamla.) -> end

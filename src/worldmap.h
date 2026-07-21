@@ -19,6 +19,7 @@ typedef enum {
     MAP_DUNGEON_F2,   // Kat 2 (Dungeon_2 tileset + boss)
     MAP_KONAK,        // Eşikçi Konağı (S3 — loş ama zindan DEĞİL: dalga/mob yok)
     MAP_MEZARLIK,     // Lanetli Mezarlık (açık hava zindanı — undead tileset)
+    MAP_LOCA,         // Sessiz El Locası (kuyu dibi — Suikastçi P1; güvenli, dalga yok)
     MAP_COUNT,
 } MapId;
 
