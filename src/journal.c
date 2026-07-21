@@ -326,6 +326,33 @@ int journal_render(R2D *renderer, TTF_Font *font, R2DTexture *bookTex,
                 snprintf(st, sizeof(st), "   ( Tamamlandı )");
             flow_block(&f, st, c);
         }
+        // SESSİZ EL zinciri (ESO tarzı birinci ağız — aşama storyFlags'ten)
+        {
+            Uint8 asq = player->storyFlags[SF_ASSASSIN];
+            if (asq >= 2) {
+                any = true;
+                SDL_Color c2 = (asq >= 6) ? faded : ink;
+                flow_block(&f, "~ Sessiz El ~", c2);
+                if (asq == 2)
+                    flow_block(&f, "Neriman bir kutu istiyor. Gece, Baran'ın "
+                               "tezgahı. Tanık olmayacak — loca 'görülmeyeni' "
+                               "arıyor; ben de görülmemeyi.", c2);
+                else if (asq == 3)
+                    flow_block(&f, "Kutu elimde, mührü sağlam. Şimdi kuyunun "
+                               "dibine — Neriman bekliyor.", c2);
+                else if (asq == 4)
+                    flow_block(&f, "Yeni iş: Yaşlı Kemal. Gün boyu gölgesi "
+                               "olacağım — üç durağını işaretleyip rapor "
+                               "edeceğim. Yaklaşmadan. Görünmeden.", c2);
+                else if (asq == 5)
+                    flow_block(&f, "Rapor hazır. Kemal beni görmedi — kimse "
+                               "görmedi. Locaya dönme vakti.", c2);
+                else
+                    flow_block(&f, "Sessiz El beni içeri aldı. Sınavı geçtim; "
+                               "gölge oldum. Sıradaki işi Neriman biliyor — "
+                               "ben beklemeyi.", c2);
+            }
+        }
         if (!any)
             flow_block(&f, "Henüz üstlenilmiş bir iş yok. Köy küçük; "
                            "iş kendini buldurur.", faded);

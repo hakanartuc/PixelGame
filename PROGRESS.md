@@ -941,6 +941,28 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - TEST NOTU: P1 ritüeli HÂLÂ TEST EDİLMEDİ — P1+P2 tek turda test edilebilir
   (F10 → taş halkası T108,7 → gece [E] → ritüel → 4 büyü + K'da Yankı ağacı).
 
+### Faz ESO-V2 — GÖREV/DİYALOG SUNUMU (2026-07-20; Hakan 4 parçayı da seçti)
+- **DİYALOG EKRANI**: tam genişlik alt perde (koyu zemin + altın çizgi),
+  büyük portre bloğu, isim plakası (altın + alt çizgi), kamera konuşurken
+  oyuncu-NPC ORTASINA süzülür + sinematik bantlar iner (cineBand paylaşımlı).
+  Seçenekler numaralı + FARE hover şeridi + TIKLAMAYLA seçim (sentetik sayı
+  tuşu push — seçim mantığı tek yerde kaldı); akan metin tıkla tamamlanır.
+- **ANAHTAR KELİME VURGUSU**: diyalog metninde *yıldız* arası ALTIN çizilir
+  (draw_markup_wrapped — kelime sarmalı + typewriter bütçeli, utf8 doğru);
+  neriman.txt vurgulandı (diğer diyaloglar zamanla).
+- **GÖREV GÜNLÜĞÜ**: J → Görevler sekmesine Sessiz El bloğu (aşama başına
+  birinci ağız ESO metni; tamamlanınca soluk).
+- **HEDEF İŞARETÇİSİ**: aktif hedef minimap'te yanıp sönen altın kare +
+  dünyada süzülen altın chevron (tezgah/kuyu/Kemal/Neriman — harita farkında).
+- v1'in bandı + sağ üst takipçisi korunur — v2 bunların üstüne oturur.
+- DÜZELTMELER (Hakan test turu): panel yüksekliği metne göre ÖLÇÜLÜR (uzun
+  metin seçenekleri taşırıyordu); satır kırma TAM kelime genişliğiyle sabit;
+  ASIL BUG: markup çizicide bütçe negatife düşünce guard atlanıyordu — ilk
+  kısmi kelimeden sonraki HER kelime tam çiziliyordu ("full metin + üstünden
+  gölge" görüntüsü; limited/remaining modeliyle yeniden yazıldı). Diyalog
+  bandı yalnız ÜSTTE (cine alt bandı panele biniyordu). UZAKLAŞINCA diyalog
+  kapanır (menzil ×2 = 180px; NPC görünmez olunca da).
+
 ### Faz SUIKAST-P1 — SESSİZ EL LOCASI: KEŞİF + İLK 2 GÖREV (2026-07-20)
 - **MAP_LOCA "Kuyunun Dibi"** (36×26, gen tarifi scripts/gen_loca.py): kuyu
   dibi odası → kıvrımlı tünel → loca salonu + zehir hücresi; MOOD_DUNGEON

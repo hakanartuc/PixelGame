@@ -1477,7 +1477,8 @@ int main(int argc, char *argv[])
     bool cineActive = false;
     float cineX = 0.0f, cineY = 0.0f;
     float cineTimer = 0.0f;
-    float cineBand = 0.0f;   // 0..1 bant animasyonu
+    float cineBand = 0.0f;   // 0..1 bant animasyonu (yalnız cine/scene)
+    float dlgBand = 0.0f;    // 0..1 diyalog üst bandı (alt panele binmez)
 
     // Mühür dalgası (zindan): periyodik toplu diriliş — sabit gerçek-zaman aralığı
     #define SEAL_WAVE_SECONDS 120.0f
@@ -3890,6 +3891,28 @@ int main(int argc, char *argv[])
                                           &slotSums[createSlot]);
                     }
                 }
+                else if (event.button.button == SDL_BUTTON_LEFT &&
+                         gameState == GAME_PLAYING && dialogNpc >= 0)
+                {
+                    // ESO diyaloğu fareyle: akan metin tıkla tamamlanır;
+                    // seçenek satırı tıklanınca sentetik sayı tuşu basılır
+                    // (asıl seçim mantığı tek yerde kalsın — tuş zinciri)
+                    if (!dialog_type_done(&npcDialogs[dialogNpc], dialogNode))
+                        dialog_type_reveal();
+                    else
+                    {
+                        int drow = dialog_opt_row_at((float)event.button.x,
+                                                     (float)event.button.y);
+                        if (drow >= 0)
+                        {
+                            SDL_Event ke;
+                            SDL_zero(ke);
+                            ke.type = SDL_EVENT_KEY_DOWN;
+                            ke.key.key = (SDL_Keycode)(SDLK_1 + drow);
+                            SDL_PushEvent(&ke);
+                        }
+                    }
+                }
                 // MENÜ AÇIKSA (ana menü ya da ESC): tıklama menüye gider
                 else if (gameState == GAME_PAUSED || gameState == GAME_MENU)
                 {
@@ -5449,6 +5472,26 @@ int main(int argc, char *argv[])
             // Diyalog typewriter'ı (metin akar, E/sayı tamamlar)
             if (dialogNpc >= 0)
                 dialog_type_update(&npcDialogs[dialogNpc], dialogNode, dt);
+
+            // Uzaklaşınca diyalog kapanır (Hakan isteği): NPC'den etkileşim
+            // menzilinin ~2 katı uzaklaşınca konuşma kesilir
+            if (dialogNpc >= 0)
+            {
+                float dnx2, dny2;
+                if (npc_visible_pos(dialogNpc, &dnx2, &dny2))
+                {
+                    float ddx = (player.rect.x + player.rect.w / 2.0f) - dnx2;
+                    float ddy = (player.rect.y + player.rect.h / 2.0f) - dny2;
+                    float far = NPC_INTERACT_RANGE * 2.0f;
+                    if (ddx * ddx + ddy * ddy > far * far)
+                    {
+                        npc_set_talking(-1);
+                        dialogNpc = -1;
+                    }
+                }
+                else
+                    dialogNpc = -1;   // NPC görünmez oldu (içeri girdi/öldü)
+            }
 
             // Tuzaklar: diken hasarı + plaka→arbalet atışları (yalnız zindanda)
             if (map_is_dungeon(map_current()))
@@ -9226,12 +9269,33 @@ int main(int argc, char *argv[])
                 cineTimer -= dt;
                 if (cineTimer <= 0.0f) cineActive = false;
             }
-            cineBand += ((cineActive ? 1.0f : 0.0f) - cineBand) * SDL_min(1.0f, dt * 5.0f);
+            // ESO diyalog sunumu: konuşurken kamera ikilinin ortasına süzülür,
+            // sinematik bantlar iner (cine ile aynı bant değişkeni)
+            float dlgCamX = 0.0f, dlgCamY = 0.0f;
+            bool dlgCam = false;
+            if (dialogNpc >= 0)
+            {
+                float dnx, dny;
+                if (npc_visible_pos(dialogNpc, &dnx, &dny))
+                {
+                    dlgCamX = (player.rect.x + player.rect.w / 2.0f + dnx) / 2.0f;
+                    dlgCamY = (player.rect.y + player.rect.h / 2.0f + dny) / 2.0f - 30.0f;
+                    dlgCam = true;
+                }
+            }
+            cineBand += ((cineActive ? 1.0f : 0.0f) - cineBand)
+                      * SDL_min(1.0f, dt * 5.0f);
+            // Diyalog kendi ÜST bandını kullanır (alt bant panelin üstüne
+            // biniyordu — "metnin üstünden geçen siyah gölge" bug'ı); kamera
+            // kaydırması cineBand'den bağımsız (dlgCam) korunur
+            dlgBand += ((dlgCam ? 1.0f : 0.0f) - dlgBand) * SDL_min(1.0f, dt * 6.0f);
             camera_update(&camera, cineActive ? cineX
-                                              : player.rect.x + player.rect.w / 2.0f,
+                                 : dlgCam ? dlgCamX
+                                 : player.rect.x + player.rect.w / 2.0f,
                           cineActive ? cineY
-                                     : player.rect.y + player.rect.h / 2.0f,
-                          winW, winH);   // kamera: cine hedefi ya da oyuncu
+                                 : dlgCam ? dlgCamY
+                                 : player.rect.y + player.rect.h / 2.0f,
+                          winW, winH);   // kamera: cine > diyalog > oyuncu
 
             // Sarsıntı: kalan süreyle sönümlenen rastgele kamera itmesi
             if (shakeTime > 0.0f)
@@ -10299,6 +10363,42 @@ int main(int argc, char *argv[])
             TTF_GetStringSize(gameFont, clockBuf, 0, &tw, &th);
             draw_text(renderer, gameFont, clockBuf, winW - tw - 20.0f, 20.0f, clockCol);
 
+            // ESO HEDEF İŞARETÇİSİ: aktif görev hedefi (minimap + dünya oku)
+            {
+                float qmx = 0.0f, qmy = 0.0f;
+                bool qmOn = false;
+                Uint8 asm2 = player.storyFlags[SF_ASSASSIN];
+                if (map_current() == MAP_WORLD)
+                {
+                    if (asm2 == 2 && gametime_is_night())
+                    { qmx = 10.2f * TILE_SIZE; qmy = 5.0f * TILE_SIZE; qmOn = true; }
+                    else if (asm2 == 3 || asm2 == 5)   // locaya dön → kuyu
+                    { qmx = 26.0f * TILE_SIZE; qmy = 15.0f * TILE_SIZE; qmOn = true; }
+                    else if (asm2 == 4 && kemalIdx >= 0)
+                        qmOn = npc_visible_pos(kemalIdx, &qmx, &qmy);
+                }
+                else if (map_current() == MAP_LOCA &&
+                         (asm2 == 3 || asm2 == 5) && nerimanIdx >= 0)
+                    qmOn = npc_visible_pos(nerimanIdx, &qmx, &qmy);
+                minimap_set_quest(qmx, qmy, qmOn);
+
+                // Dünya oku: hedefin üstünde süzülen altın chevron (3 sıra piksel)
+                if (qmOn)
+                {
+                    float bobQ = SDL_sinf((float)SDL_GetTicks() / 250.0f) * 5.0f;
+                    float qsx = (qmx - camera.x) * camera.zoom;
+                    float qsy = (qmy - 92.0f + bobQ - camera.y) * camera.zoom;
+                    r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                    r2d_set_color(renderer, 255, 210, 60, 235);
+                    SDL_FRect c1 = { qsx - 12.0f, qsy, 24.0f, 5.0f };
+                    SDL_FRect c2 = { qsx - 7.0f, qsy + 6.0f, 14.0f, 5.0f };
+                    SDL_FRect c3 = { qsx - 2.0f, qsy + 12.0f, 4.0f, 5.0f };
+                    r2d_fill_rect(renderer, &c1);
+                    r2d_fill_rect(renderer, &c2);
+                    r2d_fill_rect(renderer, &c3);
+                }
+            }
+
             // ESO GÖREV TAKİPÇİSİ (sağ üst, saatin altı): aktif hedef hep görünür
             {
                 const char *qtTitle = NULL;
@@ -10664,9 +10764,12 @@ int main(int argc, char *argv[])
                                 dlgBurnDay[dialogNpc][dialogNode][oi] == gametime_day(),
                                 &dstates[oi]);
             int dfs = NPCS[dialogNpc].frameSize > 0 ? NPCS[dialogNpc].frameSize : 64;
+            float dlgMx, dlgMy;
+            SDL_GetMouseState(&dlgMx, &dlgMy);
             dialog_render(&npcDialogs[dialogNpc], dialogNode, NPCS[dialogNpc].name,
                           dstates, renderer, gameFont, winW, winH,
-                          npc_textures[dialogNpc], (float)dfs);
+                          npc_textures[dialogNpc], (float)dfs,
+                          dlgMx, dlgMy);
         }
 
         // Muhafız yakalama paneli: öde / karşı koy / rüşvet
@@ -10710,6 +10813,14 @@ int main(int argc, char *argv[])
             r2d_set_color(renderer, 0, 0, 0, 255);
             r2d_fill_rect(renderer, &(SDL_FRect){ 0, 0, (float)winW, bandH });
             r2d_fill_rect(renderer, &(SDL_FRect){ 0, winH - bandH, (float)winW, bandH });
+        }
+        // Diyalog üst bandı: YALNIZ üstte (alt panelin işi yok — sinematik his)
+        else if (dlgBand > 0.01f)
+        {
+            float bandH = 44.0f * dlgBand;
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_set_color(renderer, 0, 0, 0, 235);
+            r2d_fill_rect(renderer, &(SDL_FRect){ 0, 0, (float)winW, bandH });
         }
 
         // Sürükleme hayaleti (Cila): taşınan item imleci izler

@@ -21,6 +21,9 @@ void minimap_set_map(R2D *renderer, bool worldPersistent);
 // Oyuncunun çevresini keşfet (her kare çağrılır; yeni tile'ları texture'a işler)
 void minimap_reveal(R2D *renderer, float worldX, float worldY);
 
+// Görev hedefi işaretçisi (ESO sunumu — main her kare basar; on=false kapatır)
+void minimap_set_quest(float wx, float wy, bool on);
+
 // Sağ-alt köşeye çiz (noktalarla birlikte)
 void minimap_render(R2D *renderer, float playerX, float playerY,
                     const Mob *mobs, int mobCount, int winW, int winH);

@@ -206,16 +206,6 @@ static int utf8_count(const char *s)
     return n;
 }
 
-static int utf8_bytes_for(const char *s, int n)
-{
-    int i = 0;
-    while (s[i] && n > 0) {
-        i++;
-        while (((unsigned char)s[i] & 0xC0) == 0x80) i++;
-        n--;
-    }
-    return i;
-}
 
 static float dlgTyped = 0.0f;    // yazılmış kod noktası (float — dt birikir)
 static float dlgTick = 0.0f;     // tık sesi sayacı
@@ -262,31 +252,144 @@ bool dialog_type_done(const Dialog *d, int nodeIdx)
     return dlgTyped >= (float)utf8_count(d->nodes[nodeIdx].text);
 }
 
+// --- ESO SUNUMU (v2): vurgulu metin çizimi + satır hit-test durumu ---
+// Diyalog metninde *yıldızlar* arası ALTIN vurgulanır (anahtar kelimeler).
+// Satır konumları hover/tıklama için saklanır (dialog_opt_row_at).
+
+static float optRowYs[DIALOG_MAX_OPTS];
+static float optPanelPX, optPanelPW;
+static int optRowN = 0;
+
+int dialog_opt_row_at(float mx, float my)
+{
+    if (mx < optPanelPX || mx > optPanelPX + optPanelPW) return -1;
+    for (int i = 0; i < optRowN; i++)
+        if (my >= optRowYs[i] && my < optRowYs[i] + 22.0f)
+            return i;
+    return -1;
+}
+
+// Kelime-sarmalı + *vurgu* renk geçişli + typewriter bütçeli metin.
+// KRİTİK: satır kırma HEP TAM kelime genişliğiyle hesaplanır — kısmi
+// gösterimde yerleşim OYNAMAZ (akış takılması bunun eksikliğiydi).
+// renderer NULL = yalnız ölç (panel yüksekliği için). Dönen: yükseklik.
+static float draw_markup_wrapped(R2D *renderer, TTF_Font *font,
+                                 const char *text, float x, float y,
+                                 float maxW, SDL_Color base, SDL_Color hi,
+                                 int revealChars)
+{
+    float cx = x, cy = y;
+    bool lit = false;
+    bool limited = (revealChars >= 0);   // false = tamamını çiz (ölçüm/tamam)
+    int remaining = revealChars;         // görünür karakter bütçesi
+    char word[96];
+    const char *p = text;
+    while (*p != '\0') {
+        if (*p == ' ') { p++; cx += 7.0f; continue; }
+        // kelimeyi topla ('*' işaretleri renk değiştirir, çizilmez)
+        int wn = 0;
+        bool litAtStart = lit;
+        while (*p != '\0' && *p != ' ') {
+            if (*p == '*') { lit = !lit; p++; continue; }
+            if (wn < (int)sizeof(word) - 5) {
+                word[wn++] = *p;
+                // utf8 devam baytlarını kopyala
+                while ((p[1] & 0xC0) == 0x80 && wn < (int)sizeof(word) - 1)
+                    word[wn++] = *++p;
+            }
+            p++;
+        }
+        word[wn] = '\0';
+        if (wn == 0) continue;
+
+        // Bütçe bitti: SONRAKİ kelimeler HİÇ çizilmez (eski kod negatif
+        // bütçede guard'ı atlayıp hepsini tam çiziyordu — "full metin" bug'ı)
+        if (limited && remaining <= 0) break;
+
+        // Yerleşim TAM kelimeyle: önce tam genişliği ölç, satırı ona göre kır
+        // (kısmi gösterimde yerleşim OYNAMAZ — akış titremez)
+        int fullW = 0, th2 = 0;
+        TTF_GetStringSize(font, word, 0, &fullW, &th2);
+        if (cx + (float)fullW > x + maxW && cx > x) { cx = x; cy += 20.0f; }
+
+        int chars = 0;
+        for (int b = 0; b < wn; b++)
+            if ((word[b] & 0xC0) != 0x80) chars++;
+
+        // Bütçe kelimenin ortasında biterse kelimeyi KISMEN göster
+        if (limited && chars > remaining) {
+            int bi = 0, seen = 0;
+            while (word[bi] != '\0') {
+                if ((word[bi] & 0xC0) != 0x80) {
+                    if (seen == remaining) break;
+                    seen++;
+                }
+                bi++;
+            }
+            word[bi] = '\0';
+        }
+
+        if (renderer != NULL)
+            draw_text(renderer, font, word, cx, cy, litAtStart ? hi : base);
+        cx += (float)fullW + 7.0f;
+        if (limited) remaining -= chars;
+    }
+    return cy - y + 20.0f;
+}
+
 void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
                    const DialogOptState *states,
                    R2D *renderer, TTF_Font *font, int winW, int winH,
-                   R2DTexture *sheet, float frameSize)
+                   R2DTexture *sheet, float frameSize,
+                   float mouseX, float mouseY)
 {
     if (nodeIdx < 0 || nodeIdx >= d->nodeCount) return;
     const DialogNode *n = &d->nodes[nodeIdx];
+    optRowN = 0;
 
-    // Panel: alt bölge, hotbar'ın üstünde (portre varsa sola taşar)
-    float pad = 16.0f;
-    float panelW = winW * 0.6f;
-    float panelH = 150.0f;
-    float px = (winW - panelW) / 2.0f;
-    float py = winH - panelH - 80.0f;   // hotbar (~60px) + boşluk
+    // Duyarlı yerleşim: metin alanı pencereye göre; panel yüksekliği METNE
+    // ve seçenek sayısına göre ÖLÇÜLÜR (uzun metin taşıp seçenekleri
+    // ekran dışına itiyordu — Hakan raporu)
+    float pad = 24.0f;
+    float px = winW * 0.5f - 380.0f;
+    if (px < pad + 176.0f) px = pad + 176.0f;
+    float textW = (float)winW - px - 260.0f;
+    if (textW > 860.0f) textW = 860.0f;
+    if (textW < 320.0f) textW = 320.0f;
 
-    ui_panel(renderer, px, py, panelW, panelH);
+    float textH = (font != NULL)
+                ? draw_markup_wrapped(NULL, font, n->text, 0.0f, 0.0f,
+                                      textW, (SDL_Color){0,0,0,0},
+                                      (SDL_Color){0,0,0,0}, -1)
+                : 60.0f;
+    int visOpts = 0;
+    for (int i = 0; i < n->optCount; i++)
+        if (states == NULL || !states[i].hidden) visOpts++;
+    float panelH = 60.0f + textH + 12.0f + (float)visOpts * 22.0f + 20.0f;
+    if (panelH < 220.0f) panelH = 220.0f;
+    if (panelH > winH * 0.6f) panelH = winH * 0.6f;
+    float py = (float)winH - panelH;
+    r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+    r2d_set_color(renderer, 10, 10, 16, 236);
+    SDL_FRect sheetRect = { 0.0f, py, (float)winW, panelH };
+    r2d_fill_rect(renderer, &sheetRect);
+    r2d_set_color(renderer, 255, 210, 60, 110);
+    SDL_FRect topLine = { 0.0f, py, (float)winW, 2.0f };
+    r2d_fill_rect(renderer, &topLine);
 
-    // Portre: idle-down ilk karenin baş bölgesi, panel soluna tam-piksel katla
+    // Portre: sol blok, büyük (ESO'nun NPC yakın çekimi hissi)
     if (sheet != NULL && frameSize > 0.0f) {
-        float box = 96.0f;
-        float bx = px - box - 10.0f, by = py + panelH - box;
-        ui_panel(renderer, bx, by, box, box);
+        float box = 150.0f;
+        float bx = px - box - 26.0f, by = py + 40.0f;
+        r2d_set_color(renderer, 20, 20, 30, 255);
+        SDL_FRect pb = { bx - 4.0f, by - 4.0f, box + 8.0f, box + 8.0f };
+        r2d_fill_rect(renderer, &pb);
+        r2d_set_color(renderer, 255, 210, 60, 90);
+        SDL_FRect pfrm = { bx - 4.0f, by - 4.0f, box + 8.0f, 2.0f };
+        r2d_fill_rect(renderer, &pfrm);
         SDL_FRect src = { frameSize * 0.25f, frameSize * 0.02f,
                           frameSize * 0.5f, frameSize * 0.5f };
-        float inw = box - 12.0f;
+        float inw = box - 10.0f;
         int k = (int)(inw / src.w);
         if (k < 1) k = 1;
         float dw = src.w * (float)k, dh = src.h * (float)k;
@@ -296,36 +399,43 @@ void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
 
     if (font == NULL) return;
 
-    // NPC adı + metin (typewriter, sarılı) + seçenekler (metin bitince)
     SDL_Color gold  = { 255, 210, 60, 255 };
-    SDL_Color white = { 235, 235, 245, 255 };
-    SDL_Color gray  = { 170, 200, 255, 255 };
+    SDL_Color white = { 232, 230, 222, 255 };
+    SDL_Color dim   = { 120, 120, 130, 255 };
+    SDL_Color hover = { 255, 235, 160, 255 };
 
-    float y = py + pad;
-    draw_text(renderer, font, npcName, px + pad, y, gold);
-    y += 24.0f;
+    // İsim başlığı + altın alt çizgi (ESO isim plakası)
+    float y = py + 16.0f;
+    draw_text(renderer, font, npcName, px, y, gold);
+    int nw = 0, nh = 0;
+    TTF_GetStringSize(font, npcName, 0, &nw, &nh);
+    r2d_set_color(renderer, 255, 210, 60, 140);
+    SDL_FRect nameLine = { px, y + 20.0f, (float)nw + 30.0f, 1.0f };
+    r2d_fill_rect(renderer, &nameLine);
+    y += 32.0f;
 
-    char shown[DIALOG_TEXT_LEN];
+    // Metin: typewriter + *vurgu* (görünür karakter bütçesi — işaretler sayılmaz).
+    // Düğüm henüz type_update görmediyse 0 (boş) — ESKİDEN -1 (tam metin)
+    // dönüyordu: ilk kare tam metni basıp sonraki karede sıfırdan yazıyordu
+    // ("üstünden geçen efekt" bug'ı — dialog_type_done ile de çelişiyordu)
     int typedN = (d == typeDlg && nodeIdx == typeNode)
-               ? (int)dlgTyped : utf8_count(n->text);
-    int nbytes = utf8_bytes_for(n->text, typedN);
-    memcpy(shown, n->text, (size_t)nbytes);
-    shown[nbytes] = '\0';
-    y += draw_text_wrapped(renderer, font, shown,
-                           px + pad, y, panelW - pad * 2, white) + 10.0f;
+               ? (int)dlgTyped : 0;
+    y += draw_markup_wrapped(renderer, font, n->text, px, y, textW,
+                             white, gold, typedN) + 8.0f;
 
     if (!dialog_type_done(d, nodeIdx)) {
         SDL_Color hint = { 150, 150, 160, 160 };
-        draw_text(renderer, font, "[E]", px + panelW - 40.0f, py + panelH - 26.0f, hint);
+        draw_text(renderer, font, "[E / tık]",
+                  (float)winW - 110.0f, py + panelH - 26.0f, hint);
         return;   // seçenekler metin bitmeden görünmez
     }
 
-    SDL_Color dim = { 120, 120, 130, 255 };
+    optPanelPX = px - 8.0f;
+    optPanelPW = textW + 16.0f;
     for (int i = 0; i < n->optCount; i++) {
         const DialogOpt *o = &n->opts[i];
         const DialogOptState *st = states ? &states[i] : NULL;
 
-        // Etiket: speech eşiği (+ eşik altındaysa şans yüzdesi)
         char label[32] = "";
         float th;
         if (dialog_opt_speech_req(o, &th)) {
@@ -336,12 +446,23 @@ void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
                 snprintf(label, sizeof(label), "[Speech %d] ", (int)th);
         }
 
-        if (st != NULL && st->hidden) continue;   // konu dünyada yok — çizme
+        if (st != NULL && st->hidden) continue;
         bool inactive = st != NULL && (st->locked || st->burned);
+        bool hov = !inactive && mouseX >= optPanelPX &&
+                   mouseX <= optPanelPX + optPanelPW &&
+                   mouseY >= y - 2.0f && mouseY < y + 20.0f;
+        if (hov) {   // ESO hover şeridi
+            r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+            r2d_set_color(renderer, 255, 210, 60, 26);
+            SDL_FRect hrow = { optPanelPX, y - 2.0f, optPanelPW, 22.0f };
+            r2d_fill_rect(renderer, &hrow);
+        }
         char buf[DIALOG_OPT_LEN + 48];
-        snprintf(buf, sizeof(buf), "%d) %s%s%s", i + 1, label, o->text,
+        snprintf(buf, sizeof(buf), "%d. %s%s%s", i + 1, label, o->text,
                  (st != NULL && st->burned) ? " (bugün olmaz)" : "");
-        draw_text(renderer, font, buf, px + pad, y, inactive ? dim : gray);
-        y += 20.0f;
+        draw_text(renderer, font, buf, px, y,
+                  inactive ? dim : (hov ? hover : (SDL_Color){ 190, 210, 245, 255 }));
+        if (optRowN < DIALOG_MAX_OPTS) optRowYs[optRowN++] = y - 2.0f;
+        y += 22.0f;
     }
 }

@@ -117,6 +117,11 @@ void minimap_reveal(R2D *renderer, float worldX, float worldY)
         r2d_target_end(renderer);
 }
 
+static float questMarkX = 0.0f, questMarkY = 0.0f;
+static bool questMarkOn = false;
+void minimap_set_quest(float wx, float wy, bool on)
+{ questMarkX = wx; questMarkY = wy; questMarkOn = on; }
+
 void minimap_render(R2D *renderer, float playerX, float playerY,
                     const Mob *mobs, int mobCount, int winW, int winH)
 {
@@ -132,6 +137,18 @@ void minimap_render(R2D *renderer, float playerX, float playerY,
     r2d_draw_texture(renderer, mapTex, NULL, &dst);
     r2d_set_color(renderer, 200, 200, 210, 255);
     r2d_rect(renderer, &dst);
+
+    // GÖREV İŞARETÇİSİ (ESO sunumu): altın yanıp sönen kare — sis şartı yok
+    // (hedef bilgisi görevden gelir, keşiften değil)
+    if (questMarkOn) {
+        int qc = (int)(questMarkX / TILE_SIZE), qr = (int)(questMarkY / TILE_SIZE);
+        if (qc >= 0 && qc < mw && qr >= 0 && qr < mh) {
+            Uint8 qa = (Uint8)(160 + 95 * ((SDL_GetTicks() / 400) % 2));
+            r2d_set_color(renderer, 255, 210, 60, qa);
+            SDL_FRect qdot = { x0 + qc * scale - 2, y0 + qr * scale - 2, 5, 5 };
+            r2d_fill_rect(renderer, &qdot);
+        }
+    }
 
     // Noktalar — yalnız keşfedilmiş tile üzerindekiler (sisin altı sızmasın)
     for (int i = 0; i < mobCount; i++) {

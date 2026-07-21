@@ -2,7 +2,7 @@
 # az ama ağır konuşur; giriş düğümünü main aşamaya göre seçer.
 
 [tanisma]
-text: ...Aklayıcı. Kuyuya beş yüz altın döktün, hiç sormadın kimin elini yıkadığını. Sormamak. İşte bu yüzden ipi sarkıttık. Otur. Ben Neriman. Bana Dilsiz derler — konuşmadığım için değil. Konuşturmadığım için.
+text: ...Aklayıcı. Kuyuya *beş yüz altın* döktün, hiç sormadın kimin elini yıkadığını. Sormamak. İşte bu yüzden ipi sarkıttık. Otur. Ben *Neriman*. Bana *Dilsiz* derler — konuşmadığım için değil. Konuşturmadığım için.
 opt: Burası ne? Siz kimsiniz? -> kimsiniz
 opt: Bana ne istediğinizi söyle. -> sinav_brief
 opt: (Sessizce dinle.) -> sinav_brief
@@ -18,7 +18,7 @@ opt: ...Dinliyorum. -> sinav_brief
 opt: (Ayrıl.) -> end
 
 [sinav_brief]
-text: Sınav basit. Baran'ın tezgahının arkasında mühürlü bir kutu durur. Gece git. Al. Kimse görmesin — TANIK, başarısızlıktır. Kutuyu bana getir. İçinde ne var diye sorma; mühür, merakından değerlidir.
+text: Sınav basit. *Baran'ın tezgahının* arkasında *mühürlü bir kutu* durur. *Gece* git. Al. Kimse görmesin — *tanık, başarısızlıktır.* Kutuyu bana getir. İçinde ne var diye sorma; mühür, merakından değerlidir.
 opt: Kutu bu gece sende olur. -> as1:ver
 opt: Düşüneyim. -> end
 
@@ -27,7 +27,7 @@ text: Kutu hâlâ orada, sen hâlâ buradasın. Gece uzun değildir, yolcu.
 opt: Gidiyorum. -> end
 
 [kutu]
-text: ...Mühür sağlam. Görülmedin. İyi. Demek elin sessiz olabiliyor. Şimdi gözünü sınayalım: Yaşlı Kemal. Zararsız görünür, değil mi? Belki de öyledir. Gün boyu gölgesi ol — durduğu ÜÇ yeri işaretle, bana getir. Yaklaşma. Görünme. Gölge merak edilmez.
+text: ...Mühür sağlam. Görülmedin. İyi. Demek elin sessiz olabiliyor. Şimdi gözünü sınayalım: *Yaşlı Kemal.* Zararsız görünür, değil mi? Belki de öyledir. Gün boyu gölgesi ol — durduğu *üç yeri işaretle*, bana getir. *Yaklaşma. Görünme.* Gölge merak edilmez.
 opt: (Kutuyu uzat.) -> as1:teslim
 
 [takip_bekle]

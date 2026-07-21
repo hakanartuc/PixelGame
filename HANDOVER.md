@@ -172,7 +172,9 @@ DOLU, sıradaki NPC'de 20'ye büyüt!); görev 1 SINAV (gece Mühürlü Kutu,
 crime_witnessed victimAlive=false — true geçmek "hep görüldü" bug'ıydı) +
 görev 2 TAKİP (Kemal 4 durak, 100-400px bandı, 3 uyarı kuralı); muhafız
 GECE DEVRİYESİ (sabit rota, dükkan önünden geçer — hırsızlık penceresi);
-ESO sunum v1 (bant+takipçi — Hakan: YETERSİZ, yeniden çalışılacak).
+ESO sunum v2 TAMAM: sinematik diyalog ekranı (kamera+bant+portre+isim
+plakası+hover/tık seçim), *anahtar kelime* vurgusu (markup), J Görevler
+sekmesinde zincir metinleri, minimap+dünya hedef işaretçisi.
 **REVİR TAMAM**: sivil NPC 1 canda bayılır (0 = ölüm yok) → revire yatar;
 Şifacı Ela; masraf 200g×1.25^gün×önem×tekrar; 30 günde köy toplar ama
 kırgınlık kalıcı (+%25 zam). sifaci.txt = ESO anlatım ilk örneği.

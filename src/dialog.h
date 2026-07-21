@@ -98,10 +98,13 @@ int dialog_find(const Dialog *d, const char *id);
 // speech eşiği/şansı etiketli çizilir.
 // sheet: NPC sprite sheet'i (NULL = portresiz) — idle-down ilk karenin baş
 // bölgesi kırpılıp panel soluna büyütülür. frameSize: sheet hücre boyutu.
+// ESO sunumu: mouseX/Y hover vurgusu için; tıklama dialog_opt_row_at ile
+int dialog_opt_row_at(float mx, float my);
 void dialog_render(const Dialog *d, int nodeIdx, const char *npcName,
                    const DialogOptState *states,
                    R2D *renderer, TTF_Font *font, int winW, int winH,
-                   R2DTexture *sheet, float frameSize);
+                   R2DTexture *sheet, float frameSize,
+                   float mouseX, float mouseY);
 
 // --- Typewriter (anlatı Faz A): metin akarak yazılır, ATLANMAZ ama E ile
 // tamamlanır. Seçenekler metin bitmeden görünmez/seçilemez. ---
