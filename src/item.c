@@ -459,6 +459,35 @@ const ItemType ITEM_TYPES[] = {
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/trinkets.png",
       .iconSrc = { 16, 0, 16, 16 } },
+
+    // SUİKASTÇİ P2 (Sessiz El zincir ödülleri — keşiften önce HİÇBİR
+    // kaynaktan düşmez; Yankıcı kuralının aynısı)
+    // İmzasız Bıçak: hızlı hançer — ARKADAN vuruşta +%50 (main melee bloğu
+    // işler) + Suikast XP akışı. "Bu bıçağın imzası yok. Senin de olmayacak."
+    { .name = "İmzasız Bıçak", .iconIndex = 0, .maxStack = 1, .value = 0,
+      .equipable = true, .equipSlot = EQUIP_WEAPON, .weaponType = WEAPON_ONE_HAND,
+      .damage = 14.0f, .attackInterval = 0.55f,
+      // El görseli: LPC tek-el sheet'i (uzun kılıçınki — hançer LPC'si gelince
+      // değişir; şimdilik elde silah GÖRÜNSÜN diye tek çalışan tek-el katmanı)
+      .equipSpritePath     = "assets/equipment/weapon/long_sword_140.png",
+      .equipSpritePathBack = "assets/equipment/weapon/long_sword_009.png",
+      .equipZ = 140, .equipZBack = 9, .equipIdleRow = 8,
+      .iconSpritePath = "assets/icons/items/assassin.png",
+      .iconSrc = { 0, 0, 16, 16 } },
+    // Zehirli İğne: sol el aracı (kalkanı feda edersin — blok YOK).
+    // Takılıyken İğne Batır atılabilir; şarj = çantadaki İğne Zehri sayısı.
+    { .name = "Zehirli İğne", .iconIndex = 0, .maxStack = 1, .value = 0,
+      .equipable = true, .equipSlot = EQUIP_SHIELD, .weaponType = WEAPON_NEEDLE,
+      .iconSpritePath = "assets/icons/items/assassin.png",
+      .iconSrc = { 16, 0, 16, 16 } },
+    { .name = "Dilsiz Şişe", .iconIndex = 0, .maxStack = 1, .value = 0,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/assassin.png",
+      .iconSrc = { 32, 0, 16, 16 } },
+    { .name = "İğne Zehri", .iconIndex = 0, .maxStack = 3, .value = 0,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/assassin.png",
+      .iconSrc = { 48, 0, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

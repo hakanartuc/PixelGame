@@ -347,10 +347,31 @@ int journal_render(R2D *renderer, TTF_Font *font, R2DTexture *bookTex,
                 else if (asq == 5)
                     flow_block(&f, "Rapor hazır. Kemal beni görmedi — kimse "
                                "görmedi. Locaya dönme vakti.", c2);
-                else
+                else if (asq == 6)
                     flow_block(&f, "Sessiz El beni içeri aldı. Sınavı geçtim; "
-                               "gölge oldum. Sıradaki işi Neriman biliyor — "
-                               "ben beklemeyi.", c2);
+                               "gölge oldum. Neriman'ın yeni bir işi varmış.", c2);
+                else if (asq == 7)
+                    flow_block(&f, "Dilsiz Şişe... İçtiğinin boğazından ses "
+                               "çıkmazmış. Üç Zehirli Öz, iki Mavi Ot, bir "
+                               "kazan. Simya sabır işi — suikast gibi.", c2);
+                else if (asq == 8)
+                    flow_block(&f, "İğne şişeyi övdü. İlk denemede. Neriman'ın "
+                               "anlatacakları varmış — kulağım onda.", c2);
+                else if (asq == 10)
+                    flow_block(&f, "Bir adamın ölümünü sahneledik; adam yaşıyor, "
+                               "dünya öldüğünü biliyor. Tanık meselesini "
+                               "hallettim — nasıl hallettiğim benimle kalır.", c2);
+                else if (asq == 11)
+                    flow_block(&f, "Son kapı: Kaçak Tahsildar. Gece kervan "
+                               "yolunda yürüyor, yanında iki koruma. Nasıl "
+                               "öleceği bana kalmış.", c2);
+                else if (asq == 12)
+                    flow_block(&f, "İmza atıldı. Rüzgar haberi benden hızlı "
+                               "taşır — Neriman'a dönüyorum.", c2);
+                else
+                    flow_block(&f, "Artık Sessiz El'denim. İmzasız Bıçak elimde, "
+                               "İğne'nin zehri belimde. Rütbem: Çırak. "
+                               "Kontratlar beni bulacakmış.", c2);
             }
         }
         if (!any)

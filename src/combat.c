@@ -48,7 +48,10 @@ float combat_attack_interval(const ItemStack *weapon, const PerkEffects *fx)
     float base = 1.0f;   // silahsız/tanımsız varsayılanı
     if (weapon != NULL && weapon->type != NULL && weapon->type->attackInterval > 0.0f)
         base = weapon->type->attackInterval;
-    return base * fx->attackIntervalMult;   // Hızlı/Usta Bilek
+    // Gölge Yolu "Usta Bilek": yalnız İmzasız Bıçak'a işler (hançer hızı)
+    if (weapon != NULL && weapon->type == &ITEM_TYPES[ITEM_DAGGER_UNSIGNED])
+        base *= fx->daggerSpeedMult;
+    return base * fx->attackIntervalMult;   // Hızlı Bilek (One-Handed)
 }
 
 HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
@@ -115,7 +118,7 @@ HitResult combat_player_hit(const Player *p, const ItemStack *weapon,
     float critChance = CRIT_BASE_CHANCE
                      + (float)(p->dexterity - STAT_BASE) * CRIT_PER_DEX
                      + fx->critChanceBonus;
-    if (randf() < critChance) {
+    if (p->forceCrit || randf() < critChance) {   // Gölge Adımı garantisi
         raw *= fx->critMult;
         hit.crit = true;
     }

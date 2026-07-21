@@ -34,6 +34,7 @@ typedef enum {
     SKILL_CONJURATION,   // dostların verdiği hasarla gelişir (M4)          // asa (asa vuruşu + tam-büyücü silah ağacı)
     SKILL_ECHO,           // Yankı: fısıltı becerileri (Sömüren hattı — bedel CAN)
     SKILL_LIGHT,          // Kutsal: şifa + ışık büyüleri (XP = şifa + kutsal hasar)
+    SKILL_ASSASSIN,       // Suikast: sırttan hasar + gizli öldürme (GİZLİ sınıf 2)
     SKILL_COUNT,
     SKILL_NONE = -1,      // skill'e bağlı olmayan eylem (örn. silahsız vuruş)
 } SkillType;
@@ -73,6 +74,7 @@ void skill_panel_render(const Skill *skills, R2D *renderer,
 
 // Panelde tıklanan skill satırı (0..SKILL_COUNT-1, -1 = yok) — perk seçimi açar
 int skill_panel_row_at(float x, float y, float panelX, float panelY);
-void skill_set_echo_visible(bool v);   // YANKICI: ritüel öncesi satır gizli
+void skill_set_echo_visible(bool v);
+void skill_set_assassin_visible(bool v);   // Sessiz El zinciri bitince   // YANKICI: ritüel öncesi satır gizli
 
 #endif

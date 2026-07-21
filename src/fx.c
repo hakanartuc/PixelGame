@@ -84,6 +84,11 @@ void fx_render(ParticleSystem *fx, R2D *renderer,
             cr = 255;
             cg = (Uint8)(p->g * t);
             cb = (Uint8)(p->b * t * t);
+        } else if (p->fxType == WEAPON_FX_VENOM) {
+            // İğne zehri: mor doğar, ölürken yeşile çalar (rünün tersi yönde akar)
+            cr = (Uint8)(p->r * t);
+            cg = (Uint8)(p->g + (1.0f - t) * 60.0f);
+            cb = (Uint8)(p->b * t);
         } else if (p->fxType == WEAPON_FX_ICE) {
             // Buz: yeni=beyaz-mavi, olurken maviye doner (kirmizi duser)
             cr = (Uint8)(p->r * t);

@@ -464,6 +464,30 @@ static const TreeNode T_ENCHANTING[] = {
     M_KEY("RÜN HAKİMİ",    "Rün şansı +%15 — törenler %30 yavaş"),
 };
 
+// --- SUİKAST: "Gölge Yolu" (T_ASSASSINTREE — Suikastçi P2). Sınıf gizli:
+// satır zincir bitene dek görünmez. Üç kimlik: pozisyon / imza zehri / duman.
+static const TreeNode T_ASSASSINTREE[] = {
+    N_ROOT("Sessiz Adım",   "Sırttan hasar +%3"),
+    N_MIN("Keskin Uç",      "Sırttan hasar +%5",                0, 1, 1),
+    N_MIN("Usta Bilek",     "Hançer saldırı hızı +%5",          1, 1, 2),
+    N_NOT("Derin Kesik",    "Sırttan Bıçak x3.0 -> x3.6",       2, 1, 3),
+    N_MIN("Soluk Alma",     "Beceri stamina maliyeti -%10",     3, 1, 4),
+    N_NOT("İnfazcı",        "%25 altı hedefe sırttan +%25",     4, 1, 5),
+
+    N_MIN("Ağır Doz",       "Zehir dozu DPS +%10",              0, 3, 1),
+    N_MIN("Kalıcı Zehir",   "Doz süresi +2sn",                  6, 3, 2),
+    N_NOT("Çifte Damla",    "İğne Batır bekleme 10 -> 7sn",     7, 3, 3),
+    N_NOT("Sessiz Eşik",    "Sessiz Son eşiği %20 -> %25",      8, 3, 4),
+
+    N_MIN("Hızlı Duman",    "Duman Perdesi bekleme -10sn",      0, 5, 1),
+    N_MIN("Uzun Perde",     "Görünmezlik 3 -> 4.5sn",          10, 5, 2),
+    N_NOT("Gölge Yürüyüşü", "Dumanda hız +%25",                11, 5, 3),
+    N_NOT("Soğuk Nefes",    "Gölge Adımı menzili +100px",      12, 5, 4),
+
+    N_KEY("KARANLIK İMZA",  "Sessiz Son eşiği +%10 — max stamina -20", 5, 9, 2),
+    N_KEY("HİÇ KİMSE",      "Dumanda ilk vuruş kritik + sırttan sayılır — Duman CD +15sn", 9, 13, 4),
+};
+
 // --- YANKI: "Fısıltı Yolu" (T_ECHO — Yankıcı P2). Sınıf gizli: satır
 // ritüele dek görünmez, ağaç da ancak o zaman açılır. Bedel hep CAN.
 static const TreeNode T_ECHOTREE[] = {
@@ -537,6 +561,7 @@ static const SkillTreeDef TREES[] = {
     TREE_DEF(SKILL_CONJURATION,  T_CONJURATION),
     TREE_DEF(SKILL_LIGHT,        T_HOLYTREE),
     TREE_DEF(SKILL_ECHO,         T_ECHOTREE),
+    TREE_DEF(SKILL_ASSASSIN,     T_ASSASSINTREE),
     TREE_DEF(TREE_FATE,          T_FATE),
 };
 static const int TREE_COUNT = (int)(sizeof(TREES) / sizeof(TREES[0]));
@@ -628,6 +653,8 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         .holyZoneTickMult = 1.0f,
         .echoDmgMult = 1.0f, .echoCostMult = 1.0f, .drainMult = 1.0f,
         .echoHpMult = 1.0f,
+        .backstabDmgMult = 1.0f, .daggerSpeedMult = 1.0f,
+        .assassinStaminaMult = 1.0f, .venomDpsMult = 1.0f,
         .staffDmgMult = 1.0f,
         .twoHandDmgMult = 1.0f, .sweepSlowMult = 1.0f,
         .summonDmgMult = 1.0f, .summonHpMult = 1.0f, .summonReserve = 0.25f,
@@ -739,6 +766,29 @@ void tree_compute_effects(const Uint32 taken[SKILL_COUNT], Uint32 fateTaken,
         if (ON(T, 14)) fx->echoCallDurBonus += 4.0f;
         if (ON(T, 15)) { fx->echoDmgMult *= 1.25f;    // AÇ GÖLGE
                          fx->echoHpMult *= 0.90f; }
+    }
+
+    // --- Suikast (Gölge Yolu — Suikastçi P2) ---
+    {
+        const int T = SKILL_ASSASSIN;
+        if (ON(T, 0))  fx->backstabDmgMult *= 1.03f;
+        if (ON(T, 1))  fx->backstabDmgMult *= 1.05f;
+        if (ON(T, 2))  fx->daggerSpeedMult *= 0.95f;
+        if (ON(T, 3))  fx->backstabScaleBonus += 0.6f;
+        if (ON(T, 4))  fx->assassinStaminaMult *= 0.90f;
+        if (ON(T, 5))  fx->backstabExecuteBonus += 0.25f;
+        if (ON(T, 6))  fx->venomDpsMult *= 1.10f;
+        if (ON(T, 7))  fx->venomDurBonus += 2.0f;
+        if (ON(T, 8))  fx->stingCdCut += 3.0f;
+        if (ON(T, 9))  fx->silentThresholdBonus += 0.05f;
+        if (ON(T, 10)) fx->smokeCdCut += 10.0f;
+        if (ON(T, 11)) fx->smokeDurBonus += 1.5f;
+        if (ON(T, 12)) fx->smokeSpeedBonus += 0.25f;
+        if (ON(T, 13)) fx->shadowstepRangeBonus += 100.0f;
+        if (ON(T, 14)) { fx->silentThresholdBonus += 0.10f;   // KARANLIK İMZA
+                         fx->maxStaminaBonus -= 20.0f; }
+        if (ON(T, 15)) { fx->smokeFirstCrit = true;           // HİÇ KİMSE
+                         fx->smokeCdPenalty = 15.0f; }
     }
 
     // --- Pickpocket (Gölge Eli) ---

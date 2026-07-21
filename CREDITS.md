@@ -131,3 +131,9 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
 - `assets/fx/holy_burst.png` (16 kare @48), `holy_impact.png` (7 @32),
   `holy_beam_init.png`, `holy_beam_mid.png` — **Holy VFX 01-02** (itch.io).
   TODO: yazar sayfası + lisans teyidi (paket arşivinde lisans dosyası yok).
+
+## Suikastçi P2 (2026-07-20)
+- `assets/characters/mobs/Soldier.png` — **Tiny RPG Character Asset Pack 01
+  v2.0** (Soldier; itch.io ücretsiz sürüm). Kompozit idle/walk/attack/death.
+  TODO: yazar + lisans sayfası teyidi (Pack 02 ile aynı seri).
+- `assets/icons/items/assassin.png` — prosedürel üretildi (4 hücre).

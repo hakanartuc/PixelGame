@@ -41,3 +41,39 @@ opt: (Raporu ver.) -> as2:teslim
 [bekle]
 text: Sabır, yolcu. Büyük işler sessiz hazırlanır. Vakti gelince ip sana gelir — hep geldiği gibi.
 opt: Bekliyorum. -> end
+
+[gorev3]
+text: Döndün. İyi. İğne'nin bahçesinde bir şey eksik: *Dilsiz Şişe*. İçtiğinin boğazından tek ses çıkmaz — adı oradan. Tarif basit, malzeme değil: *üç Zehirli Öz*, *iki Mavi Ot*, ve kaynatacak bir *simya kazanı*. Şişeyi İğne'ye götür. O anlar.
+opt: Zehirli Öz nereden bulunur? -> oz_nerede
+opt: Kaynatır getiririm. -> as3:ver
+
+[oz_nerede]
+text: Ork kanı taşır, bazı sürüngenler de. Avlan — ya da kervandan satın al, paran konuşsun. Loca yönteme karışmaz, sonuca bakar.
+opt: Anlaşıldı. -> as3:ver
+
+[gorev4]
+text: İğne şişeyi övdü. Şimdi kulağını aç. Bu gece loca bir adamın *ölümünü sahneleyecek* — adam yaşayacak ama dünya öldüğünü bilecek. Borçları silinecek, düşmanları rahatlayacak. Kusursuz plan... tek pürüz: bir *tanık* gördü. Karar senin, El: tanığı sustur, satın al, ya da bırak konuşsun.
+opt: Susturun. Korku da bir mühürdür. -> as4:sustur
+opt: Satın alın. (100 altın öderim) -> as4:rusvet
+opt: Bırakın. Tek tanık, delilsiz dedikodu eder. -> as4:birak
+
+[gorev5]
+text: Son kapı, yolcu. *Kaçak Tahsildar* — kervanlardan iki tarafın vergisini toplayıp ikisini de dolandıran adam. Ne Doğu'ya ne Batı'ya; yalnız kendi kesesine çalışır. Loca sözleşmeyi aldı. *Gece* kervan yolunda yürür, yanında iki *koruma*. Nasıl öldüğü umurumda değil — öldüğü umurumda.
+opt: İmza benim. -> as5:ver
+opt: (Sessizce başını salla.) -> as5:ver
+
+[sise_bekle]
+text: Kazan sabırlıdır, yolcu. Üç öz, iki ot. Şişe İğne'ye gidecek — bana değil.
+opt: İşteyim. -> end
+
+[imza_bekle]
+text: Tahsildar hâlâ nefes alıyor. Gece kervan yolunu dene — para sayan adam karanlıkta sayar.
+opt: Bu gece biter. -> end
+
+[imza_rapor]
+text: ...Haberi güvercinden önce rüzgar getirdi. Temiz. Sessiz. İmzasız. Al — bu bıçağın *imzası yok*. Seninkinin de olmayacak. Ve şu iğne... İğne'nin yıllardır kimseye vermediği şey. Artık *Sessiz El*'densin, yolcu. Rütben: *Çırak*. Kontratlar seni bulur.
+opt: (Bıçağı ve iğneyi al.) -> as5:teslim
+
+[usta]
+text: Çırak. Kontratlar hazırlanıyor — loca acele etmez, ama unutmaz da. Bıçağını keskin, iğneni dolu tut.
+opt: Bekliyorum. -> end

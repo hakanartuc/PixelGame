@@ -941,6 +941,44 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - TEST NOTU: P1 ritüeli HÂLÂ TEST EDİLMEDİ — P1+P2 tek turda test edilebilir
   (F10 → taş halkası T108,7 → gece [E] → ritüel → 4 büyü + K'da Yankı ağacı).
 
+### Faz SUIKAST-P2b — GÖLGE YOLU AĞACI + SİLAH GÖRSELİ (2026-07-20)
+- T_ASSASSINTREE "Gölge Yolu" (16 düğüm — Hakan onaylı): Bıçak (sırttan
+  +%3/+%5, hançer hızı, ×3.0→×3.6, stamina -%10, İnfazcı %25 altı +%25) ·
+  Zehir (DPS +%10, süre +2sn, İğne CD 10→7, eşik %20→%25) · Gölge (Duman
+  CD -10, süre 3→4.5, dumanda hız +%25, Adım menzili +100px) + keystone
+  KARANLIK İMZA (eşik +%10, stamina -20) ve HİÇ KİMSE (dumanda ilk vuruş
+  kritik + SIRTTAN SAYILIR — pusu suikasti; Duman CD +15).
+- PerkEffects +15 alan; tüm beceri case'leri + pasif + Sessiz Son eşiği +
+  speedMult kablolandı; Usta Bilek combat_attack_interval'da yalnız
+  İmzasız Bıçak'a işler.
+- İmzasız Bıçak el görseli: LPC tek-el sheet'i bağlandı (uzun kılıç katmanı
+  — hançer LPC'si bulununca değişir; İğne sol el aracı, elde çizilmez).
+
+### Faz SUIKAST-P2 — SESSİZ EL: ZİNCİR 3-5 + SINIF + 5 BECERİ (2026-07-20)
+- **Hakan tasarım kararları**: Hançer+Şarjlı İğne modeli (çift hançer P3
+  loca dükkanına); zehir imzası = ÖLÜMCÜL DOZ + SESSİZ SON; iğne görseli
+  ründen ayrık (mor-yeşil AŞAĞI damlar, rün yeşil YUKARI çıkar).
+- **GÖREV 3 "Dilsiz Şişe"**: tarif görevle öğrenilir (blueprintItem 9999 =
+  yalnız craft_learn_recipe açar); 3 Zehirli Öz + 2 Mavi Ot @ simya kazanı;
+  İğne'ye teslim. GÖREV 4 "Ölmeden Öl": karar diyalogda (sustur=kaba /
+  rüşvet 100g=ketum / bırak=kibar — kişilik sayaçlarına işler). GÖREV 5
+  "İlk İmza": Kaçak Tahsildar + 2 Koruma (MOB 21-22, Soldier sheet —
+  23/24 MAX_MOB_TYPES DOLU SAYILIR!) gece kervan yolunda (T64,19) belirir;
+  mob_die kancası SF 11→12.
+- **SINIF AÇILIŞI (SF≥13)**: skill SUIKAST görünür (row_skill iki gizli
+  satırı atlar), 5 beceri açılır, İmzasız Bıçak + Zehirli İğne + 3 şarj +
+  300g + "İğne Zehri" tarifi (1 öz → 3 şarj).
+- **BECERİLER**: Sırttan Bıçak (arka yay 120° kontrolü, ×3 + hançer pasifi
+  ×1.5) · Gölge Adımı (arkaya ışınlanma + forceCrit) · Duman Perdesi
+  (aggro sıfır + 3sn smokeTimer) · İğne Batır (doz sistemi) · Kiriş Kesme
+  (kanatma + %40 yavaş). Hançer pasifi temel vuruşta da işler (+Suikast XP).
+- **ZEHİR İMZASI**: Mob.venomDoses/venomDoseDps/venomTime — doz×DPS akar;
+  3 dozlu hedef %20 altında SESSİZ SON (anında ölüm, boss hariç — boss'ta
+  ×1.5); Alchemy ölçekler. WEAPON_FX_VENOM yeni partikül tipi; iğne+şarj
+  varken silahtan damlar, şarj bitince kesilir; HUD'da 3 kare şarj göstergesi.
+- F10: launderedTotal 500'e çekilir (zincir testi). abilityUsable: İğne
+  Batır iğne+şarj ister; Duman/Gölge Adımı silahtan bağımsız.
+
 ### Faz ESO-V2 — GÖREV/DİYALOG SUNUMU (2026-07-20; Hakan 4 parçayı da seçti)
 - **DİYALOG EKRANI**: tam genişlik alt perde (koyu zemin + altın çizgi),
   büyük portre bloğu, isim plakası (altın + alt çizgi), kamera konuşurken

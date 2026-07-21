@@ -47,6 +47,7 @@ typedef enum {
                        // SALDIRAMAZ ("Silah kuşan!") — toplama savurması için
     WEAPON_BOW,        // yay: iki el (SHIELD kilitli), köklü atış + ok tüketir,
                        // hasar DEX ile ölçeklenir, skill = Archery
+    WEAPON_NEEDLE,     // zehirli iğne (sol el — blok VERMEZ; Suikastçi P2)
     WEAPON_STAFF,      // asa: iki el, zayıf melee + büyü gücü (skill = Staff; Faz 22)
 } WeaponType;
 
@@ -283,6 +284,11 @@ typedef enum {
     ITEM_TOME_HOLYBEAM,   // Tomar: Kutsal Hüzme (Kutsal 5 — Hortlak %8 + USTA sandık)
     ITEM_TOME_HOLYZONE,   // Tomar: Kutsal Alan (Kutsal 15 — Hortlak %6 + USTA sandık)
     ITEM_SEALED_BOX,      // Mühürlü Kutu (Suikastçi P1 sınavı — görev eşyası)
+    // SUİKASTÇİ P2 (Sessiz El)
+    ITEM_DAGGER_UNSIGNED, // İmzasız Bıçak: hızlı hançer, arkadan +%50 (zincir ödülü)
+    ITEM_POISON_NEEDLE,   // Zehirli İğne: sol el — İğne Batır'ı açar (şarjla)
+    ITEM_QUIET_VIAL,      // Dilsiz Şişe: görev 3 eşyası (simya kazanında)
+    ITEM_NEEDLE_VENOM,    // İğne Zehri: şarj (max 3) — İğne Batır tüketir
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

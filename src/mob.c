@@ -803,6 +803,74 @@ const MobType MOB_TYPES[] = {
             },
         },
     },
+
+    // --- SUİKASTÇİ P2: İlk İmza hedefleri (Soldier sheet — yan bakışlı,
+    // satırlar idle6/walk8/attack6/death4 @100px) ---
+    // [21] KAÇAK TAHSİLDAR: adlı hedef — kaçmaya meyilli, zayıf dövüşçü
+    {
+        .name = "Kaçak Tahsildar",
+        .texturePath = "assets/characters/mobs/Soldier.png",
+        .level = 10, .maxHealth = 300.0f, .speed = 190.0f,
+        .attackRange = 60.0f, .detectRange = 260.0f, .damage = 14.0f, .defense = 8.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 3, .attackRecover = 1.1f,
+        .goldMin = 250, .goldMax = 350,
+        .bodyW = 40.0f, .bodyH = 46.0f, .drawScale = 1.7f,
+        .tintR = 235, .tintG = 210, .tintB = 160,   // altın sarısı urba (tahsildar)
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=78 },
+                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=78 },
+                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=78 },
+            },
+            {
+                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=78 },
+                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=78 },
+                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=78 },
+            },
+            {
+                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.10f, .feetY=78 },
+                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.10f, .feetY=78 },
+                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.10f, .feetY=78 },
+            },
+            {
+                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
+                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
+                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
+            },
+        },
+    },
+    // [22] TAHSİLDAR KORUMASI: paralı kılıç — sert vurur, hedefine sadık
+    {
+        .name = "Koruma",
+        .texturePath = "assets/characters/mobs/Soldier.png",
+        .level = 11, .maxHealth = 420.0f, .speed = 200.0f,
+        .attackRange = 65.0f, .detectRange = 320.0f, .damage = 24.0f, .defense = 14.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 3, .attackRecover = 0.9f,
+        .goldMin = 40, .goldMax = 80,
+        .bodyW = 42.0f, .bodyH = 48.0f, .drawScale = 1.8f,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=78 },
+                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=78 },
+                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=78 },
+            },
+            {
+                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=78 },
+                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=78 },
+                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=78 },
+            },
+            {
+                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.10f, .feetY=78 },
+                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.10f, .feetY=78 },
+                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.10f, .feetY=78 },
+            },
+            {
+                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
+                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
+                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
+            },
+        },
+    },
 };
 
 const int MOB_TYPE_COUNT = (int)(sizeof(MOB_TYPES) / sizeof(MOB_TYPES[0]));

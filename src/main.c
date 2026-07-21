@@ -279,6 +279,29 @@ static int infirmary_cost(int i, int today)
     return (int)c;
 }
 
+// SUİKASTÇİ: oyuncu hedefin ARKASINDA mı? (mob bakış vektörü ile
+// mob→oyuncu vektörünün zıtlığı — 120° arka yay)
+static bool player_behind_mob(const Mob *m, float px2, float py2)
+{
+    float fx2 = 0.0f, fy2 = 0.0f;
+    if (m->e.facing == 2) { fx2 = m->e.facingLeft ? -1.0f : 1.0f; }
+    else if (m->e.facing == 1) fy2 = -1.0f;
+    else fy2 = 1.0f;
+    float vx = px2 - (m->e.rect.x + m->e.rect.w / 2.0f);
+    float vy = py2 - (m->e.rect.y + m->e.rect.h / 2.0f);
+    float vl = SDL_sqrtf(vx * vx + vy * vy);
+    if (vl < 1.0f) return false;
+    return (fx2 * vx + fy2 * vy) / vl < -0.5f;   // cos(120°)
+}
+
+// İsimden tarif indeksi (Sessiz El tarifleri görev/sınıfla öğrenilir)
+static int recipe_index_by_name(const char *nm)
+{
+    for (int r = 0; r < RECIPE_COUNT; r++)
+        if (SDL_strcmp(RECIPES[r].name, nm) == 0) return r;
+    return -1;
+}
+
 // --- VFX HİS CİLASI köprüsü: isabet/ölüm/blok efektleri + hit-stop ---
 // (g_fx deseni — imza şişirmeden derin çağrı yerlerinden erişim)
 static AnimFx *g_animFx = NULL;
@@ -400,6 +423,18 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
                                  player->rect.y - 50.0f,
                                  "İskelet Lordu devrildi!", gold);
         }
+    }
+
+    // İLK İMZA (Suikastçi P2): hedef düştü — zincir son adıma geçer
+    if (target->type == &MOB_TYPES[MOB_TAX_RUNNER] &&
+        player->storyFlags[SF_ASSASSIN] == 11)
+    {
+        player->storyFlags[SF_ASSASSIN] = 12;
+        SDL_Color vio8 = { 200, 160, 255, 255 };
+        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                             player->rect.x + player->rect.w / 2.0f,
+                             player->rect.y - 40.0f,
+                             "İmza atıldı. Neriman'a dön.", vio8);
     }
 
     // ÖLÜM GETİREN'İN NİŞANI: kuşanılıysa her öldürme 8 HP geri verir
@@ -613,6 +648,15 @@ static void echo_apply_unlocks(const Player *p, PerkEffects *fx)
         fx->abilityOpen[ABILITY_SHADOW_FORM] = true;
         fx->abilityOpen[ABILITY_LIFE_DRAIN] = true;    // P2
         fx->abilityOpen[ABILITY_ECHO_CALL] = true;
+    }
+    // SUİKASTÇİ (gizli sınıf 2): Sessiz El zinciri bitince 5'i birden
+    if (p->storyFlags[SF_ASSASSIN] >= 13)
+    {
+        fx->abilityOpen[ABILITY_BACKSTAB] = true;
+        fx->abilityOpen[ABILITY_SHADOWSTEP] = true;
+        fx->abilityOpen[ABILITY_SMOKE_BOMB] = true;
+        fx->abilityOpen[ABILITY_NEEDLE_STING] = true;
+        fx->abilityOpen[ABILITY_HAMSTRING] = true;
     }
 }
 
@@ -2145,6 +2189,82 @@ int main(int argc, char *argv[])
                                          "Gözün var. Sıradaki iş... hazırlanıyor.", 5.0f);
                                 dialogNpc = -1;
                             }
+                            else if (strcmp(target, "as3:ver") == 0)
+                            {
+                                player.storyFlags[SF_ASSASSIN] = 7;
+                                int r3 = recipe_index_by_name("Dilsiz Şişe");
+                                if (r3 >= 0) craft_learn_recipe(r3);
+                                questBannerTitle = "DİLSİZ ŞİŞE";
+                                questBannerSub =
+                                    "3 Zehirli Öz + 2 Mavi Ot — simya kazanında kaynat, İğne'ye götür";
+                                questBannerTimer = 5.0f;
+                                audio_play(SFX_PERK);
+                                dialogNpc = -1;
+                            }
+                            else if (strcmp(target, "as3:teslim") == 0)
+                            {
+                                if (bag_consume(&ITEM_TYPES[ITEM_QUIET_VIAL]))
+                                {
+                                    player.storyFlags[SF_ASSASSIN] = 8;
+                                    audio_play(SFX_PERK);
+                                    questBannerTitle = "GÖREV GÜNCELLENDİ";
+                                    questBannerSub = "Neriman yeni işi anlatacak — locaya";
+                                    questBannerTimer = 4.0f;
+                                }
+                                dialogNpc = -1;
+                            }
+                            else if (strncmp(target, "as4:", 4) == 0)
+                            {
+                                // SAHTE ÖLÜM kararı: tanık ne olacak? (kişiliğe işler)
+                                if (strcmp(target + 4, "sustur") == 0)
+                                    player.persKaba += 1;
+                                else if (strcmp(target + 4, "rusvet") == 0)
+                                {
+                                    player.gold -= 100;
+                                    if (player.gold < 0) player.gold = 0;
+                                    player.persKetum += 1;
+                                }
+                                else
+                                    player.persKibar += 1;
+                                player.storyFlags[SF_ASSASSIN] = 10;
+                                audio_play(SFX_PERK);
+                                questBannerTitle = "ÖLMEDEN ÖL — TAMAM";
+                                questBannerSub = "Loca sahneyi kapattı; Neriman son işi bekliyor";
+                                questBannerTimer = 5.0f;
+                                dialogNpc = -1;
+                            }
+                            else if (strcmp(target, "as5:ver") == 0)
+                            {
+                                player.storyFlags[SF_ASSASSIN] = 11;
+                                questBannerTitle = "İLK İMZA";
+                                questBannerSub =
+                                    "Kaçak Tahsildar — GECE kervan yolunda; nasıl öldüğü sana kalmış";
+                                questBannerTimer = 5.0f;
+                                audio_play(SFX_PERK);
+                                dialogNpc = -1;
+                            }
+                            else if (strcmp(target, "as5:teslim") == 0)
+                            {
+                                // SINIF AÇILIR: Sessiz El seni imzaladı
+                                player.storyFlags[SF_ASSASSIN] = 13;
+                                bag_add(&ITEM_TYPES[ITEM_DAGGER_UNSIGNED], 1, 0);
+                                bag_add(&ITEM_TYPES[ITEM_POISON_NEEDLE], 1, 0);
+                                bag_add(&ITEM_TYPES[ITEM_NEEDLE_VENOM], 3, 0);
+                                int r4 = recipe_index_by_name("İğne Zehri");
+                                if (r4 >= 0) craft_learn_recipe(r4);
+                                player.gold += 300;
+                                tree_compute_effects(player.treeTaken,
+                                                     player.fateTaken, &perkFx);
+                                spells_apply_learned(&player, &perkFx);
+                                echo_apply_unlocks(&player, &perkFx);
+                                hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
+                                audio_play(SFX_PERK);
+                                questBannerTitle = "SUİKASTÇİ — SESSİZ EL'İN İMZASI";
+                                questBannerSub =
+                                    "İmzasız Bıçak + Zehirli İğne senin; 5 beceri açıldı (K defteri)";
+                                questBannerTimer = 6.0f;
+                                dialogNpc = -1;
+                            }
                             else if (strcmp(target, "sifa:ode") == 0)
                             {
                                 // REVİR ödemesi: TÜM yatanların masrafı tek seferde
@@ -2930,7 +3050,24 @@ int main(int argc, char *argv[])
                             else if (as2 == 3) entry = "kutu";
                             else if (as2 == 4) entry = "takip_bekle";
                             else if (as2 == 5) entry = "rapor";
-                            else               entry = "bekle";
+                            else if (as2 == 6) entry = "gorev3";
+                            else if (as2 == 7) entry = "sise_bekle";
+                            else if (as2 == 8) entry = "gorev4";
+                            else if (as2 == 10) entry = "gorev5";
+                            else if (as2 == 11) entry = "imza_bekle";
+                            else if (as2 == 12) entry = "imza_rapor";
+                            else               entry = "usta";
+                        }
+                        else if (nearestNpc >= 0 &&
+                                 SDL_strcmp(NPCS[nearestNpc].name, "Zehirci İğne") == 0)
+                        {
+                            if (player.storyFlags[SF_ASSASSIN] == 7 &&
+                                bag_count(&ITEM_TYPES[ITEM_QUIET_VIAL]) > 0)
+                                entry = "teslim";
+                            else if (player.storyFlags[SF_ASSASSIN] == 7)
+                                entry = "bekliyor";
+                            else if (player.storyFlags[SF_ASSASSIN] >= 13)
+                                entry = "usta";
                         }
                         else if (nearestNpc == sifaciIdx)
                         {
@@ -3413,6 +3550,8 @@ int main(int argc, char *argv[])
                     bag_add(&ITEM_TYPES[ITEM_TOME_HOLYBEAM], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_TOME_HOLYZONE], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_SPEAR], 1, 0);   // Two-Handed testi
+                    // Suikastçi zinciri testi: aklama eşiği dolu sayılır
+                    if (player.launderedTotal < 500) player.launderedTotal = 500;
                     bag_add(&ITEM_TYPES[ITEM_SHIELD_IRON], 1, 0);   // Block testi
                     // YANKICI test yolu: sayaç basılır ama sınıf keşifle açılır
                     if (player.echoesConsumed < 3 &&
@@ -5466,6 +5605,32 @@ int main(int argc, char *argv[])
                 }
             }
 
+            // İLK İMZA (Suikastçi P2): gece kervan yolunda hedef belirir
+            if (player.storyFlags[SF_ASSASSIN] == 11 &&
+                map_current() == MAP_WORLD && gametime_is_night())
+            {
+                bool taxAlive = false;
+                for (int i = 0; i < MAX_MOBS; i++)
+                    if (mobs[i].e.alive &&
+                        mobs[i].type == &MOB_TYPES[MOB_TAX_RUNNER])
+                    { taxAlive = true; break; }
+                static bool taxSpawnedTonight = false;
+                if (!gametime_is_night()) taxSpawnedTonight = false;
+                if (!taxAlive && !taxSpawnedTonight)
+                {
+                    taxSpawnedTonight = true;
+                    mob_spawn(mobs, MAX_MOBS, &nextMobId,
+                              &MOB_TYPES[MOB_TAX_RUNNER],
+                              64.0f * TILE_SIZE, 19.0f * TILE_SIZE, -1);
+                    mob_spawn(mobs, MAX_MOBS, &nextMobId,
+                              &MOB_TYPES[MOB_TAX_GUARD],
+                              63.0f * TILE_SIZE, 20.0f * TILE_SIZE, -1);
+                    mob_spawn(mobs, MAX_MOBS, &nextMobId,
+                              &MOB_TYPES[MOB_TAX_GUARD],
+                              65.0f * TILE_SIZE, 20.0f * TILE_SIZE, -1);
+                }
+            }
+
             // Kilit minigame'i imleci
             lockpick_update(dt, &perkFx);
 
@@ -5711,6 +5876,249 @@ int main(int argc, char *argv[])
                                              player.rect.y - 10.0f,
                                              player.gateStance ? "Kapı tutuluyor."
                                                                : "Duruş bırakıldı.", st2);
+                    }
+                    else if (hs->abilityId == ABILITY_BACKSTAB &&
+                             !player.attacking && !player.shooting)
+                    {
+                        // SIRTTAN BIÇAK: yalnız hedefin ARKASINDAN — pozisyon oyunu
+                        Mob *ab = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                        float abd = 1e9f;
+                        float pcx3 = player.rect.x + player.rect.w / 2.0f;
+                        float pcy3 = player.rect.y + player.rect.h / 2.0f;
+                        if (ab != NULL)
+                        {
+                            float adx = (ab->e.rect.x + ab->e.rect.w / 2.0f) - pcx3;
+                            float ady = (ab->e.rect.y + ab->e.rect.h / 2.0f) - pcy3;
+                            abd = SDL_sqrtf(adx * adx + ady * ady);
+                        }
+                        if (ab == NULL || abd > PLAYER_ATTACK_RANGE + 10.0f)
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, pcx3,
+                                                 player.rect.y - 10.0f,
+                                                 ab == NULL ? "Hedef gerekli!"
+                                                            : "Menzil dışı!", red);
+                        else if (!player_behind_mob(ab, pcx3, pcy3))
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, pcx3,
+                                                 player.rect.y - 10.0f,
+                                                 "Arkasından yaklaş!", red);
+                        else
+                        {
+                            player.stamina -= ad->stamina
+                                             * perkFx.assassinStaminaMult;
+                            if (player.stamina < 0.0f) player.stamina = 0.0f;
+                            player.abilityCd[ABILITY_BACKSTAB] = ad->cooldown;
+                            const ItemStack *aw = &equipment.slots[EQUIP_WEAPON];
+                            HitResult sh = combat_player_hit(&player, aw,
+                                             ab->type->defense,
+                                             ad->damageScale
+                                                 + perkFx.backstabScaleBonus,
+                                             ab->e.health / ab->e.maxHealth, &perkFx);
+                            sh.damage *= perkFx.backstabDmgMult;
+                            if (perkFx.backstabExecuteBonus > 0.0f &&
+                                ab->e.health < ab->e.maxHealth * 0.25f)
+                                sh.damage *= 1.0f + perkFx.backstabExecuteBonus;
+                            player.forceCrit = false;
+                            if (aw->type == &ITEM_TYPES[ITEM_DAGGER_UNSIGNED])
+                                sh.damage *= 1.5f;   // İmzasız Bıçak arka pasifi
+                            ab->e.health -= sh.damage;
+                            strike_fx_mob(ab, false, 0.06f);
+                            ab->e.hitFlash = 0.2f;
+                            ab->aggro = true;
+                            audio_play(SFX_CRIT);
+                            floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                            ab->e.rect.x + ab->e.rect.w / 2.0f + 10.0f,
+                                            ab->e.rect.y, (int)sh.damage, true);
+                            float sxp = combat_xp_for_hit(sh.damage, ab->type->level,
+                                            player.skills[SKILL_ASSASSIN].level);
+                            if (skill_add_xp(player.skills, SKILL_ASSASSIN, sxp))
+                                on_skill_levelup(&player, SKILL_ASSASSIN,
+                                                 &hotbar, floatTexts);
+                            if (ab->e.health <= 0.0f)
+                                mob_die(ab, mobs, MAX_MOBS, &nextMobId, loots,
+                                        questStatus, floatTexts, &player);
+                        }
+                    }
+                    else if (hs->abilityId == ABILITY_SHADOWSTEP &&
+                             !player.attacking && !player.shooting)
+                    {
+                        // GÖLGE ADIMI: hedefin arkasına ışınlan + garanti kritik
+                        Mob *st2 = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                        float std2 = 1e9f;
+                        float pcx4 = player.rect.x + player.rect.w / 2.0f;
+                        float pcy4 = player.rect.y + player.rect.h / 2.0f;
+                        if (st2 != NULL)
+                        {
+                            float sdx = (st2->e.rect.x + st2->e.rect.w / 2.0f) - pcx4;
+                            float sdy = (st2->e.rect.y + st2->e.rect.h / 2.0f) - pcy4;
+                            std2 = SDL_sqrtf(sdx * sdx + sdy * sdy);
+                        }
+                        if (st2 == NULL ||
+                            std2 > 300.0f + perkFx.shadowstepRangeBonus)
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, pcx4,
+                                                 player.rect.y - 10.0f,
+                                                 st2 == NULL ? "Hedef gerekli!"
+                                                             : "Menzil dışı!", red);
+                        else
+                        {
+                            player.stamina -= ad->stamina
+                                             * perkFx.assassinStaminaMult;
+                            if (player.stamina < 0.0f) player.stamina = 0.0f;
+                            player.abilityCd[ABILITY_SHADOWSTEP] = ad->cooldown;
+                            fx_burst(&weaponFx, pcx4, pcy4, 16, 100.0f, 120, 120, 140);
+                            // Mobun bakışının TERSİNE, arkasına düş
+                            float bx5 = st2->e.rect.x + st2->e.rect.w / 2.0f;
+                            float by5 = st2->e.rect.y + st2->e.rect.h / 2.0f;
+                            float ofx = 0.0f, ofy = 0.0f;
+                            if (st2->e.facing == 2)
+                                ofx = st2->e.facingLeft ? 44.0f : -44.0f;
+                            else if (st2->e.facing == 1) ofy = 44.0f;
+                            else ofy = -44.0f;
+                            player.rect.x = bx5 + ofx - player.rect.w / 2.0f;
+                            player.rect.y = by5 + ofy - player.rect.h / 2.0f;
+                            player.forceCrit = true;   // sonraki vuruş oturur
+                            fx_burst(&weaponFx, bx5 + ofx, by5 + ofy,
+                                     16, 100.0f, 120, 120, 140);
+                            audio_play(SFX_DODGE);
+                            SDL_Color sgray = { 190, 190, 210, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 bx5 + ofx, by5 + ofy - 40.0f,
+                                                 "Gölgeden çıktın.", sgray);
+                        }
+                    }
+                    else if (hs->abilityId == ABILITY_SMOKE_BOMB)
+                    {
+                        // DUMAN PERDESİ: aggro sıfırlanır + 3sn görünmezlik
+                        player.stamina -= ad->stamina
+                                         * perkFx.assassinStaminaMult;
+                        if (player.stamina < 0.0f) player.stamina = 0.0f;
+                        player.abilityCd[ABILITY_SMOKE_BOMB] = ad->cooldown
+                            - perkFx.smokeCdCut + perkFx.smokeCdPenalty;
+                        player.smokeTimer = 3.0f + perkFx.smokeDurBonus;
+                        if (perkFx.smokeFirstCrit)
+                            player.forceCrit = true;   // HİÇ KİMSE: ilk vuruş oturur
+                        player.autoAttack = false;
+                        for (int m5 = 0; m5 < mobCount; m5++)
+                        {
+                            if (!mobs[m5].e.alive) continue;
+                            mobs[m5].aggro = false;
+                            mobs[m5].suspicion = 0.0f;
+                        }
+                        float pcx5 = player.rect.x + player.rect.w / 2.0f;
+                        float pcy5 = player.rect.y + player.rect.h / 2.0f;
+                        fx_burst(&weaponFx, pcx5, pcy5, 40, 140.0f, 160, 160, 170);
+                        audio_play(SFX_DODGE);
+                        SDL_Color smk = { 190, 190, 200, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, pcx5,
+                                             player.rect.y - 24.0f,
+                                             "Dumana karıştın.", smk);
+                    }
+                    else if (hs->abilityId == ABILITY_NEEDLE_STING &&
+                             !player.attacking && !player.shooting)
+                    {
+                        // İĞNE BATIR: doz biriktiren imza zehri (max 3 doz)
+                        Mob *nt2 = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                        float ntd = 1e9f;
+                        float pcx6 = player.rect.x + player.rect.w / 2.0f;
+                        if (nt2 != NULL)
+                        {
+                            float ndx = (nt2->e.rect.x + nt2->e.rect.w / 2.0f) - pcx6;
+                            float ndy = (nt2->e.rect.y + nt2->e.rect.h / 2.0f)
+                                      - (player.rect.y + player.rect.h / 2.0f);
+                            ntd = SDL_sqrtf(ndx * ndx + ndy * ndy);
+                        }
+                        bool hasNeedle = equipment.slots[EQUIP_SHIELD].type
+                                         == &ITEM_TYPES[ITEM_POISON_NEEDLE];
+                        if (!hasNeedle)
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, pcx6,
+                                                 player.rect.y - 10.0f,
+                                                 "Zehirli İğne gerekli!", red);
+                        else if (bag_count(&ITEM_TYPES[ITEM_NEEDLE_VENOM]) <= 0)
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, pcx6,
+                                                 player.rect.y - 10.0f,
+                                                 "Zehir şarjın bitti — kazanda kaynat", red);
+                        else if (nt2 == NULL || ntd > PLAYER_ATTACK_RANGE + 10.0f)
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, pcx6,
+                                                 player.rect.y - 10.0f,
+                                                 nt2 == NULL ? "Hedef gerekli!"
+                                                             : "Menzil dışı!", red);
+                        else
+                        {
+                            player.stamina -= ad->stamina
+                                             * perkFx.assassinStaminaMult;
+                            if (player.stamina < 0.0f) player.stamina = 0.0f;
+                            player.abilityCd[ABILITY_NEEDLE_STING] =
+                                ad->cooldown - perkFx.stingCdCut;
+                            bag_consume(&ITEM_TYPES[ITEM_NEEDLE_VENOM]);
+                            if (nt2->venomDoses < 3) nt2->venomDoses++;
+                            nt2->venomDoseDps = ad->damageScale * 0.75f
+                                * (1.0f + (float)player.skills[SKILL_ALCHEMY].level
+                                          * 0.15f * 0.1f)
+                                * (1.0f + (float)player.skills[SKILL_ASSASSIN].level
+                                          * 0.01f);
+                            nt2->venomDoseDps *= perkFx.venomDpsMult;
+                            nt2->venomTime = 6.0f + perkFx.venomDurBonus;
+                            nt2->aggro = true;
+                            strike_fx_mob(nt2, true, 0.0f);
+                            audio_play(SFX_HIT);
+                            char vbuf[FLOAT_TEXT_LEN];
+                            snprintf(vbuf, sizeof(vbuf), "Zehir dozu %d/3",
+                                     nt2->venomDoses);
+                            SDL_Color vio9 = { 170, 100, 230, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                nt2->e.rect.x + nt2->e.rect.w / 2.0f,
+                                nt2->e.rect.y - 26.0f, vbuf, vio9);
+                        }
+                    }
+                    else if (hs->abilityId == ABILITY_HAMSTRING &&
+                             !player.attacking && !player.shooting)
+                    {
+                        // KİRİŞ KESME: ×1.2 + kanatma + %40 yavaş (kaçanı yakalar)
+                        Mob *ht2 = mob_find_by_id(mobs, mobCount, player.targetMobId);
+                        float htd = 1e9f;
+                        float pcx7 = player.rect.x + player.rect.w / 2.0f;
+                        if (ht2 != NULL)
+                        {
+                            float hdx = (ht2->e.rect.x + ht2->e.rect.w / 2.0f) - pcx7;
+                            float hdy = (ht2->e.rect.y + ht2->e.rect.h / 2.0f)
+                                      - (player.rect.y + player.rect.h / 2.0f);
+                            htd = SDL_sqrtf(hdx * hdx + hdy * hdy);
+                        }
+                        if (ht2 == NULL || htd > PLAYER_ATTACK_RANGE + 10.0f)
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, pcx7,
+                                                 player.rect.y - 10.0f,
+                                                 ht2 == NULL ? "Hedef gerekli!"
+                                                             : "Menzil dışı!", red);
+                        else
+                        {
+                            player.stamina -= ad->stamina
+                                             * perkFx.assassinStaminaMult;
+                            if (player.stamina < 0.0f) player.stamina = 0.0f;
+                            player.abilityCd[ABILITY_HAMSTRING] = ad->cooldown;
+                            const ItemStack *hw = &equipment.slots[EQUIP_WEAPON];
+                            HitResult sh = combat_player_hit(&player, hw,
+                                             ht2->type->defense, ad->damageScale,
+                                             ht2->e.health / ht2->e.maxHealth, &perkFx);
+                            player.forceCrit = false;
+                            ht2->e.health -= sh.damage;
+                            ht2->bleedDps = sh.damage * 0.25f;
+                            ht2->bleedTime = 4.0f;
+                            ht2->slowMult = 0.6f;
+                            ht2->slowTimer = 4.0f;
+                            strike_fx_mob(ht2, false, 0.04f);
+                            ht2->e.hitFlash = 0.15f;
+                            ht2->aggro = true;
+                            audio_play(SFX_HIT);
+                            floattext_spawn(floatTexts, MAX_FLOAT_TEXTS,
+                                            ht2->e.rect.x + ht2->e.rect.w / 2.0f + 10.0f,
+                                            ht2->e.rect.y, (int)sh.damage, sh.crit);
+                            float sxp = combat_xp_for_hit(sh.damage, ht2->type->level,
+                                            player.skills[SKILL_ASSASSIN].level);
+                            if (skill_add_xp(player.skills, SKILL_ASSASSIN, sxp))
+                                on_skill_levelup(&player, SKILL_ASSASSIN,
+                                                 &hotbar, floatTexts);
+                            if (ht2->e.health <= 0.0f)
+                                mob_die(ht2, mobs, MAX_MOBS, &nextMobId, loots,
+                                        questStatus, floatTexts, &player);
+                        }
                     }
                     else if (hs->abilityId == ABILITY_SHIELD_BASH &&
                              !player.attacking && !player.shooting)
@@ -7605,8 +8013,27 @@ int main(int argc, char *argv[])
 
             // YANKICI gizliliği: ritüel tamamlanana dek skill defterinde yok
             skill_set_echo_visible(player.storyFlags[SF_YANKICI] == 2);
+            skill_set_assassin_visible(player.storyFlags[SF_ASSASSIN] >= 13);
 
             // GÖLGE FORMU: kanla ödenen görünmezlik (4 HP/sn; 5 HP'de düşer)
+            if (player.smokeTimer > 0.0f) player.smokeTimer -= dt;
+
+            // İĞNE ŞARJ GÖRSELİ: iğne takılı + şarj varken silahtan KOYU
+            // MOR-YEŞİL damlalar AŞAĞI damlar (rün zehri yukarı çıkar — ayrım)
+            if (equipment.slots[EQUIP_SHIELD].type ==
+                    &ITEM_TYPES[ITEM_POISON_NEEDLE] &&
+                bag_count(&ITEM_TYPES[ITEM_NEEDLE_VENOM]) > 0 &&
+                randf() < dt * 5.0f)
+            {
+                float wx3 = player.rect.x + player.rect.w / 2.0f
+                          + WEAPON_FX_OFFSET[player.facing].dx;
+                float wy3 = player.rect.y + player.rect.h / 2.0f
+                          + WEAPON_FX_OFFSET[player.facing].dy;
+                fx_spawn(&weaponFx, wx3, wy3,
+                         (randf() - 0.5f) * 8.0f, 35.0f + randf() * 25.0f,
+                         0.6f, 3.5f + randf() * 2.5f, 130, 60, 160,
+                         WEAPON_FX_VENOM);
+            }
             if (player.shadowTimer > 0.0f)
             {
                 player.shadowTimer -= dt;
@@ -8046,6 +8473,29 @@ int main(int argc, char *argv[])
                                 on_skill_levelup(&player, SKILL_SNEAK, &hotbar, floatTexts);
                         }
 
+                        // İmzasız Bıçak: ARKADAN +%50 + Suikast XP (sınıf pasifi).
+                        // HİÇ KİMSE: dumandaki ilk (garanti kritik) vuruş
+                        // arkadan sayılır — pusudan tam suikast vuruşu
+                        if (equipment.slots[EQUIP_WEAPON].type ==
+                                &ITEM_TYPES[ITEM_DAGGER_UNSIGNED] &&
+                            (player_behind_mob(target,
+                                player.rect.x + player.rect.w / 2.0f,
+                                player.rect.y + player.rect.h / 2.0f) ||
+                             (perkFx.smokeFirstCrit && player.forceCrit &&
+                              player.smokeTimer > 0.0f)))
+                        {
+                            hit.damage *= 1.5f * perkFx.backstabDmgMult;
+                            if (perkFx.backstabExecuteBonus > 0.0f &&
+                                target->e.health < target->e.maxHealth * 0.25f)
+                                hit.damage *= 1.0f + perkFx.backstabExecuteBonus;
+                            float sxpA = combat_xp_for_hit(hit.damage,
+                                             target->type->level,
+                                             player.skills[SKILL_ASSASSIN].level);
+                            if (skill_add_xp(player.skills, SKILL_ASSASSIN, sxpA))
+                                on_skill_levelup(&player, SKILL_ASSASSIN,
+                                                 &hotbar, floatTexts);
+                        }
+                        player.forceCrit = false;   // Gölge Adımı garantisi tüketildi
                         target->e.health -= hit.damage;
                         strike_fx_mob(target, false, 0.05f);
                         target->e.hitFlash = 0.15f;
@@ -8789,12 +9239,15 @@ int main(int argc, char *argv[])
                             * perkFx.detectOnPlayerMult    // Hayalet/Hortlak düğümleri
                             * (map_current() == MAP_WORLD
                                ? weather_percept_mult() : 1.0f)    // sis örter
-                            * (player.shadowTimer > 0.0f ? 0.05f : 1.0f);  // Gölge Formu
+                            * (player.shadowTimer > 0.0f ? 0.05f : 1.0f)   // Gölge Formu
+                            * (player.smokeTimer > 0.0f ? 0.05f : 1.0f);   // Duman Perdesi
 
             // Hız çarpanı: perk (Çevik/Rüzgar/Uyumlu) × gece (Gölge Adımı) × eğilme.
             // player_update tile hızıyla çarpar (doğrudan speed yazmak eziliyordu — bug'dı)
             player.speedMult = (player.shadowTimer > 0.0f
                                 ? 1.2f + perkFx.shadowSpeedBonus : 1.0f)
+                             * (player.smokeTimer > 0.0f
+                                ? 1.0f + perkFx.smokeSpeedBonus : 1.0f)
                              * (player.blocking
                                 ? (perkFx.stanceSlowMult < 0.0f ? 1.0f       // FALANKS
                                    : perkFx.stanceSlowMult > 0.0f
@@ -8956,6 +9409,47 @@ int main(int argc, char *argv[])
                     if (mobs[i].e.health <= 0.0f && mobs[i].e.alive)
                         mob_die(&mobs[i], mobs, MAX_MOBS, &nextMobId, loots,
                                 questStatus, floatTexts, &player);
+                }
+
+                // İĞNE ZEHRİ (Suikastçi imzası): doz × DPS; 3 dozda SESSİZ SON
+                // eşiği (%20 altı = anında ölüm; boss'ta eşik yok, DoT ×1.5)
+                if (mobs[i].venomTime > 0.0f && mobs[i].e.alive)
+                {
+                    mobs[i].venomTime -= dt;
+                    float vd = mobs[i].venomDoseDps * (float)mobs[i].venomDoses
+                             * ((mobs[i].type->isBoss && mobs[i].venomDoses >= 3)
+                                ? 1.5f : 1.0f);
+                    mobs[i].e.health -= vd * dt;
+                    if (randf() < dt * 5.0f)
+                        fx_spawn(&weaponFx,
+                                 mobs[i].e.rect.x + mobs[i].e.rect.w / 2.0f
+                                     + (randf() - 0.5f) * 18.0f,
+                                 mobs[i].e.rect.y + mobs[i].e.rect.h * 0.4f,
+                                 (randf() - 0.5f) * 12.0f, 30.0f + randf() * 30.0f,
+                                 0.5f, 4.0f + randf() * 3.0f, 130, 60, 160,
+                                 WEAPON_FX_VENOM);
+                    float sxpV = combat_xp_for_hit(vd * dt,
+                                     mobs[i].type->level,
+                                     player.skills[SKILL_ASSASSIN].level);
+                    if (skill_add_xp(player.skills, SKILL_ASSASSIN, sxpV))
+                        on_skill_levelup(&player, SKILL_ASSASSIN, &hotbar, floatTexts);
+                    bool silentEnd = !mobs[i].type->isBoss &&
+                                     mobs[i].venomDoses >= 3 &&
+                                     mobs[i].e.health < mobs[i].e.maxHealth *
+                                         (0.20f + perkFx.silentThresholdBonus);
+                    if (mobs[i].e.health <= 0.0f || silentEnd)
+                    {
+                        if (silentEnd)
+                        {
+                            SDL_Color vio10 = { 200, 140, 255, 255 };
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                mobs[i].e.rect.x + mobs[i].e.rect.w / 2.0f,
+                                mobs[i].e.rect.y - 30.0f, "Sessiz Son.", vio10);
+                            audio_play(SFX_WHISPER);
+                        }
+                        mob_die(&mobs[i], mobs, MAX_MOBS, &nextMobId, loots,
+                                questStatus, floatTexts, &player);
+                    }
                 }
 
                 // Zehir: kanamadan AYRI kanal — ikisi birden akar (tam DoT build'i)
@@ -10378,8 +10872,16 @@ int main(int argc, char *argv[])
                         qmOn = npc_visible_pos(kemalIdx, &qmx, &qmy);
                 }
                 else if (map_current() == MAP_LOCA &&
-                         (asm2 == 3 || asm2 == 5) && nerimanIdx >= 0)
+                         (asm2 == 3 || asm2 == 5 || asm2 == 6 || asm2 == 8 ||
+                          asm2 == 10 || asm2 == 12) && nerimanIdx >= 0)
                     qmOn = npc_visible_pos(nerimanIdx, &qmx, &qmy);
+                if (!qmOn && map_current() == MAP_WORLD)
+                {
+                    if (asm2 == 6 || asm2 == 8 || asm2 == 10 || asm2 == 12)
+                    { qmx = 26.0f * TILE_SIZE; qmy = 15.0f * TILE_SIZE; qmOn = true; }
+                    else if (asm2 == 11 && gametime_is_night())
+                    { qmx = 64.0f * TILE_SIZE; qmy = 19.0f * TILE_SIZE; qmOn = true; }
+                }
                 minimap_set_quest(qmx, qmy, qmOn);
 
                 // Dünya oku: hedefin üstünde süzülen altın chevron (3 sıra piksel)
@@ -10426,6 +10928,34 @@ int main(int argc, char *argv[])
                 else if (asq == 5) {
                     qtTitle = "Gölge Ol";
                     snprintf(qtObj, sizeof(qtObj), "Neriman'a rapor ver");
+                }
+                else if (asq == 6) {
+                    qtTitle = "Sessiz El";
+                    snprintf(qtObj, sizeof(qtObj), "Neriman'ın yeni işi var — locaya in");
+                }
+                else if (asq == 7) {
+                    qtTitle = "Dilsiz Şişe";
+                    snprintf(qtObj, sizeof(qtObj),
+                             "3 Zehirli Öz + 2 Mavi Ot → simya kazanı; İğne'ye götür");
+                }
+                else if (asq == 8) {
+                    qtTitle = "Sessiz El";
+                    snprintf(qtObj, sizeof(qtObj), "Neriman'la konuş — yeni iş");
+                }
+                else if (asq == 10) {
+                    qtTitle = "Sessiz El";
+                    snprintf(qtObj, sizeof(qtObj), "Neriman son işi anlatacak");
+                }
+                else if (asq == 11) {
+                    qtTitle = "İlk İmza";
+                    snprintf(qtObj, sizeof(qtObj),
+                             "%s", gametime_is_night()
+                                   ? "Kaçak Tahsildar — kervan yolunda (doğu)"
+                                   : "Geceyi bekle — Tahsildar gece yürür");
+                }
+                else if (asq == 12) {
+                    qtTitle = "İlk İmza";
+                    snprintf(qtObj, sizeof(qtObj), "İmza atıldı — Neriman'a dön");
                 }
                 if (qtTitle != NULL) {
                     SDL_Color qgold = { 255, 210, 60, 255 };
@@ -10482,6 +11012,24 @@ int main(int argc, char *argv[])
                 draw_text(renderer, gameFont, "X", hbX0 + 18.0f, hbY0 + 14.0f,
                           (SDL_Color){ 255, 110, 90, 255 });
         }
+        // İĞNE ŞARJ GÖSTERGESİ: iğne takılıyken barların altında 3 kare
+        if (gameState == GAME_PLAYING &&
+            equipment.slots[EQUIP_SHIELD].type == &ITEM_TYPES[ITEM_POISON_NEEDLE])
+        {
+            int vCount = bag_count(&ITEM_TYPES[ITEM_NEEDLE_VENOM]);
+            if (gameFont != NULL)
+                draw_text(renderer, gameFont, "Zehir", 20.0f, 78.0f,
+                          (SDL_Color){ 170, 100, 230, 255 });
+            for (int vq = 0; vq < 3; vq++)
+            {
+                SDL_FRect vc = { 78.0f + (float)vq * 16.0f, 82.0f, 10.0f, 10.0f };
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                if (vq < vCount) r2d_set_color(renderer, 150, 70, 190, 255);
+                else             r2d_set_color(renderer, 60, 45, 75, 255);
+                r2d_fill_rect(renderer, &vc);
+            }
+        }
+
         // Silah uygunluğu: uymayan beceriler barda SOLUK çizilir (kullanım
         // kapılarının aynası — asıl engel hotbarPressed akışında duruyor)
         bool abilityUsable[ABILITY_COUNT];
@@ -10498,6 +11046,13 @@ int main(int argc, char *argv[])
                     abilityUsable[ai] = true;   // büyü silahtan bağımsız
                 else if (ai == ABILITY_SHIELD_BASH)
                     abilityUsable[ai] = hbSh;
+                else if (ai == ABILITY_NEEDLE_STING)
+                    abilityUsable[ai] =
+                        (equipment.slots[EQUIP_SHIELD].type ==
+                             &ITEM_TYPES[ITEM_POISON_NEEDLE]) &&
+                        bag_count(&ITEM_TYPES[ITEM_NEEDLE_VENOM]) > 0;
+                else if (ai == ABILITY_SMOKE_BOMB || ai == ABILITY_SHADOWSTEP)
+                    abilityUsable[ai] = true;   // silahtan bağımsız
                 else if (ad->skill == SKILL_TWO_HANDED)
                     abilityUsable[ai] = player.spearEquipped;
                 else

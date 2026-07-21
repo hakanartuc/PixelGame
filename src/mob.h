@@ -117,6 +117,8 @@ typedef struct {
                                  // ÜST ÜSTE biner (tam DoT build'i meşru)
     float burnDps, burnTime;     // Yanma DoT'u (Ateş Topu) — 3. bağımsız kanal (Faz 22)
     float drainDps, drainTime;   // Can Emme (Yankıcı P2) — emilen oyuncuya AKAR
+    float venomDoseDps, venomTime; // İğne zehri (Suikastçi): doz başına DPS + süre
+    Sint8 venomDoses;            // 0-3 doz — 3 dozda SESSİZ SON eşiği (main)
     int arrowsHit;        // saplanan ok sayısı — ölünce ~%30'u lootta geri (Faz 5)
     Sint8 bossPhase;      // boss: 1 kılıç / 2 ok yağmuru+çağrı (faz mantığı main'de)
     float bossTimer;      // boss: yağmur sayacı
@@ -162,6 +164,8 @@ typedef struct {
 #define MOB_GHOUL_WIZARD  18  // Hortlak Büyücü (mezarlık elit caster — Faz MOB-2)
 #define MOB_BLOOD_MONSTER 19  // Kan Canavarı (mezarlık ölü su kıyısı)
 #define MOB_BRINGER       20  // ÖLÜM GETİREN (mezarlık boss'u — haftalık diriliş)
+#define MOB_TAX_RUNNER    21  // Kaçak Tahsildar (İlk İmza hedefi — gece kervan yolu)
+#define MOB_TAX_GUARD     22  // Tahsildar koruması (23/24 MAX_MOB_TYPES — DOLU SAYILIR)
 
 extern const MobType MOB_TYPES[];
 extern const int MOB_TYPE_COUNT;

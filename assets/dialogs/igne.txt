@@ -8,3 +8,15 @@ opt: (Uzaklaş.) -> end
 [zehir]
 text: Ben yapmam. Ben BÜYÜTÜRÜM. Zehir bir bitkidir, yolcu — sabır ister, sessizlik ister. Usta sana güvenince gel; o zaman bahçemi gösteririm.
 opt: (Ayrıl.) -> end
+
+[bekliyor]
+text: Şişe? Yok mu? O zaman ne konuşuyoruz. *Üç öz, iki ot, kazan.* Simya sabır işidir — suikast gibi.
+opt: (Ayrıl.) -> end
+
+[teslim]
+text: Ver bakayım... Rengi doğru. Kokusu yok. Ağırlığı... evet. *Dilsiz Şişe.* İlk denemede — Usta'ya söyleyeceğim, kulakları çınlasın. Git; Neriman'ın sana anlatacakları var.
+opt: (Şişeyi ver.) -> as3:teslim
+
+[usta]
+text: Ah, İMZA. İğnemi taşıyan el... Zehrin bitince bana değil KAZANA git: bir öz, üç şarj. Bahçem her zaman açık — artık aileden sayılırsın.
+opt: (Başınla selamla.) -> end

@@ -14,7 +14,8 @@ typedef enum {
     WEAPON_FX_PINK,        // pembe enerji (+8 tarzi)
     WEAPON_FX_FLAME,       // alev
     WEAPON_FX_ICE,         // buz (mavi-beyaz, agir dusen kristaller)
-    WEAPON_FX_POISON,      // zehir (yesil, yukselen kabarciklar)
+    WEAPON_FX_POISON,      // zehir (yesil, yukselen kabarciklar) — RÜN
+    WEAPON_FX_VENOM,       // İĞNE zehri (koyu mor-yeşil, AŞAĞI damlar) — şarj görseli
     WEAPON_FX_COUNT,       // sayac (onizleme dongusu icin)
 } WeaponFxType;
 

@@ -51,14 +51,21 @@ bool skill_add_xp(Skill *skills, SkillType t, float xp)
 // YANKICI gizliliği: SKILL_ECHO enum sonunda — görünür satır sayısı
 // bayrağa göre 1 eksik (main her kare basar; ritüel öncesi sınıf YOK sayılır)
 static bool echoVisible = false;
+static bool assassinVisible = false;
 void skill_set_echo_visible(bool v) { echoVisible = v; }
-static int skill_rows(void) { return SKILL_COUNT - (echoVisible ? 0 : 1); }
-// Panel satırı → SkillType: Yankı gizliyken ATLANIR (ECHO artık son eleman
-// değil — LIGHT sonra geldi; eski "son satırı kes" varsayımı kırılırdı)
+void skill_set_assassin_visible(bool v) { assassinVisible = v; }
+static int skill_rows(void)
+{
+    return SKILL_COUNT - (echoVisible ? 0 : 1) - (assassinVisible ? 0 : 1);
+}
+// Panel satırı → SkillType: gizli sınıf satırları ATLANIR (Yankı + Suikast;
+// enum sırasına göre kaydırma — "son satırı kes" varsayımı çoktan öldü)
 static SkillType row_skill(int row)
 {
-    if (!echoVisible && row >= (int)SKILL_ECHO) return (SkillType)(row + 1);
-    return (SkillType)row;
+    int sk = row;
+    if (!echoVisible && sk >= (int)SKILL_ECHO) sk++;
+    if (!assassinVisible && sk >= (int)SKILL_ASSASSIN) sk++;
+    return (SkillType)sk;
 }
 
 const char *skill_name(SkillType t)
@@ -86,6 +93,7 @@ const char *skill_name(SkillType t)
         case SKILL_CONJURATION:  return "Conjuration";
         case SKILL_ECHO:         return "Yankı";
         case SKILL_LIGHT:        return "Kutsal";
+        case SKILL_ASSASSIN:     return "Suikast";
         default:                 return "?";
     }
 }

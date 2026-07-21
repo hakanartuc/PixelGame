@@ -47,7 +47,13 @@ typedef enum {
     // YANKICI P2 (bedel yine CAN)
     ABILITY_LIFE_DRAIN,     // Can Emme: hedefte 4sn emiş DoT'u — çalınan sana akar
     ABILITY_ECHO_CALL,      // Yankı Çağırma: 12sn gölge kopya — hasarının %35'i
-    ABILITY_COUNT,          // spellsLearned artık Uint64 (Faz TB64) — 64 tavan
+    // SUİKASTÇİ (Sessiz El — bedel STAMINA; zincir bitince 5'i birden açılır)
+    ABILITY_BACKSTAB,       // Sırttan Bıçak: arkadan ×3.0 (önden atılamaz)
+    ABILITY_SHADOWSTEP,     // Gölge Adımı: hedefin arkasına ışınlan + garanti kritik
+    ABILITY_SMOKE_BOMB,     // Duman Perdesi: 3sn görünmez + tüm aggro sıfır
+    ABILITY_NEEDLE_STING,   // İğne Batır: güçlü zehir DoT — İğne + zehir şarjı ister
+    ABILITY_HAMSTRING,      // Kiriş Kesme: ×1.2 + kanatma + %40 yavaş 4sn
+    ABILITY_COUNT,          // spellsLearned Uint64 (Faz TB64) — 64 tavan (36/64)
 
 } AbilityId;
 

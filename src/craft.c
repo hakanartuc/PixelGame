@@ -203,6 +203,15 @@ const RecipeDef RECIPES[] = {
     { .station = STATION_ALCH, .name = "Gezgin Kavurması",
       .in1Item = ITEM_MEAT, .in1Count = 2, .in2Item = ITEM_HERB_BLUE, .in2Count = 1,
       .outItem = ITEM_KAVURMA, .outCount = 1, .work = 5.0f, .xp = 8.0f },
+    // SUİKASTÇİ P2 (Sessiz El): blueprintItem 9999 = hiçbir eşya öğretmez,
+    // yalnız görev/sınıf açar (craft_learn_recipe — zincir kancaları main'de)
+    { STATION_ALCH, "Dilsiz Şişe",
+      ITEM_ESSENCE_TOXIC, 3, ITEM_HERB_BLUE, 2, ITEM_QUIET_VIAL, 1,
+      12.0f, 40.0f, 0, 9999 },
+    { STATION_ALCH, "İğne Zehri",
+      ITEM_ESSENCE_TOXIC, 1, -1, 0, ITEM_NEEDLE_VENOM, 3,
+      8.0f, 25.0f, 0, 9999 },
+
 };
 const int RECIPE_COUNT = (int)(sizeof(RECIPES) / sizeof(RECIPES[0]));
 

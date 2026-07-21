@@ -170,6 +170,33 @@ const AbilityDef ABILITIES[ABILITY_COUNT] = {
         .damageScale = 0.35f,   // kopyanın vuruş oranı (senin vuruşunun %35'i)
         .cooldown = 30.0f, .hpFrac = 0.12f,
     },
+    // SUİKASTÇİ (Sessiz El): fiziksel gölge savaşçısı — pozisyon + zehir
+    [ABILITY_BACKSTAB] = {
+        .name = "Sırttan Bıçak", .abbrev = "SB",
+        .skill = SKILL_ASSASSIN, .unlockLevel = 1,
+        .damageScale = 3.0f, .cooldown = 6.0f, .stamina = 25.0f,
+    },
+    [ABILITY_SHADOWSTEP] = {
+        .name = "Gölge Adımı", .abbrev = "GA",
+        .skill = SKILL_ASSASSIN, .unlockLevel = 1,
+        .damageScale = 0.0f, .cooldown = 14.0f, .stamina = 20.0f,
+    },
+    [ABILITY_SMOKE_BOMB] = {
+        .name = "Duman Perdesi", .abbrev = "DP",
+        .skill = SKILL_ASSASSIN, .unlockLevel = 1,
+        .damageScale = 0.0f, .cooldown = 45.0f, .stamina = 30.0f,
+    },
+    [ABILITY_NEEDLE_STING] = {
+        .name = "İğne Batır", .abbrev = "İB",
+        .skill = SKILL_ASSASSIN, .unlockLevel = 1,
+        .damageScale = 8.0f,    // zehir DoT: saniyede (6sn — üzerine yazar)
+        .cooldown = 10.0f, .stamina = 15.0f,
+    },
+    [ABILITY_HAMSTRING] = {
+        .name = "Kiriş Kesme", .abbrev = "KK",
+        .skill = SKILL_ASSASSIN, .unlockLevel = 1,
+        .damageScale = 1.2f, .cooldown = 8.0f, .stamina = 20.0f,
+    },
     [ABILITY_HEAL_LIGHT] = {
         .name = "Şifa Nuru", .abbrev = "ŞN",
         .skill = SKILL_LIGHT, .unlockLevel = 1,

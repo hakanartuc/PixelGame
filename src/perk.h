@@ -156,6 +156,23 @@ typedef struct {
     float echoCallDurBonus;   // Yankı Çağırma süresine eklenen sn (taban 12)
     float echoHpMult;         // AÇ GÖLGE bedeli: max HP çarpanı (0 = 1.0 say)
 
+    // Suikast — Gölge Yolu ağacı (Suikastçi P2)
+    float backstabDmgMult;    // sırttan hasar çarpanı (pasif + beceri; 0 = 1.0)
+    float daggerSpeedMult;    // hançer saldırı aralığı çarpanı (0 = 1.0)
+    float backstabScaleBonus; // Sırttan Bıçak ×3.0'a eklenir (Derin Kesik)
+    float assassinStaminaMult;// suikast becerileri stamina çarpanı (0 = 1.0)
+    float backstabExecuteBonus;// %25 altı hedefe sırttan ek çarpan payı
+    float venomDpsMult;       // doz DPS çarpanı (0 = 1.0)
+    float venomDurBonus;      // doz süresine eklenen sn (taban 6)
+    float stingCdCut;         // İğne Batır CD'sinden düşülen sn
+    float silentThresholdBonus;// SESSİZ SON eşiğine eklenir (taban 0.20)
+    float smokeCdCut;         // Duman Perdesi CD'sinden düşülen sn
+    float smokeDurBonus;      // görünmezlik süresine eklenen sn (taban 3)
+    float smokeSpeedBonus;    // dumanda hız bonusu (+0.25 = %25)
+    float shadowstepRangeBonus;// Gölge Adımı menziline eklenen px (taban 300)
+    bool  smokeFirstCrit;     // HİÇ KİMSE: dumanda ilk vuruş kritik + sırttan sayılır
+    float smokeCdPenalty;     // HİÇ KİMSE bedeli: Duman CD'sine eklenen sn
+
     // Kader Ağacı (karakter-geneli)
     float maxStaminaBonus, maxManaBonus;
     float stamRegenMult, manaRegenMult;

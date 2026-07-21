@@ -165,6 +165,14 @@ DoT/yansıtma hariç); mob_die'da büyük kan + hit-stop (melee 50ms / ok 30ms /
 ölüm 90ms / PERFECT parry 120ms — dünya dt ×0.08, menü gerçek zaman); blok
 kıvılcımı, cast halkası, yöne göre slash yayı. Assetler assets/fx/ +
 CREDITS.md. Sırada: ④ müzik seti (xDeviruchi).
+**SUİKASTÇİ P2 TAMAM — SINIF AÇIK**: zincir 3-5 (Dilsiz Şişe simya tarifi →
+sahte ölüm kararı [kişiliğe işler] → İlk İmza: Kaçak Tahsildar gece kervan
+yolu, MOB 21-22 Soldier — 23/24 tavan DOLU!); SF≥13: SUIKAST skill'i +
+5 beceri (Sırttan Bıçak/Gölge Adımı/Duman Perdesi/İğne Batır/Kiriş Kesme)
++ İmzasız Bıçak (arkadan ×1.5 pasif) + Zehirli İğne (sol el, şarj =
+İğne Zehri item'ı, kazanda 1 öz→3 şarj). ZEHİR İMZASI: doz sistemi —
+3 dozda %20 altı SESSİZ SON (boss hariç); WEAPON_FX_VENOM görseli
+(ründen ayrık: mor-yeşil aşağı damlar). npcState 16/16 + MOB 23/24 DOLU.
 **SUİKASTÇİ P1 TAMAM (Sessiz El)**: MAP_LOCA "Kuyunun Dibi" (36×26; kuyu↔loca
 portal — iniş [R], aklama [E] ayrımı); keşif: launderedTotal≥500 + GECE;
 kadro Neriman/Çelme/İğne (NpcDef.map harita farkındalığı — npcState 16/16
