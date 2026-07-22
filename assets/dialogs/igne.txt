@@ -18,5 +18,6 @@ text: Ver bakayım... Rengi doğru. Kokusu yok. Ağırlığı... evet. *Dilsiz �
 opt: (Şişeyi ver.) -> as3:teslim
 
 [usta]
-text: Ah, İMZA. İğnemi taşıyan el... Zehrin bitince bana değil KAZANA git: bir öz, üç şarj. Bahçem her zaman açık — artık aileden sayılırsın.
+text: Ah, İMZA. İğnemi taşıyan el... Zehrin bitince bana değil KAZANA git: bir öz, üç şarj. Bahçem her zaman açık — artık aileden sayılırsın. Bak, bir de sana göstereceklerim var; rütben yükseldikçe rafın arkası da açılır.
+opt: Ne satıyorsun? -> shop
 opt: (Başınla selamla.) -> end

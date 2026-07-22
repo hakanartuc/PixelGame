@@ -65,6 +65,7 @@ add_executable(game
     src/lockpick.c
     src/trap.c
     src/scene.c
+    src/assassin.c
     src/r2d.c
     src/stb_vorbis.c
 ) # 'game' adında çalıştırılabilir, kaynağı src/main.c

@@ -306,6 +306,9 @@ bool save_game(const char *path, const Player *p,
     ok = ok && w32(f, (Sint32)(Uint32)(p->spellsLearned >> 32));
     // Aklama toplamı (Suikastçi P1 — loca keşif eşiği)
     ok = ok && w32(f, p->launderedTotal);
+    // Sessiz El kontrat/rütbe (Suikastçi P3)
+    ok = ok && w32(f, p->assassinPoints)
+            && w32(f, p->contractActive) && w32(f, p->contractProgress);
     // REVİR durumu (Faz REVIR): NPC başına yatış/gün/yatış-sayısı/kırgınlık
     ok = ok && w32(f, NPC_COUNT);
     for (int i = 0; ok && i < NPC_COUNT; i++) {
@@ -597,8 +600,13 @@ bool load_game(const char *path, Player *p,
     if (ok && !r32(f, &b2Day)) { b2Day = -999; b2First = 0; }
     else if (ok && !r32(f, &b2First)) b2First = 0;
     if (ok && !r32(f, &slHi)) slHi = 0;   // eski save: üst bitler yok
-    Sint32 laundered = 0;
+    Sint32 laundered = 0, asPts = 0, asAct = -1, asProg = 0;
     if (ok && !r32(f, &laundered)) laundered = 0;
+    else {
+        if (!r32(f, &asPts)) asPts = 0;
+        else if (!r32(f, &asAct)) asAct = -1;
+        else if (!r32(f, &asProg)) asProg = 0;
+    }
     // REVİR (toleranslı): eski save'de yoksa herkes ayakta
     Sint32 nInf = 0;
     Sint32 infA[32] = {0}, infD[32] = {0}, infB[32] = {0}, infG[32] = {0};
@@ -658,6 +666,9 @@ bool load_game(const char *path, Player *p,
     for (int i = 0; i < nInf && i < NPC_COUNT; i++)   // REVİR durumu (kuyruk)
         npc_infirm_state_set(i, infA[i], infD[i], infB[i], infG[i]);
     p->launderedTotal = laundered;
+    p->assassinPoints = asPts;
+    p->contractActive = (Sint8)asAct;
+    p->contractProgress = asProg;
     // TB64 FIX: üst 32 bit uygulanıyordu sanılıyordu ama unutulmuştu —
     // okunan slHi burada birleşir (eski save'de 0)
     p->spellsLearned |= ((Uint64)(Uint32)slHi) << 32;

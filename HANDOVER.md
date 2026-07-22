@@ -45,7 +45,7 @@ WASD hareket · Space auto-attack toggle · TAB hedef (Z KALDIRILDI) · 1-8 hotb
 [Alt+1-8] + sol dikey 2×4 tuşsuz; hepsi hep görünür) · SHIFT aktif blok (kalkanla) ·
 P yankesicilik (eğilmişken) · R dinlen (ateş başı) / kuyuda İPTEN İN (loca) · E konuş/istasyon/
 topla/kuyu · I envanter (TAB Eşya↔Malzeme) · K skill/ağaç (alınmış aktif düğümü
-hotbara SÜRÜKLE) · J Yolculuk günlüğü (Tab sekme, ←→ yaprak) · F8 hava döngüsü (dev)
+hotbara SÜRÜKLE) · J Yolculuk günlüğü (Tab: Görevler/Günlük/Ünvanlar/Kontrat, ←→ yaprak) · F8 hava döngüsü (dev)
 Hotbar: düz TIK = becerine bas (click-to-cast); SHIFT+sürükle = taşı/takas;
 kaldırma YALNIZ sürüklerken beliren ✕ hedefine (dışarı=iptal — yanlış atma yok);
 silaha uymayan beceri SOLUK çizilir (kullanım engeli hotbarPressed akışında)
@@ -165,6 +165,12 @@ DoT/yansıtma hariç); mob_die'da büyük kan + hit-stop (melee 50ms / ok 30ms /
 ölüm 90ms / PERFECT parry 120ms — dünya dt ×0.08, menü gerçek zaman); blok
 kıvılcımı, cast halkası, yöne göre slash yayı. Assetler assets/fx/ +
 CREDITS.md. Sırada: ④ müzik seti (xDeviruchi).
+**SUİKASTÇİ P3 TAMAM — LONCA KONTRAT/RÜTBE**: assassin.c/h; loca kontrat
+tahtası (T28,16, [E], SF≥13) — 5 K1 kontratı (mevcut moblar), üstlen→
+tamamla→dön→ödül; rütbe Çırak→Usta El (eşik 0/3/7/13/20); İğne loca dükkanı
+rütbe kapılı (İkiz Bıçak sol-el +%15 hız = çift hançer build'i); aklama
+oranı rütbeyle iyileşir. Player assassinPoints/contractActive/Progress
+(save kuyruk). Kızıl Kanca+haber ağı P4'e ertelendi.
 **SUİKASTÇİ P2 TAMAM — SINIF AÇIK**: zincir 3-5 (Dilsiz Şişe simya tarifi →
 sahte ölüm kararı [kişiliğe işler] → İlk İmza: Kaçak Tahsildar gece kervan
 yolu, MOB 21-22 Soldier — 23/24 tavan DOLU!); SF≥13: SUIKAST skill'i +

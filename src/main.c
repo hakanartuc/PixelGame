@@ -51,6 +51,7 @@
 #include "craft.h"
 #include "contract.h"
 #include "skilltree.h"
+#include "assassin.h"
 
 #define BASE_MAX_HP 100.0f   // oyuncu taban canı (perk bonusları üstüne biner)
 
@@ -422,6 +423,28 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
                                  player->rect.x + player->rect.w / 2.0f,
                                  player->rect.y - 50.0f,
                                  "İskelet Lordu devrildi!", gold);
+        }
+    }
+
+    // SESSİZ EL KONTRATI (P3): etkin kontratın hedefi düştüyse ilerlet
+    if (player->contractActive >= 0 &&
+        player->contractActive < ASSASSIN_CONTRACT_COUNT)
+    {
+        const AssassinContract *ac = &ASSASSIN_CONTRACTS[player->contractActive];
+        if (target->type == &MOB_TYPES[ac->targetMob] &&
+            player->contractProgress < ac->count)
+        {
+            player->contractProgress++;
+            SDL_Color vio11 = { 200, 160, 255, 255 };
+            char cbuf[FLOAT_TEXT_LEN];
+            if (player->contractProgress >= ac->count)
+                snprintf(cbuf, sizeof(cbuf), "Kontrat tamam — tahtaya dön");
+            else
+                snprintf(cbuf, sizeof(cbuf), "Kontrat: %d/%d",
+                         player->contractProgress, ac->count);
+            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                 player->rect.x + player->rect.w / 2.0f,
+                                 player->rect.y - 34.0f, cbuf, vio11);
         }
     }
 
@@ -1069,6 +1092,7 @@ int main(int argc, char *argv[])
         .strength = 10,    // sabit taban — dağıtım yok, ileride ekipman/perk ekler
         .dexterity = 10,
         .gold = 50,        // başlangıç parası (vendor için)
+        .contractActive = -1,   // Sessiz El: 0 geçerli kontrat — boş = -1
         // weaponFx her frame kusanili silahtan senkronlanir (bkz. player_update oncesi)
     };
     skills_init(player.skills);
@@ -1235,6 +1259,10 @@ int main(int argc, char *argv[])
     int sifaciIdx = -1;  // Revir (Faz REVIR)
     int shopVendorIdx = -1;   // açık dükkanın sahibi (kırgınlık zammı okur)
     int nerimanIdx = -1, kemalIdx = -1;   // Suikastçi P1 (loca ustası + takip hedefi)
+    bool locaBoardOpen = false;   // Sessiz El kontrat tahtası (P3)
+    #define LOCABOARD_X (28.0f * TILE_SIZE)
+    #define LOCABOARD_Y (16.0f * TILE_SIZE)
+    #define LOCABOARD_RANGE 90.0f
     float tailNearTimer = 0.0f;   // takipte <100px yakınlık süresi (uyarı sayacı)
     int tailWarnings = 0;         // 3 uyarı = rapor sıfırlanır
     // ESO görev sunumu: kabul/aşama değişiminde ekran üstünde büyük bant
@@ -1328,6 +1356,7 @@ int main(int argc, char *argv[])
     int dialogNode = -1;   // aktif diyalog düğümü
     bool shopOpen = false;
     bool shopCaravan = false;   // açık dükkan kervan mı? (özel stok + %15 pahalı)
+    bool shopLoca = false;      // İğne loca dükkanı (rütbe kapılı stok; lawless fiyat)
     ShopEntry caravanStock[12]; // aktif kervan stoğu: sabit liste + 2 rastgele tomar
     int caravanStockN = 0;      // (olayın startDay'i tohumlar — save gerekmez)
     int nearestNpc = -1;   // E prompt'u için (her kare güncellenir)
@@ -1685,6 +1714,10 @@ int main(int argc, char *argv[])
                     else if (boardOpen)
                     {
                         boardOpen = false; // 0a) ilan panosu
+                    }
+                    else if (locaBoardOpen)
+                    {
+                        locaBoardOpen = false; // 0a2) Sessiz El kontrat tahtası
                     }
                     else if (craftOpen)
                     {
@@ -2109,8 +2142,27 @@ int main(int argc, char *argv[])
                             {
                                 shopOpen = true;
                                 shopCaravan = (dialogNpc == kervanIdx);
+                                shopLoca = (nerimanIdx >= 0 && dialogNpc >= 0 &&
+                                    SDL_strcmp(NPCS[dialogNpc].name, "Zehirci İğne") == 0);
                                 shopVendorIdx = dialogNpc;   // kırgınlık zammı için
-                                if (shopCaravan)
+                                if (shopLoca)
+                                {
+                                    // LOCA DÜKKANI (P3): rütbeye göre açılan mal
+                                    int rank = assassin_rank(player.assassinPoints);
+                                    caravanStockN = 0;
+                                    caravanStock[caravanStockN++] =
+                                        (ShopEntry){ &ITEM_TYPES[ITEM_NEEDLE_VENOM] };
+                                    if (rank >= 1)   // El
+                                        caravanStock[caravanStockN++] =
+                                            (ShopEntry){ &ITEM_TYPES[ITEM_QUIET_VIAL] };
+                                    if (rank >= 2)   // Bıçak — Çift Hançer seçeneği
+                                        caravanStock[caravanStockN++] =
+                                            (ShopEntry){ &ITEM_TYPES[ITEM_DAGGER_OFFHAND] };
+                                    if (rank >= 4)   // Usta El — unique nişan
+                                        caravanStock[caravanStockN++] =
+                                            (ShopEntry){ &ITEM_TYPES[ITEM_DEATH_SIGIL] };
+                                }
+                                else if (shopCaravan)
                                 {
                                     // Kervan stoğu: sabitler + havuzdan 2 FARKLI tomar.
                                     // startDay tohumlu → aynı ziyarette hep aynı ikili
@@ -2336,8 +2388,9 @@ int main(int argc, char *argv[])
                             {
                                 // AKLAMA (kervan): kirli altın ×0.75 (+ağaç) temize;
                                 // çalıntı eşya satılır — obje TAM, diğerleri ×0.6
-                                float rate = 0.75f + perkFx.pickFenceBonus;
-                                if (rate > 0.85f) rate = 0.85f;
+                                float rate = 0.75f + perkFx.pickFenceBonus
+                                           + (float)assassin_rank(player.assassinPoints) * 0.02f;
+                                if (rate > 0.90f) rate = 0.90f;   // rütbe: loca kanalını temizler
                                 int clean = (int)(player.dirtyGold * rate);
                                 player.launderedTotal += clean;   // loca eşiği sayar
                                 int sold = 0;
@@ -2724,8 +2777,9 @@ int main(int argc, char *argv[])
                     }
                     else
                     {
-                    float rate = 0.50f + perkFx.pickFenceBonus;
-                    if (rate > 0.60f) rate = 0.60f;
+                    float rate = 0.50f + perkFx.pickFenceBonus
+                              + (float)assassin_rank(player.assassinPoints) * 0.03f;
+                    if (rate > 0.72f) rate = 0.72f;   // rütbe: kuyu kanalı iyileşir
                     int total = player.dirtyGold;
                     for (int b2 = 0; b2 < 2; b2++)
                     {
@@ -3152,6 +3206,19 @@ int main(int argc, char *argv[])
                             craftProgress = 0.0f;
                         }
                     }
+                    // SESSİZ EL kontrat tahtası (P3): locada, sınıf açıldıysa
+                    else if (map_current() == MAP_LOCA &&
+                             player.storyFlags[SF_ASSASSIN] >= 13 && !locaBoardOpen &&
+                             SDL_fabsf(LOCABOARD_X - (player.rect.x + player.rect.w / 2.0f))
+                                 < LOCABOARD_RANGE &&
+                             SDL_fabsf(LOCABOARD_Y - (player.rect.y + player.rect.h / 2.0f))
+                                 < LOCABOARD_RANGE)
+                    {
+                        locaBoardOpen = true;
+                        player.autoAttack = false;
+                        gatherRes = -1;
+                        audio_play(SFX_UI);
+                    }
                     // İlan panosu (Faz 6): bounty/dip itibar panoya da kapı
                     else if (!boardOpen &&
                              SDL_sqrtf((BOARD_X - (player.rect.x + player.rect.w / 2.0f)) *
@@ -3482,9 +3549,9 @@ int main(int argc, char *argv[])
                     // Günlük gezinme: Tab sekme, oklar yaprak (render klampler)
                     if (event.key.key == SDLK_TAB)
                     {
-                        journalTab = (journalTab + 1) % 3;   // Görevler→Günlük→Ünvanlar
+                        journalTab = (journalTab + 1) % 4;   // Görevler→Günlük→Ünvanlar→Kontrat
                         // Günlük sekmesi son yaprağa açılır (en taze yaşanmışlık)
-                        journalPage = (journalTab == 1) ? 9999 : 0;
+                        journalPage = (journalTab == 1) ? 9999 : 0;   // Günlük son sayfa
                     }
                     else if (event.key.key == SDLK_LEFT && journalPage > 0)
                         journalPage--;
@@ -3552,6 +3619,9 @@ int main(int argc, char *argv[])
                     bag_add(&ITEM_TYPES[ITEM_SPEAR], 1, 0);   // Two-Handed testi
                     // Suikastçi zinciri testi: aklama eşiği dolu sayılır
                     if (player.launderedTotal < 500) player.launderedTotal = 500;
+                    // Kontrat sistemi testi: sınıf açıksa rütbe puanı ver
+                    if (player.storyFlags[SF_ASSASSIN] >= 13)
+                        player.assassinPoints += 5;
                     bag_add(&ITEM_TYPES[ITEM_SHIELD_IRON], 1, 0);   // Block testi
                     // YANKICI test yolu: sayaç basılır ama sınıf keşifle açılır
                     if (player.echoesConsumed < 3 &&
@@ -4096,6 +4166,7 @@ int main(int argc, char *argv[])
                             menuScreen = MENU_ROOT;
                             dialogNpc = -1; shopOpen = false; inventoryOpen = false;
                             skillsOpen = false; questLogOpen = false; boardOpen = false;
+                            locaBoardOpen = false;
                             craftOpen = false; craftRecipe = -1; catchOpen = false;
                             treeOpenSkill = -1; treeSelNode = -1;
                             player.autoAttack = false;
@@ -4389,7 +4460,7 @@ int main(int argc, char *argv[])
                     {
                         int entry = shop_entry_at((float)event.button.x, (float)event.button.y,
                                                   40.0f, 40.0f,
-                                                  shopCaravan ? caravanStockN : 0);
+                                                  (shopCaravan||shopLoca) ? caravanStockN : 0);
                         if (entry >= 0)
                         {
                             const ItemType *it = shopCaravan ? caravanStock[entry].type
@@ -4401,8 +4472,8 @@ int main(int argc, char *argv[])
                                                  rep_buy_mult(player.reputation[shopRegion]) *
                                                  perkFx.shopBuyMult *
                                                  (shopCaravan ? 1.15f : 1.0f) *
-                                                 (npc_grudge(shopVendorIdx)
-                                                  ? 1.25f : 1.0f));   // REVİR kırgınlığı
+                                                 ((!shopLoca && npc_grudge(shopVendorIdx))
+                                                  ? 1.25f : 1.0f));   // REVİR kırgınlığı (loca hariç)
                             if (player.gold >= buyPrice &&
                                 bag_add(it, 1, 0))
                             {
@@ -4421,6 +4492,65 @@ int main(int argc, char *argv[])
                     }
 
                     // 0a2) İlan panosu açıksa: satır = kabul/teslim, dışarısı = kapat
+                    // SESSİZ EL kontrat tahtası (P3): üstlen / ödül al / vazgeç
+                    if (!handled && locaBoardOpen)
+                    {
+                        bool cReady = player.contractActive >= 0 &&
+                            player.contractProgress >=
+                                ASSASSIN_CONTRACTS[player.contractActive].count;
+                        int row = assassin_board_row_at(player.assassinPoints,
+                                     player.contractActive, cReady,
+                                     (float)event.button.x, (float)event.button.y,
+                                     40.0f, 40.0f);
+                        SDL_Color goldc2 = { 255, 210, 60, 255 };
+                        SDL_Color red2 = { 255, 120, 100, 255 };
+                        if (row >= 0)
+                        {
+                            if (player.contractActive == row && cReady)
+                            {
+                                // Ödülü al: altın + rütbe puanı + rütbe atlama
+                                const AssassinContract *c =
+                                    &ASSASSIN_CONTRACTS[row];
+                                int before = assassin_rank(player.assassinPoints);
+                                player.gold += c->rewardGold;
+                                player.assassinPoints += c->rankPoints;
+                                player.contractActive = -1;
+                                player.contractProgress = 0;
+                                audio_play(SFX_LOOT);
+                                questBannerTitle = "KONTRAT TAMAM";
+                                questBannerSub = c->name;
+                                questBannerTimer = 4.0f;
+                                int after = assassin_rank(player.assassinPoints);
+                                if (after > before)
+                                {
+                                    questBannerTitle = "RÜTBE YÜKSELDİ";
+                                    questBannerSub = assassin_rank_name(after);
+                                    questBannerTimer = 5.0f;
+                                    audio_play(SFX_PERK);
+                                }
+                            }
+                            else if (player.contractActive == row)
+                                locaBoardOpen = false;   // etkin kontrata tık = vazgeçme yok, kapat
+                            else if (player.contractActive >= 0)
+                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                    player.rect.x + player.rect.w / 2.0f,
+                                    player.rect.y - 10.0f,
+                                    "Önce etkin kontratı bitir", red2);
+                            else
+                            {
+                                player.contractActive = (Sint8)row;
+                                player.contractProgress = 0;
+                                audio_play(SFX_UI);
+                                questBannerTitle = "KONTRAT ÜSTLENİLDİ";
+                                questBannerSub = ASSASSIN_CONTRACTS[row].name;
+                                questBannerTimer = 4.0f;
+                                (void)goldc2;
+                            }
+                            handled = true;
+                        }
+                        else { locaBoardOpen = false; handled = true; }
+                    }
+
                     if (!handled && boardOpen)
                     {
                         int slot = contract_panel_slot_at((float)event.button.x,
@@ -5606,7 +5736,11 @@ int main(int argc, char *argv[])
             }
 
             // İLK İMZA (Suikastçi P2): gece kervan yolunda hedef belirir
-            if (player.storyFlags[SF_ASSASSIN] == 11 &&
+            bool taxContract = (player.contractActive >= 0 &&
+                ASSASSIN_CONTRACTS[player.contractActive].targetMob == MOB_TAX_RUNNER &&
+                player.contractProgress <
+                    ASSASSIN_CONTRACTS[player.contractActive].count);
+            if ((player.storyFlags[SF_ASSASSIN] == 11 || taxContract) &&
                 map_current() == MAP_WORLD && gametime_is_night())
             {
                 bool taxAlive = false;
@@ -6415,6 +6549,9 @@ int main(int argc, char *argv[])
             }
 
             // İlan panosu: yürüyünce kapanır (craft paneliyle aynı davranış)
+            if (locaBoardOpen && (keys[SDL_SCANCODE_W] || keys[SDL_SCANCODE_A] ||
+                                  keys[SDL_SCANCODE_S] || keys[SDL_SCANCODE_D]))
+                locaBoardOpen = false;
             if (boardOpen && (keys[SDL_SCANCODE_W] || keys[SDL_SCANCODE_A] ||
                               keys[SDL_SCANCODE_S] || keys[SDL_SCANCODE_D]))
                 boardOpen = false;
@@ -7466,6 +7603,12 @@ int main(int argc, char *argv[])
                             attackPressed = true;
                             player.pendingAbility = -1;   // normal vuruş
                             player.attackTimer = combat_attack_interval(&equipment.slots[EQUIP_WEAPON], &perkFx);
+                            // İkiz Bıçak (sol el): ana el hançerse +%15 hız
+                            if (equipment.slots[EQUIP_SHIELD].type ==
+                                    &ITEM_TYPES[ITEM_DAGGER_OFFHAND] &&
+                                equipment.slots[EQUIP_WEAPON].type ==
+                                    &ITEM_TYPES[ITEM_DAGGER_UNSIGNED])
+                                player.attackTimer *= 0.85f;
                         }
                     }
                 }
@@ -9961,6 +10104,18 @@ int main(int argc, char *argv[])
                 }
             }
 
+            // SESSİZ EL kontrat tahtası [E] ipucu (locada, sınıf açık)
+            if (gameFont != NULL && map_current() == MAP_LOCA &&
+                player.storyFlags[SF_ASSASSIN] >= 13 && !locaBoardOpen &&
+                SDL_fabsf(LOCABOARD_X - (player.rect.x + player.rect.w / 2.0f))
+                    < LOCABOARD_RANGE &&
+                SDL_fabsf(LOCABOARD_Y - (player.rect.y + player.rect.h / 2.0f))
+                    < LOCABOARD_RANGE)
+                draw_text(renderer, gameFont, "[E] Kontrat Tahtası",
+                          (LOCABOARD_X - camera.x) * camera.zoom - 70.0f,
+                          (LOCABOARD_Y - 70.0f - camera.y) * camera.zoom,
+                          (SDL_Color){ 200, 160, 255, 255 });
+
             // SUİKASTÇİ P1 ipuçları: sınav kutusu (gece) + takip rapor bandı
             if (gameFont != NULL && map_current() == MAP_WORLD)
             {
@@ -10957,6 +11112,20 @@ int main(int argc, char *argv[])
                     qtTitle = "İlk İmza";
                     snprintf(qtObj, sizeof(qtObj), "İmza atıldı — Neriman'a dön");
                 }
+                else if (player.contractActive >= 0) {
+                    const AssassinContract *ac2 =
+                        &ASSASSIN_CONTRACTS[player.contractActive];
+                    qtTitle = "Kontrat: ";  // başlık + isim tek satır
+                    static char ctBuf[64];
+                    snprintf(ctBuf, sizeof(ctBuf), "Kontrat — %s", ac2->name);
+                    qtTitle = ctBuf;
+                    if (player.contractProgress >= ac2->count)
+                        snprintf(qtObj, sizeof(qtObj),
+                                 "Tamam — kontrat tahtasına dön (loca)");
+                    else
+                        snprintf(qtObj, sizeof(qtObj), "%s: %d / %d",
+                                 ac2->name, player.contractProgress, ac2->count);
+                }
                 if (qtTitle != NULL) {
                     SDL_Color qgold = { 255, 210, 60, 255 };
                     SDL_Color qwhite = { 225, 225, 235, 255 };
@@ -11250,10 +11419,10 @@ int main(int argc, char *argv[])
             shop_render(renderer, gameFont, itemIconTex, &itemTex, player.gold,
                         rep_buy_mult(player.reputation[region_of(player.rect.x, player.rect.y)])
                             * (shopCaravan ? 1.15f : 1.0f)
-                            * (npc_grudge(shopVendorIdx) ? 1.25f : 1.0f),
+                            * ((!shopLoca && npc_grudge(shopVendorIdx)) ? 1.25f : 1.0f),
                         40.0f, 40.0f,
-                        shopCaravan ? caravanStock : NULL,
-                        shopCaravan ? caravanStockN : 0);
+                        (shopCaravan||shopLoca) ? caravanStock : NULL,
+                        (shopCaravan||shopLoca) ? caravanStockN : 0);
 
         // Craft paneli + aktif sürecin ilerleme barı
         if (craftOpen && craftStation >= 0)
@@ -11287,6 +11456,15 @@ int main(int argc, char *argv[])
         }
 
         // İlan panosu paneli (Faz 6): günün kontratları + kabul/teslim
+        if (locaBoardOpen)
+        {
+            bool cReady2 = player.contractActive >= 0 &&
+                player.contractProgress >=
+                    ASSASSIN_CONTRACTS[player.contractActive].count;
+            assassin_board_render(player.assassinPoints, player.contractActive,
+                                  player.contractProgress, cReady2,
+                                  renderer, gameFont, 40.0f, 40.0f);
+        }
         if (boardOpen)
             contract_panel_render(renderer, gameFont, &craftBag, &inventory,
                                   player.reputation[region_of(BOARD_X, BOARD_Y)],
@@ -11434,12 +11612,12 @@ int main(int argc, char *argv[])
             if (tip == NULL && shopOpen)
             {
                 int se = shop_entry_at(tmx, tmy, 40.0f, 40.0f,
-                                       shopCaravan ? caravanStockN : 0);
+                                       (shopCaravan||shopLoca) ? caravanStockN : 0);
                 if (se >= 0 &&
-                    se < (shopCaravan ? caravanStockN : SHOP_STOCK_COUNT))
+                    se < ((shopCaravan||shopLoca) ? caravanStockN : SHOP_STOCK_COUNT))
                 {
                     static ItemStack shopTip;   // stok taze instance gibi gösterilir
-                    shopTip = item_make((shopCaravan ? caravanStock : SHOP_STOCK)[se].type,
+                    shopTip = item_make(((shopCaravan||shopLoca) ? caravanStock : SHOP_STOCK)[se].type,
                                         1, 0);
                     tip = &shopTip;
                     if (shopTip.type->equipable && shopTip.type->equipSlot >= 0 &&

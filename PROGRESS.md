@@ -941,6 +941,30 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - TEST NOTU: P1 ritüeli HÂLÂ TEST EDİLMEDİ — P1+P2 tek turda test edilebilir
   (F10 → taş halkası T108,7 → gece [E] → ritüel → 4 büyü + K'da Yankı ağacı).
 
+### Faz SUIKAST-P3 — LONCA KONTRAT SİSTEMİ + RÜTBE + DÜKKAN (2026-07-20)
+- **assassin.c/h** (yeni modül): ASSASSIN_CONTRACTS tablosu (5 K1 kontratı —
+  mevcut dünya mobları, yeni tür YOK; Kaçak Tahsildar kontratı gece kervan
+  yolunda spawn); rütbe (Çırak/El/Bıçak/Gölge/Usta El, eşik 0/3/7/13/20);
+  kontrat tahtası panel render + row_at.
+- **Kontrat tahtası**: locada T(28,16), sınıf açıksa (SF≥13) [E] açar; birini
+  üstlen → dünyada tamamla → tahtaya dön → "Ödülü al" (altın + rütbe puanı;
+  rütbe atlarsa RÜTBE YÜKSELDİ bandı). Tek etkin kontrat kuralı.
+- **mob_die kancası**: etkin kontrat hedefi düştükçe contractProgress++.
+- **Loca dükkanı (İğne)**: rütbe kapılı stok — Çırak İğne Zehri, El Dilsiz
+  Şişe, Bıçak İKİZ BIÇAK (sol el +%15 hız — iğnenin alternatifi, çift hançer
+  build'i), Usta El Nişan. shopLoca bayrağı (lawless fiyat, kırgınlık yok).
+- **Dünya etkisi**: aklama oranı rütbeyle iyileşir (kervan 0.75→0.90 cap,
+  kuyu 0.50→0.72 cap) — rütbe loca kanallarını temizler.
+- Player: assassinPoints/contractActive/contractProgress (save toleranslı
+  kuyruk); ESC/yürü kapatma + görev takipçisi HUD satırı.
+- Kızıl Kanca rakip ağı + haber ağı P4'e ertelendi (kapsam: çekirdek).
+- TAVAN NOTU: MOB_TYPES 23/24, npcState 16/16 hâlâ DOLU — yeni tür/NPC
+  eklemeden önce büyüt.
+- OKUNABİLİRLİK (Hakan geri bildirimi): J günlüğüne 4. sekme KONTRATLAR
+  (aktif kontrat + rütbe + NET hedef "nerede/nasıl"; sınıf yoksa ipucu);
+  kontrat tahtası satırlarına konum ipucu satırı (AssassinContract.where);
+  TAB döngüsü %3→%4; görev takipçisi zaten aktif kontratı gösterir.
+
 ### Faz SUIKAST-P2b — GÖLGE YOLU AĞACI + SİLAH GÖRSELİ (2026-07-20)
 - T_ASSASSINTREE "Gölge Yolu" (16 düğüm — Hakan onaylı): Bıçak (sırttan
   +%3/+%5, hançer hızı, ×3.0→×3.6, stamina -%10, İnfazcı %25 altı +%25) ·

@@ -289,6 +289,7 @@ typedef enum {
     ITEM_POISON_NEEDLE,   // Zehirli İğne: sol el — İğne Batır'ı açar (şarjla)
     ITEM_QUIET_VIAL,      // Dilsiz Şişe: görev 3 eşyası (simya kazanında)
     ITEM_NEEDLE_VENOM,    // İğne Zehri: şarj (max 3) — İğne Batır tüketir
+    ITEM_DAGGER_OFFHAND,  // İkiz Bıçak: sol el hançeri (+%15 saldırı hızı) — dükkan
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

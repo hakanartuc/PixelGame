@@ -480,14 +480,20 @@ const ItemType ITEM_TYPES[] = {
       .equipable = true, .equipSlot = EQUIP_SHIELD, .weaponType = WEAPON_NEEDLE,
       .iconSpritePath = "assets/icons/items/assassin.png",
       .iconSrc = { 16, 0, 16, 16 } },
-    { .name = "Dilsiz Şişe", .iconIndex = 0, .maxStack = 1, .value = 0,
+    { .name = "Dilsiz Şişe", .iconIndex = 0, .maxStack = 1, .value = 120,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/assassin.png",
       .iconSrc = { 32, 0, 16, 16 } },
-    { .name = "İğne Zehri", .iconIndex = 0, .maxStack = 3, .value = 0,
+    { .name = "İğne Zehri", .iconIndex = 0, .maxStack = 3, .value = 60,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/assassin.png",
       .iconSrc = { 48, 0, 16, 16 } },
+    // İkiz Bıçak: sol el (kalkan slotu — iğnenin alternatifi). Zehir yerine
+    // HAM HIZ: +%15 saldırı hızı (combat_attack_interval, yalnız ana el hançerle).
+    { .name = "İkiz Bıçak", .iconIndex = 0, .maxStack = 1, .value = 400,
+      .equipable = true, .equipSlot = EQUIP_SHIELD, .weaponType = WEAPON_NEEDLE,
+      .iconSpritePath = "assets/icons/items/assassin.png",
+      .iconSrc = { 0, 0, 16, 16 } },
 };
 const int ITEM_TYPE_COUNT = (int)(sizeof(ITEM_TYPES) / sizeof(ITEM_TYPES[0]));
 

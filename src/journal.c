@@ -6,6 +6,7 @@
 #include "worldmap.h"
 #include "title.h"
 #include "player.h"
+#include "assassin.h"
 
 // --- Giriş havuzu -----------------------------------------------------------
 static JournalEntry entries[JOURNAL_MAX];
@@ -280,17 +281,18 @@ int journal_render(R2D *renderer, TTF_Font *font, R2DTexture *bookTex,
     SDL_Color ink    = { 62, 44, 30, 255 };    // parşömen üstü koyu mürekkep
     SDL_Color faded  = { 120, 100, 84, 255 };
     SDL_Color tabCol = { 255, 240, 210, 255 };
-    for (int t = 0; t < 3; t++) {
-        float rxp = bx + 30.0f + t * 165.0f;
+    for (int t = 0; t < 4; t++) {
+        float rxp = bx + 24.0f + t * 124.0f;
         float drop = (t == tab) ? 26.0f : 8.0f;
         if (bookTex != NULL) {
-            SDL_FRect rsrc = { 752.0f + t * 48.0f, 31, 22, 18 };
-            SDL_FRect rdst = { rxp, by - 34.0f + drop, 66, 54 };
+            SDL_FRect rsrc = { 752.0f + (t % 3) * 48.0f, 31, 22, 18 };
+            SDL_FRect rdst = { rxp, by - 34.0f + drop, 60, 54 };
             r2d_draw_texture(renderer, bookTex, &rsrc, &rdst);
         }
         draw_text(renderer, font,
-                  (t == 0) ? "Görevler" : (t == 1) ? "Günlük" : "Ünvanlar",
-                  rxp + 70.0f, by - 20.0f + drop,
+                  (t == 0) ? "Görevler" : (t == 1) ? "Günlük"
+                           : (t == 2) ? "Ünvanlar" : "Kontrat",
+                  rxp + 60.0f, by - 20.0f + drop,
                   (t == tab) ? tabCol : faded);
     }
 
@@ -417,7 +419,48 @@ int journal_render(R2D *renderer, TTF_Font *font, R2DTexture *bookTex,
         }
     }
 
-    int pageCount = (tab == 2) ? 1 : f.col / 2 + 1;
+    if (tab == 3) {
+        // KONTRATLAR (Suikastçi P3): Sessiz El sınıfı açıksa aktif kontrat +
+        // rütbe; değilse ipucu. Ne yapılacağı NET (mob + nerede).
+        if (player->storyFlags[SF_ASSASSIN] < 13) {
+            flow_block(&f, "~ Sessiz El ~", faded);
+            flow_block(&f, "Henüz locaya kabul edilmedin. Kör Kuyu'nun dibi... "
+                       "belki bir gün.", faded);
+        } else {
+            int rank = assassin_rank(player->assassinPoints);
+            char rl[80];
+            int nxt = assassin_next_threshold(rank);
+            if (nxt >= 0)
+                snprintf(rl, sizeof(rl), "~ Sessiz El — Rütbe: %s (%d/%d puan) ~",
+                         assassin_rank_name(rank), player->assassinPoints, nxt);
+            else
+                snprintf(rl, sizeof(rl), "~ Sessiz El — Rütbe: %s (en yüksek) ~",
+                         assassin_rank_name(rank));
+            flow_block(&f, rl, ink);
+            if (player->contractActive >= 0) {
+                const AssassinContract *c =
+                    &ASSASSIN_CONTRACTS[player->contractActive];
+                char hl[96];
+                snprintf(hl, sizeof(hl), "ETKİN: %s", c->name);
+                flow_block(&f, hl, ink);
+                flow_block(&f, c->desc, ink);
+                char obj[128];
+                if (player->contractProgress >= c->count)
+                    snprintf(obj, sizeof(obj),
+                             ">> TAMAM — locadaki kontrat tahtasına dön, "
+                             "ödülü al (%d altın).", c->rewardGold);
+                else
+                    snprintf(obj, sizeof(obj), ">> Hedef: %s  (%d / %d)",
+                             c->where, player->contractProgress, c->count);
+                flow_block(&f, obj, ink);
+            } else {
+                flow_block(&f, "Etkin kontratın yok. Locadaki kontrat "
+                           "tahtasına git ([E]) ve bir iş üstlen.", ink);
+            }
+        }
+    }
+
+    int pageCount = (tab == 2 || tab == 3) ? 1 : f.col / 2 + 1;
 
     // Alt bilgi: sayfa + tuşlar
     char foot[80];

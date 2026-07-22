@@ -109,6 +109,9 @@ typedef struct Player {
     float smokeTimer;         // Duman Perdesi: kalan görünmezlik (sn)
     Uint64 spellsLearned;     // tomarla öğrenilen büyüler (bit = AbilityId; v27 alt 32 + kuyrukta üst 32 — Faz TB64)
     int launderedTotal;       // toplam AKLANAN altın (loca keşif eşiği; kuyrukta)
+    int assassinPoints;       // Sessiz El rütbe puanı (Suikastçi P3; kuyrukta)
+    Sint8 contractActive;     // etkin kontrat indeksi (-1 yok)
+    int contractProgress;     // etkin kontrat öldürme sayacı
     Uint8 bagUpgrades;        // çanta kademeleri (bit0/1 Eşya +10, bit2/3 Malzeme +15; v28)
     int dirtyGold;            // KİRLİ altın (yankesicilik) — harcanamaz, aklanmalı (v29)
     int wellGold;             // Kör Kuyu'ya bırakılan (temiz karşılığı) — şafakta teslim
