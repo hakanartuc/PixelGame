@@ -127,9 +127,9 @@ void contract_save_set(int day, const int *st, const int *prog)
 }
 
 // --- Panel: başlık + kademe başına 1 satır (2 satır metin) + ipucu ---
-#define CT_ROW_H 52.0f
+#define CT_ROW_H 58.0f
 #define CT_PAD 16.0f
-#define CT_W 420.0f
+#define CT_W 520.0f
 
 void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
                            const Inventory *inv2,
@@ -168,10 +168,10 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
         char line[112];
         if (locked) {
             snprintf(line, sizeof(line), "[%s] ???", CONTRACT_TIER_NAMES[c->tier]);
-            draw_text(renderer, font, line, row.x + 10.0f, rowY + 4.0f, dim);
+            draw_text(renderer, font, line, row.x + 12.0f, rowY + 6.0f, dim);
             snprintf(line, sizeof(line), "İtibar %d gerekli",
                      (int)CONTRACT_TIER_REP[c->tier]);
-            draw_text(renderer, font, line, row.x + 10.0f, rowY + 22.0f, dim);
+            draw_text(renderer, font, line, row.x + 12.0f, rowY + 28.0f, dim);
             rowY += CT_ROW_H;
             continue;
         }
@@ -179,21 +179,21 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
         // Başlık satırı: kademe + ad + ödül
         snprintf(line, sizeof(line), "[%s] %s — %dg +%d itibar",
                  CONTRACT_TIER_NAMES[c->tier], c->name, c->gold, (int)c->rep);
-        draw_text(renderer, font, line, row.x + 10.0f, rowY + 4.0f,
+        draw_text(renderer, font, line, row.x + 12.0f, rowY + 6.0f,
                   states[s] == CONTRACT_DONE ? dim : white);
 
         // Durum satırı: hedef + ilerleme + eylem ipucu
         if (states[s] == CONTRACT_DONE) {
             draw_text(renderer, font, "Teslim edildi — yarın yenisi gelir",
-                      row.x + 10.0f, rowY + 22.0f, dim);
+                      row.x + 12.0f, rowY + 28.0f, dim);
         }
         else if (c->targetMob != NULL) {
             int cur = (states[s] == CONTRACT_ACCEPTED) ? progress[s] : 0;
             snprintf(line, sizeof(line), "%s x%d  (%d/%d)%s",
                      c->targetMob->name, c->count, cur, c->count,
-                     states[s] == CONTRACT_AVAILABLE ? "  [tıkla: kabul]"
-                     : (cur >= c->count ? "  [tıkla: TESLİM]" : ""));
-            draw_text(renderer, font, line, row.x + 10.0f, rowY + 22.0f,
+                     states[s] == CONTRACT_AVAILABLE ? "   > kabul et"
+                     : (cur >= c->count ? "   > TESLİM ET" : ""));
+            draw_text(renderer, font, line, row.x + 10.0f, rowY + 28.0f,
                       (states[s] == CONTRACT_ACCEPTED && cur >= c->count) ? green : cyan);
         }
         else {
@@ -202,9 +202,9 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
             snprintf(line, sizeof(line), "%dx %s getir  (%d/%d)%s",
                      c->count, ITEM_TYPES[c->fetchItem].name,
                      have > c->count ? c->count : have, c->count,
-                     states[s] == CONTRACT_AVAILABLE ? "  [tıkla: kabul]"
-                     : (have >= c->count ? "  [tıkla: TESLİM]" : ""));
-            draw_text(renderer, font, line, row.x + 10.0f, rowY + 22.0f,
+                     states[s] == CONTRACT_AVAILABLE ? "   > kabul et"
+                     : (have >= c->count ? "   > TESLİM ET" : ""));
+            draw_text(renderer, font, line, row.x + 12.0f, rowY + 28.0f,
                       (states[s] == CONTRACT_ACCEPTED && have >= c->count) ? green : cyan);
         }
         rowY += CT_ROW_H;

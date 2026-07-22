@@ -960,6 +960,13 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - Kızıl Kanca rakip ağı + haber ağı P4'e ertelendi (kapsam: çekirdek).
 - TAVAN NOTU: MOB_TYPES 23/24, npcState 16/16 hâlâ DOLU — yeni tür/NPC
   eklemeden önce büyüt.
+- FIX (Hakan test): (1) köy panosu SPRITE'ı (boardTex) + [E] ipucu harita
+  koşulsuz çiziliyordu → locada "ikinci tahta" olarak görünüyordu; MAP_WORLD'e
+  bağlandı. (2) köy panosu E-açma + harita geçişinde kapatma MAP_WORLD guard.
+  (3) getir kontratı teslimi bag_count (iki çanta) — craft çantasındaki
+  malzeme teslim edilemiyordu. (4) köy paneli 520px + ferah satır. (5) loca
+  tahtası (32,19)'a taşındı (NPC'lerden uzak) + dairesel E menzili; E ipucu
+  MAP_WORLD bloğundan çıkarıldı (locada hiç çizilmiyordu).
 - OKUNABİLİRLİK (Hakan geri bildirimi): J günlüğüne 4. sekme KONTRATLAR
   (aktif kontrat + rütbe + NET hedef "nerede/nasıl"; sınıf yoksa ipucu);
   kontrat tahtası satırlarına konum ipucu satırı (AssassinContract.where);

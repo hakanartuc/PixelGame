@@ -3,6 +3,7 @@
 // Köy evleri — NPC'lerin gece gittiği kapılar bunların önü (npc.c rutinleri)
 #define T(n) ((n) * (float)TILE_SIZE)
 #define DM_MEZARLIK 4   // MAP_MEZARLIK (worldmap.h enum sırası — include döngüsünden kaçınmak için literal)
+#define DM_LOCA 5       // MAP_LOCA (Sessiz El kontrat tahtası dekoru)
 
 const DecorDef DECORS[] = {
     // RİTÜEL TAŞLARI (YANKICI — gizli): Karanlık Orman derinliği, işaretsiz.
@@ -90,6 +91,9 @@ const DecorDef DECORS[] = {
     { .texPath = "assets/decor/undead/crystal.png",
       .x = T(52), .y = T(9), .scale = 1.5f, .solidBase = true, .map = DM_MEZARLIK },
 
+    // SESSİZ EL kontrat tahtası (loca T32,19 — salon sağ-alt, NPC'lerden uzak, [E] açar)
+    { .texPath = "assets/decor/notice_board.png",
+      .x = T(32), .y = T(19), .scale = 1.8f, .solidBase = true, .map = DM_LOCA },
 };
 const int DECOR_COUNT = (int)(sizeof(DECORS) / sizeof(DECORS[0]));
 

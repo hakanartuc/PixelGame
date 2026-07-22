@@ -1260,9 +1260,9 @@ int main(int argc, char *argv[])
     int shopVendorIdx = -1;   // açık dükkanın sahibi (kırgınlık zammı okur)
     int nerimanIdx = -1, kemalIdx = -1;   // Suikastçi P1 (loca ustası + takip hedefi)
     bool locaBoardOpen = false;   // Sessiz El kontrat tahtası (P3)
-    #define LOCABOARD_X (28.0f * TILE_SIZE)
-    #define LOCABOARD_Y (16.0f * TILE_SIZE)
-    #define LOCABOARD_RANGE 90.0f
+    #define LOCABOARD_X (32.0f * TILE_SIZE)
+    #define LOCABOARD_Y (19.0f * TILE_SIZE)
+    #define LOCABOARD_RANGE 100.0f
     float tailNearTimer = 0.0f;   // takipte <100px yakınlık süresi (uyarı sayacı)
     int tailWarnings = 0;         // 3 uyarı = rapor sıfırlanır
     // ESO görev sunumu: kabul/aşama değişiminde ekran üstünde büyük bant
@@ -3209,10 +3209,11 @@ int main(int argc, char *argv[])
                     // SESSİZ EL kontrat tahtası (P3): locada, sınıf açıldıysa
                     else if (map_current() == MAP_LOCA &&
                              player.storyFlags[SF_ASSASSIN] >= 13 && !locaBoardOpen &&
-                             SDL_fabsf(LOCABOARD_X - (player.rect.x + player.rect.w / 2.0f))
-                                 < LOCABOARD_RANGE &&
-                             SDL_fabsf(LOCABOARD_Y - (player.rect.y + player.rect.h / 2.0f))
-                                 < LOCABOARD_RANGE)
+                             (LOCABOARD_X - (player.rect.x + player.rect.w / 2.0f)) *
+                             (LOCABOARD_X - (player.rect.x + player.rect.w / 2.0f)) +
+                             (LOCABOARD_Y - (player.rect.y + player.rect.h / 2.0f)) *
+                             (LOCABOARD_Y - (player.rect.y + player.rect.h / 2.0f))
+                                 <= LOCABOARD_RANGE * LOCABOARD_RANGE)
                     {
                         locaBoardOpen = true;
                         player.autoAttack = false;
@@ -3220,13 +3221,15 @@ int main(int argc, char *argv[])
                         audio_play(SFX_UI);
                     }
                     // İlan panosu (Faz 6): bounty/dip itibar panoya da kapı
-                    else if (!boardOpen &&
+                    else if (!boardOpen && map_current() == MAP_WORLD &&
                              SDL_sqrtf((BOARD_X - (player.rect.x + player.rect.w / 2.0f)) *
                                        (BOARD_X - (player.rect.x + player.rect.w / 2.0f)) +
                                        (BOARD_Y - (player.rect.y + player.rect.h / 2.0f)) *
                                        (BOARD_Y - (player.rect.y + player.rect.h / 2.0f)))
                                  <= BOARD_RANGE)
                     {
+                        // KÖY İLAN PANOSU: yalnız DÜNYADA (locada koordinatı
+                        // çakışıyordu — köy/loca tahtası karışıyordu, Hakan raporu)
                         int bRegion = region_of(BOARD_X, BOARD_Y);
                         SDL_Color red = { 255, 120, 100, 255 };
                         if (player.bounty[bRegion] > 0 ||
@@ -4587,10 +4590,12 @@ int main(int argc, char *argv[])
                             else if (ci >= 0 && contract_state(slot) == CONTRACT_ACCEPTED)
                             {
                                 const ContractDef *c = &CONTRACTS[ci];
+                                // Getir kontratı: İKİ çantaya bak (malzeme craft
+                                // çantasına düşer — panel de böyle sayıyor; eski
+                                // kod yalnız ana çantaya bakıp teslimi engelliyordu)
                                 bool ready = (c->targetMob != NULL)
                                     ? contract_progress(slot) >= c->count
-                                    : inventory_count(&inventory,
-                                                      &ITEM_TYPES[c->fetchItem]) >= c->count;
+                                    : bag_count(&ITEM_TYPES[c->fetchItem]) >= c->count;
                                 if (ready)
                                 {
                                     if (c->targetMob == NULL)
@@ -5324,7 +5329,8 @@ int main(int argc, char *argv[])
                 // 5) Dünya-özel sistemler kapanır/açılır + ambiyans
                 npc_set_active(to == MAP_WORLD || to == MAP_LOCA);
                 npc_set_map((int)to);
-                decor_set_active(to == MAP_WORLD || to == MAP_MEZARLIK);
+                decor_set_active(to == MAP_WORLD || to == MAP_MEZARLIK ||
+                                 to == MAP_LOCA);
                 decor_set_map((int)to);
                 map_set_current(to);
                 if (MAPS[to].name[0] != '\0')
@@ -5333,6 +5339,8 @@ int main(int argc, char *argv[])
                     splashTimer = 3.0f;
                 }
                 currentRegion = -2;   // dünyaya dönüşte bölge splash'i yeniden tetiklensin
+                boardOpen = false;    // köy panosu haritalar arası taşınmaz
+                locaBoardOpen = false;
                 sealWaveTimer = SEAL_WAVE_SECONDS;   // zindan girişinde dalga sıfırdan sayar
                 sealWaveWarned = false;
                 bool wasPortal = pendingPortal >= 0;
@@ -10059,6 +10067,21 @@ int main(int argc, char *argv[])
         if (map_is_dungeon(map_current()))
             trap_render(renderer, map_current(), &camera);   // dikenler/plaka/arbalet (zemin)
         map_portals_render(renderer, &camera, gameFont, nearPortal);  // geçit kapı/merdivenleri
+
+        // SESSİZ EL kontrat tahtası [E] ipucu (locada, sınıf açık) — MAP_WORLD
+        // bloğunun DIŞINDA (içindeyken locada hiç çizilmiyordu, Hakan raporu)
+        if (gameFont != NULL && map_current() == MAP_LOCA &&
+            player.storyFlags[SF_ASSASSIN] >= 13 && !locaBoardOpen)
+        {
+            float lbdx = LOCABOARD_X - (player.rect.x + player.rect.w / 2.0f);
+            float lbdy = LOCABOARD_Y - (player.rect.y + player.rect.h / 2.0f);
+            if (lbdx * lbdx + lbdy * lbdy <= LOCABOARD_RANGE * LOCABOARD_RANGE)
+                draw_text(renderer, gameFont, "[E] Kontrat Tahtası",
+                          (LOCABOARD_X - camera.x) * camera.zoom - 70.0f,
+                          (LOCABOARD_Y - 70.0f - camera.y) * camera.zoom,
+                          (SDL_Color){ 200, 160, 255, 255 });
+        }
+
         if (map_current() == MAP_WORLD)
         {
             resource_render_all(renderer, resource_textures, &camera, gameFont,
@@ -10104,17 +10127,6 @@ int main(int argc, char *argv[])
                 }
             }
 
-            // SESSİZ EL kontrat tahtası [E] ipucu (locada, sınıf açık)
-            if (gameFont != NULL && map_current() == MAP_LOCA &&
-                player.storyFlags[SF_ASSASSIN] >= 13 && !locaBoardOpen &&
-                SDL_fabsf(LOCABOARD_X - (player.rect.x + player.rect.w / 2.0f))
-                    < LOCABOARD_RANGE &&
-                SDL_fabsf(LOCABOARD_Y - (player.rect.y + player.rect.h / 2.0f))
-                    < LOCABOARD_RANGE)
-                draw_text(renderer, gameFont, "[E] Kontrat Tahtası",
-                          (LOCABOARD_X - camera.x) * camera.zoom - 70.0f,
-                          (LOCABOARD_Y - 70.0f - camera.y) * camera.zoom,
-                          (SDL_Color){ 200, 160, 255, 255 });
 
             // SUİKASTÇİ P1 ipuçları: sınav kutusu (gece) + takip rapor bandı
             if (gameFont != NULL && map_current() == MAP_WORLD)
@@ -10165,8 +10177,10 @@ int main(int argc, char *argv[])
             }
         }
 
-        // İlan panosu (dünya objesi): taban-orta hizalı, yaklaşınca [E] ipucu
-        if (boardTex != NULL)
+        // İlan panosu (dünya objesi): taban-orta hizalı, yaklaşınca [E] ipucu.
+        // YALNIZ DÜNYADA çizilir — locada dünya-koordinatına denk gelip
+        // "ikinci tahta" olarak görünüyordu (Hakan raporu)
+        if (boardTex != NULL && map_current() == MAP_WORLD)
         {
             const float bScale = 2.0f, bw = 27.0f * bScale, bh = 40.0f * bScale;
             SDL_FRect bsrc = { 0, 0, 27, 40 };
