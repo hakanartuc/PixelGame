@@ -941,6 +941,30 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - TEST NOTU: P1 ritüeli HÂLÂ TEST EDİLMEDİ — P1+P2 tek turda test edilebilir
   (F10 → taş halkası T108,7 → gece [E] → ritüel → 4 büyü + K'da Yankı ağacı).
 
+### Faz MAPGEN-2 — LOCA + MEZARLIK YENİDEN ÜRETİM (2026-07-23, onaylı 3 karar)
+- **Hakan kararları (AskUserQuestion)**: loca = mağara + taş salon karışımı;
+  loca planı = yeni organik; mezarlık = Cave koyu seti + organik plan.
+- **Loca v2 (gen_loca.py, 36×26)**: kuyu mağarası (noise oda) → dar kıvrımlı
+  tünel (Çelme nöbet noktasından) → dik hatlı TAŞ SALON (inşa edilmiş — bilerek
+  köşeli; batı kapısı) + zehir hücresi bölmesi (İğne, kapı 26,20). Yeni tile:
+  [18] mağara zemini (düz 138,72,54), [19] mağara duvarı (üstü ten 225,163,122).
+  Sabitler korunur: portal (5.5,5.5), Neriman (28,14), Çelme (21,12),
+  İğne (27,22), tahta (32,19).
+- **Mezarlık v2 (gen_mezarlik.py, 60×45)**: organik noise sınır + CA kuzey
+  sırtı/yan yakalar (küçük alanda fill 0.58/steps 2 — 0.46/4 kenar erozyonuyla
+  ÖLÜYOR, öğrenildi) + Poisson mezar siperleri + KAYA ÇERÇEVELİ ölü su
+  gölcükleri (su düz doku kalır — ayrı su atlası gerekmez). Tile 13 artık
+  dokusuz koyu (57,31,33) — görsel dual-grid'den. 24 sabit nokta korunur
+  (portal/boss arenası/13 dekor/2 sandık/8 kamp).
+- **MAĞARA DUAL-GRID (tilemap.c cave_dual_pass — parametreli)**: Cave_Walls
+  atlası; ışık bloklar loca (CAVE_LUT), koyu bloklar mezarlık (MZ_LUT). Ring
+  yalnız ZEMİNE bakan sınırda (duvar|void çizgisiz karanlığa karışır); güney
+  duvar sırası kaya yığını YÜZÜ (satır 6); çapraz maskeler parçasız. Keyed
+  atlas: bake_cave_ring.py koyu blokların düz arka planını (57,31,33)
+  şeffaflar → parçalar mezarlığın gri zemininde halo bırakmaz
+  (Cave_Walls_Keyed.png — türetilmiş asset, iki harita da bunu kullanır).
+- NOT: mz_rock.png artık kullanılmıyor (tile 13 dokusuz); dosya duruyor.
+
 ### Faz MAPGEN — HARİTA ÜRETİM KÜTÜPHANESİ + GÖRSEL İTERASYON (2026-07-22)
 - **scripts/mapgen.py** (Hakan isteği: "daha doğal, el yapımı gibi"):
   value-noise (organik sınır/biyom) · drunkard's walk (kıvrımlı yol) ·

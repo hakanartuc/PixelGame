@@ -62,11 +62,16 @@ vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü
 - Save dünya durumunu (mob/loot) içermez; harita değişirse eski save konumu tuhaf düşebilir.
 - CREDITS.md'de lisans TODO'ları var (ULPC parça listesi + Cute_Fantasy ticari lisans teyidi) — mobil yayın öncesi şart.
 - **MAPGEN + DUAL-GRID AUTOTILE (2026-07-23)**: haritalar scripts/mapgen.py ile
-  üretilir (noise/drunk-path/CA/min2x2 + PNG önizleme — asistan üret→BAK→düzelt
-  döngüsü uygular). Çöl kaya(16)/vaha(17) görseli tilemap.c dsr_dual_pass:
-  köşe-örneklemeli dual-grid, 16 parçalık atlas LUT'u, parça yarım karo kaymış
-  çizilir (assets/tiles/desert/{water,cliff}_atlas.png). Yeni eşleme eklerken
-  önce scratchpad mock'uyla görsel doğrula. CSV kuralı: değer = tile id + 1.
+  üretilir (noise/drunk-path/CA/min2x2/fill_pockets/poisson + PNG önizleme —
+  asistan üret→BAK→düzelt döngüsü uygular). Çöl kaya(16)/vaha(17) görseli
+  tilemap.c dsr_dual_pass; loca mağara duvarı(19) + mezarlık kayası(13)
+  cave_dual_pass (parametreli: LUT + wallId; ring yalnız zemine bakan sınırda,
+  güney sıra kaya yığını yüzü). Atlaslar: desert/{water,cliff}_atlas.png +
+  Tiles/Cave/Cave_Walls_Keyed.png (bake_cave_ring.py türetir — koyu blok
+  arka planı şeffaflanır). Üreteçler: gen_dogu/gen_loca/gen_mezarlik.py —
+  sabit noktalar (portal/NPC/dekor/kamp) script içinde garanti edilir; harita
+  değiştirirken ÖNCE oradaki sabit listesine bak. Yeni eşleme eklerken önce
+  scratchpad mock'uyla görsel doğrula. CSV kuralı: değer = tile id + 1.
 - **DEV kancaları (main.c)**: `PIXE_AUTOLOAD=auto|<slotNo>` menüsüz kayıt
   yükler; ek `PIXE_AUTOPLAY=1` dolaş+saldır+6sn'de bir portal geçişi (stres).
   CMake `-DASAN=ON` yalnız game hedefini ASan'lar (build-asan/). Çıkış ses

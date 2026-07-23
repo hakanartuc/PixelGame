@@ -23,12 +23,17 @@ const TileType TILE_TYPES[] = {
 
     // --- Lanetli Mezarlık (Faz HG-B — undead paleti, açık hava zindanı) ---
     [12] = { .solid = false, .r = 111, .g = 115, .b = 106, .texturePath = "assets/tiles/undead/mz_ground.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü toprak
-    [13] = { .solid = true,  .r = 38,  .g = 42,  .b = 54,  .texturePath = "assets/tiles/undead/mz_rock.png",   .speedMultiplier = 1.0f, .damage = 0.0f },  // dikenli kaya
+    [13] = { .solid = true,  .r = 57,  .g = 31,  .b = 33,  .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // mezarlık kayası (üstü koyu — doku dual-grid'den)
     [14] = { .solid = true,  .r = 26,  .g = 32,  .b = 46,  .texturePath = "assets/tiles/undead/mz_water.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü su
     // Doğu çölü (Taşdurak — Faz DOGU)
     [15] = { .solid = false, .r = 222, .g = 180, .b = 120, .texturePath = "assets/tiles/desert/sand.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // kum
     [16] = { .solid = true,  .r = 160, .g = 110, .b = 70,  .texturePath = "assets/tiles/desert/rock.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // çöl kayası
     [17] = { .solid = true,  .r = 70,  .g = 190, .b = 200, .texturePath = "assets/tiles/desert/water.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // vaha suyu
+
+    // Mağara (Loca v2 — Faz MAPGEN-2): düz renk tabanlar, doku dual-grid
+    // ring/yüz parçalarından gelir (Cave_Walls atlası)
+    [18] = { .solid = false, .r = 138, .g = 72,  .b = 54,  .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // mağara zemini
+    [19] = { .solid = true,  .r = 225, .g = 163, .b = 122, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // mağara duvarı (üstü ten)
 };
 const int TILE_TYPE_COUNT = (int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0]));
 
@@ -232,6 +237,7 @@ static R2DTexture *waterDecTex = NULL;  // Water_Decoration.png (3 hücre 16px)
 static R2DTexture *mzGround2 = NULL;    // mezarlık zemin 2. varyantı
 static R2DTexture *dsrWaterTex = NULL;  // çöl vaha atlası (dual-grid 16 parça)
 static R2DTexture *dsrCliffTex = NULL;  // çöl kaya atlası (dual-grid 16 parça)
+static R2DTexture *caveWallTex = NULL;  // mağara duvar atlası (Loca — dual-grid)
 
 void tilemap_load_details(R2D *renderer)
 {
@@ -247,6 +253,9 @@ void tilemap_load_details(R2D *renderer)
     mzGround2 = load_texture(renderer, "assets/tiles/undead/mz_ground2.png");
     dsrWaterTex = load_texture(renderer, "assets/tiles/desert/water_atlas.png");
     dsrCliffTex = load_texture(renderer, "assets/tiles/desert/cliff_atlas.png");
+    // Keyed varyant: koyu blokların düz arka planı şeffaf (bake_cave_ring.py) —
+    // ışık bloklar dokunulmamış; loca + mezarlık AYNI atlası kullanır
+    caveWallTex = load_texture(renderer, "assets/Tiles/Cave/Cave_Walls_Keyed.png");
 }
 
 void tilemap_free_details(void)
@@ -260,6 +269,7 @@ void tilemap_free_details(void)
     if (mzGround2) { r2d_texture_destroy(NULL, mzGround2); mzGround2 = NULL; }
     if (dsrWaterTex) { r2d_texture_destroy(NULL, dsrWaterTex); dsrWaterTex = NULL; }
     if (dsrCliffTex) { r2d_texture_destroy(NULL, dsrCliffTex); dsrCliffTex = NULL; }
+    if (caveWallTex) { r2d_texture_destroy(NULL, caveWallTex); caveWallTex = NULL; }
 }
 
 // Deterministik varyant: hash(col,row) — save'e girmez, hep aynı görünür
@@ -364,6 +374,77 @@ static void dsr_dual_pass(R2D *renderer, R2DTexture *atlas, int id,
     }
 }
 
+// --- MAĞARA DUAL-GRID (Loca v2 — Faz MAPGEN-2) ---
+// Duvar(19) ile zemin sınırı Cave_Walls ring parçalarıyla çizilir; duvarın
+// void'e bakan tarafı ÇİZGİSİZ kalır (karanlığa karışır). Güneye bakan duvar
+// sırası kaya yığını YÜZÜ alır; yüz hücreleri ring pass'inde duvardan sayılmaz.
+#define CAVE_FLOOR 18
+#define CAVE_WALL  19
+#define MZ_ROCK    13
+
+// Işık bloklar (loca): ring (0-2,0-2) + delikli iç köşe (0-2,3-4)
+static const DsrCell CAVE_LUT[16] = {
+    [1]={2,2}, [2]={0,2}, [4]={2,0}, [8]={0,0},
+    [3]={1,2}, [12]={1,0}, [5]={2,1}, [10]={0,1},
+    [7]={0,3}, [11]={2,3}, [13]={0,4}, [14]={2,4},   // iç köşe (delikli blok)
+    [6]={255,255}, [9]={255,255},   // çapraz: parçasız (yuvarlak kötü durur)
+    [15]={255,255},                 // duvar içi: düz taban kalır
+};
+// Koyu bloklar (mezarlık): ring (4-6,0-2) + delikli (4-6,3-4) — keyed atlas
+static const DsrCell MZ_LUT[16] = {
+    [1]={6,2}, [2]={4,2}, [4]={6,0}, [8]={4,0},
+    [3]={5,2}, [12]={5,0}, [5]={6,1}, [10]={4,1},
+    [7]={4,3}, [11]={6,3}, [13]={4,4}, [14]={6,4},
+    [6]={255,255}, [9]={255,255}, [15]={255,255},
+};
+
+// Duvar id'sine göre "zemin" sayılan komşu (ring yalnız zemine bakar)
+static inline bool cave_floor_at(int wallId, int col, int row)
+{
+    if (col < 0) col = 0; if (col >= mapW) col = mapW - 1;
+    if (row < 0) row = 0; if (row >= mapH) row = mapH - 1;
+    int t = tilemap[row][col];
+    if (wallId == MZ_ROCK) return t == 12;                  // ölü toprak
+    return t == CAVE_FLOOR || t == 6;                       // mağara + taş salon
+}
+
+static inline bool cave_is_face(int wallId, int col, int row)
+{
+    return dsr_is(col, row, wallId) && cave_floor_at(wallId, col, row + 1);
+}
+
+static inline bool cave_wallish(int wallId, int col, int row)
+{
+    return dsr_is(col, row, wallId) && !cave_is_face(wallId, col, row);
+}
+
+static void cave_dual_pass(R2D *renderer, const DsrCell *lut, int wallId,
+                           const Camera *camera,
+                           int colL, int rowT, int colR, int rowB)
+{
+    float zoom = camera->zoom;
+    for (int row = rowT - 1; row < rowB; row++) {
+        for (int col = colL - 1; col < colR; col++) {
+            int m = (cave_wallish(wallId, col, row) ? 1 : 0)
+                  | (cave_wallish(wallId, col + 1, row) ? 2 : 0)
+                  | (cave_wallish(wallId, col, row + 1) ? 4 : 0)
+                  | (cave_wallish(wallId, col + 1, row + 1) ? 8 : 0);
+            if (m == 0 || lut[m].cx == 255) continue;
+            bool touchesFloor = cave_floor_at(wallId, col, row) ||
+                                cave_floor_at(wallId, col + 1, row) ||
+                                cave_floor_at(wallId, col, row + 1) ||
+                                cave_floor_at(wallId, col + 1, row + 1);
+            if (!touchesFloor) continue;   // duvar|void tarafı çizgisiz
+            SDL_FRect src = { lut[m].cx * 16.0f, lut[m].cy * 16.0f, 16, 16 };
+            SDL_FRect dst = {
+                ((col + 0.5f) * TILE_SIZE - camera->x) * zoom,
+                ((row + 0.5f) * TILE_SIZE - camera->y) * zoom,
+                TILE_SIZE * zoom, TILE_SIZE * zoom };
+            r2d_draw_texture(renderer, caveWallTex, &src, &dst);
+        }
+    }
+}
+
 void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *camera)
 {
     float zoom = camera->zoom;
@@ -426,6 +507,26 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
             else
                 tile_draw(renderer, tileTextures, tileID, dst);
 
+            // MAĞARA/MEZARLIK YÜZÜ: güneyi zemin olan duvar hücresi kaya
+            // yığını duvarı gösterir (atlas satır 6; loca L/M/R, mezarlık
+            // 2 koyu varyant hash ile)
+            if (tileID == CAVE_WALL && caveWallTex != NULL &&
+                cave_is_face(CAVE_WALL, col, row))
+            {
+                bool fl = cave_is_face(CAVE_WALL, col - 1, row);
+                bool fr = cave_is_face(CAVE_WALL, col + 1, row);
+                int fc = (fl && fr) ? 1 : (fr ? 0 : (fl ? 2 : 1));
+                SDL_FRect fsrc = { fc * 16.0f, 6 * 16.0f, 16, 16 };
+                r2d_draw_texture(renderer, caveWallTex, &fsrc, &dst);
+            }
+            else if (tileID == MZ_ROCK && caveWallTex != NULL &&
+                     cave_is_face(MZ_ROCK, col, row))
+            {
+                SDL_FRect fsrc = { (4 + grass_variant(col, row) % 2) * 16.0f,
+                                   6 * 16.0f, 16, 16 };
+                r2d_draw_texture(renderer, caveWallTex, &fsrc, &dst);
+            }
+
             // KENAR KAPLAMALARI: çimen komşu tabana taşar (yumuşak geçiş)
             if (edgeTex != NULL && grass_bleeds_onto(tileID))
             {
@@ -455,6 +556,11 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
         dsr_dual_pass(renderer, dsrWaterTex, DSR_WATER, camera, colL, rowT, colR, rowB);
     if (dsrCliffTex != NULL)
         dsr_dual_pass(renderer, dsrCliffTex, DSR_ROCK, camera, colL, rowT, colR, rowB);
+    if (caveWallTex != NULL)
+    {
+        cave_dual_pass(renderer, CAVE_LUT, CAVE_WALL, camera, colL, rowT, colR, rowB);
+        cave_dual_pass(renderer, MZ_LUT, MZ_ROCK, camera, colL, rowT, colR, rowB);
+    }
 }
 
 // --- SÜS SERPİŞTİRMESİ: dünya boş hissettirmesin (çarpışmasız, deterministik) ---
