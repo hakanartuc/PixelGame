@@ -85,6 +85,9 @@ void audio_set_volume(float v01)
 
 void audio_quit(void)
 {
+    // Önce sustur (kapanış yarışına karşı — bkz. music_quit notu)
+    for (int i = 0; i < SFX_COUNT; i++)
+        if (sfxStream[i]) SDL_PauseAudioStreamDevice(sfxStream[i]);
     for (int i = 0; i < SFX_COUNT; i++) {
         if (sfxStream[i]) SDL_DestroyAudioStream(sfxStream[i]);
         if (sfxBuf[i]) SDL_free(sfxBuf[i]);

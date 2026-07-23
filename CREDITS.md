@@ -137,3 +137,10 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
   v2.0** (Soldier; itch.io ücretsiz sürüm). Kompozit idle/walk/attack/death.
   TODO: yazar + lisans sayfası teyidi (Pack 02 ile aynı seri).
 - `assets/icons/items/assassin.png` — prosedürel üretildi (4 hücre).
+
+## Doğu — Taşdurak (Faz DOGU, 2026-07-20)
+- `assets/tiles/desert/*`, `assets/decor/desert/*` (evler/pergola/pazar/
+  akasya/kaktüs/tapınak/obelisk), `assets/characters/npcs/Desert_Trader_2-3`,
+  `assets/characters/mobs/Mummy|Desert_Warrior|Scarab` — **Cute Fantasy
+  Desert** paketi (Kenney? itch.io — Cute_Fantasy serisi). Ticari lisans
+  teyidi mevcut Cute_Fantasy TODO'suyla birlikte doğrulanacak.

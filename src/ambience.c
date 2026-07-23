@@ -110,6 +110,10 @@ void ambience_update(float dt)
 
 void ambience_quit(void)
 {
+    // Önce sustur (kapanış yarışına karşı — bkz. music_quit notu)
+    if (rainStream) SDL_PauseAudioStreamDevice(rainStream);
+    for (int i = 0; i < AMB_KIND_COUNT; i++)
+        if (ambStream[i]) SDL_PauseAudioStreamDevice(ambStream[i]);
     if (rainStream) SDL_DestroyAudioStream(rainStream);
     if (rainBuf) SDL_free(rainBuf);
     for (int i = 0; i < AMB_KIND_COUNT; i++) {

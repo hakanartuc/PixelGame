@@ -152,6 +152,36 @@ const NpcDef NPCS[] = {
       }, .stopCount = 1,
       .map = 5, .frameSize = 32, .drawScale = 2.8f },
 
+    // --- TAŞDURAK (Faz DOGU — map 6 = MAP_DOGU) ---
+    // Sınır kasabası: ticaret kimliği; Sultanlık'ın ucu ama kimseye tam bağlı
+    // değil. Kervancı Selim'in memleketi.
+    { .name = "Tüccar Ferah",
+      .sheetPath = "assets/characters/npcs/Desert_Trader_2.png",
+      .dialogFile = "assets/dialogs/ferah.txt",
+      .isVendor = true, .questId = NULL,
+      .schedule = {
+          { .hour = 0.0f, .x = T(14), .y = T(30), .indoors = false },  // dükkan önü
+      }, .stopCount = 1,
+      .map = 6, .frameSize = 32, .drawScale = 2.8f },
+    { .name = "Hancı Duman",
+      .sheetPath = "assets/characters/npcs/Desert_Trader_3.png",
+      .dialogFile = "assets/dialogs/duman.txt",
+      .isVendor = false, .questId = NULL,
+      .schedule = {
+          { .hour = 0.0f, .x = T(21), .y = T(31), .indoors = false },  // han kapısı
+      }, .stopCount = 1,
+      .map = 6, .frameSize = 32, .drawScale = 2.8f },
+    // Sultanlık Kâtibi: Doğu bloğunun ilk resmî yüzü (Kıta planı tohum).
+    // Sprite Çelme'yle ortak (Desert_Person_1) — çöl halkı; ayrı sheet gelince değişir.
+    { .name = "Kâtip Rüstem",
+      .sheetPath = "assets/characters/npcs/Desert_Person_1.png",
+      .dialogFile = "assets/dialogs/rustem.txt",
+      .isVendor = false, .questId = NULL,
+      .schedule = {
+          { .hour = 0.0f, .x = T(28), .y = T(30), .indoors = false },  // konak önü
+      }, .stopCount = 1,
+      .map = 6, .frameSize = 32, .drawScale = 2.8f },
+
     // ŞİFACI (Faz REVIR): revirin sahibi — yaralı köylüler ona yatar,
     // masraf ödemesi + oyuncuya paralı tedavi. Revir köy kuzeybatısında.
     { .name = "Şifacı Ela",
@@ -194,7 +224,7 @@ typedef struct {
     int  beatCount;   // kaçıncı yatış (masraf çarpanı — seri dayak caydırma)
     bool grudge;      // köy topladı ama AFFETMEDİ (soğuk diyalog + kalıcı zam)
 } NpcState;
-#define NPC_STATE_CAP 16   // NPC_COUNT tavanı (12'de doluydu — Şifacı ile büyüdü)
+#define NPC_STATE_CAP 24   // NPC_COUNT tavanı (16 doluydu — Taşdurak ile büyüdü)
 static NpcState npcState[NPC_STATE_CAP];
 
 void npc_reset(void)

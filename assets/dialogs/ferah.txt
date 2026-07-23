@@ -1,0 +1,21 @@
+# Tüccar Ferah — Taşdurak (Faz DOGU). ESO standardı: kişilikli, sorgulanabilir.
+
+[start]
+text: Hoş geldin, yolcu! Batıdan mı? Terin taze, çizmen yeşil çamurlu — kervan yolundan geldin. Otur, su iç. Taşdurak'ta iki kural vardır: gölgeyi paylaş, fiyatı tartış. Ben Ferah — bu tezgah dedemden kaldı.
+opt: Ne alır ne satarsın? -> ticaret
+opt: Dükkanını göreyim. -> shop
+opt: Burası nasıl bir yer? -> tasdurak
+
+[ticaret]
+text: Batı malı burada altın eder, yolcu: *deri*, *et*, *kereste*... Çöl bunları üretmez, çöl bunları YER. Karşılığında *hurma* ve *baharat* veririm — köyüne götür, iki katına satarsın. Kervanlar bu yüzden yürür: fark, yolun ta kendisidir.
+opt: Dükkanını aç. -> shop
+opt: Aklımda olsun. -> start
+
+[tasdurak]
+text: Sınırın son gölgesi. Doğuya gidersen Sultanlığın toprakları başlar — vergisi, mührü, kâtibiyle. Batıya gidersen... sen zaten oradan geldin. Biz aradayız: ne Sultan'ın kulu ne Batı'nın adamı. Taşdurak sadece TİCARETİN kuludur.
+opt: Sultanlık mı? -> sultanlik
+opt: Anladım. -> start
+
+[sultanlik]
+text: Doğunun büyük gücü. Kâtip Rüstem'i gördün mü konakta oturur — mühür basar, vergi yazar. Ona sor; ama dikkatli sor. Kâtipler kelimeleri de vergilendirir.
+opt: (Başınla selamla.) -> end

@@ -290,6 +290,9 @@ typedef enum {
     ITEM_QUIET_VIAL,      // Dilsiz Şişe: görev 3 eşyası (simya kazanında)
     ITEM_NEEDLE_VENOM,    // İğne Zehri: şarj (max 3) — İğne Batır tüketir
     ITEM_DAGGER_OFFHAND,  // İkiz Bıçak: sol el hançeri (+%15 saldırı hızı) — dükkan
+    // Faz DOGU — ticaret malları (bölgesel fiyat farkı döngüsü)
+    ITEM_DATE_FRUIT,      // Hurma: çölde ucuz, köyde pahalı satılır (+küçük yiyecek)
+    ITEM_SPICE,           // Baharat: çöl malı — köyde değerli; ileride yemek malzemesi
 } ItemId;
 
 extern const ItemType ITEM_TYPES[];

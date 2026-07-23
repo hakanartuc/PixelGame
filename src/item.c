@@ -488,6 +488,18 @@ const ItemType ITEM_TYPES[] = {
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/assassin.png",
       .iconSrc = { 48, 0, 16, 16 } },
+    // Faz DOGU ticaret malları: Taşdurak'ta ucuz alınır, köyde pahalı satılır
+    // (bölgesel fiyat farkı — shop satış çarpanı main'de)
+    { .name = "Hurma", .iconIndex = 2, .maxStack = 20, .value = 12,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .consumable = true, .healAmount = 12.0f,
+      .iconSpritePath = "assets/icons/items/trinkets.png",
+      .iconSrc = { 32, 0, 16, 16 } },
+    { .name = "Baharat", .iconIndex = 3, .maxStack = 20, .value = 30,
+      .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
+      .iconSpritePath = "assets/icons/items/trinkets.png",
+      .iconSrc = { 0, 0, 16, 16 } },
+
     // İkiz Bıçak: sol el (kalkan slotu — iğnenin alternatifi). Zehir yerine
     // HAM HIZ: +%15 saldırı hızı (combat_attack_interval, yalnız ana el hançerle).
     { .name = "İkiz Bıçak", .iconIndex = 0, .maxStack = 1, .value = 400,

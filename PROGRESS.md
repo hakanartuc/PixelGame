@@ -941,6 +941,86 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - TEST NOTU: P1 ritüeli HÂLÂ TEST EDİLMEDİ — P1+P2 tek turda test edilebilir
   (F10 → taş halkası T108,7 → gece [E] → ritüel → 4 büyü + K'da Yankı ağacı).
 
+### Faz MAPGEN — HARİTA ÜRETİM KÜTÜPHANESİ + GÖRSEL İTERASYON (2026-07-22)
+- **scripts/mapgen.py** (Hakan isteği: "daha doğal, el yapımı gibi"):
+  value-noise (organik sınır/biyom) · drunkard's walk (kıvrımlı yol) ·
+  cellular automata (doğal kaya/mağara kümeleri) · Poisson-disk serpiştirme ·
+  stamp (el yapımı prefab) · PNG önizleme + işaretler.
+- **GÖRSEL İTERASYON PROTOKOLÜ (yeni standart)**: her harita üretiminde
+  script renkli önizleme kaydeder → ASİSTAN Read ile BAKAR → beğenmediğini
+  değiştirir → yeniden üretir → Hakan'a son görsel sunulur. (Taşdurak v2
+  iki iterasyonda: batı dokusu + güney yoğunluğu eklendi.)
+- **Taşdurak v2**: organik dış sınır, CA kuzey sırtları + güney akrep
+  adaları, kıvrımlı kervan yolu, noise kenarlı vaha; kod bağımlılıkları
+  (giriş/kasaba/kamplar/tapınak tabanı) sabit-alan garantileriyle korunur.
+- **DUAL-GRID AUTOTILE (2026-07-23, Hakan "yapay/eksik, autotile yok"
+  eleştirisi üzerine)**: Cute Fantasy Desert atlasları köşe-örneklemeli
+  dual-grid setmiş — tilemap.c'ye genel dsr_dual_pass eklendi: kaya(16) ve
+  vaha suyu(17) hücreleri kum tabanına basılır, sınır görseli 16 parçalık
+  LUT'tan yarım karo kaymış overlay'le çizilir (kenar + dış köşe + İÇ köşe
+  tamam). Atlaslar: assets/tiles/desert/{water,cliff}_atlas.png.
+  Eşlemeler önce PYTHON MOCK ile görsel doğrulandı (scratchpad
+  mock_autotile.py) — iç köşe LUT'u ters çıktı, mock'ta yakalandı, C'ye
+  doğrusu taşındı. mapgen.py'ye min2x2 eklendi (1 genişlik şerit süpürücü;
+  convexify denendi — yoğun noise'da zincirleme büyüyüp haritayı yuttu,
+  GERİ ALINDI). Not: dual-grid'de sınır hücre ORTASINDAN geçer — çarpışma
+  hücre bazlı kaldı (yarım karo görsel tolerans, tür standardı).
+- **KAYA = MESA/PLATO (Hakan 2-3. tur görsel geri bildirimi)**: koyu dolgu
+  kenar ringiyle uyuşmuyordu (tuğla dikişi); rock.png dolgu da "eski tekrarlı"
+  okundu. PAKET STİLİ NİHAİ: mesa üstü = KUM (zeminle aynı — sınırı dual
+  dudak çizer) + güneye bakan kaya sırası KLİF YÜZÜ (atlas 9-11,2 çizgili
+  duvar, L/M/R uçlu; yüz hücreleri dual pass'te kayadan sayılmaz —
+  dsr_is_face) + ZEMİN BENEKLERİ (scatter, MAP_DOGU'da da çalışır: 4×3 koyu
+  yama (7,7) / 2×2 açık yama (9,5) / 6 tekli çatlak (11-12,5-7) — grid'e
+  hizalı). gen_dogu'ya fill_pockets (mesa içi <12 hücre kum delikleri
+  kapanır — yüz kırıntısı üretmesin). Su değişmedi (Hakan onayladı).
+- SONRAKİ: Hakan görsel onayı → aynı dille loca + mezarlık yeniden üretimi
+  + çimen kenar sisteminin diğer biyomlara genellenmesi (çöl artık dual-grid
+  ile çözüldü) + damga kütüphanesinin büyütülmesi.
+- FIX: yankesicilik kapısı MAP_WORLD + nearestNpc<12'ye sabitti — çöl
+  NPC'lerinde çalışmıyordu (Hakan raporu); dünya+Taşdurak + tavan 24
+  (loca KASITLI kapalı — kendi loncandan çalamazsın).
+- **ÇIKIŞ CRASH'İ 2. VAKA (2026-07-22 Hakan raporu, pickTries fix'li
+  binary'de)**: ASan altında 1/17 reproduce; bozuk değerler bayt-sayacı
+  deseninde, SDL'in mantıksal ses aygıtı listesinde çöp stream. 24 harita
+  geçişi + savaş autoplay stresinde ASan TEMİZ → bizim tarafta taşma
+  bulunamadı; şüphe SDL 3.4.8 ses kapanış yarışı. MİTİGASYON: üç quit
+  fonksiyonu (music/ambience/audio) yok etmeden önce tüm stream'leri
+  SDL_PauseAudioStreamDevice ile susturuyor. ARAÇLAR (kalıcı): CMake
+  -DASAN=ON (yalnız game hedefi), env PIXE_AUTOLOAD=auto|slotNo (menüsüz
+  yükleme), PIXE_AUTOPLAY=1 (dolaş+saldır+portal stresi). Tekrar gelirse:
+  SDL sürüm güncellemesi gündeme alınacak.
+
+### Faz DOGU — TAŞDURAK: DOĞU SINIR KASABASI (Kıta planı ilk adım; 2026-07-20)
+- **TAVANLAR BÜYÜDÜ**: MAX_MOB_TYPES 24→32 (26 dolu), NPC_STATE_CAP 16→24
+  (19 dolu) — kısıt kalktı.
+- **MAP_DOGU** (100×70 çöl, gen_dogu.py seed 88): batı girişi → kasaba
+  (x8-32) + vaha → doğu çölü; kuzey TAPINAK VADİSİ (mumyalar), güney akrep
+  yuvaları, kervan yolu haydutları. Tile 15/16/17 (kum/kaya/vaha).
+  Portal: dünya T(197,19) "Çöl Geçidi" ↔ Taşdurak T(4,35).
+- **BÖLGE 6: Taşdurak** (REGIONS[5], rect 0 — region_of harita kontrolüyle
+  döner): bounty/itibar köyden AYRI yaşar (sınır kasabası sicilini bilmez).
+- **NPC'ler (Hakan onaylı kimlik — ticaret kasabası)**: Tüccar Ferah
+  (bölgesel dükkan), Hancı Duman (söylentiler — tapınak/haydut ipuçları),
+  KÂTİP RÜSTEM (Sultanlığın ilk resmî yüzü — Kıta planının tohum diyaloğu:
+  "yedi beylik, üç vadi, bir taht"; sprite Çelme'yle ortak, yenisi gelince
+  değişir). Diyaloglar ESO standardı.
+- **ÇİFT YÖNLÜ TİCARET (onaylı)**: köy malı (deri/et/odun) Taşdurak'ta
+  ×1.6 satılır; çöl malı (HURMA yeni yiyecek + BAHARAT) ucuz alınıp köyde
+  ×1.5 satılır — taşıma riski = yol mobları. shopDogu bayrağı.
+- **ÇÖL EKOLOJİSİ (onaylı 3 tür)**: [23] Mumya (undead — Kutsal sinerji),
+  [24] Akrep (hızlı sürü), [25] Çöl Haydudu (Desert Warrior 64px düzen —
+  anim offsetleri tahmini, testte doğrulanacak). 6 kamp (DOGU_CAMPS).
+- CRASH FIX (Hakan raporu — çıkışta SDL_QuitAudio SIGSEGV): pickTries[12]
+  NPC indeksiyle yazılıyordu, NPC_COUNT 19 olunca Taşdurak NPC'sine
+  yankesicilik STACK taşırıyordu (gecikmeli patlama) → PICK_TRIES_CAP 24 +
+  guard'lar. AYRICA save.c npcAliveFlag[16]+guard 16 → 19 NPC'li save
+  YÜKLENEMİYORDU → 32'ye büyütüldü. Paralel-dizi dersi 4 vakaya çıktı
+  (hafızada güncel); CSV GID+1 kuralı da gen_dogu'ya not düşüldü (zemin
+  ölü-su okunuyordu — yürünmeme/karanlık harita raporunun nedeni).
+- NOT: bölgesel gündoğumu/mevsim (vizyon) bu faza SIĞMADI — Doğu P2'ye;
+  kervanci.txt'ye Taşdurak memleket referansı da P2'ye.
+
 ### Faz SUIKAST-P3 — LONCA KONTRAT SİSTEMİ + RÜTBE + DÜKKAN (2026-07-20)
 - **assassin.c/h** (yeni modül): ASSASSIN_CONTRACTS tablosu (5 K1 kontratı —
   mevcut dünya mobları, yeni tür YOK; Kaçak Tahsildar kontratı gece kervan

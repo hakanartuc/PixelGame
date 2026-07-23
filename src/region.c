@@ -53,6 +53,9 @@ const Region REGIONS[] = {
     { .name = "Karanlık Orman",  .rect = { T(100), T(0),  T(100), T(75) }, .mood = MOOD_DANGER, CAMPS(ORMAN_CAMPS) },
     { .name = "Bataklık",        .rect = { T(0),   T(75), T(100), T(75) }, .mood = MOOD_DANGER, CAMPS(BATAKLIK_CAMPS) },
     { .name = "Kayalık Geçit",   .rect = { T(100), T(75), T(100), T(75) }, .mood = MOOD_DANGER, CAMPS(GECIT_CAMPS) },
+    // Taşdurak (MAP_DOGU): rect dünya uzayında EŞLEŞMEZ (0 boyut) — bölge
+    // indeksi main'deki region_of harita kontrolüyle döner (bounty/itibar ayrı)
+    { .name = "Taşdurak",        .rect = { 0, 0, 0, 0 }, .mood = MOOD_WILD },
 };
 const int REGION_COUNT = (int)(sizeof(REGIONS) / sizeof(REGIONS[0]));
 

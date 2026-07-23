@@ -10,7 +10,7 @@
 
 
 #define MAX_MOBS 64        // dünya geneli aynı anda max mob (yuva tavanları + reis/totem + pay)
-#define MAX_MOB_TYPES 24   // tür tablosu kapasitesi (E1: 18 tür — reis+totem eklendi)
+#define MAX_MOB_TYPES 32   // tür tablosu kapasitesi (Doğu fazında 24→32 büyütüldü)
 #define MAX_SPAWN_ZONES 32 // bölge kamplarından kurulabilecek max spawn bölgesi
 
 // Dünyada var olan, hareket eden, hasar alabilen her şeyin ortak çekirdeği.
@@ -165,7 +165,10 @@ typedef struct {
 #define MOB_BLOOD_MONSTER 19  // Kan Canavarı (mezarlık ölü su kıyısı)
 #define MOB_BRINGER       20  // ÖLÜM GETİREN (mezarlık boss'u — haftalık diriliş)
 #define MOB_TAX_RUNNER    21  // Kaçak Tahsildar (İlk İmza hedefi — gece kervan yolu)
-#define MOB_TAX_GUARD     22  // Tahsildar koruması (23/24 MAX_MOB_TYPES — DOLU SAYILIR)
+#define MOB_TAX_GUARD     22  // Tahsildar koruması
+#define MOB_MUMMY         23  // Mumya (Taşdurak tapınak vadisi — undead)
+#define MOB_SCARAB        24  // Akrep (çöl sürüsü — zehir basar)
+#define MOB_BANDIT        25  // Çöl Haydudu (kervan yolu — insan; 26/32)
 
 extern const MobType MOB_TYPES[];
 extern const int MOB_TYPE_COUNT;

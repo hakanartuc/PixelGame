@@ -4,6 +4,7 @@
 #define T(n) ((n) * (float)TILE_SIZE)
 #define DM_MEZARLIK 4   // MAP_MEZARLIK (worldmap.h enum sırası — include döngüsünden kaçınmak için literal)
 #define DM_LOCA 5       // MAP_LOCA (Sessiz El kontrat tahtası dekoru)
+#define DM_DOGU 6       // MAP_DOGU (Taşdurak — Faz DOGU)
 
 const DecorDef DECORS[] = {
     // RİTÜEL TAŞLARI (YANKICI — gizli): Karanlık Orman derinliği, işaretsiz.
@@ -94,6 +95,34 @@ const DecorDef DECORS[] = {
     // SESSİZ EL kontrat tahtası (loca T32,19 — salon sağ-alt, NPC'lerden uzak, [E] açar)
     { .texPath = "assets/decor/notice_board.png",
       .x = T(32), .y = T(19), .scale = 1.8f, .solidBase = true, .map = DM_LOCA },
+
+    // --- TAŞDURAK dekorları (Faz DOGU — map 6) ---
+    { .texPath = "assets/decor/desert/house1.png",       // Tüccar Ferah'ın evi
+      .x = T(13), .y = T(27), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
+    { .texPath = "assets/decor/desert/house2.png",       // Han (Duman)
+      .x = T(20), .y = T(28), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
+    { .texPath = "assets/decor/desert/house3.png",       // Kâtip konağı
+      .x = T(27), .y = T(27), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
+    { .texPath = "assets/decor/desert/pergola.png",      // meydan gölgeliği
+      .x = T(17), .y = T(34), .scale = 1.6f, .solidBase = false, .map = DM_DOGU },
+    { .texPath = "assets/decor/desert/market.png",       // pazar sahnesi (deve+halı)
+      .x = T(24), .y = T(35), .scale = 1.6f, .solidBase = true, .map = DM_DOGU },
+    { .texPath = "assets/decor/desert/acacia.png",       // vaha akasyası
+      .x = T(19), .y = T(41), .scale = 1.6f, .solidBase = true, .map = DM_DOGU },
+    { .texPath = "assets/decor/desert/cactus.png",
+      .x = T(38), .y = T(30), .scale = 2.0f, .solidBase = true, .map = DM_DOGU },
+    { .texPath = "assets/decor/desert/cactus.png",
+      .x = T(52), .y = T(44), .scale = 2.0f, .solidBase = true, .map = DM_DOGU },
+    { .texPath = "assets/decor/desert/dead_bush.png",
+      .x = T(45), .y = T(22), .scale = 1.8f, .solidBase = false, .map = DM_DOGU },
+    { .texPath = "assets/decor/desert/dead_bush.png",
+      .x = T(66), .y = T(40), .scale = 1.8f, .solidBase = false, .map = DM_DOGU },
+    { .texPath = "assets/decor/desert/temple.png",       // TAPINAK (mumya vadisi)
+      .x = T(80), .y = T(14), .scale = 2.0f, .solidBase = true, .map = DM_DOGU },
+    { .texPath = "assets/decor/desert/obelisk.png",
+      .x = T(75), .y = T(16), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
+    { .texPath = "assets/decor/desert/obelisk.png",
+      .x = T(85), .y = T(16), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
 };
 const int DECOR_COUNT = (int)(sizeof(DECORS) / sizeof(DECORS[0]));
 

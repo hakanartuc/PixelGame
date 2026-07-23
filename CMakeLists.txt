@@ -77,6 +77,15 @@ target_link_libraries(game PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)   # ← SDL3_t
 
 target_compile_options(game PRIVATE -Wall -Wextra)
 
+# ASan (opt-in): bellek bozulmasını yazıldığı ANDA yakalar — yalnız game hedefi,
+# vendored SDL/SDL_ttf enstrümante edilmez. Kullanım:
+#   cmake -B build-asan -DASAN=ON && cmake --build build-asan
+option(ASAN "AddressSanitizer (yalniz game hedefi)" OFF)
+if(ASAN)
+    target_compile_options(game PRIVATE -fsanitize=address -fno-omit-frame-pointer -g)
+    target_link_options(game PRIVATE -fsanitize=address)
+endif()
+
 # r2d duman testi — SDL_GPU yolunu oyundan bagimsiz dogrular (GPU gecisi araci)
 add_executable(r2d_test src/r2d_test.c src/r2d.c)
 target_link_libraries(r2d_test PRIVATE SDL3::SDL3)

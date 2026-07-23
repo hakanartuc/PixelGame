@@ -1,0 +1,25 @@
+# Kâtip Rüstem — Sultanlık'ın Taşdurak temsilcisi (Faz DOGU).
+# Doğu bloğunun İLK resmî yüzü — Kıta planının tohum diyaloğu.
+
+[start]
+text: ...Kayıtlı mısın? Hayır. Batılı mısın? Görünüşe göre. Taşdurak'ta ne işin var — ticaret mi, geçiş mi, yerleşme mi? Üçünün de mührü farklıdır ve mühürsüz hiçbir şey GERÇEK değildir, yolcu.
+opt: Sultanlık nedir? Anlat. -> sultanlik
+opt: Sadece ticaret. -> ticaret
+opt: Sana hesap vermem. -> soguk
+
+[sultanlik]
+text: Güneşin doğduğu her yer. Yedi beylik, üç vadi, bir taht — ve tahtın gölgesinde biz: kâtipler. Batınızın kralları kılıçla yazar; Sultan mühürle yazar. Mühür daha uzun yaşar. Bir gün sınır bu kasabayı yutarsa, hangi tarafta duracağını şimdiden düşün.
+opt: Ya sen hangi taraftasın? -> taraf
+opt: Düşünürüm. -> end
+
+[taraf]
+text: Ben mi? Kâtip taraf tutmaz — kâtip KAYIT tutar. Kim kazanırsa onun defterini yazarım. Ama defterime şimdiden not düştüm seni: "Batıdan geldi. Soru soruyor." Sorular... ilginç vergilerdir.
+opt: (Gözlerini kaçırma, ayrıl.) -> end
+
+[ticaret]
+text: Ferah'la konuş. Ama bil: buradan Doğu'ya geçen her malın Sultanlık vergisi vardır. Şimdilik senden istemiyorum — kayıtsızsın, YOKSUN. Yok olan vergilendirilemez. Kayda girdiğin gün... o gün konuşuruz.
+opt: (Ayrıl.) -> end
+
+[soguk]
+text: Vermezsin tabii. Batılılar hesabı hep kılıca havale eder. Not düşüldü.
+opt: (Ayrıl.) -> end

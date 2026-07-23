@@ -61,6 +61,18 @@ vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü
 - CuteFantasy-5x9.ttf glyph seti eksik (boşluk yok) — font PublicPixel'de kaldı.
 - Save dünya durumunu (mob/loot) içermez; harita değişirse eski save konumu tuhaf düşebilir.
 - CREDITS.md'de lisans TODO'ları var (ULPC parça listesi + Cute_Fantasy ticari lisans teyidi) — mobil yayın öncesi şart.
+- **MAPGEN + DUAL-GRID AUTOTILE (2026-07-23)**: haritalar scripts/mapgen.py ile
+  üretilir (noise/drunk-path/CA/min2x2 + PNG önizleme — asistan üret→BAK→düzelt
+  döngüsü uygular). Çöl kaya(16)/vaha(17) görseli tilemap.c dsr_dual_pass:
+  köşe-örneklemeli dual-grid, 16 parçalık atlas LUT'u, parça yarım karo kaymış
+  çizilir (assets/tiles/desert/{water,cliff}_atlas.png). Yeni eşleme eklerken
+  önce scratchpad mock'uyla görsel doğrula. CSV kuralı: değer = tile id + 1.
+- **DEV kancaları (main.c)**: `PIXE_AUTOLOAD=auto|<slotNo>` menüsüz kayıt
+  yükler; ek `PIXE_AUTOPLAY=1` dolaş+saldır+6sn'de bir portal geçişi (stres).
+  CMake `-DASAN=ON` yalnız game hedefini ASan'lar (build-asan/). Çıkış ses
+  crash'i (SDL_QuitAudio) 2. vakası bu araçlarla kovalandı — bizim taşma
+  bulunamadı, SDL 3.4.8 kapanış yarışı şüphesi; quit fonksiyonları artık
+  stream'leri önce SDL_PauseAudioStreamDevice ile susturuyor.
 - Skill sistemi = PUANLI DÜĞÜM AĞACI (Faz 21, skilltree.c): 16 ağaç (7 savaş/sosyal +
   6 meslek mini + Destruction + Staff + Kader). 4 seviye = 1 puan (Kader: 10 TOPLAM seviye = 1).
   Aktif beceriler (PS/QS + 5 yay + 5 büyü) ağaçtan SATIN ALINIR (mavi AKTİF düğüm) —
@@ -165,6 +177,12 @@ DoT/yansıtma hariç); mob_die'da büyük kan + hit-stop (melee 50ms / ok 30ms /
 ölüm 90ms / PERFECT parry 120ms — dünya dt ×0.08, menü gerçek zaman); blok
 kıvılcımı, cast halkası, yöne göre slash yayı. Assetler assets/fx/ +
 CREDITS.md. Sırada: ④ müzik seti (xDeviruchi).
+**TAŞDURAK TAMAM (Faz DOGU — Kıta planı ilk adım)**: MAP_DOGU 100×70 çöl
+(kum/kaya/vaha tile 15-17); portal dünya T(197,19)↔T(4,35); bölge 6 ayrı
+bounty/itibar; NPC Ferah (bölgesel dükkan)/Duman (söylenti)/Kâtip Rüstem
+(Sultanlık ilk yüzü); ÇİFT YÖNLÜ ticaret (köy malı çölde ×1.6, hurma/baharat
+köyde ×1.5); moblar Mumya/Akrep/Çöl Haydudu (6 kamp). TAVANLAR: MOB 32
+(26 dolu), NPC 24 (19 dolu). Gündoğumu ofseti/mevsim → Doğu P2.
 **SUİKASTÇİ P3 TAMAM — LONCA KONTRAT/RÜTBE**: assassin.c/h; loca kontrat
 tahtası (T28,16, [E], SF≥13) — 5 K1 kontratı (mevcut moblar), üstlen→
 tamamla→dön→ödül; rütbe Çırak→Usta El (eşik 0/3/7/13/20); İğne loca dükkanı

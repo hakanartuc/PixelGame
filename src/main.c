@@ -58,6 +58,9 @@
 // Bölge indeksi (dünya konumundan); bölge dışı → 0 (Yeşil Ova varsayılan)
 static int region_of(float x, float y)
 {
+    // Harita-farkında: Taşdurak kendi bölge indeksini kullanır (bounty/itibar
+    // ayrı yaşar — sınır kasabası köyün sicilini bilmez)
+    if (map_current() == MAP_DOGU) return 5;   // REGIONS[5] = Taşdurak
     int r = region_at(x, y);
     return (r < 0 || r >= MAX_REGIONS) ? 0 : r;
 }
@@ -1034,7 +1037,12 @@ int main(int argc, char *argv[])
     int trashTab = -1, trashSlot = -1;   // çöp onayı bekleyen item (-1 = yok)
     int dragHbSlot = -1;                 // hotbar'dan sürüklenen hücre (-1 = yok)
     int dragAbility = -1;                // K panelinden sürüklenen beceri (-1 = yok)
-    int pickTries[12] = {0};   // NPC başına BUGÜNKÜ yankesicilik denemesi (-15%/deneme)
+    // NPC başına BUGÜNKÜ yankesicilik denemesi (-15%/deneme).
+    // DİKKAT: NPC_COUNT'a paralel — tavan npc.c NPC_STATE_CAP (24) ile aynı
+    // tutulur. 12'de kalmıştı: Taşdurak NPC'sine (idx 16+) yankesicilik
+    // STACK TAŞIYORDU (çıkışta SDL_QuitAudio SIGSEGV — Hakan crash raporu)
+    #define PICK_TRIES_CAP 24
+    int pickTries[PICK_TRIES_CAP] = {0};
     bool pickFailUsed = false; // Masum Yüz: günde bir affedilen başarısızlık kullanıldı mı
     int dragTab = 0;           // sürükleme HANGİ sekmeden başladı (I ile değişse de doğru)
     g_mainBag = &inventory;    // bag_* yardımcıları (yönlendirme + iki-çanta sayım)
@@ -1357,6 +1365,7 @@ int main(int argc, char *argv[])
     bool shopOpen = false;
     bool shopCaravan = false;   // açık dükkan kervan mı? (özel stok + %15 pahalı)
     bool shopLoca = false;      // İğne loca dükkanı (rütbe kapılı stok; lawless fiyat)
+    bool shopDogu = false;      // Taşdurak tüccarı (bölgesel fiyat farkı — ticaret)
     ShopEntry caravanStock[12]; // aktif kervan stoğu: sabit liste + 2 rastgele tomar
     int caravanStockN = 0;      // (olayın startDay'i tohumlar — save gerekmez)
     int nearestNpc = -1;   // E prompt'u için (her kare güncellenir)
@@ -1589,6 +1598,33 @@ int main(int argc, char *argv[])
 #define FLASH_DUR 0.35f
 
     Uint64 last = SDL_GetTicks();
+
+    // DEV kancası: PIXE_AUTOLOAD=auto|<slotNo> → başlıkta durmadan kaydı yükle
+    // (ASan/repro koşuları menüsüz oyuna girebilsin; normal oyunda etkisiz)
+    const char *autoloadEnv = SDL_getenv("PIXE_AUTOLOAD");
+    int autoloadSlot = SAVE_SLOT_AUTO;
+    if (autoloadEnv != NULL && autoloadEnv[0] >= '1' && autoloadEnv[0] <= '9')
+        autoloadSlot = SDL_atoi(autoloadEnv) - 1;   // insan sayısı → slot indeksi
+    if (autoloadEnv != NULL &&
+        load_game(save_slot_path(autoloadSlot), &player,
+                  &inventory, &craftBag, &equipment, &hotbar, questStatus))
+    {
+        mapReloadNeeded = true;
+        tree_compute_effects(player.treeTaken, player.fateTaken, &perkFx);
+        spells_apply_learned(&player, &perkFx);
+        echo_apply_unlocks(&player, &perkFx);
+        skill_set_xp_mult(perkFx.xpGainMult);
+        hotbar_purge_closed(&hotbar, perkFx.abilityOpen);
+        hotbar_place_unlocks(&hotbar, perkFx.abilityOpen);
+        if (guardIdx >= 0) guard_init(guardIdx);
+        lastSeenDay = gametime_day();
+        wasNightWE = gametime_is_night();
+        bags_apply_caps(&player, &inventory, &craftBag);
+        if (kervanIdx >= 0)
+            npc_force_hidden(kervanIdx, worldevent_current() != WE_CARAVAN);
+        gameState = GAME_PLAYING;
+        SDL_Log("DEV: PIXE_AUTOLOAD — otomatik kayit yuklendi");
+    }
 
     while (running)
     {
@@ -2144,8 +2180,26 @@ int main(int argc, char *argv[])
                                 shopCaravan = (dialogNpc == kervanIdx);
                                 shopLoca = (nerimanIdx >= 0 && dialogNpc >= 0 &&
                                     SDL_strcmp(NPCS[dialogNpc].name, "Zehirci İğne") == 0);
+                                shopDogu = (dialogNpc >= 0 &&
+                                    SDL_strcmp(NPCS[dialogNpc].name, "Tüccar Ferah") == 0);
                                 shopVendorIdx = dialogNpc;   // kırgınlık zammı için
-                                if (shopLoca)
+                                if (shopDogu)
+                                {
+                                    // TAŞDURAK stoğu: çöl malları ucuz (ticaret
+                                    // döngüsünün alım ayağı) + temel ihtiyaç
+                                    caravanStockN = 0;
+                                    caravanStock[caravanStockN++] =
+                                        (ShopEntry){ &ITEM_TYPES[ITEM_DATE_FRUIT] };
+                                    caravanStock[caravanStockN++] =
+                                        (ShopEntry){ &ITEM_TYPES[ITEM_SPICE] };
+                                    caravanStock[caravanStockN++] =
+                                        (ShopEntry){ &ITEM_TYPES[ITEM_POTION_HP] };
+                                    caravanStock[caravanStockN++] =
+                                        (ShopEntry){ &ITEM_TYPES[ITEM_ARROW] };
+                                    caravanStock[caravanStockN++] =
+                                        (ShopEntry){ &ITEM_TYPES[ITEM_POTION_MANA] };
+                                }
+                                else if (shopLoca)
                                 {
                                     // LOCA DÜKKANI (P3): rütbeye göre açılan mal
                                     int rank = assassin_rank(player.assassinPoints);
@@ -3052,7 +3106,7 @@ int main(int argc, char *argv[])
                 }
                 else if (event.key.key == SDLK_E && gameState == GAME_PLAYING &&
                          dialogNpc < 0 && map_current() != MAP_WORLD &&
-                         map_current() != MAP_LOCA)
+                         map_current() != MAP_LOCA && map_current() != MAP_DOGU)
                 {
                     // Zindanda E başka işe bakmaz (NPC/istasyon/pano dünyada;
                     // LOCA hariç — orada NPC'lerle konuşulur)
@@ -3374,8 +3428,9 @@ int main(int argc, char *argv[])
                 }
                 else if (event.key.key == SDLK_P && gameState == GAME_PLAYING &&
                          !scene_active() && dialogNpc < 0 && !shopOpen &&
-                         map_current() == MAP_WORLD && nearestNpc >= 0 &&
-                         nearestNpc < 12)
+                         (map_current() == MAP_WORLD ||
+                          map_current() == MAP_DOGU) &&
+                         nearestNpc >= 0 && nearestNpc < PICK_TRIES_CAP)
                 {
                     // YANKESİCİLİK: eğilerek yaklaş + P. Zar: taban %35 +
                     // Pickpocket lvl×0.5 + eğilme +25 + meşgul +15, muhafız -30,
@@ -3390,9 +3445,10 @@ int main(int argc, char *argv[])
                                  + (player.sneaking ? 0.25f : 0.0f)
                                  + (npc_bark_active(pv) ? 0.15f : 0.0f)
                                  - (NPCS[pv].isGuard ? 0.30f : 0.0f)
-                                 - 0.15f * (float)pickTries[pv];
+                                 - 0.15f * (float)(pv < PICK_TRIES_CAP
+                                                   ? pickTries[pv] : 0);
                         if (ch > 0.90f) ch = 0.90f;
-                        pickTries[pv]++;
+                        if (pv < PICK_TRIES_CAP) pickTries[pv]++;
                         int pRegion = region_of(pnx, pny);
                         if (ch > 0.0f && randf() < ch)
                         {
@@ -4463,7 +4519,7 @@ int main(int argc, char *argv[])
                     {
                         int entry = shop_entry_at((float)event.button.x, (float)event.button.y,
                                                   40.0f, 40.0f,
-                                                  (shopCaravan||shopLoca) ? caravanStockN : 0);
+                                                  (shopCaravan||shopLoca||shopDogu) ? caravanStockN : 0);
                         if (entry >= 0)
                         {
                             const ItemType *it = shopCaravan ? caravanStock[entry].type
@@ -4974,9 +5030,21 @@ int main(int argc, char *argv[])
                                 {
                                     // Dükkan açıkken sağ tık = SAT (alışın yarısı × itibar, plus dahil)
                                     int sellRegion = region_of(player.rect.x, player.rect.y);
+                                    // BÖLGESEL FİYAT FARKI (Faz DOGU — ticaret döngüsü):
+                                    // köy malı Taşdurak'ta ×1.6, çöl malı köyde ×1.5
+                                    float tradeMult = 1.0f;
+                                    if (shopDogu &&
+                                        (st->type == &ITEM_TYPES[ITEM_LEATHER] ||
+                                         st->type == &ITEM_TYPES[ITEM_MEAT] ||
+                                         st->type == &ITEM_TYPES[ITEM_WOOD]))
+                                        tradeMult = 1.6f;
+                                    else if (!shopDogu && !shopCaravan && !shopLoca &&
+                                             (st->type == &ITEM_TYPES[ITEM_DATE_FRUIT] ||
+                                              st->type == &ITEM_TYPES[ITEM_SPICE]))
+                                        tradeMult = 1.5f;
                                     int price = (int)(item_value(st) / 2 *
                                                       rep_sell_mult(player.reputation[sellRegion]) *
-                                                      perkFx.shopSellMult);
+                                                      perkFx.shopSellMult * tradeMult);
                                     player.gold += price;
                                     audio_play(SFX_UI);
                                     st->count--;
@@ -5191,6 +5259,23 @@ int main(int argc, char *argv[])
         int winW, winH;
         SDL_GetWindowSize(window, &winW, &winH); // pencere boyutunu al (dinamik olarak, pencere yeniden boyutlandırılabilir)
 
+        // DEV kancası: PIXE_AUTOPLAY=1 → dolaş + sürekli saldır (ASan stres
+        // koşusu savaş/FX/loot yollarını menüsüz tetikleyebilsin)
+        if (autoloadEnv != NULL && SDL_getenv("PIXE_AUTOPLAY") != NULL &&
+            gameState == GAME_PLAYING && deathTimer <= 0.0f)
+        {
+            static float apT = 0.0f, apPortalT = 0.0f;
+            apT += dt; apPortalT += dt;
+            player.autoAttack = true;
+            player.rect.x += SDL_cosf(apT * 0.6f) * 90.0f * dt;
+            player.rect.y += SDL_sinf(apT * 0.85f) * 90.0f * dt;
+            if (apPortalT > 6.0f && pendingPortal < 0)   // harita geçiş stresi
+            {
+                apPortalT = 0.0f;
+                pendingPortal = (map_current() == MAP_DOGU) ? 1 : 0;
+            }
+        }
+
         // ÖLÜM EKRANI: dünya donuk, sadece geri sayım (bitince köyde diril)
         if (deathTimer > 0.0f)
         {
@@ -5327,10 +5412,11 @@ int main(int argc, char *argv[])
                 player.knockbackX = player.knockbackY = 0.0f;
 
                 // 5) Dünya-özel sistemler kapanır/açılır + ambiyans
-                npc_set_active(to == MAP_WORLD || to == MAP_LOCA);
+                npc_set_active(to == MAP_WORLD || to == MAP_LOCA ||
+                               to == MAP_DOGU);
                 npc_set_map((int)to);
                 decor_set_active(to == MAP_WORLD || to == MAP_MEZARLIK ||
-                                 to == MAP_LOCA);
+                                 to == MAP_LOCA || to == MAP_DOGU);
                 decor_set_map((int)to);
                 map_set_current(to);
                 if (MAPS[to].name[0] != '\0')
@@ -8025,8 +8111,9 @@ int main(int argc, char *argv[])
 
             gametime_update(dt);                      // dünya saati
             npc_set_talking(dialogNpc);               // konuşan NPC yerinde durur
-            if (map_current() == MAP_WORLD || map_current() == MAP_LOCA)
-                npc_update(dt, gametime_hours());     // NPC rutinleri (loca dahil)
+            if (map_current() == MAP_WORLD || map_current() == MAP_LOCA ||
+                map_current() == MAP_DOGU)
+                npc_update(dt, gametime_hours());     // NPC rutinleri (loca+doğu)
 
             // Günlük itibar toparlanması: suçsuz geçen gün, negatif itibar 0'a doğru +1
             // (pozitif itibar zamanla artmaz — güven kazanmak iş ister)
@@ -8034,7 +8121,7 @@ int main(int argc, char *argv[])
             if (today != lastSeenDay)
             {
                 lastSeenDay = today;
-                for (int pi = 0; pi < 12; pi++) pickTries[pi] = 0;   // cepler tazelenir
+                for (int pi = 0; pi < PICK_TRIES_CAP; pi++) pickTries[pi] = 0;   // cepler tazelenir
                 pickFailUsed = false;
 
                 // REVİR: 30 gün ödenmeyen yatış — köylüler toplar, NPC döner
@@ -10061,7 +10148,7 @@ int main(int argc, char *argv[])
         if (!r2d_begin_frame(renderer, 155, 155, 155))
             continue;
         tilemap_render(renderer, tile_textures, &camera);     // haritayı çiz
-        if (map_current() == MAP_WORLD)
+        if (map_current() == MAP_WORLD || map_current() == MAP_DOGU)
             tilemap_render_scatter(renderer, &camera);         // süs serpiştirmesi
         decor_render_all(renderer, decor_textures, &camera);  // evler (zemin üstü, entity altı)
         if (map_is_dungeon(map_current()))
@@ -11435,8 +11522,8 @@ int main(int argc, char *argv[])
                             * (shopCaravan ? 1.15f : 1.0f)
                             * ((!shopLoca && npc_grudge(shopVendorIdx)) ? 1.25f : 1.0f),
                         40.0f, 40.0f,
-                        (shopCaravan||shopLoca) ? caravanStock : NULL,
-                        (shopCaravan||shopLoca) ? caravanStockN : 0);
+                        (shopCaravan||shopLoca||shopDogu) ? caravanStock : NULL,
+                        (shopCaravan||shopLoca||shopDogu) ? caravanStockN : 0);
 
         // Craft paneli + aktif sürecin ilerleme barı
         if (craftOpen && craftStation >= 0)
@@ -11626,12 +11713,12 @@ int main(int argc, char *argv[])
             if (tip == NULL && shopOpen)
             {
                 int se = shop_entry_at(tmx, tmy, 40.0f, 40.0f,
-                                       (shopCaravan||shopLoca) ? caravanStockN : 0);
+                                       (shopCaravan||shopLoca||shopDogu) ? caravanStockN : 0);
                 if (se >= 0 &&
-                    se < ((shopCaravan||shopLoca) ? caravanStockN : SHOP_STOCK_COUNT))
+                    se < ((shopCaravan||shopLoca||shopDogu) ? caravanStockN : SHOP_STOCK_COUNT))
                 {
                     static ItemStack shopTip;   // stok taze instance gibi gösterilir
-                    shopTip = item_make(((shopCaravan||shopLoca) ? caravanStock : SHOP_STOCK)[se].type,
+                    shopTip = item_make(((shopCaravan||shopLoca||shopDogu) ? caravanStock : SHOP_STOCK)[se].type,
                                         1, 0);
                     tip = &shopTip;
                     if (shopTip.type->equipable && shopTip.type->equipSlot >= 0 &&

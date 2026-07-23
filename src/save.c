@@ -459,9 +459,9 @@ bool load_game(const char *path, Player *p,
     ok = ok && r32(f, &tmpP.lastCrimeDay);
 
     Sint32 nNpc = 0;
-    Sint32 npcAliveFlag[16];
+    Sint32 npcAliveFlag[32];   // NPC tavanıyla uyumlu (16'da save yüklenemez olmuştu)
     ok = ok && r32(f, &nNpc);
-    if (ok && (nNpc < 0 || nNpc > 16))
+    if (ok && (nNpc < 0 || nNpc > 32))
         ok = false;   // bozuk sayı
     for (int i = 0; ok && i < nNpc; i++)
         ok = r32(f, &npcAliveFlag[i]);

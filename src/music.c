@@ -163,6 +163,11 @@ void music_set_volume(float v01)
 
 void music_quit(void)
 {
+    // Önce SUSTUR: aygıt thread'i karıştırırken stream yok etmek nadir bir
+    // kapanış çökmesi üretiyordu (SDL_QuitAudio/DestroyLogicalAudioDevice
+    // SIGSEGV) — duraklatma yok etmeyle karıştırma yarışını kapatır
+    for (int i = 0; i < MOOD_COUNT; i++)
+        if (trkStream[i]) SDL_PauseAudioStreamDevice(trkStream[i]);
     for (int i = 0; i < MOOD_COUNT; i++) {
         if (trkStream[i]) SDL_DestroyAudioStream(trkStream[i]);
         if (trkBuf[i]) {

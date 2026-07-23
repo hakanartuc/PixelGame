@@ -44,6 +44,12 @@ const MapDef MAPS[MAP_COUNT] = {
         .mood = MOOD_DUNGEON,
         .ambient = 0.30f,   // meşale loşluğu — ama zindan DEĞİL (dalga/mob yok)
     },
+    [MAP_DOGU] = {
+        .name = "Taşdurak — Sınır Kasabası",
+        .csvPath = "assets/maps/dogu.csv",
+        .mood = MOOD_WILD,
+        .ambient = 0.0f,   // açık hava — gün/gece döngüsü işler
+    },
 };
 
 // ---------------------------------------------------------------------------
@@ -51,6 +57,14 @@ const MapDef MAPS[MAP_COUNT] = {
 // (assets/maps/dungeon_f*.csv scripts/gen_dungeon.py'den; oda düzeni orada)
 // ---------------------------------------------------------------------------
 const MapPortal PORTALS[] = {
+    // DOĞU (Taşdurak): kervan yolunun doğu ucu — çöl geçidi
+    { .from = MAP_WORLD, .x = T(197), .y = T(19), .radius = 80.0f,
+      .to = MAP_DOGU, .tx = T(4), .ty = T(35),
+      .label = "[E] Çöl Geçidi — Taşdurak", .decorTex = NULL },
+    { .from = MAP_DOGU, .x = T(2.5f), .y = T(35), .radius = 80.0f,
+      .to = MAP_WORLD, .tx = T(195.5f), .ty = T(19),
+      .label = "[E] Batıya — Kervan Yolu", .decorTex = NULL },
+
     // SUİKASTÇİ P1: Kör Kuyu'nun dibi — ip yalnız koşul sağlanınca görünür
     // (main: gece + 500g aklama YA DA loca zaten keşfedilmiş)
     { .from = MAP_WORLD, .x = T(26), .y = T(15), .radius = 60.0f,
@@ -128,6 +142,17 @@ static const RegionCamp MZ_CAMPS[] = {
     { .x = T(10), .y = T(22), .radius = T(4), .type = &MOB_TYPES[MOB_GHOUL_WIZARD],  .maxCount = 1 }, // batı sırt
     { .x = T(34), .y = T(40), .radius = T(5), .type = &MOB_TYPES[MOB_BLOOD_MONSTER], .maxCount = 3 }, // güney ölü su
 };
+// Taşdurak çölü (Faz DOGU): tapınak vadisi mumyaları + akrep yuvaları +
+// kervan yolu hayduları — kasaba alanı (x8-32) TEMİZ bırakılır
+static const RegionCamp DOGU_CAMPS[] = {
+    { .x = T(78), .y = T(17), .radius = T(5), .type = &MOB_TYPES[MOB_MUMMY],  .maxCount = 3 }, // tapınak
+    { .x = T(88), .y = T(24), .radius = T(4), .type = &MOB_TYPES[MOB_MUMMY],  .maxCount = 2 },
+    { .x = T(62), .y = T(56), .radius = T(5), .type = &MOB_TYPES[MOB_SCARAB], .maxCount = 4 }, // güney yuva
+    { .x = T(84), .y = T(52), .radius = T(4), .type = &MOB_TYPES[MOB_SCARAB], .maxCount = 3 },
+    { .x = T(52), .y = T(34), .radius = T(4), .type = &MOB_TYPES[MOB_BANDIT], .maxCount = 2 }, // yol kesen
+    { .x = T(70), .y = T(38), .radius = T(4), .type = &MOB_TYPES[MOB_BANDIT], .maxCount = 2 },
+};
+
 static const RegionCamp F2_CAMPS[] = {
     { .x = T(20), .y = T(9),  .radius = T(4), .type = &MOB_TYPES[12], .maxCount = 2 }, // salon
     { .x = T(23), .y = T(11), .radius = T(3), .type = &MOB_TYPES[14], .maxCount = 1 }, // salon: büyücü
@@ -147,6 +172,9 @@ const RegionCamp *map_camps(MapId id, int *count)
         case MAP_MEZARLIK:
             *count = (int)(sizeof(MZ_CAMPS) / sizeof(MZ_CAMPS[0]));
             return MZ_CAMPS;
+        case MAP_DOGU:
+            *count = (int)(sizeof(DOGU_CAMPS) / sizeof(DOGU_CAMPS[0]));
+            return DOGU_CAMPS;
         default:
             *count = 0;
             return NULL;   // dünya: REGIONS kampları (main kurar)

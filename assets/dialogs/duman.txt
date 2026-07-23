@@ -1,0 +1,15 @@
+# Hancı Duman — Taşdurak hanı (Faz DOGU)
+
+[start]
+text: Han dolu değil, gönül dolu — geç otur. Duman derler bana; ocağım hiç sönmez de ondan. Yol yorgunuysan gölge bizde, söylenti de bizde.
+opt: Ne söylentisi? -> soylenti
+opt: Sadece uğradım. -> end
+
+[soylenti]
+text: Tapınak vadisinden gece sesler geliyor — sargılı ayaklar kumda iz bırakmaz ama BIRAKIYOR, anlıyor musun? Bir de kervan yolunda haydutlar türedi; Ferah'ın malını iki kez soydular. Sultanlık asker yollamıyor... "sınır meselesi" diyorlar.
+opt: Tapınakta ne var? -> tapinak
+opt: Sağ ol. -> end
+
+[tapinak]
+text: Eskiler oraya ölülerini SARIP koyarlarmış — bal, tuz, kefen. Şimdi o sarılılar geceleri geziniyormuş. Ben görmedim; gören masamda oturdu, üç gün konuşmadı.
+opt: (Ayrıl.) -> end

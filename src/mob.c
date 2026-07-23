@@ -118,6 +118,22 @@ static const LootEntry BLOOD_LOOT[] = {
     { &ITEM_TYPES[ITEM_POTION_HP],      0.35f, 0 },
     { &ITEM_TYPES[ITEM_ESSENCE_TOXIC],  0.15f, 0 },
 };
+// Faz DOGU — çöl aileleri
+static const LootEntry MUMMY_LOOT[] = {
+    { &ITEM_TYPES[ITEM_BONE],           0.60f, 0 },
+    { &ITEM_TYPES[ITEM_ESSENCE_PALE],   0.20f, 0 },
+    { &ITEM_TYPES[ITEM_SPICE],          0.25f, 0 },   // kefen baharatı (ticaret)
+};
+static const LootEntry SCARAB_LOOT[] = {
+    { &ITEM_TYPES[ITEM_ESSENCE_TOXIC],  0.30f, 0 },   // zehir bezi — İğne ekonomisi
+    { &ITEM_TYPES[ITEM_MEAT],           0.40f, 0 },
+};
+static const LootEntry BANDIT_LOOT[] = {
+    { &ITEM_TYPES[ITEM_POTION_HP],      0.30f, 0 },
+    { &ITEM_TYPES[ITEM_ARROW],          0.40f, 0 },
+    { &ITEM_TYPES[ITEM_DATE_FRUIT],     0.50f, 0 },   // heybesinden hurma
+};
+
 static const LootEntry BRINGER_LOOT[] = {
     { &ITEM_TYPES[ITEM_BONE],           1.00f, 0 },
     { &ITEM_TYPES[ITEM_STONE_HP],       1.00f, 0 },
@@ -868,6 +884,108 @@ const MobType MOB_TYPES[] = {
                 { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
                 { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
                 { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
+            },
+        },
+    },
+
+    // --- Faz DOGU: çöl aileleri (Cute Fantasy Desert — iskelet/ork düzenleri) ---
+    // [23] MUMYA: yavaş-dayanıklı undead (Kutsal ×1.6 sinerjisi) — iskelet düzeni
+    {
+        .name = "Mumya",
+        .texturePath = "assets/characters/mobs/Mummy.png",
+        .level = 8, .maxHealth = 380.0f, .speed = 110.0f,
+        .attackRange = 60.0f, .detectRange = 260.0f, .damage = 22.0f, .defense = 16.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 2, .attackRecover = 1.2f,
+        .lootTable = MUMMY_LOOT, .lootTableCount = LOOT_COUNT(MUMMY_LOOT),
+        .goldMin = 25, .goldMax = 50,
+        .undead = true,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.18f, .feetY=30 },
+                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.18f, .feetY=30 },
+                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.18f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
+            },
+            {
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.16f, .feetY=30 },
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.16f, .feetY=30 },
+                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.16f, .feetY=30 },
+            },
+        },
+    },
+    // [24] AKREP: hızlı sürü + zehir basar (combat mob vuruşu — poison alanları
+    // main'de mob→oyuncu zehri YOK; akrep zehrini vuruşta main işler)
+    {
+        .name = "Akrep",
+        .texturePath = "assets/characters/mobs/Scarab.png",
+        .level = 7, .maxHealth = 120.0f, .speed = 230.0f,
+        .attackRange = 45.0f, .detectRange = 300.0f, .damage = 10.0f, .defense = 4.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 2, .attackRecover = 0.8f,
+        .lootTable = SCARAB_LOOT, .lootTableCount = LOOT_COUNT(SCARAB_LOOT),
+        .goldMin = 8, .goldMax = 20,
+        .bodyW = 34.0f, .bodyH = 26.0f, .drawScale = 2.0f,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.3f, .feetY=22 },
+                { .x=0, .y=0,   .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.3f, .feetY=22 },
+                { .x=0, .y=0,   .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.3f, .feetY=22 },
+            },
+            {
+                { .x=0, .y=24,  .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.12f, .feetY=22 },
+                { .x=0, .y=24,  .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.12f, .feetY=22 },
+                { .x=0, .y=24,  .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.12f, .feetY=22 },
+            },
+            {
+                { .x=0, .y=24,  .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.10f, .feetY=22 },
+                { .x=0, .y=24,  .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.10f, .feetY=22 },
+                { .x=0, .y=24,  .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.10f, .feetY=22 },
+            },
+            {
+                { .x=0, .y=0,   .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.2f, .feetY=22 },
+                { .x=0, .y=0,   .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.2f, .feetY=22 },
+                { .x=0, .y=0,   .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.2f, .feetY=22 },
+            },
+        },
+    },
+    // [25] ÇÖL HAYDUDU: kervan yolu kesen insan — 64px düzen (Desert Warrior)
+    {
+        .name = "Çöl Haydudu",
+        .texturePath = "assets/characters/mobs/Desert_Warrior.png",
+        .level = 9, .maxHealth = 260.0f, .speed = 190.0f,
+        .attackRange = 70.0f, .detectRange = 340.0f, .damage = 20.0f, .defense = 10.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 3, .attackRecover = 0.9f,
+        .lootTable = BANDIT_LOOT, .lootTableCount = LOOT_COUNT(BANDIT_LOOT),
+        .goldMin = 35, .goldMax = 70,
+        .bodyW = 44.0f, .bodyH = 50.0f, .drawScale = 1.3f,
+        .anims = {
+            {
+                { .x=0, .y=0,   .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.14f, .feetY=56 },
+                { .x=0, .y=128, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.14f, .feetY=56 },
+                { .x=0, .y=64,  .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.14f, .feetY=56 },
+            },
+            {
+                { .x=0, .y=192, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.11f, .feetY=56 },
+                { .x=0, .y=320, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.11f, .feetY=56 },
+                { .x=0, .y=256, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.11f, .feetY=56 },
+            },
+            {
+                { .x=0, .y=384, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.10f, .feetY=56 },
+                { .x=0, .y=512, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.10f, .feetY=56 },
+                { .x=0, .y=448, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.10f, .feetY=56 },
+            },
+            {
+                { .x=0, .y=576, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.16f, .feetY=56 },
+                { .x=0, .y=576, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.16f, .feetY=56 },
+                { .x=0, .y=576, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.16f, .feetY=56 },
             },
         },
     },
