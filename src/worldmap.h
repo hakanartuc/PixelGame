@@ -29,6 +29,7 @@ typedef struct {
     const char *csvPath;
     MusicMood mood;        // sabit harita mood'u (dünyada bölge sistemi kazanır)
     float ambient;         // 0 = gametime'a bağlı (dünya); >0 = sabit karanlık çarpanı
+    float sunriseOffset;   // gündoğumu kayması (saat): doğu haritaları NEGATİF
 } MapDef;
 
 // Geçit: E ile kullanılır. Tek yönlü — çift yön = iki satır.

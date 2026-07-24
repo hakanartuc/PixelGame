@@ -81,9 +81,9 @@ void shop_render(R2D *renderer, TTF_Font *font,
             r2d_draw_texture(renderer, itemIconTex, &src, &dst);
         }
 
-        // Ad + fiyat (itibar çarpanlı; altın yetmiyorsa soluk)
+        // Ad + fiyat (itibar + mevsim çarpanlı; altın yetmiyorsa soluk)
         draw_text(renderer, font, it->name, row.x + 44.0f, rowY + 4.0f, white);
-        int shown = (int)(it->value * buyMult);
+        int shown = (int)(it->value * buyMult * item_season_trade_mult(it));
         char price[16];
         snprintf(price, sizeof(price), "%d g", shown);
         draw_text(renderer, font, price, row.x + 44.0f, rowY + 20.0f,

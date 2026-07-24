@@ -4530,6 +4530,7 @@ int main(int argc, char *argv[])
                             int buyPrice = (int)(it->value *
                                                  rep_buy_mult(player.reputation[shopRegion]) *
                                                  perkFx.shopBuyMult *
+                                                 item_season_trade_mult(it) *   // kış pahalı / hasat ucuz
                                                  (shopCaravan ? 1.15f : 1.0f) *
                                                  ((!shopLoca && npc_grudge(shopVendorIdx))
                                                   ? 1.25f : 1.0f));   // REVİR kırgınlığı (loca hariç)
@@ -5044,7 +5045,8 @@ int main(int argc, char *argv[])
                                         tradeMult = 1.5f;
                                     int price = (int)(item_value(st) / 2 *
                                                       rep_sell_mult(player.reputation[sellRegion]) *
-                                                      perkFx.shopSellMult * tradeMult);
+                                                      perkFx.shopSellMult * tradeMult *
+                                                      item_season_trade_mult(st->type));   // mevsim talebi
                                     player.gold += price;
                                     audio_play(SFX_UI);
                                     st->count--;
@@ -5419,6 +5421,8 @@ int main(int argc, char *argv[])
                                  to == MAP_LOCA || to == MAP_DOGU);
                 decor_set_map((int)to);
                 map_set_current(to);
+                // Bölgesel gündoğumu (DOGU-P2): doğu haritasında güneş erken
+                gametime_set_sun_offset(MAPS[to].sunriseOffset);
                 if (MAPS[to].name[0] != '\0')
                 {
                     splashText = MAPS[to].name;
@@ -10855,6 +10859,21 @@ int main(int argc, char *argv[])
                 float golden = SDL_sinf(dark01 * SDL_PI_F) * 0.18f;
                 ambR += golden;
                 ambG += golden * 0.45f;
+
+                // MEVSİM TONU (DOGU-P2): gündüze ince renk kimliği —
+                // sonbahar sıcak turuncu, kış soluk mavi, yaz doygun sıcak.
+                // Gece etkilenmesin diye gündüz ağırlığıyla (1-dark01) karışır.
+                float dayW = 1.0f - dark01;
+                switch (gametime_season()) {
+                    case SEASON_AUTUMN:
+                        ambR += 0.05f * dayW; ambB -= 0.07f * dayW; break;
+                    case SEASON_WINTER:
+                        ambR -= 0.07f * dayW; ambG -= 0.03f * dayW;
+                        ambB += 0.05f * dayW; break;
+                    case SEASON_SUMMER:
+                        ambR += 0.04f * dayW; ambG += 0.02f * dayW; break;
+                    default: break;   // ilkbahar: nötr taze
+                }
             }
 
             // Meşale: envanterde varsa oyuncu ışık taşır
@@ -11106,7 +11125,7 @@ int main(int argc, char *argv[])
                 draw_text(renderer, gameFont, "[Gizli]", 20.0f, hudY, sneakCol);
             }
 
-            char clockBuf[24];
+            char clockBuf[40];   // "Gün 999 · İlkbahar  23:59" UTF-8 sığsın
             gametime_format(clockBuf, sizeof(clockBuf));
             SDL_Color clockCol = { 220, 220, 235, 255 };
             int tw = 0, th = 0;

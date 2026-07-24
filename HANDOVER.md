@@ -72,6 +72,14 @@ vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü
   sabit noktalar (portal/NPC/dekor/kamp) script içinde garanti edilir; harita
   değiştirirken ÖNCE oradaki sabit listesine bak. Yeni eşleme eklerken önce
   scratchpad mock'uyla görsel doğrula. CSV kuralı: değer = tile id + 1.
+- **MEVSİMLER (DOGU-P2, 2026-07-24)**: 10 gün/mevsim, günden türetilir (save
+  değişmedi). Güneş sınırları mevsimsel (yaz 05-21, kış 08-17) + harita
+  gündoğumu offset'i (MapDef.sunriseOffset — Taşdurak -0.75 saat; geçişte
+  gametime_set_sun_offset). Etkiler: gündüz ambient mevsim tonu (main ışık
+  bloğu), şafak hava havuzu mevsimsel (weather.c roll_pool — kış %38 kar),
+  fiyat çarpanı item_season_trade_mult (kış yiyecek+odun ×1.35, sonbahar
+  yiyecek ×0.80 — main alım/satım + shop paneli), ekoloji üremesi
+  (ilkbahar +1, kış hayvan gün aşırı — ecology_dawn).
 - **DEV kancaları (main.c)**: `PIXE_AUTOLOAD=auto|<slotNo>` menüsüz kayıt
   yükler; ek `PIXE_AUTOPLAY=1` dolaş+saldır+6sn'de bir portal geçişi (stres).
   CMake `-DASAN=ON` yalnız game hedefini ASan'lar (build-asan/). Çıkış ses

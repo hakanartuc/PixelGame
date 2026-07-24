@@ -47,6 +47,7 @@ const MapDef MAPS[MAP_COUNT] = {
     [MAP_DOGU] = {
         .name = "Taşdurak — Sınır Kasabası",
         .csvPath = "assets/maps/dogu.csv",
+        .sunriseOffset = -0.75f,   // doğu: güneş 45 dk erken doğar/batar
         .mood = MOOD_WILD,
         .ambient = 0.0f,   // açık hava — gün/gece döngüsü işler
     },
@@ -378,7 +379,7 @@ void map_portals_render(R2D *renderer, const Camera *cam, TTF_Font *font, int ne
     for (int i = 0; i < PORTAL_COUNT; i++) {
         if (PORTALS[i].from != curMap) continue;
 
-        if (i < 8 && portalTex[i] != NULL) {
+        if (i < 16 && portalTex[i] != NULL) {   // portalTex tavanıyla aynı (8'de kalmıştı — mezarlık kapısı görünmüyordu)
             float w, h;
             r2d_texture_size(portalTex[i], &w, &h);
             float dw = w * PORTALS[i].decorScale, dh = h * PORTALS[i].decorScale;

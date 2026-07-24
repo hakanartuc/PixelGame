@@ -10,11 +10,29 @@
 #define GAMETIME_START_HOUR 8.0f      // oyun sabah 08:00'de başlar
 
 typedef enum {
-    PHASE_DAWN,    // 05-07: karanlık çözülür
-    PHASE_DAY,     // 07-19: aydınlık
-    PHASE_DUSK,    // 19-21: kararır
-    PHASE_NIGHT,   // 21-05: karanlık (tehlike saatleri)
+    PHASE_DAWN,    // karanlık çözülür (sınırlar mevsime + haritaya göre kayar)
+    PHASE_DAY,     // aydınlık
+    PHASE_DUSK,    // kararır
+    PHASE_NIGHT,   // karanlık (tehlike saatleri)
 } DayPhase;
+
+// Mevsimler (Faz DOGU-P2): 10 günde bir döner — yıl 40 gün.
+// Gündüz uzunluğu mevsime bağlı: yaz 05-21, kış 08-17.
+#define SEASON_DAYS 10
+typedef enum {
+    SEASON_SPRING = 0,
+    SEASON_SUMMER,
+    SEASON_AUTUMN,
+    SEASON_WINTER,
+    SEASON_COUNT,
+} Season;
+
+Season gametime_season(void);            // günden türetilir (save'e girmez)
+const char *gametime_season_name(void);  // "İlkbahar" / "Yaz" / ...
+
+// Harita gündoğumu kayması (saat): doğu haritaları NEGATİF (erken doğar,
+// erken batar). Harita geçişinde main çağırır (MapDef.sunriseOffset).
+void gametime_set_sun_offset(float hours);
 
 void gametime_init(void);
 void gametime_update(float dt);

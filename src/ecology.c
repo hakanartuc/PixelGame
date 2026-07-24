@@ -1,5 +1,6 @@
 #include <string.h>
 #include "ecology.h"
+#include "gametime.h"   // mevsim üremesi (DOGU-P2)
 #include "common.h"   // randf
 
 #define T(n) ((n) * (float)TILE_SIZE)
@@ -198,8 +199,15 @@ void ecology_dawn(int day, SpawnZone *zones, int maxZones, int *zoneCount,
 
         // Şafak üremesi: yuva başına +1 (eksik olan İLK girişe).
         // Bereket (WE_BOUNTY): hayvan sürüleri o şafak +2 EKSTRA doğurur.
+        // MEVSİM (DOGU-P2): ilkbahar +1 (bolluk); kışın hayvan üremesi
+        // gün aşırı (av kıtlığı — canavar yuvaları etkilenmez, kış onların)
         bool animal = s->family >= FAM_SHEEP;
         int births = 1 + ((animal && birthBonus > 0) ? birthBonus : 0);
+        Season season = gametime_season();
+        if (season == SEASON_SPRING)
+            births++;
+        else if (season == SEASON_WINTER && animal && (day % 2 == 0))
+            births = 0;
         for (int b = 0; b < births; b++) {
             for (int e = 0; e < NEST_MAX_ENTRIES; e++) {
                 if (s->entries[e].type == NULL) continue;

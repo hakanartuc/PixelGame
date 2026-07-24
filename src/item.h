@@ -169,6 +169,7 @@ typedef enum {
 float item_damage(const ItemStack *s);    // silah değilse 0
 float item_defense(const ItemStack *s);   // zırh/kalkan değilse 0
 int   item_value(const ItemStack *s);     // instance fiyatı (plus dahil)
+float item_season_trade_mult(const ItemType *t);   // mevsim talebi (kış/hasat)
 
 // Loot tablosu girdisi: mob ölünce her girdi için ayrı zar atılır
 typedef struct {

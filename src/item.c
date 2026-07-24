@@ -1,6 +1,7 @@
 #include "item.h"
 #include "ability.h"   // tomeAbility (Büyü dalgası 2)
 #include "skill.h"   // parşömen skill sabitleri (SKILL_MINING vb.)
+#include "gametime.h"  // mevsim ekonomisi (item_season_trade_mult)
 
 // idle-down karesi: LPC satir 24 (idle 22 + DIR_DOWN 2), kare yuksekligi 64 → y=1536.
 // LPC ekipman sheet'leri izole parca icerdiginden bu kare temiz ikon verir.
@@ -544,4 +545,19 @@ int item_value(const ItemStack *s)
 {
     if (s == NULL || s->type == NULL) return 0;
     return (int)(s->type->value * plus_scale(s->plusLevel));
+}
+
+// MEVSİM EKONOMİSİ (DOGU-P2): kışın yiyecek + odun pahalanır (talep),
+// sonbahar hasadında yiyecek ucuzlar. Yiyecek = foodDuration'lı item
+// (iksirler healAmount'lu ama foodDuration'sız — etkilenmez).
+// Hem alım (main + shop paneli) hem satımda uygulanır.
+float item_season_trade_mult(const ItemType *t)
+{
+    if (t == NULL) return 1.0f;
+    bool food = t->foodDuration > 0.0f;
+    bool wood = (t == &ITEM_TYPES[ITEM_WOOD]);
+    Season s = gametime_season();
+    if (s == SEASON_WINTER && (food || wood)) return 1.35f;
+    if (s == SEASON_AUTUMN && food)           return 0.80f;
+    return 1.0f;
 }

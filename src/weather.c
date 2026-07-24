@@ -19,14 +19,23 @@ void weather_reset(void)
     middayRolled = false;
 }
 
-// Havuzdan çek: Açık %50 / Yağmur %22 / Sis %13 / Kar %10 / Fırtına %5
+// Havuzdan çek — MEVSİME göre (DOGU-P2): satır = kümülatif eşikler
+// {Açık, Yağmur, Sis, Kar} — kalan pay Fırtına.
+// Yaz kurak (kar yok), sonbahar yağmurlu-sisli, kış karlı.
 static Weather roll_pool(void)
 {
+    static const float POOL[SEASON_COUNT][4] = {
+        [SEASON_SPRING] = { 0.45f, 0.75f, 0.87f, 0.92f },
+        [SEASON_SUMMER] = { 0.70f, 0.85f, 0.92f, 0.92f },
+        [SEASON_AUTUMN] = { 0.35f, 0.67f, 0.87f, 0.92f },
+        [SEASON_WINTER] = { 0.35f, 0.42f, 0.55f, 0.93f },
+    };
+    const float *p = POOL[gametime_season()];
     float r = randf();
-    if (r < 0.50f) return WEATHER_CLEAR;
-    if (r < 0.72f) return WEATHER_RAIN;
-    if (r < 0.85f) return WEATHER_FOG;
-    if (r < 0.95f) return WEATHER_SNOW;
+    if (r < p[0]) return WEATHER_CLEAR;
+    if (r < p[1]) return WEATHER_RAIN;
+    if (r < p[2]) return WEATHER_FOG;
+    if (r < p[3]) return WEATHER_SNOW;
     return WEATHER_STORM;
 }
 

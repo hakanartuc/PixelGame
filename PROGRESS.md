@@ -941,6 +941,29 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - TEST NOTU: P1 ritüeli HÂLÂ TEST EDİLMEDİ — P1+P2 tek turda test edilebilir
   (F10 → taş halkası T108,7 → gece [E] → ritüel → 4 büyü + K'da Yankı ağacı).
 
+### Faz DOGU-P2 — MEVSİMLER + BÖLGESEL GÜNDOĞUMU (2026-07-24, onaylı 3 karar)
+- **Hakan kararları**: 10 gün/mevsim (yıl 40 gün); DÖRT etki birden (gündüz
+  uzunluğu + görsel/hava + ekonomi + ekoloji); harita başına offset altyapısı.
+- **Çekirdek (gametime)**: Season enum (İlkbahar→Yaz→Sonbahar→Kış, günden
+  türetilir — SAVE DEĞİŞMEDİ); mevsimsel güneş sınırları: yaz 05-21, kış
+  08-17 (ilkbahar 06-19, sonbahar 07-19; şafak/alacakaranlık 2 saat).
+  gametime_set_sun_offset(saat): MapDef.sunriseOffset — Taşdurak -0.75
+  (45 dk erken doğar/erken batar); harita geçişinde main uygular.
+  HUD saati: "Gün 13 · Sonbahar 08:30" (clockBuf 40 bayta büyüdü).
+- **Görsel + hava**: gündüz ambient'ine ince mevsim tonu (sonbahar sıcak
+  turuncu, kış soluk mavi, yaz doygun; gece etkilenmez — dayW ağırlığı).
+  Şafak hava zarı MEVSİMSEL havuz: yaz kurak (%70 açık, kar yok), sonbahar
+  yağmur+sis, kış %38 kar (mevcut kar örtüsü/snowCover sistemi kışı bedava
+  karlı dünyaya çevirir).
+- **Ekonomi**: item_season_trade_mult (item.c — main alım/satım + shop
+  paneli gösterimi AYNI çarpanı kullanır): kış yiyecek+odun ×1.35, sonbahar
+  hasadı yiyecek ×0.80. Yiyecek = foodDuration>0 (iksir etkilenmez).
+- **Ekoloji**: şafak üremesi ilkbaharda +1 (bolluk), kışın hayvan sürüleri
+  gün aşırı üremez (av kıtlığı) — canavar yuvaları kıştan etkilenmez.
+- TEST: mevsim görmek için save day ilerletmeli (Gün 21-30 = Sonbahar,
+  31-40 = Kış) ya da oyunda gün geçirmeli; Taşdurak'ta alacakaranlık
+  dünyadan ~45 dk önce başlar.
+
 ### Faz MAPGEN-2 — LOCA + MEZARLIK YENİDEN ÜRETİM (2026-07-23, onaylı 3 karar)
 - **Hakan kararları (AskUserQuestion)**: loca = mağara + taş salon karışımı;
   loca planı = yeni organik; mezarlık = Cave koyu seti + organik plan.
