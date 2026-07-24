@@ -3,6 +3,10 @@
 Güncelleme: 2026-07-14 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
 
 ## Çalışma kuralları
+- **docs/GDD.md = tasarım anayasası (2026-07-24)**: her tasarım kararı önce
+  GDD'ye işlenir ([ONAYLI]/[KODDA]/[TASLAK]/[AÇIK] etiketleriyle), kod onu
+  izler; yol haritası GDD §9. PROGRESS üretim günlüğü, HANDOVER devir notu
+  olarak kalır.
 - **Asistan kodu yazar** (2026-07-09'dan beri), faz faz ilerler; her faz sonunda durur, Hakan test eder, onayla commit atılır.
 - **TÜM tasarım kararları Hakan'a sorulur** (AskUserQuestion) — denge değerleri, UX, kapsam. İnisiyatif alınmaz.
 - Derleme hep `-Wall -Wextra` sıfır uyarı. Her çalışan aşama sonrası commit önerilir.
@@ -49,7 +53,7 @@ hotbara SÜRÜKLE) · J Yolculuk günlüğü (Tab: Görevler/Günlük/Ünvanlar/
 Hotbar: düz TIK = becerine bas (click-to-cast); SHIFT+sürükle = taşı/takas;
 kaldırma YALNIZ sürüklerken beliren ✕ hedefine (dışarı=iptal — yanlış atma yok);
 silaha uymayan beceri SOLUK çizilir (kullanım engeli hotbarPressed akışında)
-· M minimap · C eğilme · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 AKTİF slota kaydet/yükle (slot yoksa — otomatik kayıttan yüklendiyse — F5 kayıt ekranını açar, seçilen slot aktif olur) · ESC katmanlı kapatma/menü
+· M minimap · C eğilme · **F7 post-fx filtre döngüsü** (20 tarz + kapalı: SICAK/DARK FANTASY/CRT/VHS/NOIR/GAMEBOY... splash'ta ad; SICAK açılışta aktif — kalıcı tarz seçilmedi) · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 AKTİF slota kaydet/yükle (slot yoksa — otomatik kayıttan yüklendiyse — F5 kayıt ekranını açar, seçilen slot aktif olur) · ESC katmanlı kapatma/menü
 (K = skill listesi + ağaç paneli; ok mühimmatı sağ tıkla seçilir)
 (F efekt önizleme KALDIRILDI 2026-07-10 — rünün instance efektini eziyordu)
 AÇILIŞ AKIŞI (Faz B1): başlık ekranı → ana menü (Yeni Oyun/Yükle/Çıkış) → 20+1 slot;

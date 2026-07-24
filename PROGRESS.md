@@ -941,6 +941,27 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - TEST NOTU: P1 ritüeli HÂLÂ TEST EDİLMEDİ — P1+P2 tek turda test edilebilir
   (F10 → taş halkası T108,7 → gece [E] → ritüel → 4 büyü + K'da Yankı ağacı).
 
+### Faz POSTFX — TAM-EKRAN POST-PROCESS + 20 FİLTRE (2026-07-24, Hakan isteği)
+- **Altyapı (r2d)**: SDL_GPU post-process pass'i. postfx açıkken kare pencere
+  boyutlu offscreen target'a çizilir, `fs_postfx` shader'ıyla tam-ekran quad
+  olarak swapchain'e basılır. Kapalıyken eski yol (doğrudan swapchain) — maliyet
+  sıfır. Sahne target'ı resize'da yeniden kurulur. Işık pass'ine RGBA8 target
+  varyantı eklendi (`lightPipelineTarget`) — gece aydınlatması filtre altında da
+  çalışır. Gren animasyonu için r2d'de sarmalı kare sayacı (`frameNo`).
+- **Shader yetenekleri** (R2DPostFX, hepsi parametrik/karışabilir): doygunluk,
+  sıcaklık (turuncu↔mavi ekseni), kontrast, parlaklık, vinyet (+yarıçap),
+  CRT scanline, GameBoy DMG palet kuantalama, posterize (kanal başına N kademe),
+  kromatik sapma (R/B kayması), animasyonlu film greni.
+- **20 ön ayar + kapalı** (main.c POSTFX_PRESETS): SICAK (varsayılan), DARK
+  FANTASY, SOGUK, PASTEL, CANLI, SEPYA, NOIR, KORKU, CRT, VHS, 8-BIT, GAMEBOY,
+  GUNBATIMI, AY ISIGI, RUYA, CORAK, RETRO ARCADE, ESKI FILM, SYNTHWAVE, KABUS.
+  Kombinasyonlar: RETRO ARCADE (CRT+posterize), ESKI FILM (sepya+tarama+gren),
+  VHS/KABUS (sapma+gren). Filtre HUD dahil TÜM kareye uygulanır.
+- **F7** = preset döngüsü (kapalı dahil), splash'ta ad; oyun içi + menüde çalışır.
+- NOT: SICAK açılışta aktif — kalıcı tarz henüz seçilmedi (Hakan test edecek).
+  Değerler tek satır tabloda, ince ayar kolay. Vulkan/D3D için SPIR-V ekleme
+  noktası load_shader()'da (yayın fazına ertelendi — MSL şimdilik yalnız Metal).
+
 ### Faz DOGU-P2 — MEVSİMLER + BÖLGESEL GÜNDOĞUMU (2026-07-24, onaylı 3 karar)
 - **Hakan kararları**: 10 gün/mevsim (yıl 40 gün); DÖRT etki birden (gündüz
   uzunluğu + görsel/hava + ekonomi + ekoloji); harita başına offset altyapısı.
