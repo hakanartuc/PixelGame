@@ -238,6 +238,7 @@ static R2DTexture *mzGround2 = NULL;    // mezarlık zemin 2. varyantı
 static R2DTexture *dsrWaterTex = NULL;  // çöl vaha atlası (dual-grid 16 parça)
 static R2DTexture *dsrCliffTex = NULL;  // çöl kaya atlası (dual-grid 16 parça)
 static R2DTexture *caveWallTex = NULL;  // mağara duvar atlası (Loca — dual-grid)
+static R2DTexture *wldWaterTex = NULL;  // dünya suyu kıyı atlası (dual-grid)
 
 void tilemap_load_details(R2D *renderer)
 {
@@ -256,6 +257,7 @@ void tilemap_load_details(R2D *renderer)
     // Keyed varyant: koyu blokların düz arka planı şeffaf (bake_cave_ring.py) —
     // ışık bloklar dokunulmamış; loca + mezarlık AYNI atlası kullanır
     caveWallTex = load_texture(renderer, "assets/Tiles/Cave/Cave_Walls_Keyed.png");
+    wldWaterTex = load_texture(renderer, "assets/Tiles/Water/Water_Tile_1.png");
 }
 
 void tilemap_free_details(void)
@@ -270,6 +272,7 @@ void tilemap_free_details(void)
     if (dsrWaterTex) { r2d_texture_destroy(NULL, dsrWaterTex); dsrWaterTex = NULL; }
     if (dsrCliffTex) { r2d_texture_destroy(NULL, dsrCliffTex); dsrCliffTex = NULL; }
     if (caveWallTex) { r2d_texture_destroy(NULL, caveWallTex); caveWallTex = NULL; }
+    if (wldWaterTex) { r2d_texture_destroy(NULL, wldWaterTex); wldWaterTex = NULL; }
 }
 
 // Deterministik varyant: hash(col,row) — save'e girmez, hep aynı görünür
@@ -445,6 +448,47 @@ static void cave_dual_pass(R2D *renderer, const DsrCell *lut, int wallId,
     }
 }
 
+// --- DÜNYA SUYU KIYI GEÇİŞLERİ (Faz MAPGEN-2) ---
+// Su(2) kıyıları Water_Tile_1 dual-grid setiyle yumuşar: çimen tutamlı
+// toprak dudak. Parça yalnız kıyının TAMAMI ÇİMEN(0) olduğunda basılır —
+// yol/bataklık/taş kıyısı bugünkü sert haliyle kalır (parça bg'si çimen).
+static const DsrCell WLD_WATER_LUT[16] = {
+    [1]={2,2}, [2]={0,2}, [4]={2,0}, [8]={0,0},
+    [3]={1,2}, [12]={1,0}, [5]={2,1}, [10]={0,1},
+    [7]={0,3}, [11]={1,3}, [13]={0,4}, [14]={1,4},   // iç köşe (2x2 ada bloğu)
+    [6]={0,2}, [9]={0,0},
+    [15]={255,255},   // tam su: taban Water_Middle zaten çizili
+};
+
+static void wld_water_pass(R2D *renderer, const Camera *camera,
+                           int colL, int rowT, int colR, int rowB)
+{
+    float zoom = camera->zoom;
+    for (int row = rowT - 1; row < rowB; row++) {
+        for (int col = colL - 1; col < colR; col++) {
+            int m = 0;
+            bool shoreGrass = true;
+            for (int dy = 0; dy < 2; dy++)
+                for (int dx = 0; dx < 2; dx++) {
+                    int cc = col + dx, rr = row + dy;
+                    if (cc < 0) cc = 0; if (cc >= mapW) cc = mapW - 1;
+                    if (rr < 0) rr = 0; if (rr >= mapH) rr = mapH - 1;
+                    int t = tilemap[rr][cc];
+                    if (t == 2) m |= 1 << (dy * 2 + dx);
+                    else if (t != 0) shoreGrass = false;
+                }
+            if (m == 0 || !shoreGrass || WLD_WATER_LUT[m].cx == 255) continue;
+            SDL_FRect src = { WLD_WATER_LUT[m].cx * 16.0f,
+                              WLD_WATER_LUT[m].cy * 16.0f, 16, 16 };
+            SDL_FRect dst = {
+                ((col + 0.5f) * TILE_SIZE - camera->x) * zoom,
+                ((row + 0.5f) * TILE_SIZE - camera->y) * zoom,
+                TILE_SIZE * zoom, TILE_SIZE * zoom };
+            r2d_draw_texture(renderer, wldWaterTex, &src, &dst);
+        }
+    }
+}
+
 void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *camera)
 {
     float zoom = camera->zoom;
@@ -561,6 +605,8 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
         cave_dual_pass(renderer, CAVE_LUT, CAVE_WALL, camera, colL, rowT, colR, rowB);
         cave_dual_pass(renderer, MZ_LUT, MZ_ROCK, camera, colL, rowT, colR, rowB);
     }
+    if (wldWaterTex != NULL)
+        wld_water_pass(renderer, camera, colL, rowT, colR, rowB);
 }
 
 // --- SÜS SERPİŞTİRMESİ: dünya boş hissettirmesin (çarpışmasız, deterministik) ---

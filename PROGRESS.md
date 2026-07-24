@@ -964,6 +964,13 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
   şeffaflar → parçalar mezarlığın gri zemininde halo bırakmaz
   (Cave_Walls_Keyed.png — türetilmiş asset, iki harita da bunu kullanır).
 - NOT: mz_rock.png artık kullanılmıyor (tile 13 dokusuz); dosya duruyor.
+- **DÜNYA SUYU KIYILARI (wld_water_pass)**: su(2) kıyıları Water_Tile_1
+  dual-grid setiyle (çimen tutamlı toprak dudak; 1 genişlik nehirler dual'da
+  doğal çalışır). Parça yalnız kıyının TAMAMI çimen(0) olduğunda basılır —
+  yol/bataklık kıyısı sert kalır (parça bg'si çimen; ileride biyom başına
+  set eklenebilir). Yol geçişleri ZATEN çimen-kenar sistemiyle kaplı;
+  SONRAKI ADAY: taş(3) kütlelerine Kayalık Geçit için klif seti
+  (Grass_Tiles_1 sağ blokları hazır bekliyor).
 
 ### Faz MAPGEN — HARİTA ÜRETİM KÜTÜPHANESİ + GÖRSEL İTERASYON (2026-07-22)
 - **scripts/mapgen.py** (Hakan isteği: "daha doğal, el yapımı gibi"):
