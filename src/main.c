@@ -2499,7 +2499,9 @@ int main(int argc, char *argv[])
                                            + (float)assassin_rank(player.assassinPoints) * 0.02f;
                                 if (rate > 0.90f) rate = 0.90f;   // rütbe: loca kanalını temizler
                                 int clean = (int)(player.dirtyGold * rate);
-                                player.launderedTotal += clean;   // loca eşiği sayar
+                                // Loca eşiği VERİLEN kirli değerle artar (kesinti
+                                // öncesi — "hepsi sayılıyor"; Hakan kararı 2026-07-24)
+                                int dirtyIn = player.dirtyGold;
                                 int sold = 0;
                                 for (int b2 = 0; b2 < 2; b2++)
                                 {
@@ -2512,11 +2514,13 @@ int main(int argc, char *argv[])
                                             ss->type == &ITEM_TYPES[ITEM_TRINKET_RING] ||
                                             ss->type == &ITEM_TYPES[ITEM_TRINKET_BROOCH] ||
                                             ss->type == &ITEM_TYPES[ITEM_TRINKET_WATCH];
+                                        dirtyIn += item_value(ss) * ss->count;
                                         sold += (int)(item_value(ss) * ss->count
                                                       * (trinket ? 1.0f : 0.6f));
                                         *ss = item_make(NULL, 0, 0);
                                     }
                                 }
+                                player.launderedTotal += dirtyIn;
                                 if (clean + sold <= 0 && player.dirtyGold <= 0)
                                 {
                                     npc_bark(kervanIdx, "Kesen temizmiş, yolcu.", 4.0f);
@@ -2842,37 +2846,28 @@ int main(int argc, char *argv[])
                 {
                     // KÖR KUYU: gece bırak / şafak sonrası kuyu başından TOPLA.
                     // wellDay = HAZIR olduğu gün (gece yarısı sonrası bırakma da
-                    // aynı şafağa yetişir — bekleme cezası yok)
-                    if (player.wellGold > 0)
+                    // aynı şafağa yetişir — bekleme cezası yok).
+                    // Bekleyen kese YENİ bırakmayı ENGELLEMEZ — üstüne eklenir
+                    // (Hakan raporu 2026-07-24: 2. parça sessizce yutuluyordu)
+                    int wday; float whrs;
+                    gametime_get(&wday, &whrs);
+                    bool pouchReady = player.wellGold > 0 &&
+                                      ((wday > player.wellDay) ||
+                                       (wday == player.wellDay && whrs >= 5.0f));
+                    if (pouchReady)
                     {
-                        // TOPLAMA: kese hazırsa al (şafak 05:00 sonrası)
-                        int wday; float whrs;
-                        gametime_get(&wday, &whrs);
-                        bool ready = (wday > player.wellDay) ||
-                                     (wday == player.wellDay && whrs >= 5.0f);
-                        if (ready)
-                        {
-                            player.gold += player.wellGold;
-                            player.launderedTotal += player.wellGold;   // loca eşiği
-                            char wbuf[FLOAT_TEXT_LEN];
-                            snprintf(wbuf, sizeof(wbuf),
-                                     "Kuyu başında temiz bir kese: +%d g",
-                                     player.wellGold);
-                            SDL_Color vio2 = { 200, 160, 255, 255 };
-                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
-                                                 player.rect.x + player.rect.w / 2.0f,
-                                                 player.rect.y - 24.0f, wbuf, vio2);
-                            player.wellGold = 0;
-                            audio_play(SFX_LOOT);
-                        }
-                        else
-                        {
-                            SDL_Color dim2 = { 190, 190, 200, 255 };
-                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
-                                                 player.rect.x + player.rect.w / 2.0f,
-                                                 player.rect.y - 10.0f,
-                                                 "Henüz sayılıyor... şafağı bekle.", dim2);
-                        }
+                        // TOPLAMA önce: kese hazırsa al (bırakma sonraki E'de)
+                        player.gold += player.wellGold;
+                        char wbuf[FLOAT_TEXT_LEN];
+                        snprintf(wbuf, sizeof(wbuf),
+                                 "Kuyu başında temiz bir kese: +%d g",
+                                 player.wellGold);
+                        SDL_Color vio2 = { 200, 160, 255, 255 };
+                        floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                             player.rect.x + player.rect.w / 2.0f,
+                                             player.rect.y - 24.0f, wbuf, vio2);
+                        player.wellGold = 0;
+                        audio_play(SFX_LOOT);
                     }
                     else if (!gametime_is_night())
                     {
@@ -2880,7 +2875,9 @@ int main(int argc, char *argv[])
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
                                              player.rect.y - 10.0f,
-                                             "Kuyu gündüz sağır. Gece gel.", dim2);
+                                             player.wellGold > 0
+                                             ? "Henüz sayılıyor... şafağı bekle."
+                                             : "Kuyu gündüz sağır. Gece gel.", dim2);
                     }
                     else
                     {
@@ -2905,17 +2902,23 @@ int main(int argc, char *argv[])
                         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                              player.rect.x + player.rect.w / 2.0f,
                                              player.rect.y - 10.0f,
-                                             "Kuyu boş bakışını yansıtıyor.", dim);
+                                             player.wellGold > 0
+                                             ? "Henüz sayılıyor... şafağı bekle."
+                                             : "Kuyu boş bakışını yansıtıyor.", dim);
                     }
                     else
                     {
-                        int wday2; float whrs2;
-                        gametime_get(&wday2, &whrs2);
+                        // Loca eşiği BIRAKILAN kirli değerle artar (kesinti öncesi —
+                        // "Hepsi sayılıyor"; Hakan kararı 2026-07-24)
+                        player.launderedTotal += total;
                         player.wellGold += (int)(total * rate);
                         // Hazır günü: akşam bırakıldıysa ertesi gün şafak;
-                        // gece yarısı SONRASI bırakıldıysa AYNI günün şafağı geçti,
-                        // 05:00'ten önceyse bugünkü şafağa yetişir
-                        player.wellDay = (whrs2 >= 5.0f) ? wday2 + 1 : wday2;
+                        // gece yarısı SONRASI bırakıldıysa 05:00'ten önceyse bugünkü
+                        // şafağa yetişir. Bekleyen kese daha geç güne bakıyorsa
+                        // birleşik kese ONUN gününü bekler (erken sızma yok).
+                        int readyDay = (whrs >= 5.0f) ? wday + 1 : wday;
+                        if (readyDay < player.wellDay) readyDay = player.wellDay;
+                        player.wellDay = readyDay;
                         player.dirtyGold = 0;
                         audio_play(SFX_WHISPER);
                         SDL_Color vio = { 200, 160, 255, 255 };
@@ -10263,8 +10266,24 @@ int main(int argc, char *argv[])
                         gametime_get(&wday3, &whrs3);
                         bool rdy = (wday3 > player.wellDay) ||
                                    (wday3 == player.wellDay && whrs3 >= 5.0f);
-                        wtxt = rdy ? "[E] Keseni al" : "Sayılıyor...";
-                        wc = (SDL_Color){ 255, 210, 60, 255 };
+                        if (rdy)
+                        {
+                            wtxt = "[E] Keseni al";
+                            wc = (SDL_Color){ 255, 210, 60, 255 };
+                        }
+                        else if (gametime_is_night())
+                        {
+                            // Bekleyen kese bırakmayı engellemez — üstüne eklenir
+                            wtxt = (player.dirtyGold > 0)
+                                 ? "[E] Kuyuya bırak (kirli kese) — sayım sürüyor"
+                                 : "Sayılıyor...";
+                            wc = (SDL_Color){ 200, 160, 255, 255 };
+                        }
+                        else
+                        {
+                            wtxt = "Sayılıyor...";
+                            wc = (SDL_Color){ 255, 210, 60, 255 };
+                        }
                     }
                     else if (gametime_is_night())
                     {
