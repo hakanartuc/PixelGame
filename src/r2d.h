@@ -78,6 +78,27 @@ void r2d_set_color(R2D *ctx, Uint8 r, Uint8 g, Uint8 b, Uint8 a);   // primitif 
 void r2d_light_pass(R2D *ctx, float ambientR, float ambientG, float ambientB,
                     const R2DLight *lights, int count);
 
+// --- Post-fx: tam ekran "grade" filtresi ---
+// Etkinken kare offscreen target'a çizilir, kare sonunda fs_postfx shader'ıyla
+// ekrana basılır. HUD dahil TÜM kare filtrelenir. Tüm alanlar nötr değerdeyken
+// görüntü değişmez — tarzı bulmak için topuzlar tek tek oynatılabilir.
+typedef struct {
+    float saturation;      // 1 = nötr; <1 soluk, >1 canlı
+    float warmth;          // 0 = nötr; + sıcak (turuncu), - soğuk (mavi); ±0.05 tipik
+    float contrast;        // 1 = nötr; 0.5 civarına göre açılır
+    float brightness;      // 0 = nötr; ± doğrudan eklenir
+    float vignette;        // 0 = yok; kenar karartma gücü (0.3 tipik)
+    float vignetteRadius;  // karartmanın başladığı merkez uzaklığı 0..1 (0.4 tipik)
+    float scanline;        // 0 = yok; CRT tarama çizgisi koyuluğu (0.35 tipik)
+    float gameboy;         // >0.5 = DMG 4-renk yeşil palet (grade üstüne biner)
+    float posterize;       // 0 = yok; kanal başına renk kademesi (6-8 tipik, min 2)
+    float aberration;      // 0 = yok; kromatik sapma, uv birimi (0.002 tipik)
+    float grain;           // 0 = yok; animasyonlu film greni gücü (0.06 tipik)
+} R2DPostFX;
+
+// Değerler kopyalanır (her kare çağırmak gerekmez). NULL = filtreyi kapat.
+void r2d_postfx_set(R2D *ctx, const R2DPostFX *fx);
+
 // --- Sprite ---
 void r2d_draw_texture(R2D *ctx, R2DTexture *tex,
                       const SDL_FRect *src, const SDL_FRect *dst);

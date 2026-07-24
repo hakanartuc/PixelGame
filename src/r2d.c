@@ -89,6 +89,56 @@ static const char *MSL_SOURCE =
     "    float dn = fract(sin(dot(in.pos.xy, float2(12.9898, 78.233))) * 43758.5453);\n"
     "    c += (dn - 0.5) * (1.5 / 255.0);\n"
     "    return float4(clamp(c, float3(0.0), float3(1.0)), 1.0);\n"
+    "}\n"
+    // Post-fx "grade": sahne target'ını tam ekran örnekleyip doygunluk +
+    // sıcaklık + kontrast/parlaklık + retro modlar + vinyet uygular.
+    // Düzen R2DPostFXU ile aynı.
+    "struct PostU {\n"
+    "    float4 a;\n"   // x=doygunluk y=sıcaklık z=kontrast w=parlaklık
+    "    float4 b;\n"   // x=vinyet gücü y=vinyet yarıçapı z=scanline w=gameboy
+    "    float4 c;\n"   // x=posterize y=kromatik sapma z=gren w=zaman (kare sayacı)
+    "};\n"
+    "fragment float4 fs_postfx(VSOut in [[stage_in]],\n"
+    "                          constant PostU &u [[buffer(0)]],\n"
+    "                          texture2d<float> tex [[texture(0)]],\n"
+    "                          sampler smp [[sampler(0)]]) {\n"
+    // Kromatik sapma: R sola, B sağa kaymış örneklenir (VHS/retro kenar taşması)
+    "    float3 c;\n"
+    "    if (u.c.y > 0.0) {\n"
+    "        c.r = tex.sample(smp, in.uv - float2(u.c.y, 0.0)).r;\n"
+    "        c.g = tex.sample(smp, in.uv).g;\n"
+    "        c.b = tex.sample(smp, in.uv + float2(u.c.y, 0.0)).b;\n"
+    "    } else {\n"
+    "        c = tex.sample(smp, in.uv).rgb;\n"
+    "    }\n"
+    "    float luma = dot(c, float3(0.299, 0.587, 0.114));\n"
+    "    c = mix(float3(luma), c, u.a.x);\n"
+    "    c += float3(u.a.y, 0.0, -u.a.y);\n"
+    "    c = (c - 0.5) * u.a.z + 0.5 + u.a.w;\n"
+    // Posterize: kanal başına N kademe (8-bit görünüm)
+    "    if (u.c.x > 1.5) {\n"
+    "        float n = u.c.x - 1.0;\n"
+    "        c = round(clamp(c, 0.0, 1.0) * n) / n;\n"
+    "    }\n"
+    // GameBoy modu: parlaklığı 4 kademeye kuantala, DMG yeşil paletine bas
+    "    if (u.b.w > 0.5) {\n"
+    "        float3 pal[4] = { float3(0.06, 0.22, 0.06), float3(0.19, 0.38, 0.19),\n"
+    "                          float3(0.55, 0.67, 0.06), float3(0.61, 0.74, 0.06) };\n"
+    "        float l = dot(clamp(c, 0.0, 1.0), float3(0.299, 0.587, 0.114));\n"
+    "        c = pal[clamp(int(l * 4.0), 0, 3)];\n"
+    "    }\n"
+    // CRT tarama çizgisi: her 3 piksel satırının biri koyulaşır
+    "    if (u.b.z > 0.0 && fract(in.pos.y / 3.0) < 0.334) c *= 1.0 - u.b.z;\n"
+    // Film greni: kare sayacıyla kayan hash gürültüsü (animasyonlu kumlanma)
+    "    if (u.c.z > 0.0) {\n"
+    "        float gn = fract(sin(dot(in.pos.xy + u.c.w,\n"
+    "                                 float2(12.9898, 78.233))) * 43758.5453);\n"
+    "        c += (gn - 0.5) * u.c.z;\n"
+    "    }\n"
+    // Vinyet: uv merkez uzaklığı 0 (orta) → 1 (köşe); radius'tan köşeye yumuşak iner
+    "    float d = length(in.uv - 0.5) * 1.41421356;\n"
+    "    c *= 1.0 - u.b.x * smoothstep(u.b.y, 1.0, d);\n"
+    "    return float4(clamp(c, float3(0.0), float3(1.0)), 1.0);\n"
     "}\n";
 
 // ---------------------------------------------------------------------------
@@ -98,7 +148,17 @@ static SDL_GPUDevice *gpu = NULL;
 static SDL_Window *win = NULL;
 static SDL_GPUGraphicsPipeline *pipeline[R2D_BLEND_COUNT];        // swapchain formatı
 static SDL_GPUGraphicsPipeline *targetPipeline[R2D_BLEND_COUNT];  // RGBA8 target formatı
-static SDL_GPUGraphicsPipeline *lightPipeline = NULL;             // ışık pass'i (yalnız swapchain)
+static SDL_GPUGraphicsPipeline *lightPipeline = NULL;             // ışık pass'i (swapchain)
+static SDL_GPUGraphicsPipeline *lightPipelineTarget = NULL;       // ışık pass'i (RGBA8 target)
+
+// Post-fx: açıkken kare önce sceneTex'e çizilir, sonra fs_postfx ile ekrana basılır
+static SDL_GPUGraphicsPipeline *postfxPipeline = NULL;
+static SDL_GPUBuffer *fsQuadBuf = NULL;      // statik tam-ekran quad (pos 0..1)
+static R2DTexture *sceneTex = NULL;          // pencere boyutunda; resize'da yeniden kurulur
+static bool postfxOn = false;
+typedef struct { float a[4]; float b[4]; float c[4]; } R2DPostFXU;   // MSL PostU ile birebir
+static R2DPostFXU postfxU;
+static Uint32 frameNo = 0;   // gren animasyonu için kare sayacı (postfx zamanı)
 
 // Işık uniform'ları — MSL'deki LightU ile birebir aynı düzen (float4 hizalı).
 // Tek statik kopya: kare başına bir ışık pass'i (r2d_light_pass yorumu).
@@ -254,11 +314,26 @@ R2D *r2d_init(SDL_Window *window)
         return NULL;
     }
     lightPipeline = make_pipeline(vs, fsLight, R2D_BLEND_COUNT, swapFmt);
-    if (lightPipeline == NULL) {
+    lightPipelineTarget = make_pipeline(vs, fsLight, R2D_BLEND_COUNT,
+                                        SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM);
+    if (lightPipeline == NULL || lightPipelineTarget == NULL) {
         SDL_Log("r2d: isik pipeline kurulamadi: %s", SDL_GetError());
         return NULL;
     }
     SDL_ReleaseGPUShader(gpu, fsLight);
+
+    // Post-fx: kendi fragment shader'ı (1 uniform buffer + sahne texture'ı)
+    SDL_GPUShader *fsPost = load_shader(SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_postfx", 1, 1);
+    if (fsPost == NULL) {
+        SDL_Log("r2d: postfx shader'i derlenemedi: %s", SDL_GetError());
+        return NULL;
+    }
+    postfxPipeline = make_pipeline(vs, fsPost, R2D_BLEND_ALPHA, swapFmt);
+    if (postfxPipeline == NULL) {
+        SDL_Log("r2d: postfx pipeline kurulamadi: %s", SDL_GetError());
+        return NULL;
+    }
+    SDL_ReleaseGPUShader(gpu, fsPost);
 
     SDL_ReleaseGPUShader(gpu, vs);   // pipeline'lara bağlandı — referansımız gereksiz
     SDL_ReleaseGPUShader(gpu, fs);
@@ -285,8 +360,37 @@ R2D *r2d_init(SDL_Window *window)
     };
     transferBuf = SDL_CreateGPUTransferBuffer(gpu, &tci);
 
+    // Post-fx'in tam-ekran quad'ı: pos 0..1 (viewport uniform'u {1,1} basılır,
+    // NDC dönüşümü birebir kalır) — pencere boyutundan bağımsız, bir kez yüklenir
+    static const R2DVertex FSQUAD[6] = {
+        { 0, 0, 0, 0, 1, 1, 1, 1 }, { 1, 0, 1, 0, 1, 1, 1, 1 },
+        { 0, 1, 0, 1, 1, 1, 1, 1 }, { 1, 0, 1, 0, 1, 1, 1, 1 },
+        { 1, 1, 1, 1, 1, 1, 1, 1 }, { 0, 1, 0, 1, 1, 1, 1, 1 },
+    };
+    SDL_GPUBufferCreateInfo qci = {
+        .usage = SDL_GPU_BUFFERUSAGE_VERTEX, .size = sizeof(FSQUAD),
+    };
+    fsQuadBuf = SDL_CreateGPUBuffer(gpu, &qci);
+    if (fsQuadBuf != NULL) {
+        SDL_GPUTransferBufferCreateInfo qtci = {
+            .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, .size = sizeof(FSQUAD),
+        };
+        SDL_GPUTransferBuffer *qtb = SDL_CreateGPUTransferBuffer(gpu, &qtci);
+        void *map = SDL_MapGPUTransferBuffer(gpu, qtb, false);
+        memcpy(map, FSQUAD, sizeof(FSQUAD));
+        SDL_UnmapGPUTransferBuffer(gpu, qtb);
+        SDL_GPUCommandBuffer *cb = SDL_AcquireGPUCommandBuffer(gpu);
+        SDL_GPUCopyPass *cp = SDL_BeginGPUCopyPass(cb);
+        SDL_GPUTransferBufferLocation srcLoc = { .transfer_buffer = qtb };
+        SDL_GPUBufferRegion dstReg = { .buffer = fsQuadBuf, .size = sizeof(FSQUAD) };
+        SDL_UploadToGPUBuffer(cp, &srcLoc, &dstReg, false);
+        SDL_EndGPUCopyPass(cp);
+        SDL_SubmitGPUCommandBuffer(cb);
+        SDL_ReleaseGPUTransferBuffer(gpu, qtb);
+    }
+
     if (sampler == NULL || samplerLinear == NULL ||
-        vertexBuf == NULL || transferBuf == NULL) {
+        vertexBuf == NULL || transferBuf == NULL || fsQuadBuf == NULL) {
         SDL_Log("r2d: kaynaklar kurulamadi: %s", SDL_GetError());
         return NULL;
     }
@@ -305,6 +409,8 @@ void r2d_quit(R2D *ctx)
     if (gpu == NULL) return;
     SDL_WaitForGPUIdle(gpu);
     if (whiteTex) { SDL_ReleaseGPUTexture(gpu, whiteTex->tex); SDL_free(whiteTex); }
+    if (sceneTex) { SDL_ReleaseGPUTexture(gpu, sceneTex->tex); SDL_free(sceneTex); }
+    if (fsQuadBuf) SDL_ReleaseGPUBuffer(gpu, fsQuadBuf);
     if (transferBuf) SDL_ReleaseGPUTransferBuffer(gpu, transferBuf);
     if (vertexBuf) SDL_ReleaseGPUBuffer(gpu, vertexBuf);
     if (sampler) SDL_ReleaseGPUSampler(gpu, sampler);
@@ -314,6 +420,8 @@ void r2d_quit(R2D *ctx)
         if (targetPipeline[b]) SDL_ReleaseGPUGraphicsPipeline(gpu, targetPipeline[b]);
     }
     if (lightPipeline) SDL_ReleaseGPUGraphicsPipeline(gpu, lightPipeline);
+    if (lightPipelineTarget) SDL_ReleaseGPUGraphicsPipeline(gpu, lightPipelineTarget);
+    if (postfxPipeline) SDL_ReleaseGPUGraphicsPipeline(gpu, postfxPipeline);
     SDL_ReleaseWindowFromGPUDevice(gpu, win);
     SDL_DestroyGPUDevice(gpu);
     gpu = NULL;
@@ -678,9 +786,10 @@ static void flush_to(SDL_GPUCommandBuffer *cb, SDL_GPUTexture *dst,
         if (draws[i].first < firstVert) continue;   // önceki pass'in aralığı
 
         // Işık pass'i işareti: light pipeline + fragment uniform, sampler yok
+        // (hedef formatına göre swapchain/RGBA8 varyantı — post-fx sahne target'ı)
         if (draws[i].blend == R2D_BLEND_COUNT) {
-            if (pipes != pipeline) continue;   // target içinde desteklenmez
-            SDL_BindGPUGraphicsPipeline(pass, lightPipeline);
+            SDL_BindGPUGraphicsPipeline(pass, (pipes == pipeline)
+                                              ? lightPipeline : lightPipelineTarget);
             SDL_PushGPUFragmentUniformData(cb, 0, &lightU, sizeof(lightU));
             SDL_DrawGPUPrimitives(pass, (Uint32)draws[i].count, 1,
                                   (Uint32)(draws[i].first - firstVert), 0);
@@ -729,13 +838,51 @@ bool r2d_begin_frame(R2D *ctx, Uint8 clearR, Uint8 clearG, Uint8 clearB)
     return true;
 }
 
+// Post-fx pass'i: sceneTex'i tam-ekran quad'la swapchain'e bas (fs_postfx)
+static void postfx_pass(void)
+{
+    SDL_GPUColorTargetInfo target = {
+        .texture = swapTex,
+        .load_op = SDL_GPU_LOADOP_DONT_CARE,   // quad her pikseli yazar
+        .store_op = SDL_GPU_STOREOP_STORE,
+    };
+    SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmdBuf, &target, 1, NULL);
+    SDL_BindGPUGraphicsPipeline(pass, postfxPipeline);
+    float viewport[2] = { 1.0f, 1.0f };   // quad pos 0..1 — NDC dönüşümü birebir
+    SDL_PushGPUVertexUniformData(cmdBuf, 0, viewport, sizeof(viewport));
+    frameNo = (frameNo + 1) & 1023;   // float hassasiyeti için sarmalı sayaç
+    postfxU.c[3] = (float)frameNo;
+    SDL_PushGPUFragmentUniformData(cmdBuf, 0, &postfxU, sizeof(postfxU));
+    SDL_GPUBufferBinding vb = { .buffer = fsQuadBuf, .offset = 0 };
+    SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
+    SDL_GPUTextureSamplerBinding tsb = { .texture = sceneTex->tex, .sampler = sampler };
+    SDL_BindGPUFragmentSamplers(pass, 0, &tsb, 1);
+    SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
+    SDL_EndGPURenderPass(pass);
+}
+
 void r2d_end_frame(R2D *ctx)
 {
     (void)ctx;
     if (cmdBuf == NULL) return;
 
-    flush_to(cmdBuf, swapTex, (float)swapW, (float)swapH, true, clearColor,
-             pipeline, 0);
+    // Post-fx açıkken sahne offscreen target'a akar, oradan filtreyle ekrana.
+    // Sahne target'ı pencere boyutunu izler (resize'da yeniden kurulur).
+    if (postfxOn) {
+        if (sceneTex == NULL ||
+            (Uint32)sceneTex->w != swapW || (Uint32)sceneTex->h != swapH) {
+            if (sceneTex) r2d_texture_destroy(NULL, sceneTex);   // ertelenir
+            sceneTex = texture_create((int)swapW, (int)swapH, true);
+        }
+    }
+    if (postfxOn && sceneTex != NULL) {
+        flush_to(cmdBuf, sceneTex->tex, (float)swapW, (float)swapH, true,
+                 clearColor, targetPipeline, 0);
+        postfx_pass();
+    } else {
+        flush_to(cmdBuf, swapTex, (float)swapW, (float)swapH, true, clearColor,
+                 pipeline, 0);
+    }
     SDL_SubmitGPUCommandBuffer(cmdBuf);
     cmdBuf = NULL;
     inFrame = false;
@@ -782,4 +929,29 @@ void r2d_target_end(R2D *ctx)
     drawCount = savedDrawCount;
     curTarget = NULL;
     forceNewDraw = true;   // sonraki ana-kare çizimi de taze girdiyle başlasın
+}
+
+// ---------------------------------------------------------------------------
+// Post-fx
+// ---------------------------------------------------------------------------
+void r2d_postfx_set(R2D *ctx, const R2DPostFX *fx)
+{
+    (void)ctx;
+    if (fx == NULL) {
+        postfxOn = false;   // sceneTex dursun — tekrar açılışta hazır
+        return;
+    }
+    postfxU.a[0] = fx->saturation;
+    postfxU.a[1] = fx->warmth;
+    postfxU.a[2] = fx->contrast;
+    postfxU.a[3] = fx->brightness;
+    postfxU.b[0] = fx->vignette;
+    postfxU.b[1] = fx->vignetteRadius;
+    postfxU.b[2] = fx->scanline;
+    postfxU.b[3] = fx->gameboy;
+    postfxU.c[0] = fx->posterize;
+    postfxU.c[1] = fx->aberration;
+    postfxU.c[2] = fx->grain;
+    // c[3] = zaman — her kare postfx_pass içinde basılır
+    postfxOn = true;
 }

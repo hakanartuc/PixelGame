@@ -1006,6 +1006,59 @@ int main(int argc, char *argv[])
         return 1;                  // Başarısızsa çık
     }
 
+    // Post-fx ön ayarları — F7 her basışta sıradakine geçer (0 = kapalı).
+    // Alan sırası: doygunluk, sıcaklık, kontrast, parlaklık, vinyet, v.yarıçap,
+    //              scanline, gameboy, posterize, kromatik sapma, gren.
+    // Sıralama: önce renk grade'leri, sonra film, en sonda retro/ekran efektleri.
+    static const struct { const char *name; R2DPostFX fx; } POSTFX_PRESETS[] = {
+        { "POST-FX KAPALI", { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },   // fx kullanılmaz
+        // Hafif sıcak dokunuş — pixel-art'ı boğmayan canlılık (varsayılan)
+        { "SICAK",        { 1.12f,  0.02f,  1.05f,  0.00f, 0.32f, 0.40f, 0, 0, 0, 0,       0 } },
+        // Diablo/Souls havası — soluk soğuk renkler, sert kontrast, ağır vinyet
+        { "DARK FANTASY", { 0.78f, -0.04f,  1.18f, -0.03f, 0.50f, 0.30f, 0, 0, 0, 0,       0 } },
+        // Kasvetli kuzey — mavi ton, hafif soluk (Banished/Frostpunk havası)
+        { "SOGUK",        { 0.95f, -0.035f, 1.08f, -0.01f, 0.38f, 0.38f, 0, 0, 0, 0,       0 } },
+        // Soluk masal kitabı — düşük doygunluk, yumuşak kontrast, aydınlık
+        { "PASTEL",       { 0.82f,  0.01f,  0.92f,  0.04f, 0.18f, 0.50f, 0, 0, 0, 0,       0 } },
+        // Arcade — yüksek doygunluk + kontrast, renkler bağırsın
+        { "CANLI",        { 1.35f,  0.00f,  1.15f,  0.00f, 0.20f, 0.45f, 0, 0, 0, 0,       0 } },
+        // Eski fotoğraf — griye çök + sıcak kahve tonu
+        { "SEPYA",        { 0.05f,  0.06f,  1.05f,  0.02f, 0.35f, 0.40f, 0, 0, 0, 0,       0 } },
+        // Siyah-beyaz film — sert kontrast, koyu kenarlar + ince gren
+        { "NOIR",         { 0.00f,  0.00f,  1.25f, -0.02f, 0.55f, 0.30f, 0, 0, 0, 0,       0.05f } },
+        // Korku — renkler çekilmiş, karanlık, kumlanma + hafif renk kayması
+        { "KORKU",        { 0.55f, -0.02f,  1.20f, -0.06f, 0.60f, 0.25f, 0, 0, 0, 0.0015f, 0.10f } },
+        // Eski tüplü ekran — tarama çizgileri + canlı fosfor renkleri
+        { "CRT",          { 1.15f,  0.00f,  1.08f,  0.02f, 0.35f, 0.45f, 0.35f, 0, 0, 0,   0 } },
+        // VHS kaset — soluk, tarama + kromatik sapma + kumlanma
+        { "VHS",          { 0.85f,  0.01f,  0.95f,  0.03f, 0.30f, 0.45f, 0.20f, 0, 0, 0.0025f, 0.06f } },
+        // 8-bit konsol — kanal başına 6 renk kademesi, canlı
+        { "8-BIT",        { 1.25f,  0.00f,  1.10f,  0.00f, 0.15f, 0.50f, 0, 0, 6, 0,       0 } },
+        // Orijinal GameBoy — 4 kademeli DMG yeşili
+        { "GAMEBOY",      { 1.00f,  0.00f,  1.05f,  0.00f, 0.15f, 0.50f, 0, 1, 0, 0,       0 } },
+
+        // --- Ek tarzlar + kombinasyonlar (mevcutları ezmeden döngü sonuna) ---
+        // Gün batımı — sıcak turuncu, canlı, yumuşak vinyet (kırsal akşam)
+        { "GUNBATIMI",    { 1.20f,  0.06f,  1.08f,  0.02f, 0.30f, 0.40f, 0, 0, 0, 0,       0 } },
+        // Ay ışığı — soğuk mavi, karanlık, sakin gece + çok ince gren
+        { "AY ISIGI",     { 0.80f, -0.05f,  1.05f, -0.08f, 0.45f, 0.35f, 0, 0, 0, 0,       0.03f } },
+        // Rüya — pastel + hafif renk kayması + ince gren (yumuşak, sisli)
+        { "RUYA",         { 0.75f,  0.02f,  0.90f,  0.05f, 0.25f, 0.55f, 0, 0, 0, 0.0018f, 0.04f } },
+        // Çorak toprak — soluk sıcak, ağır vinyet + gren (Fallout/Mad Max)
+        { "CORAK",        { 0.60f,  0.05f,  1.15f, -0.02f, 0.55f, 0.30f, 0, 0, 0, 0,       0.07f } },
+        // Retro arcade — CRT tarama + posterize + canlı (dolap oyunu; kombinasyon)
+        { "RETRO ARCADE", { 1.30f,  0.00f,  1.12f,  0.02f, 0.25f, 0.45f, 0.30f, 0, 8, 0,   0 } },
+        // Eski film makarası — sepya + tarama + gren + ağır vinyet (kombinasyon)
+        { "ESKI FILM",    { 0.10f,  0.06f,  1.10f,  0.00f, 0.55f, 0.30f, 0.15f, 0, 0, 0,   0.09f } },
+        // Sentetik dalga — yüksek doygunluk + kromatik sapma (neon/synthwave)
+        { "SYNTHWAVE",    { 1.40f,  0.02f,  1.15f,  0.02f, 0.35f, 0.40f, 0, 0, 0, 0.0022f, 0.03f } },
+        // Kâbus — korku uçlara: renksiz, çok karanlık, ağır kumlanma + sapma (kombinasyon)
+        { "KABUS",        { 0.30f, -0.02f,  1.30f, -0.10f, 0.65f, 0.20f, 0, 0, 0, 0.0030f, 0.14f } },
+    };
+    const int POSTFX_COUNT = (int)(sizeof(POSTFX_PRESETS) / sizeof(POSTFX_PRESETS[0]));
+    int postfxIdx = 1;   // SICAK ile başla
+    r2d_postfx_set(renderer, &POSTFX_PRESETS[postfxIdx].fx);
+
     R2DTexture *crateTex = load_texture(renderer, "assets/loot/chest_small.png");
     R2DTexture *chestTex = load_texture(renderer, "assets/decor/Chest_anim.png");
     if (crateTex == NULL)
@@ -3623,6 +3676,16 @@ int main(int argc, char *argv[])
                 {
                     minimapOpen = !minimapOpen;
                     audio_play(SFX_UI);
+                }
+                else if (event.key.key == SDLK_F7)
+                {
+                    // DEV: post-fx preset döngüsü (kapalı dahil) — tarz denemesi.
+                    // Topuzlar: POSTFX_PRESETS (r2d_init'in hemen altında).
+                    postfxIdx = (postfxIdx + 1) % POSTFX_COUNT;
+                    r2d_postfx_set(renderer, (postfxIdx > 0)
+                                             ? &POSTFX_PRESETS[postfxIdx].fx : NULL);
+                    splashText = POSTFX_PRESETS[postfxIdx].name;
+                    splashTimer = 2.0f;
                 }
                 else if (event.key.key == SDLK_F8 && gameState == GAME_PLAYING)
                 {
