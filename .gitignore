@@ -4,3 +4,4 @@ save.dat
 saves/
 settings.cfg
 __pycache__/
+.DS_Store
