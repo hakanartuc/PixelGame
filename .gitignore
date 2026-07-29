@@ -5,3 +5,6 @@ saves/
 settings.cfg
 __pycache__/
 .DS_Store
+
+# Claude Code yerel ayarları (makineye özel)
+.claude/settings.local.json

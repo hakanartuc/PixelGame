@@ -31,6 +31,19 @@ void decor_set_map(int mapId);   // aktif harita (filtre; main geçişte basar)
 void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
                       const Camera *camera);
 
+// Güneş gölgeleri: zeminin üstüne, dekorun altına (shadow.h'den parametreler).
+// strength 0 ise (gece) hiç çizmez.
+void decor_render_shadows(R2D *renderer, R2DTexture **decorTextures,
+                          const Camera *camera,
+                          float dx, float dy, float lenMul, float strength);
+
+// IŞIĞI KESEN GÖVDELER — ekran uzayı dikdörtgenleri, en yakın `cap` tanesi.
+// Nesnenin AYAK İZİ + gövdesi: ağacın tacı ışığı kesmez (yapraklar arasından
+// sızar), gövdesi keser. Ev tüm yüksekliğiyle keser.
+// Dönen: yazılan adet. cx/cy = öncelik merkezi (oyuncu konumu).
+int decor_light_occluders(SDL_FRect *out, int cap, const Camera *camera,
+                          float cx, float cy);
+
 // Kutu herhangi bir dekorun katı tabanına çarpıyor mu?
 // (taban = sprite'ın alt %35'i — çatının arkasından yürünebilir)
 bool decor_blocks(SDL_FRect box);

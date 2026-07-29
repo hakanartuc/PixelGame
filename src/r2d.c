@@ -21,6 +21,11 @@ struct R2DTexture {
     Uint8 modR, modG, modB, modA;   // color/alpha mod (çizimde çarpılır)
     bool isTarget;
     bool linear;                    // örnekleme: false=NEAREST (pixel-art)
+    // OPAK SINIRLAR (alpha bounding box) — yüklemede bir kez taranır.
+    // Gölge ayak noktası için gerekli: sprite dikdörtgeninin alt kenarı
+    // nesnenin zemine değdiği yer DEĞİL (ağaç PNG'sinde altta şeffaf boşluk
+    // var). Unity'nin Sprite Editor "Trim" işlevinin yaptığı şey budur.
+    float opX, opY, opW, opH;
 };
 
 typedef struct {
@@ -70,24 +75,176 @@ static const char *MSL_SOURCE =
     // Işık pass'i: piksel başına ambient + Σ ışık katkısı; multiply blend ile
     // sahne rengiyle çarpılır. Dizi boyutu R2D_MAX_LIGHTS (r2d.h) ile AYNI.
     "struct LightU {\n"
-    "    float4 ambient;\n"          // rgb = ortam çarpanı
-    "    float4 count;\n"            // x = aktif ışık sayısı
+    "    float4 ambient;\n"          // rgb = ortam çarpanı, w = kamera ofset X
+    "    float4 count;\n"            // x=ışık sayısı y=kuantize z=ızgara w=kamera ofset Y
+    "    float4 mode;\n"             // x=gamma y=düşüş z=dither w=düşüş parametresi
+    "    float4 mode2;\n"            // x=A/B bölme y=anizotropi z=dikey ofset w=tıkama
     "    float4 pos[32];\n"          // xy = ekran px, z = yarıçap px
     "    float4 col[32];\n"          // rgb = renk, w = yoğunluk
+    "    float4 shape[32];\n"        // x = siluet genliği, yz = dönen faz vektörü
+    "    float4 occ[16];\n"          // ışığı kesen dikdörtgenler: xy=köşe, zw=boyut
     "};\n"
+    // Segment (pa→pb) bir AABB'yi kesiyor mu — slab testi, dallanmasız.
+    // Işık tıkama için: pikselden ışığa giden doğru bir gövdeden geçiyorsa
+    // o piksel gölgede. Ray-box ucuz (birkaç karşılaştırma), doku okuması yok.
+    "static bool seg_hits_box(float2 pa, float2 pb, float4 b) {\n"
+    "    float2 d = pb - pa;\n"
+    "    float2 ad = abs(d);\n"
+    "    if (ad.x < 1e-4) d.x = (d.x < 0.0 ? -1e-4 : 1e-4);\n"
+    "    if (ad.y < 1e-4) d.y = (d.y < 0.0 ? -1e-4 : 1e-4);\n"
+    "    float2 t0 = (b.xy - pa) / d;\n"
+    "    float2 t1 = (b.xy + b.zw - pa) / d;\n"
+    "    float2 tmin = min(t0, t1), tmax = max(t0, t1);\n"
+    "    float tn = max(tmin.x, tmin.y);\n"
+    "    float tf = min(tmax.x, tmax.y);\n"
+    "    return (tf >= tn) && (tn < 1.0) && (tf > 0.0);\n"
+    "}\n"
+    // sRGB ⇄ lineer (IEC 61966-2-1). Işık katkıları FİZİKSEL olarak lineer
+    // uzayda toplanır; sRGB kodunda toplamak merkezi +0.22 fazla parlatıp
+    // kırpıyor (düz beyaz plato) ve dış halkayı 0.03 karartıyor. Yani ışık
+    // "kubbe" değil "kenarı sıkıştırılmış patlamış disk" gibi okunuyordu.
+    // Not: çarpma gama ile komütatiftir, o yüzden multiply kompozisyonu doğru;
+    // hata YALNIZCA toplama satırındaydı.
+    "static float3 s2l(float3 c) {\n"
+    "    return select(pow((c + 0.055) / 1.055, float3(2.4)), c / 12.92,\n"
+    "                  c <= 0.04045);\n"
+    "}\n"
+    "static float3 l2s(float3 c) {\n"
+    "    return select(1.055 * pow(c, float3(1.0 / 2.4)) - 0.055, 12.92 * c,\n"
+    "                  c <= 0.0031308);\n"
+    "}\n"
     "fragment float4 fs_light(VSOut in [[stage_in]],\n"
     "                         constant LightU &lu [[buffer(0)]]) {\n"
-    "    float3 c = lu.ambient.rgb;\n"
-    "    int n = int(lu.count.x);\n"
+    "    int   n      = int(lu.count.x);\n"
+    "    float qsteps = lu.count.y;\n"
+    "    float grid   = lu.count.z;\n"
+    "    int   gmode  = int(lu.mode.x);\n"   // 0=sRGB toplama 1=lineer 2=lineer+ACES
+    "    int   fmode  = int(lu.mode.y);\n"   // 0=plato+ss 1=Karis 2=URP pow 3=knee
+    "    int   dmode  = int(lu.mode.z);\n"   // 0=IGN 1=Bayer 2=dünya-IGN 3=yok
+    "    float fparam = lu.mode.w;\n"
+    // A/B KARŞILAŞTIRMA: bölme çizgisinin SOLU daima orijinal ayarlar, sağı
+    // seçili modlar. Tek ekranda yan yana fark görülür — varyantların çoğu
+    // tek başına bakıldığında ayırt edilemiyor.
+    "    float splitX = lu.mode2.x;\n"
+    "    bool  isLeft = (splitX > 0.5 && in.pos.x < splitX);\n"
+    "    if (isLeft) { gmode = 0; fmode = 0; dmode = 0; fparam = 0.0; }\n"
+    "    bool  lin    = (gmode > 0);\n"
+    "    float3 c = lin ? s2l(lu.ambient.rgb) : lu.ambient.rgb;\n"
+    // Kuantize modda ışığı SANAT pikselinin merkezinden örnekle
+    "    float2 sp = in.pos.xy;\n"
+    "    if (grid > 0.5) sp = floor(sp / grid) * grid + grid * 0.5;\n"
     "    for (int i = 0; i < n; i++) {\n"
-    "        float d = distance(in.pos.xy, lu.pos[i].xy);\n"
-    "        float att = clamp(1.0 - d / lu.pos[i].z, 0.0, 1.0);\n"
-    "        att *= att;\n"                                          // yumuşak düşüş
-    "        c += lu.col[i].rgb * (att * lu.col[i].w);\n"
+    // EĞİK PERSPEKTİF DÜZELTMESİ. Kamera tam kuş bakışı DEĞİL (evler yandan
+    // görünüyor, çatıları var) — zemin dikey olarak kısaltılmış çiziliyor.
+    // Yani zeminde dairesel olan aydınlık alan ekranda YATAY ELİPS olmalı.
+    // aniso < 1 → dikey yönde ışık daha çabuk biter (basık elips)
+    // aniso > 1 → dikey uzar (alevin yukarı yayılması)
+    // yOff  < 0 → ışık merkezi yukarı kayar (kaynak zeminde değil, hazne/alev
+    //             yüksekliğinde) — 3/4 perspektifte yükseklik ekranda yukarıdır
+    "        float2 v = sp - lu.pos[i].xy;\n"
+    // Şekil ışık BAŞINA (pos.w = dikey ofset, shape.w = anizotropi);
+    // mode2.y/z global çarpan-ekleyen (dev tuşu ile test için).
+    "        v.y -= lu.pos[i].w + lu.mode2.z;\n"
+    "        float aniso = max(lu.shape[i].w * lu.mode2.y, 0.05);\n"
+    "        v.y /= aniso;\n"
+    "        float d = length(v);\n"
+    "        float r = lu.pos[i].z;\n"
+    "        float amp = lu.shape[i].x;\n"
+    "        if (d >= r * (1.0 + amp)) continue;\n"
+    // SİLUET: halkanın kenarı kusursuz daire olmasın. Açıya bağlı loblar,
+    // ama atan2 YOK — çift/üçlü açı özdeşlikleriyle (nx²−ny² = cos2a vb.).
+    // Faz vektörü CPU'dan gelir, yani per-pixel transcendental hiç yok.
+    "        if (amp > 0.0) {\n"
+    "            float2 nv = v / max(d, 0.001);\n"
+    "            float c2 = nv.x * nv.x - nv.y * nv.y;\n"
+    "            float s2 = 2.0 * nv.x * nv.y;\n"
+    "            float c3 = nv.x * (2.0 * c2 - 1.0);\n"
+    "            float s3 = nv.y * (2.0 * c2 + 1.0);\n"
+    "            float cp = lu.shape[i].y, sp2 = lu.shape[i].z;\n"
+    "            float wob = (c2 * cp + s2 * sp2) * 0.6\n"
+    "                      + (c3 * cp - s3 * sp2) * 0.4;\n"
+    "            r *= 1.0 + amp * wob;\n"
+    "        }\n"
+    "        if (d >= r) continue;\n"
+    "        float att;\n"
+    "        if (fmode == 1) {\n"
+    // KARIS pencereli ters-kare (UE4 SIGGRAPH 2013, dnk.9; Frostbite dnk.26).
+    // Referans uzunluk şart: piksel biriminde +1 hiç iş görmez.
+    "            float u = d / fparam;\n"
+    "            float w = saturate(1.0 - pow(d / r, 4.0));\n"
+    "            att = (w * w) / (u * u + 1.0);\n"
+    "        } else if (fmode == 2) {\n"
+    // URP 2D Light2D ailesi: att = (1-t)^k, k=1 tam lineer
+    "            att = pow(1.0 - d / r, fparam);\n"
+    "        } else if (fmode == 3) {\n"
+    // KENAR DİZİ: iç bölge smoothstep, dış %25'te ani çöküş → sınır okunur
+    "            float b = 1.0 - d / r;\n"
+    "            float a = b * b * (3.0 - 2.0 * b);\n"
+    "            float w = saturate(b / 0.25);\n"
+    "            att = a * w * w;\n"
+    "        } else {\n"
+    // MEVCUT: iç %35 plato → smoothstep
+    "            float t = min((1.0 - d / r) / 0.65, 1.0);\n"
+    "            att = t * t * (3.0 - 2.0 * t);\n"
+    "        }\n"
+    // KESİN KENAR — HER MODA. light.h light_atten() ile aynı eşik (0.06).
+    // Yalnız mod 0'da olması bastırma yarıçapını moda göre kaydırıyordu.
+    "        if (att < 0.06) continue;\n"
+    // ── IŞIK TIKAMA ── pikselden ışığa giden doğru bir gövdeden geçiyorsa
+    // bu piksel gölgede. Bu olmadan ışık duvarların içinden geçiyordu ve her
+    // halka kusursuz bir oval oluyordu. Tam karanlık değil: gölgeye ışık sızar
+    // (yansıma yaklaşımı), yoksa siyah kamalar oyuncuyu kör eder.
+    "        float occN = lu.mode2.w;\n"
+    "        if (occN > 0.5 && !isLeft) {\n"
+    "            int on = int(occN);\n"
+    "            for (int k = 0; k < on; k++) {\n"
+    "                if (seg_hits_box(in.pos.xy, lu.pos[i].xy, lu.occ[k])) {\n"
+    "                    att *= 0.22;\n"
+    "                    break;\n"
+    "                }\n"
+    "            }\n"
+    "        }\n"
+    "        float3 lc = lin ? s2l(lu.col[i].rgb) : lu.col[i].rgb;\n"
+    "        c += lc * (att * lu.col[i].w);\n"
     "    }\n"
-    // Dither: 8-bit hedefte yavaş gradyan banding yapar; ±0.75/255 gürültü kırar
-    "    float dn = fract(sin(dot(in.pos.xy, float2(12.9898, 78.233))) * 43758.5453);\n"
-    "    c += (dn - 0.5) * (1.5 / 255.0);\n"
+    // ACES filmic (Narkowicz 2016). DİKKAT: çıktı clamp'li ve blend çarpımsal
+    // olduğu için bu mod 1.0 tavanını AÇMIYOR — ACES(1.0)=0.804, ACES(2.0)=0.915,
+    // yani tepeyi ~%20 karartıp yumuşak bir omuz veriyor. Gerçek overbright için
+    // RGBA16F hedef gerekir (ayrı iş). Lineer girdi ister.
+    "    if (gmode == 2)\n"
+    "        c = clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14),\n"
+    "                  0.0, 1.0);\n"
+    "    if (lin) c = l2s(c);\n"
+    // KUANTİZE — l2s SONRASINDA olmak zorunda. sRGB kodlaması kendisi kabaca
+    // algısal olarak düzgün olduğu için eşit aralıklı kuantizasyon burada
+    // algısal olarak da doğru; lineer uzayda kuantalarsak bantlar tepe ışıkta
+    // yığılır, gölgede 1-2 kademeye düşer.
+    "    if (qsteps > 0.5) {\n"
+    "        c = floor(c * qsteps + 0.5) / qsteps;\n"
+    "        return float4(clamp(c, float3(0.0), float3(1.0)), 1.0);\n"
+    "    }\n"
+    // DITHER — 8-bit hedefte banding kırar
+    "    if (dmode != 3) {\n"
+    "        float dn;\n"
+    "        if (dmode == 1) {\n"
+    // Bayer 4×4 ordered: 8/16-bit döneminin görsel dili, kasıtlı desen
+    "            float B[16] = {  0.0,  8.0,  2.0, 10.0, 12.0,  4.0, 14.0,  6.0,\n"
+    "                             3.0, 11.0,  1.0,  9.0, 15.0,  7.0, 13.0,  5.0 };\n"
+    "            int2 bi = int2(in.pos.xy) & 3;\n"
+    "            dn = B[bi.y * 4 + bi.x] / 16.0;\n"
+    "        } else {\n"
+    // IGN (Jimenez, CoD:AW 2014). dmode==2: indeks DÜNYA koordinatından —
+    // ekran uzayı deseni kamera hareketinde "crawl" ediyor ("kirli cam").
+    "            float2 q = in.pos.xy;\n"
+    "            if (dmode == 2) q = floor((q + float2(lu.ambient.w,\n"
+    "                                                 lu.count.w)) / 8.0);\n"
+    "            dn = fract(52.9829189 * fract(dot(q, float2(0.06711056,\n"
+    "                                                        0.00583715))));\n"
+    "        }\n"
+    "        c += (dn - 0.5) * (2.0 / 255.0);\n"
+    "    }\n"
+    "    if (splitX > 0.5 && abs(in.pos.x - splitX) < 1.5)\n"
+    "        c = float3(1.0, 0.85, 0.2);\n"        // bölme çizgisi
     "    return float4(clamp(c, float3(0.0), float3(1.0)), 1.0);\n"
     "}\n"
     // Post-fx "grade": sahne target'ını tam ekran örnekleyip doygunluk +
@@ -165,8 +322,12 @@ static Uint32 frameNo = 0;   // gren animasyonu için kare sayacı (postfx zaman
 typedef struct {
     float ambient[4];
     float count[4];
+    float mode[4];      // MSL LightU.mode ile AYNI SIRADA olmak zorunda
+    float mode2[4];     // x = A/B bölme çizgisi (ekran px), 0 = kapalı
     float pos[R2D_MAX_LIGHTS][4];
     float col[R2D_MAX_LIGHTS][4];
+    float shape[R2D_MAX_LIGHTS][4];   // x=siluet genliği y=cos(faz) z=sin(faz)
+    float occ[R2D_MAX_OCCLUDERS][4];  // ışığı kesen dikdörtgenler (ekran px)
 } R2DLightU;
 static R2DLightU lightU;
 static SDL_GPUSampler *sampler = NULL;        // NEAREST (pixel-art)
@@ -467,6 +628,12 @@ static R2DTexture *texture_create(int w, int h, bool isTarget)
     t->h = (float)h;
     t->modR = t->modG = t->modB = t->modA = 255;
     t->isTarget = isTarget;
+    // HATA DÜZELTMESİ: SDL_malloc sıfırlamaz — bu alan atanmadığı için her yeni
+    // doku ÇÖP değerle geliyordu, yani rastgele NEAREST ya da LINEAR örnekleniyordu
+    // (pixel-art'ta LINEAR = bulanık sprite). Varsayılan NEAREST.
+    t->linear = false;
+    t->opX = 0.0f; t->opY = 0.0f;
+    t->opW = (float)w; t->opH = (float)h;   // varsayılan: tüm alan opak sayılır
     return t;
 }
 
@@ -475,6 +642,28 @@ R2DTexture *r2d_texture_from_pixels(R2D *ctx, const void *rgba, int w, int h)
     (void)ctx;
     R2DTexture *t = texture_create(w, h, false);
     if (t == NULL) return NULL;
+
+    // ALPHA BOUNDING BOX taraması (Unity "Trim" muadili). Gölge ayak noktası
+    // ve blob genişliği bundan çıkar; alpha eşiği 8/255 (neredeyse şeffaf sayılır).
+    {
+        const unsigned char *px = (const unsigned char *)rgba;
+        int minX = w, minY = h, maxX = -1, maxY = -1;
+        for (int yy = 0; yy < h; yy++) {
+            for (int xx = 0; xx < w; xx++) {
+                if (px[(yy * w + xx) * 4 + 3] > 8) {
+                    if (xx < minX) minX = xx;
+                    if (xx > maxX) maxX = xx;
+                    if (yy < minY) minY = yy;
+                    if (yy > maxY) maxY = yy;
+                }
+            }
+        }
+        if (maxX >= minX && maxY >= minY) {
+            t->opX = (float)minX;          t->opY = (float)minY;
+            t->opW = (float)(maxX - minX + 1);
+            t->opH = (float)(maxY - minY + 1);
+        }
+    }
 
     Uint32 byteCount = (Uint32)(w * h * 4);
     SDL_GPUTransferBufferCreateInfo up = {
@@ -527,6 +716,16 @@ void r2d_texture_destroy(R2D *ctx, R2DTexture *tex)
     }
     SDL_ReleaseGPUTexture(gpu, tex->tex);
     SDL_free(tex);
+}
+
+void r2d_texture_opaque_bounds(const R2DTexture *tex, float *x, float *y,
+                               float *w, float *h)
+{
+    if (tex == NULL) { if (x) *x = 0; if (y) *y = 0; if (w) *w = 0; if (h) *h = 0; return; }
+    if (x) *x = tex->opX;
+    if (y) *y = tex->opY;
+    if (w) *w = tex->opW;
+    if (h) *h = tex->opH;
 }
 
 void r2d_texture_size(const R2DTexture *tex, float *w, float *h)
@@ -602,6 +801,55 @@ static void push_quad(R2DTexture *tex, float dx, float dy, float dw, float dh,
     d->count += 6;
 }
 
+// Serbest 4 köşeli quad — push_quad'ın eksen-hizalı olmayan kardeşi.
+// Motorda rotation/shear yoktu; gölge izdüşümü için gerekli (sprite'ın tabanı
+// yerinde kalır, tepesi güneşten uzağa yatar). Köşe sırası: TL, TR, BL, BR.
+static void push_quad_corners(R2DTexture *tex, const SDL_FPoint c4[4],
+                              float u0, float v0, float u1, float v1, SDL_Color c)
+{
+    if (vertCount + 6 > R2D_MAX_VERTS || drawCount >= R2D_MAX_DRAWS)
+        return;
+
+    R2DDraw *d = (drawCount > 0) ? &draws[drawCount - 1] : NULL;
+    if (d == NULL || forceNewDraw || d->tex != tex || d->blend != curBlend) {
+        d = &draws[drawCount++];
+        d->tex = tex;
+        d->blend = curBlend;
+        d->first = vertCount;
+        d->count = 0;
+        forceNewDraw = false;
+    }
+
+    float r = (c.r / 255.0f) * (tex->modR / 255.0f);
+    float g = (c.g / 255.0f) * (tex->modG / 255.0f);
+    float b = (c.b / 255.0f) * (tex->modB / 255.0f);
+    float a = (c.a / 255.0f) * (tex->modA / 255.0f);
+    R2DVertex q[6] = {
+        { c4[0].x, c4[0].y, u0, v0, r, g, b, a },   // TL
+        { c4[1].x, c4[1].y, u1, v0, r, g, b, a },   // TR
+        { c4[2].x, c4[2].y, u0, v1, r, g, b, a },   // BL
+        { c4[1].x, c4[1].y, u1, v0, r, g, b, a },   // TR
+        { c4[3].x, c4[3].y, u1, v1, r, g, b, a },   // BR
+        { c4[2].x, c4[2].y, u0, v1, r, g, b, a },   // BL
+    };
+    memcpy(&verts[vertCount], q, sizeof(q));
+    vertCount += 6;
+    d->count += 6;
+}
+
+void r2d_draw_texture_quad(R2D *ctx, R2DTexture *tex, const SDL_FRect *src,
+                           const SDL_FPoint corners[4], SDL_Color col)
+{
+    (void)ctx;
+    if (tex == NULL || corners == NULL) return;
+    float u0 = 0.0f, v0 = 0.0f, u1 = 1.0f, v1 = 1.0f;
+    if (src != NULL) {
+        u0 = src->x / tex->w;             v0 = src->y / tex->h;
+        u1 = (src->x + src->w) / tex->w;  v1 = (src->y + src->h) / tex->h;
+    }
+    push_quad_corners(tex, corners, u0, v0, u1, v1, col);
+}
+
 void r2d_draw_texture_flip(R2D *ctx, R2DTexture *tex, const SDL_FRect *src,
                            const SDL_FRect *dst, bool flipH)
 {
@@ -653,6 +901,62 @@ void r2d_draw_9grid(R2D *ctx, R2DTexture *tex, const SDL_FRect *src,
     }
 }
 
+// Işık görsel modu (F4 ile döngü) — yalnız GÖRSELİ etkiler.
+// Oynanış sorgusu (lamp_level_at) CPU'da ve bundan bağımsız: mod değişince
+// ölülerin bastırıldığı sınır DEĞİŞMEZ, sadece nasıl göründüğü değişir.
+static float s_lightQuantSteps = 0.0f;   // 0 = serbest (sürekli gradyan)
+static float s_lightGridPx     = 0.0f;   // 0 = ızgara yok
+static float s_lightGamma      = 0.0f;   // 0=sRGB toplama 1=lineer 2=lineer+ACES
+static float s_lightFalloff    = 0.0f;   // 0=plato+ss 1=Karis 2=URP 3=knee
+static float s_lightDither     = 0.0f;   // 0=IGN 1=Bayer 2=dünya-IGN 3=yok
+static float s_lightFParam     = 41.0f;  // Karis d0 / URP k
+static float s_lightCamX = 0.0f, s_lightCamY = 0.0f;
+static float s_lightSplitX = 0.0f;   // 0 = A/B karşılaştırma kapalı
+static float s_lightAniso  = 1.0f;   // 1 = daire · <1 basık elips · >1 dikey
+static float s_lightYOff   = 0.0f;   // ışık merkezinin dikey kayması (ekran px)
+
+void r2d_light_set_split(float screenX) { s_lightSplitX = screenX; }
+
+void r2d_light_set_shape(float aniso, float yOffset)
+{
+    s_lightAniso = aniso;
+    s_lightYOff  = yOffset;
+}
+
+static SDL_FRect s_occ[R2D_MAX_OCCLUDERS];
+static int   s_occCount = 0;
+static float s_occStrength = 0.0f;
+
+void r2d_light_set_occluders(const SDL_FRect *rects, int count, float strength)
+{
+    if (count > R2D_MAX_OCCLUDERS) count = R2D_MAX_OCCLUDERS;
+    if (count < 0) count = 0;
+    for (int i = 0; i < count; i++) s_occ[i] = rects[i];
+    s_occCount    = count;
+    s_occStrength = strength;
+}
+
+void r2d_light_set_mode(float quantSteps, float gridPx)
+{
+    s_lightQuantSteps = quantSteps;
+    s_lightGridPx     = gridPx;
+}
+
+void r2d_light_set_model(float gammaMode, float falloffMode, float ditherMode,
+                        float falloffParam)
+{
+    s_lightGamma   = gammaMode;
+    s_lightFalloff = falloffMode;
+    s_lightDither  = ditherMode;
+    s_lightFParam  = falloffParam;
+}
+
+void r2d_light_set_camera(float camX, float camY)
+{
+    s_lightCamX = camX;
+    s_lightCamY = camY;
+}
+
 void r2d_light_pass(R2D *ctx, float ambientR, float ambientG, float ambientB,
                     const R2DLight *lights, int count)
 {
@@ -665,15 +969,38 @@ void r2d_light_pass(R2D *ctx, float ambientR, float ambientG, float ambientB,
     lightU.ambient[2] = ambientB;
     lightU.ambient[3] = 1.0f;
     lightU.count[0] = (float)count;
+    lightU.count[1] = s_lightQuantSteps;   // 0 = serbest mod
+    lightU.count[2] = s_lightGridPx;       // 0 = ızgaraya yapışma yok
+    lightU.count[3] = s_lightCamY;         // dünya-çivili dither için
+    lightU.ambient[3] = s_lightCamX;
+    lightU.mode[0] = s_lightGamma;
+    lightU.mode[1] = s_lightFalloff;
+    lightU.mode[2] = s_lightDither;
+    lightU.mode[3] = s_lightFParam;
+    lightU.mode2[0] = s_lightSplitX;
+    lightU.mode2[1] = s_lightAniso;
+    lightU.mode2[2] = s_lightYOff;
+    lightU.mode2[3] = (s_occStrength > 0.01f) ? (float)s_occCount : 0.0f;
+    for (int i = 0; i < R2D_MAX_OCCLUDERS; i++) {
+        bool live = (i < s_occCount);
+        lightU.occ[i][0] = live ? s_occ[i].x : 0.0f;
+        lightU.occ[i][1] = live ? s_occ[i].y : 0.0f;
+        lightU.occ[i][2] = live ? s_occ[i].w : 0.0f;
+        lightU.occ[i][3] = live ? s_occ[i].h : 0.0f;
+    }
     for (int i = 0; i < count; i++) {
         lightU.pos[i][0] = lights[i].x;
         lightU.pos[i][1] = lights[i].y;
         lightU.pos[i][2] = (lights[i].radius > 1.0f) ? lights[i].radius : 1.0f;
-        lightU.pos[i][3] = 0.0f;
+        lightU.pos[i][3] = lights[i].yOff;
         lightU.col[i][0] = lights[i].r;
         lightU.col[i][1] = lights[i].g;
         lightU.col[i][2] = lights[i].b;
         lightU.col[i][3] = lights[i].intensity;
+        lightU.shape[i][0] = lights[i].wobAmp;
+        lightU.shape[i][1] = lights[i].wobC;
+        lightU.shape[i][2] = lights[i].wobS;
+        lightU.shape[i][3] = (lights[i].aniso > 0.05f) ? lights[i].aniso : 1.0f;
     }
 
     // Tam-ekran quad'ı R2D_BLEND_COUNT işaretli draw olarak batch'e koy —

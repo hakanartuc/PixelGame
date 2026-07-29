@@ -5,7 +5,42 @@
 > **[TASLAK]** asistan önerisi — Hakan onayı bekler · **[AÇIK]** karar verilmedi.
 > Bu belge canlıdır: her tasarım kararı önce buraya işlenir, kod onu izler.
 > Bakış TEPEDEN: burada iskelet kurulur; karakter/görev yazımı iskelete sonra asılır.
-> Üretim geçmişi PROGRESS.md'de, teknik devir HANDOVER.md'de, derin kurgu LORE.md'de (kurulacak).
+> Üretim geçmişi PROGRESS.md'de, teknik devir HANDOVER.md'de, derin kurgu **LORE.md**'de.
+> **LORE.md kuruldu (2026-07-28) ve kanon kilidi orasıdır** — dünya/halk/örgüt/ölü/zanaat/
+> hat/final çelişkisi çıkarsa LORE.md kazanır. Bu belge **tasarım kararlarını**, LORE.md
+> **dünyayı** tutar. Sıra: LORE → GDD → yapı → hikaye → görev → **kod en son**.
+
+> ## ⚠️ MVP RESET — 2026-07-24 [Hakan direktifi]
+> **Oyundaki mevcut KURGU sıfırlandı.** Bugüne kadarki hikaye, görevler,
+> karakterler, hizip ve yer isimleri (Taşdurak, Sessiz El, Neriman, Fatma/
+> Kerem, K9 Kandil, mühür hattı, mevcut zincirler...) **MVP denemesiydi —
+> bağlayıcı DEĞİL, referans alınmaz.** Kurgu sıfırdan, "canlı gerçek"
+> tasarlanacak; yeni kanon LORE.md'de doğacak ve kod ona uyarlanacak
+> (harita/NPC/diyalog isimleri yeni kurguya göre yeniden adlandırılır).
+>
+> **SIFIRLANMAYAN — aynen geçerli:**
+> - §1 tasarım sütunları · §2 döngüler · §4 **tüm mekanikler** (savaş,
+>   gizlilik, itibar/suç/revir, ekoloji, ekonomi, hava/mevsim, kontrat...)
+> - İSKELET modelleri: §3.1 kıta modeli · §3.2 bölge şablonu · §3.4 zincir
+>   mimarisi · §3.5 ortak düşman çerçevesi · §3.6 çoğul örgüt modeli
+> - §6 sanat/ses · §7 UI · §8 teknik
+>
+> Aşağıdaki §3.3 ırk matrisi ve somut yer/hizip adları **MVP kalıntısıdır**;
+> yeni kanon geldiğinde tamamen değişecek.
+>
+> ### ✅ YENİ KANON GELDİ — "SÖNEN KANDİLLER" (2026-07-28)
+> Beş tur sonunda kanon `docs/LORE.md`'ye kilitlendi. Dört tur reddedildi
+> (bürokratik · soyut · meslek dayatan · alet dayatan) ve gerekçeleri
+> LORE.md §0 + §14'te kalıcı kural olarak duruyor.
+> **Çekirdek:** kandiller askeri sebeple dikildi, ölülerin yatması bilinmeyen
+> bir yan etkiydi; yolun taşında iki bin yıllık **isimler** birikti, kor
+> gürültülü yandığı için ölü kendi adını duyamıyor. **Aşağıda kimse yok** —
+> çağrı bir kayıt. Kor **korur ve ifşa eder**. Kor **soğumuş ejderhadır**.
+>
+> **§3.3 ırk matrisi ve MVP yer adları artık LORE.md §4/§6 ile değiştirilmiştir**
+> (metin aşağıda duruyor, silinmedi — bkz. §10 doküman disiplini ve LORE §14.8).
+> **§3.5'in [AÇIK] bırakılan "ortak düşman hikaye kimliği" kapandı:** ortak
+> düşman bir ırk ya da ordu değil, **sönen kandil ve altındaki kayıt.**
 
 ---
 
@@ -33,9 +68,55 @@ inşa ettiğin, offline, top-down 2D pixel-art RPG — "Skyrim ruhu, KO dövüş
 ESO tarzı sunum: kişilikli, sorgulanabilir diyaloglar; sinematik perde,
 *altın vurgu*, typewriter; voice acting yok; Türkçe metin, dosya tabanlı.
 
+### 1.2b İNSAN ELİ KURALI [ONAYLI — Hakan 2026-07-24]
+**Oyundaki ve belgelerdeki her metin insan yazmış gibi okunmalı.** Yapay
+zekâ metninin tanınabilir izleri yasaktır:
+
+- **Simetri yasağı.** Her halkın üç özelliği, her gücün bir zaafı, her
+  bölümün eşit uzunluğu olmasın. İnsan yazarı dengesiz yazar: bir şeye
+  bayılır ve üç paragraf ayırır, başka bir şeyi bir cümlede geçer.
+- **Tablo, anlatının yerine geçmez.** Tablo veri içindir (sayı, konum,
+  eşleşme). Bir halkı, bir karakteri, bir yeri **paragrafla** anlat.
+- **"Sadece X değil, aynı zamanda Y"** ve benzeri denge kalıpları,
+  gereksiz üçlemeler ("hızlı, güçlü ve akıllı"), her paragrafı bağlayan
+  sonuç cümlesi — hepsi AI kokar. At.
+- **Her şeyi tanımlama.** Bazı şeyler sezdirilir, açıklanmaz. Okur
+  boşlukları kendi doldurabilmeli; her kavramın parantez içinde etimolojisi
+  olmasın.
+- **Somut ve beklenmedik detay** soyut nitelemeye yeğdir: "gururlu bir
+  halk" değil, "misafire önce atının suyunu sorarlar".
+- **Kişisel ses.** Metnin bir bakışı olsun; ansiklopedi maddesi değil,
+  bir şeyi anlatmayı seven birinin sesi.
+- Diyalogda: eksik cümle, laf arasında bölünme, konu değiştirme, aynı
+  şeyi iki kez farklı söyleme — insanlar böyle konuşur.
+
+Bu kural belgelere de uygulanır: LORE.md bir insan tarafından yazılmış
+kitap gibi okunmalı, üretilmiş bir rapor gibi değil.
+
 ### 1.3 Hedef / platform [AÇIK]
 Masaüstü (SDL3 taşınabilir); mobil ihtimali lisans teyidine bağlı.
 Fiyat/kitle/pazar konumu kararsız.
+
+### 1.4 ÇOK DİLLİLİK [ONAYLI — Hakan 2026-07-24]
+Oyun **çok dilli** olacak: **Türkçe + İngilizce kesin**; ileride İspanyolca/
+Almanca/Fransızca eklenebilir. Bunun tasarıma ve koda etkileri:
+
+- **İsimlendirme kuralı** [ONAYLI]: özel isimler (kişi/yer/örgüt) her iki
+  dilde de **telaffuz edilebilir** olmalı. Türkçe'ye özgü karakterlerde
+  (ç ğ ı ö ş ü) ölçülü olunur — bir ismin İngilizce konuşan oyuncunun
+  ağzında dağılmaması esastır. **Özel isimler ÇEVRİLMEZ**, aynı kalır;
+  yalnız unvan/sıfat kısımları çevrilir ("Gözcü Çelme" → "Çelme the
+  Watcher" kalıbı).
+- **Metin yazımı** [ONAYLI]: diyalog ve anlatı metinleri çeviriye uygun
+  yazılır — kelime oyunu, yerel deyim ve argo ölçülü kullanılır; kullanılan
+  yerde çeviri notu bırakılır. Cinsiyet/çoğul eki varsayımı yapan cümle
+  kurulmaz (İngilizce/Almanca'da bozulur).
+- **Teknik** [AÇIK — borç]: şu an metinler tek dilde ve dosyalara gömülü
+  (`assets/dialogs/*.txt`, kod içi HUD/UI stringleri). Lokalizasyon
+  altyapısı gerekecek: dil başına metin dizini + anahtar tabanlı string
+  tablosu + UTF-8 font kapsaması (aksanlı Latin harfleri) + değişken
+  uzunluklu metne dayanıklı UI. **Yeni yazılan her metin bu geçişe hazır
+  olmalı** (metin koda gömülmez, dosyadan gelir).
 
 ---
 
@@ -235,6 +316,53 @@ Tam-ekran post-process filtre altyapısı kodda (bkz. §8, F7 döngüsü); 20 ha
 Hakan testinden sonra seçilecek — muhtemelen SICAK/DARK FANTASY ekseni. Filtre
 şu an HUD dahil tüm kareye uygulanıyor (sahne-only varyantı açık soru).
 
+### 6.2 Işık & gölge modeli [KODDA — varyantlar test bekliyor]
+Işık bu oyunda dekor değil **mekanik**: LORE §1.5 "eşik = ışığın bittiği yer".
+O yüzden görsel eğri ile oyun kuralı **tek formülden** gelmek zorunda.
+
+**Karar 1 — TEK DÜŞÜŞ EĞRİSİ (bağlayıcı).** `light_atten()` (CPU) ile
+`fs_light` shader'ı (GPU) aynı eğriyi uygular; ayrışırsa oyuncu *aydınlık
+gördüğü yerde* ölüyle karşılaşır. Bu bir kez oldu (görsel 210px / bastırma
+141px / fısıltı 158px). Eğriyi değiştiren, iki yeri birlikte değiştirir.
+İç %35 plato + smoothstep düşüş + **kesin kenar** (`LIGHT_EDGE_CUT`) —
+kuyruk asimptotik gitse "ışık var mı yok mu" kenarda belirsiz kalırdı.
+
+**Karar 2 — GÖLGE = Blinn düzlemsel projeksiyonu (bağlayıcı).** Tahmin değil:
+Blinn 1988, yönlü ışıkta matris saf **shear**'e iner, `L = h·cot α`. Ayak
+noktası sprite dikdörtgeninin altı DEĞİL, **alpha sınır kutusunun** altıdır
+(ağaç sprite'ında altta şeffaf boşluk var → gölge tabandan kopuyordu).
+
+**Karar 3 — "ZELDA YALANI" (bağlayıcı).** Top-down'da dünya-kuzeyi ile
+dünya-yukarısı ekranda ayırt edilemez, yani kuzeye düşen gölge sprite'ın
+arkasına saklanır. Gölgenin dikey bileşeni pozitif tabanda tutulur; gölge
+**asla ekranda yukarı gitmez**. Top-down oyunların bunu yapmasının sebebi bu.
+
+**Karar 4 — TİTREŞİM AŞAĞI YÖNLÜDÜR.** Çarpımsal ışıkta yukarı titreşim
+1.0'da kırpılır ve sinyal kaybolur (Doom 1993 deseni). Genlik **yarıçapta**
+parlaklıktan ~5.9× daha etkili; dalga asimetrik (yavaş kabarma, hızlı çöküş).
+Karakter tipe bağlı (`FlickerKind`): kor sakin — LORE §1.9 "seni koruyan şey
+durur, korumayan gezinir" hem fizik (akkor katının termal ataleti) hem
+mekanik (kor bastırır, odun bastırmaz) ile aynı yere çıkıyor.
+
+**Karar 5 — ŞEKİL IŞIK TİPİNE BAĞLIDIR.** Kamera 3/4 eğik, bu yüzden zemin
+dikey olarak kısalıyor ve kaynaklar zeminin ÜSTÜNDE duruyor. Tek global şekil
+her kaynağı aynı gösteriyordu; artık `aniso`/`yOff` tipin kendi alanında:
+kandil basık ve yukarı kaymış (hazne direğin tepesinde) · kamp ateşi çok basık
+ve yerde · meşale orta (elde) · kutsal büyü daire (fiziği yok).
+
+**Karar 6 — GAMMA.** Katkılar **lineer** uzayda toplanır; sRGB'de toplamak
+merkezi +0.218 fazla parlatıp kırpıyordu.
+
+**[AÇIK] Kor'un rengi — kanon/fizik çatışması.** LORE korun beyaza yakın
+yandığını söylüyor; siyah cisim eğrisinde o sıcaklık koyu kızıl. Şu an elle
+seçilmiş renk ≈3130K (tungsten masa lambası). F11 iki modu değiştiriyor;
+**kalıcı seçim Hakan testinden sonra.**
+
+**Borç:** tilemap tıkaması (su karosu `solid` olduğu için `blocksLight` ayrı
+bayrak şart — yoksa göl opaklaşır) · çift-karartma için ayrı hedefe çizip tek
+kompozit (Factorio'nun belgelenmiş çözümü) · düşük çözünürlüklü lightmap
+(1 texel = 1 sanat pikseli) · kandil durumu save'e girmiyor.
+
 ## 7. UI / UX [KODDA]
 WoW hotbar · HUD (mevsimli saat, kontrat takipçisi) · panel ailesi
 (tooltip/drag&drop) · minimap · menü + 20+1 slot + yaratma-lite.
@@ -243,6 +371,8 @@ WoW hotbar · HUD (mevsimli saat, kontrat takipçisi) · panel ailesi
 C + SDL3 (vendored) + r2d GPU renderer (SDL_GPU/Metal; MSL shader — Vulkan/D3D
 SPIR-V yayın fazına ertelendi) · post-fx pass (offscreen target + fs_postfx:
 grade/vinyet/scanline/posterize/kromatik sapma/gren; F7 preset döngüsü) ·
+ışık pass'i (32 nokta ışık; tip başına titreşim+şekil; ışın-kutu tıkama, 16
+gövde) + Blinn gölgeleri (§6.2) ·
 save: sabit v29 + toleranslı kuyruk · dev araçları (ASAN, PIXE_AUTOLOAD/AUTOPLAY,
 F8/F10) ·
 disiplinler: paralel dizi tavanları (5 vaka), sıfır yeni uyarı, CSV=GID+1,

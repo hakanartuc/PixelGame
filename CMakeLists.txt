@@ -55,6 +55,8 @@ add_executable(game
     src/ui_theme.c
     src/skilltree.c
     src/light.c
+    src/lamp.c
+    src/shadow.c
     src/crime.c
     src/guard.c
     src/sneak.c

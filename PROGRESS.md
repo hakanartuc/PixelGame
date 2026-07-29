@@ -1,6 +1,6 @@
 # PROGRESS — Yapılanlar ve Kalanlar
 
-Güncelleme: 2026-07-11
+Güncelleme: 2026-07-29
 
 ## ✅ Tamamlanan fazlar
 
@@ -940,6 +940,71 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - İkon atlası 29→31; ritüel unlocks P2 büyülerini de açar (echo_apply_unlocks).
 - TEST NOTU: P1 ritüeli HÂLÂ TEST EDİLMEDİ — P1+P2 tek turda test edilebilir
   (F10 → taş halkası T108,7 → gece [E] → ritüel → 4 büyü + K'da Yankı ağacı).
+
+### Faz KANON+IŞIK — "SÖNEN KANDİLLER" KANONU + IŞIK/GÖLGE ELDEN GEÇİRME (2026-07-29)
+
+**A. Kanon kilidi (kod öncesi iş — Hakan direktifi "kod en son gelir")**
+- `docs/LORE.md` kuruldu (14 bölüm): kanon artık orada kilitli, çelişkide LORE kazanır.
+- Dört tur REDDEDİLDİ (bürokratik · soyut · **meslek dayatan** · alet dayatan);
+  gerekçeleri LORE §0 iptal listesi + §14 yazım kuralları olarak kalıcılaştı.
+- Hakan iki ucuzluk yakaladı ve ikisi de kalıcı kurala dönüştü:
+  - **FATURA REFLEKSİ yasağı**: "geçmişte biri kolayı seçti, şimdi bedelini
+    ödüyoruz" deseni. Panzehir: geçmiş karar HÂLÂ akıllı görünmeli, kriz onun
+    *yan etkisi* olmalı. → Kandiller **askeri** sebeple dikildi (gece yürüyen
+    ordular); ölülerin yatması **bilinmeyen bir yan etkiydi**.
+  - **ROL ÖZGÜRLÜĞÜ**: kurgu asla meslek dayatmaz ("hiçbir oyuncu kürekle
+    oynamak istemez ki"). Omurga dünyanın *durumu* olur, oyuncunun işi değil.
+- Çekirdek: yolun taşında 2000 yıllık **isimler** birikti · kor gürültülü
+  yandığı için ölü kendi adını duyamıyor · kandil sönünce duyar, kalkar ve
+  **öldüğü an ne yapıyorsa onu yapar** · **AŞAĞIDA KİMSE YOK** (çağrı bir
+  kayıt, iptal edilmemiş bir prosedür) · kor **korur ve ifşa eder** · **kor =
+  soğumuş ejderha**. 22 hat + 2 gizli sınıf; sınıf = 3-4 skill kesişimi + bir
+  dünya eylemi (tek skill sınıf yapmaz).
+- 23 skill ağacının tamamı subagent'larla denetlendi; içerik kusurları çıktı
+  (orta zırh ağacının item'ı yok · iki-el ağacı mızrak dayatıyor).
+
+**B. Oynanabilir kandil demosu** (mevcut ışık/ekoloji üstüne)
+- `lamp.c/h`: 16 direk, yakıt ömrü (3 gece/kor), `lamp_level_at()` bastırma.
+- Ölüler YALNIZ gömüldükleri yerde kalkar (`graves` bayrağı) — ilk sürümde
+  direklerin etrafında kalkıyordu, Hakan kasaba merkezinde iskelet gördü.
+- Gün 300s → **1200s** (Hakan: "her şey çok hızlı gerçekleşiyor").
+
+**C. Işık & gölge (GDD §6.2 — 6 karar + varyantlar)**
+- **TEK DÜŞÜŞ EĞRİSİ**: `light_atten()` CPU'da, `fs_light` GPU'da aynı formül.
+  Denetimde ÜÇ ayrı sınır bulundu (149/158/210 px) ve `LIGHT_EDGE_CUT` yalnız
+  mod 0'da uygulanıyordu — F2 basmak bastırmayı sessizce 149→165'e taşıyıp
+  oyuncuyu *görünür karanlıkta* koruyordu. Tek kaynağa indirildi.
+- **Blinn 1988** düzlemsel gölge (tahmin değil, makale): yönlü ışıkta saf
+  shear, `L = h·cot α`. Hakan: "tahmin etmesek, bunun formülü vardır."
+- **Ayak noktası = alpha sınır kutusu** (sprite dikdörtgeninin altı değil):
+  ağaç gölgesinin gövdeden kopmasının gerçek sebebi buydu.
+- **"Zelda yalanı"**: gölge asla ekranda yukarı gitmez (kuzeye düşen gölge
+  sprite'ın arkasına saklanır).
+- **Titreşim aşağı yönlü** (çarpımsalda yukarı 1.0'da kırpılır), tip başına
+  karakter; yarıçap modülasyonu parlaklıktan ~5.9× etkili.
+- **Şekil ışık TİPİNE bağlı** (Hakan: "her ışık kaynağı farklı davranmaz mı?"):
+  kandil basık+yukarı · kamp ateşi çok basık+yerde · meşale orta · büyü daire.
+- **Işın-kutu tıkama** (16 gövde, slab testi): ışığın kusursuz elips olmasını
+  kıran şey bu. Ağacın TACI kesmez (yapraktan sızar), gövdesi keser.
+- Yarıçaplar kısıldı (Hakan: "çaplar çok geniş"): kandil 165→122 · meşale
+  175→128 · kamp ateşi 230→168 · pencere 105→78 · zindan meşalesi 210→150.
+- Gölge lekesi: 3 dikdörtgen oval taklidi ev boyutunda "kare kare" okunuyordu
+  → kodda üretilen radyal alpha dokusu (LINEAR).
+- **Gerçek hata düzeltmeleri**: `texture_create` `t->linear`'ı hiç set
+  etmiyordu (her doku rastgele örnekleme — eski hata) · `light_seed` işaretli
+  taşma (UB) · `lenMul = cotA * L` gölgeyi öğlen %58 kısaltıyordu ·
+  `splashText` kapsam-sonrası kullanım · zindan/kuyu dibinde güneş gölgesi.
+- **Test araçları** (Hakan "aynı gözüküyorlar, nereyi test edeceğim?" dedikten
+  sonra): F12 A/B ekran bölme · kalıcı mod göstergesi · F1 gamma · F2 düşüş
+  (CPU+GPU birlikte) · F3 dither · F4 quantize · F11 fiziksel renk (Kelvin) ·
+  **Ctrl+L** şekil (Ctrl+Shift+L geri) · **Ctrl+O** tıkama.
+  `[` `]` bırakıldı: Türkçe Q klavyede o konumda `ğ`/`ü` var, basılamıyordu.
+
+**Kalan borç:** tilemap tıkaması (su `solid` olduğu için `blocksLight` ayrı
+bayrak şart) · çift-karartma tek kompozit · düşük çözünürlüklü lightmap ·
+kandil durumu save'e girmiyor · mezar taşı harflerinin ısınması · ışık terimi
+`sneak.c`/`crime.c`'de yok (kanon §1.5'in yarısı) · kor renginin kanon/fizik
+çatışması F11 ile Hakan'a bırakıldı.
 
 ### Faz POSTFX — TAM-EKRAN POST-PROCESS + 20 FİLTRE (2026-07-24, Hakan isteği)
 - **Altyapı (r2d)**: SDL_GPU post-process pass'i. postfx açıkken kare pencere

@@ -66,6 +66,17 @@ static void sun_bounds(float *dawnStart, float *dayStart,
     *nightStart = *duskStart + TWILIGHT;
 }
 
+// Güneşin gökteki ilerlemesi: şafak başı 0 → gece başı 1, gece boyunca -1.
+// Gölge yönü ve uzunluğu bundan türetilir (shadow.c). Mevsim ve harita
+// gündoğumu kayması sun_bounds içinde zaten hesaplı, tekrar etmiyoruz.
+float gametime_sun_t(void)
+{
+    float dawnS, dayS, duskS, nightS;
+    sun_bounds(&dawnS, &dayS, &duskS, &nightS);
+    if (curHours < dawnS || curHours >= nightS) return -1.0f;   // güneş yok
+    return (curHours - dawnS) / (nightS - dawnS);
+}
+
 DayPhase gametime_phase(void)
 {
     float dawnS, dayS, duskS, nightS;

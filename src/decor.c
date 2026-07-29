@@ -1,4 +1,5 @@
 #include "decor.h"
+#include "shadow.h"   // temas lekesi (ayak izi)
 
 // Köy evleri — NPC'lerin gece gittiği kapılar bunların önü (npc.c rutinleri)
 #define T(n) ((n) * (float)TILE_SIZE)
@@ -136,8 +137,13 @@ void decor_set_map(int mapId) { decorMap = mapId; }
 
 void decor_set_active(bool active) { decorActive = active; }
 
+// Occluder toplarken dokulara erişmek için: set_texture_sizes çağrısında
+// diziyi saklıyoruz (aynı dizi kare boyunca geçerli).
+R2DTexture **decorTextures_cached = NULL;
+
 void decor_set_texture_sizes(R2DTexture **decorTextures)
 {
+    decorTextures_cached = decorTextures;
     if (DECOR_COUNT > DECOR_CAP)
         SDL_Log("UYARI: DECOR_COUNT (%d) > DECOR_CAP (%d) — tavani buyut!",
                 DECOR_COUNT, DECOR_CAP);
@@ -172,6 +178,117 @@ void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
         };
         r2d_draw_texture(renderer, decorTextures[i], NULL, &dst);
     }
+}
+
+// Güneş gölgeleri — zeminin ÜSTÜNE, dekorun ALTINA çizilir (main sırası).
+// Sprite'ın yatık kopyası: taban ayak hizasında çakılı, tepe güneşten uzağa.
+// Renk vertex'e siyaha yakın verilir; sprite dokusuyla çarpıldığı için silüet
+// kendiliğinden çıkar (ayrı gölge sprite'ı gerekmez).
+void decor_render_shadows(R2D *renderer, R2DTexture **decorTextures,
+                          const Camera *camera,
+                          float dx, float dy, float lenMul, float strength)
+{
+    if (!decorActive || strength <= 0.02f) return;
+    float zoom = camera->zoom;
+    SDL_Color col = { 22, 24, 34, (Uint8)(78.0f * strength) };
+
+    for (int i = 0; i < DECOR_COUNT && i < DECOR_CAP; i++) {
+        if (decorTextures[i] == NULL) continue;
+        if (DECORS[i].map != decorMap) continue;
+        SDL_FRect r = decor_rect(i);
+        SDL_FRect dst = {
+            (r.x - camera->x) * zoom, (r.y - camera->y) * zoom,
+            r.w * zoom, r.h * zoom,
+        };
+
+        // ══ AYAK NOKTASI — eski hatanın kaynağı ══
+        // Gölge sprite DİKDÖRTGENİNİN alt kenarından başlıyordu. Ağaç PNG'sinde
+        // altta şeffaf boşluk var, yani o kenar gövdenin dibi DEĞİL — gölge
+        // nesneden kopuk görünüyordu. Stardew de sprite dikdörtgenini
+        // kullanmıyor (Character.cs: ayak noktası çarpışma kutusundan + elle
+        // düzeltme). Biz opak sınırları yüklemede tarıyoruz (Unity "Trim"
+        // muadili) ve ayak çizgisini oradan alıyoruz.
+        float opX, opY, opW, opH;
+        r2d_texture_opaque_bounds(decorTextures[i], &opX, &opY, &opW, &opH);
+        float texH2 = 0.0f, texW2 = 0.0f;
+        r2d_texture_size(decorTextures[i], &texW2, &texH2);
+        if (texH2 <= 0.0f) continue;
+
+        // Opak sınırları sprite'ın ekran dikdörtgenine ölçekle
+        float sxScale = dst.w / texW2, syScale = dst.h / texH2;
+        float oL = dst.x + opX * sxScale;              // opak sol
+        float oW = opW * sxScale;                      // opak genişlik
+        float oT = dst.y + opY * syScale;              // opak üst
+        float footY = dst.y + (opY + opH) * syScale;   // AYAK ÇİZGİSİ
+        float objH = footY - oT;                       // gerçek nesne yüksekliği
+        if (objH <= 1.0f) continue;
+
+        // Blinn shear'i: taban ayak çizgisinde çakılı, tepe güneşten uzağa.
+        // Uzunluk gerçek nesne yüksekliğinin cot(α) katı.
+        float offX = SDL_roundf(dx * lenMul * objH);
+        float offY = SDL_roundf(dy * lenMul * objH);
+
+        SDL_FPoint c4[4] = {
+            { oL + offX,       footY + offY },   // TL = sprite tepesi, uzak uç
+            { oL + oW + offX,  footY + offY },   // TR
+            { oL,              footY        },   // BL = ayak çizgisi, yerinde
+            { oL + oW,         footY        },   // BR
+        };
+        // UV: yalnız OPAK bölge — şeffaf kenarları gölgeye sokmak gölgeyi
+        // yanlış boyutlu ve kopuk gösteriyordu.
+        SDL_FRect srcOpaque = { opX, opY, opW, opH };
+        r2d_draw_texture_quad(renderer, decorTextures[i], &srcOpaque, c4, col);
+
+        // Temas lekesi: shear öğlen sıfıra yaklaşır ve nesne zeminden kopar;
+        // bu leke o boşluğu doldurur ve gölgeyi ayak izine çiviler.
+        // DÜNYA-uzayı ayak çizgisi — quad'la AYNI yer. Eskiden DECORS[i].y
+        // (sprite dikdörtgeninin altı) geçiliyordu ve leke gölgenin altında
+        // yüzüyordu: lich.png'de 158 px, dead_tree'de 32 px kayma.
+        float footWorld = DECORS[i].y - (texH2 - opY - opH) * DECORS[i].scale;
+        shadow_ground_blob(renderer, camera,
+                           DECORS[i].x, footWorld, oW / zoom, strength);
+    }
+}
+
+int decor_light_occluders(SDL_FRect *out, int cap, const Camera *camera,
+                          float cx, float cy)
+{
+    if (!decorActive || out == NULL || cap <= 0) return 0;
+    float zoom = camera->zoom;
+
+    // En yakın nesneleri seç: occluder bütçesi küçük (16), uzaktakiler zaten
+    // ışık menzilinde değil. Basit seçim sıralaması — n küçük.
+    int    idx[64];
+    float  dist[64];
+    int    m = 0;
+    for (int i = 0; i < DECOR_COUNT && i < DECOR_CAP && m < 64; i++) {
+        if (decorTextures_cached[i] == NULL) continue;
+        if (DECORS[i].map != decorMap) continue;
+        if (!DECORS[i].solidBase) continue;      // çalı/saman ışığı kesmez
+        float dx = DECORS[i].x - cx, dy = DECORS[i].y - cy;
+        float d2 = dx * dx + dy * dy;
+        if (d2 > 900.0f * 900.0f) continue;      // çok uzak
+        idx[m] = i; dist[m] = d2; m++;
+    }
+    int n = 0;
+    for (; n < cap && n < m; n++) {
+        int best = n;
+        for (int j = n + 1; j < m; j++) if (dist[j] < dist[best]) best = j;
+        int ti = idx[best]; float td = dist[best];
+        idx[best] = idx[n]; dist[best] = dist[n];
+        idx[n] = ti; dist[n] = td;
+
+        int i = idx[n];
+        SDL_FRect r = decor_rect(i);
+        // GÖVDE: alt %45 ve genişliğin ortadaki %60'ı. Ağaç için bu gövdedir
+        // (taç ışığı kesmez); ev için duvar hattı.
+        float bw = r.w * 0.60f, bh = r.h * 0.45f;
+        out[n].x = (r.x + (r.w - bw) * 0.5f - camera->x) * zoom;
+        out[n].y = (r.y + r.h - bh - camera->y) * zoom;
+        out[n].w = bw * zoom;
+        out[n].h = bh * zoom;
+    }
+    return n;
 }
 
 bool decor_blocks(SDL_FRect box)

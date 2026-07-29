@@ -6,7 +6,11 @@
 // Fazlar karanlık overlay'ini, gece tehlikesini ve NPC rutinlerini sürer.
 // (adı time.h ile çakışmasın diye "gametime")
 
-#define GAMETIME_DAY_SECONDS 300.0f   // 5 dk = 24 saat
+// Bir tam gün = 20 gerçek dakika (gece ~7 dk). Eskiden 300s (5 dk) idi —
+// test için hızlıydı ama olayları takip etmek imkânsızdı: gece çöküyor,
+// ölüler kalkıyor ve oyuncu ne olduğunu göremeden sabah oluyordu.
+// Kıyas: Stardew ~14 dk, Skyrim ~48 dk.
+#define GAMETIME_DAY_SECONDS 1200.0f  // 20 dk = 24 saat
 #define GAMETIME_START_HOUR 8.0f      // oyun sabah 08:00'de başlar
 
 typedef enum {
@@ -33,6 +37,10 @@ const char *gametime_season_name(void);  // "İlkbahar" / "Yaz" / ...
 // Harita gündoğumu kayması (saat): doğu haritaları NEGATİF (erken doğar,
 // erken batar). Harita geçişinde main çağırır (MapDef.sunriseOffset).
 void gametime_set_sun_offset(float hours);
+
+// Güneşin gökteki ilerlemesi: şafak başı 0.0 → gece başı 1.0.
+// Gece boyunca -1.0 döner (güneş yok). Gölge yönü/uzunluğu buradan türetilir.
+float gametime_sun_t(void);
 
 void gametime_init(void);
 void gametime_update(float dt);

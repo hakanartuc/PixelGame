@@ -1,8 +1,18 @@
 # HANDOVER — Pixe Game
 
-Güncelleme: 2026-07-14 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
+Güncelleme: 2026-07-29 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
 
 ## Çalışma kuralları
+- **KOD EN SON GELİR (2026-07-28 Hakan direktifi)**: kod faturası tasarım
+  kriteri DEĞİL — kapsam maliyet için asla küçültülmez. Sıra: **lore → GDD →
+  yapı → hikaye → görev → kod**. "Bunlar oturmadan kodun önemi yok." Bir
+  bölümü demo gibi oynamak yine de iyi fikir.
+- **BOŞA ÇIKAN KODU SİLME (2026-07-28)**: kanon değişince sahipsiz kalan
+  mekanik/ağaç/bayrak silinmez — gerekçesiyle yorumlanır ya da rafa kalkar.
+  Yeniden yazmak yerine **yeniden adlandır/yeniden yorumla**.
+- **docs/LORE.md = kanon kilidi (2026-07-28)**: dünya/halk/örgüt/ölü/zanaat/
+  hat/final çelişkisinde LORE kazanır. §0 iptal listesi (12 reddedilmiş fikir)
+  ve §14 yazım kuralları (FATURA REFLEKSİ testi, ROL ÖZGÜRLÜĞÜ) bağlayıcı.
 - **docs/GDD.md = tasarım anayasası (2026-07-24)**: her tasarım kararı önce
   GDD'ye işlenir ([ONAYLI]/[KODDA]/[TASLAK]/[AÇIK] etiketleriyle), kod onu
   izler; yol haritası GDD §9. PROGRESS üretim günlüğü, HANDOVER devir notu

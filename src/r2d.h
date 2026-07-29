@@ -29,12 +29,24 @@ typedef enum {
 // Sahnenin üstüne multiply blend'li tam-ekran quad: shader piksel başına
 // ambient + Σ ışık katkısı hesaplar, sahne rengiyle çarpılır (gerçek renk karışımı).
 #define R2D_MAX_LIGHTS 32   // MSL'deki dizi boyutuyla AYNI kalmalı (r2d.c)
+#define R2D_MAX_OCCLUDERS 16  // ışığı kesen dikdörtgen sayısı (MSL ile AYNI)
 
 typedef struct {
     float x, y;        // ekran px (dünya→ekran dönüşümü çağıranda)
     float radius;      // ekran px — bu uzaklıkta katkı sıfırlanır
     float r, g, b;     // ışık rengi (0..1)
     float intensity;   // katkı gücü (0..1 tipik)
+    // SİLUET DALGALANMASI: halkanın kenarı kusursuz daire olmasın. Gerçek alev
+    // nefes alan bir amip gibidir. amp = genlik (yarıçap oranı), phaseC/S =
+    // CPU'da hesaplanmış dönen faz vektörü (shader'da atan2 yapmamak için).
+    float wobAmp, wobC, wobS;
+    // ŞEKİL — ışık başına. Her kaynağın zemine düşen lekesi farklıdır:
+    // kandilin haznesi direğin tepesinde (yukarı kaymış, basık), kamp ateşi
+    // yerde (çok basık ve geniş), meşale elde (orta). Global tek şekil hepsini
+    // aynı gösteriyordu.
+    //   aniso <1 = basık elips · 1 = daire · >1 dikey uzama
+    //   yOff  <0 = merkez yukarı (kaynağın gerçek yüksekliği)
+    float aniso, yOff;
 } R2DLight;
 
 // --- Kurulum / yaşam döngüsü ---
@@ -54,6 +66,12 @@ R2DTexture *r2d_texture_from_pixels(R2D *ctx, const void *rgba, int w, int h);
 R2DTexture *r2d_target_create(R2D *ctx, int w, int h);               // çizilebilir
 void r2d_texture_destroy(R2D *ctx, R2DTexture *tex);   // kare içinde güvenli (ertelenir)
 void r2d_texture_size(const R2DTexture *tex, float *w, float *h);
+
+// OPAK SINIRLAR (alpha bounding box) — yüklemede taranır, sprite px cinsinden.
+// Gölge ayak noktası için: sprite PNG'sinin alt kenarı nesnenin zemine değdiği
+// yer değildir (ağaçta altta şeffaf boşluk var). Ayak çizgisi = opY + opH.
+void r2d_texture_opaque_bounds(const R2DTexture *tex, float *x, float *y,
+                               float *w, float *h);
 
 // SDL_SetTextureColorMod/AlphaMod karşılığı — çizimde vertex rengiyle çarpılır
 void r2d_texture_set_color_mod(R2DTexture *tex, Uint8 r, Uint8 g, Uint8 b);
@@ -75,6 +93,51 @@ void r2d_set_color(R2D *ctx, Uint8 r, Uint8 g, Uint8 b, Uint8 a);   // primitif 
 // Işık pass'ini batch'e koy — o ana kadar çizilenlerin ÜSTÜNE uygulanır,
 // sonrası (HUD) etkilenmez. Kare başına EN FAZLA BİR kez; target içinde çalışmaz.
 // ambient: sahne çarpanı (gece ~0.3, gündüz 1 → çağırma, görünmez).
+// Işık GÖRSEL modu — F4 ile döngülenir, oynanışı ETKİLEMEZ.
+//   quantSteps: 0 = serbest (sürekli gradyan) · >0 = ışık alanı N basamağa iner
+//   gridPx:     0 = yok · >0 = ışık bu ızgaranın merkezinden örneklenir
+//               (sanat pikseline yapıştırma; zemin 16px sanat × 4 ölçek = 4 px)
+void r2d_light_set_mode(float quantSteps, float gridPx);
+
+// IŞIK MODELİ VARYANTLARI (dev tuşları) — hepsi yalnız GÖRSELİ etkiler.
+//   gammaMode   0 = sRGB uzayında topla (eski, HATALI: merkez +0.22 kırpılıyor)
+//               1 = LİNEER uzayda topla (fiziksel doğru — Karis/Frostbite PBR)
+//               2 = lineer + ACES filmic tone map (Narkowicz 2016)
+//   falloffMode 0 = iç plato + smoothstep + kenar kesimi (mevcut)
+//               1 = Karis pencereli ters-kare (UE4 2013 dnk.9) — falloffParam = d0 px
+//               2 = URP 2D pow(1-t, k) ailesi — falloffParam = k (1.0 = lineer)
+//               3 = kenar dizi (knee): dış %25'te ani çöküş, sınır çok okunur
+//   ditherMode  0 = interleaved gradient noise · 1 = Bayer 4×4 ordered
+//               2 = dünya-çivili IGN (kamera hareketinde "crawl" etmez) · 3 = yok
+// DİKKAT: falloffMode değişirse light.h light_atten() de AYNI eğriye geçmeli,
+// yoksa oyuncu aydınlık gördüğü yerde ölüyle karşılaşır.
+void r2d_light_set_model(float gammaMode, float falloffMode, float ditherMode,
+                        float falloffParam);
+
+// Dünya-çivili dither için kamera konumu (her kare, ışık pass'inden önce)
+void r2d_light_set_camera(float camX, float camY);
+
+// A/B KARŞILAŞTIRMA: ekranı dikey bölüp SOL yarıya orijinal ayarları, SAĞ
+// yarıya seçili modları uygular (bölme çizgisi sarı çizilir). 0 = kapalı.
+// Varyantların çoğu tek başına bakıldığında ayırt edilemiyor; yan yana görünür.
+void r2d_light_set_split(float screenX);
+
+// IŞIK ŞEKLİ — kamera tam kuş bakışı değil (3/4 eğik: evler yandan görünüyor).
+// Eğik perspektifte zemin dikey olarak kısaltılır, yani zeminde DAİRESEL olan
+// aydınlık alan ekranda YATAY ELİPS görünmeli. Ayrıca kaynak zeminde değil
+// (kandil haznesi, alev) — yükseklik ekranda yukarı çizilir.
+//   aniso  1.0 = daire · <1 basık elips (zemin kısaltması) · >1 dikey uzama
+//   yOffset  0 = merkez ayak hizasında · <0 merkez yukarı (kaynak yüksekliği)
+void r2d_light_set_shape(float aniso, float yOffset);
+
+// IŞIK TIKAMA (occlusion) — ışığın nesnelerden GEÇMEMESİ. Bu olmadan her ışık,
+// önünde ne olursa olsun kusursuz bir geometrik şekil boyar; "hep yuvarlak
+// görünüyor" şikâyetinin asıl sebebi buydu.
+// Dikdörtgenler EKRAN uzayında (x, y, w, h) ve nesnelerin AYAK İZİdir (gövde),
+// sprite'ın tamamı değil — ağacın tacı ışığı kesmez, gövdesi keser.
+//   strength 0 = kapalı · 1 = tam gölge · 0.75 tipik (gölgeye ışık sızar)
+void r2d_light_set_occluders(const SDL_FRect *rects, int count, float strength);
+
 void r2d_light_pass(R2D *ctx, float ambientR, float ambientG, float ambientB,
                     const R2DLight *lights, int count);
 
@@ -104,6 +167,12 @@ void r2d_draw_texture(R2D *ctx, R2DTexture *tex,
                       const SDL_FRect *src, const SDL_FRect *dst);
 void r2d_draw_texture_flip(R2D *ctx, R2DTexture *tex, const SDL_FRect *src,
                            const SDL_FRect *dst, bool flipH);
+// Serbest 4 köşeli quad (eksen-hizalı DEĞİL) — gölge izdüşümü için.
+// Köşe sırası TL, TR, BL, BR (ekran px). UV eşlemesi sprite'ın tabanını
+// BL/BR'ye, tepesini TL/TR'ye bağlar: yani gölge kendiliğinden doğru yatar.
+void r2d_draw_texture_quad(R2D *ctx, R2DTexture *tex, const SDL_FRect *src,
+                           const SDL_FPoint corners[4], SDL_Color col);
+
 void r2d_draw_9grid(R2D *ctx, R2DTexture *tex, const SDL_FRect *src,
                     float corner, float scale, const SDL_FRect *dst);
 

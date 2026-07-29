@@ -1,4 +1,5 @@
 #include "worldmap.h"
+#include "light.h"   // tek titreşim çekirdeği
 #include "render.h"
 #include "font.h"
 
@@ -204,19 +205,15 @@ int map_append_lights(MapId id, R2DLight *out, int n, int cap,
     if (id == MAP_DUNGEON_F2) { torches = F2_TORCHES; torchCount = 5; }
     if (torches == NULL) return n;
 
-    float t = (float)SDL_GetTicks() / 1000.0f;
-    float zoom = cam->zoom;
+    // TEK titreşim çekirdeği (light.c light_append_point). Eskiden burada
+    // kendi flicker kopyası vardı: YUKARI yönlü (çarpım blend'i 1.0'da
+    // kırpıyor, yani titreşimin yarısı görünmüyordu), indeks-tabanlı faz,
+    // yarıçap ve merkez oynaması yok, ve F11 fiziksel renk modu etkisizdi.
+    // Yani zindanda ve dünyada iki farklı ateş dili vardı.
     for (int i = 0; i < torchCount && n < cap; i++) {
-        float sx = (torches[i].x - cam->x) * zoom;
-        float sy = (torches[i].y - cam->y) * zoom;
-        float sr = 210.0f * zoom;
-        if (sx + sr < 0 || sx - sr > (float)sw ||
-            sy + sr < 0 || sy - sr > (float)sh)
-            continue;   // ekran dışı
-        // İki frekanslı titreşim (light.c deseniyle aynı his)
-        float fl = 1.0f + 0.12f * (SDL_sinf(t * 9.0f + i * 1.7f) * 0.6f
-                                 + SDL_sinf(t * 23.0f + i * 3.1f) * 0.4f);
-        out[n++] = (R2DLight){ sx, sy, sr, 1.00f, 0.60f, 0.26f, 0.72f * fl };
+        n = light_append_point(out, n, cap, cam, sw, sh,
+                               torches[i].x, torches[i].y,
+                               150.0f, 1.00f, 0.52f, 0.16f, 0.72f, LK_TORCH);
     }
     return n;
 }

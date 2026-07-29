@@ -38,12 +38,14 @@
 #include "ally.h"
 #include "gametime.h"
 #include "decor.h"
+#include "shadow.h"   // gündüz güneş gölgeleri
 #include "audio.h"
 #include "music.h"
 #include "minimap.h"
 #include "ui_theme.h"
 #include "perk.h"
 #include "light.h"
+#include "lamp.h"   // kandil direği — LORE §1.1/§1.4/§1.5
 #include "crime.h"
 #include "guard.h"
 #include "sneak.h"
@@ -1185,6 +1187,11 @@ int main(int argc, char *argv[])
     for (int i = 0; i < DECOR_COUNT && i < DECOR_TEX_CAP; i++)
         decor_textures[i] = load_texture(renderer, DECORS[i].texPath);
     decor_set_texture_sizes(decor_textures);
+    shadow_init(renderer);   // gölge lekesi dokusu (radyal alpha gradyanı)
+    r2d_light_set_model(1.0f, 0.0f, 0.0f, 41.0f);   // varsayılan: LİNEER toplama
+    // Şekil artık ışık TİPİNE bağlı (light.c FLICKER tablosu). Global değerler
+    // yalnız test çarpanı: 1.0 / 0 = tipin kendi şeklini kullan.
+    r2d_light_set_shape(1.0f, 0.0f);
 
     // Kaynak düğümleri (cevher/bitki/ağaç) — toplama sistemi
     R2DTexture *resource_textures[MAX_RESOURCES] = {0};
@@ -1427,6 +1434,18 @@ int main(int argc, char *argv[])
 
     // Craft durumu: panel + aktif üretim süreci (malzeme TAMAMLANINCA tüketilir)
     int nearestStation = -1;
+    int nearestLamp = -1;      // kandil direği (LORE §1.1)
+    float whisperTimer = 3.0f; // karanlığın sesi (LORE §1.2) — halka dışında işler
+    int   lightMode = 0;       // kuantizasyon (F4): 0 serbest · 1/2 kademeli
+    // Varsayılan LİNEER: sRGB uzayında toplamak bir HATA (merkez +0.22 fazla
+    // parlayıp kırpılıyor). F1 ile eski hatalı moda dönülebilir — A/B (F12)
+    // karşılaştırması için gerekli.
+    int   lightGamma = 1;      // F1: 0 sRGB (eski/hatalı) · 1 lineer · 2 +ACES
+    int   lightFall = 0;       // F2: 0 plato+ss · 1 Karis · 2 URP · 3 knee
+    int   lightDither = 0;     // F3: 0 IGN · 1 Bayer · 2 dünya-çivili · 3 yok
+    bool  lightSplit = false;  // F12: A/B karşılaştırma (sol orijinal, sağ seçili)
+    int   lightShape = 0;      // Ctrl+L: 0 tipin kendi şekli · 1 basık · 2 dikey · 3 daire
+    float lightOccl = 1.0f;    // O tuşu: ışık tıkama aç/kapa (0 = kapalı)
     bool craftOpen = false;
     int craftStation = -1;    // panelin bağlı olduğu istasyon
     int craftRecipe = -1;     // süreçteki tarif (RECIPES indeksi)
@@ -1437,6 +1456,7 @@ int main(int argc, char *argv[])
     int trainedDay[32];
     for (int i = 0; i < 32; i++) trainedDay[i] = -1;
     craft_reset_learned();   // blueprint tarifleri kapalı başlar (save v10 doldurur)
+    lamp_reset();            // kandil hattı: meydan ve bostan SÖNÜK başlar (LORE §13.2)
 
     // Sunak durumu: hedef ekipman + aktif basma işlemi (0 yok, 1/2 rün, 10+s stat)
     EquipSlot enchTarget = EQUIP_WEAPON;
@@ -1641,6 +1661,9 @@ int main(int argc, char *argv[])
     // Bölge splash durumu: bölge değişince ad 3 sn görünür
     int currentRegion = -1;
     const char *splashText = NULL;
+    // splashText bir İŞARETÇİ: yerel diziyi atamak use-after-scope olur.
+    // Biçimlenmiş splash metinleri buraya yazılır (döngü boyunca yaşar).
+    char splashOwn[96] = { 0 };
     float splashTimer = 0.0f;
     TTF_Font *splashFont = font_load("assets/fonts/PublicPixel-rv0pA.ttf", 32.0f);
     Camera camera = {.x = 0.0f, .y = 0.0f, .zoom = 1.0f};
@@ -3355,6 +3378,47 @@ int main(int argc, char *argv[])
                             audio_play(SFX_UI);
                         }
                     }
+                    // KANDİL DİREĞİ (LORE §1.1): sönük direğe kor koy.
+                    // Bir kor = üç gece. Yanan halkada ölü kalkmaz (§1.4) —
+                    // ama halkayı taşıyan da iki mil öteden görünür (§1.5).
+                    else if (nearestLamp >= 0)
+                    {
+                        SDL_Color warm = { 255, 200, 120, 255 };
+                        SDL_Color cold = { 255, 120, 100, 255 };
+                        char buf[FLOAT_TEXT_LEN];
+                        float ftx = player.rect.x + player.rect.w / 2.0f;
+                        float fty = player.rect.y - 10.0f;
+
+                        if (lamp_lit(nearestLamp))
+                        {
+                            snprintf(buf, sizeof(buf), "%s yaniyor - %d gece",
+                                     LAMPS[nearestLamp].place, lamp_nights(nearestLamp));
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 ftx, fty, buf, warm);
+                        }
+                        else if (bag_count(&ITEM_TYPES[ITEM_ORE_COPPER]) <= 0)
+                        {
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 ftx, fty, "Hazne bos - kor gerek", cold);
+                        }
+                        else
+                        {
+                            bool first = (lamp_owner(nearestLamp) == LAMP_OWNER_NONE);
+                            bag_consume(&ITEM_TYPES[ITEM_ORE_COPPER]);
+                            lamp_add_kor(nearestLamp, 1);
+                            lamp_set_owner(nearestLamp, LAMP_OWNER_PLAYER);
+                            if (first)
+                                snprintf(buf, sizeof(buf), "%s SENIN adina yandi",
+                                         LAMPS[nearestLamp].place);
+                            else
+                                snprintf(buf, sizeof(buf), "%s beslendi - %d gece",
+                                         LAMPS[nearestLamp].place,
+                                         lamp_nights(nearestLamp));
+                            floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                                 ftx, fty, buf, warm);
+                            audio_play(SFX_UI);
+                        }
+                    }
                     // İstasyon kullanımı (NPC yoksa): ÜÇ kapı — izin görevi + bounty + itibar.
                     // permQuest NULL = sahipsiz harabe: kapı yok (keşif ödülü)
                     else if (nearestStation >= 0)
@@ -3694,6 +3758,145 @@ int main(int argc, char *argv[])
                     weather_debug_cycle();
                     splashText = weather_name(weather_current());
                     splashTimer = 2.0f;
+                }
+                else if (event.key.key == SDLK_L &&
+                         (event.key.mod & SDL_KMOD_CTRL) &&
+                         gameState == GAME_PLAYING)
+                {
+                    // DEV: IŞIK ŞEKLİ (Ctrl+L / Ctrl+Shift+L geri).
+                    // Kamera 3/4 eğik olduğu için zemin dikey
+                    // kısaltılmış çiziliyor — zeminde dairesel olan alan ekranda
+                    // yatay elips görünmeli. Ve kaynak zeminde değil (hazne/alev).
+                    // Ctrl+L ileri, Ctrl+Shift+L geri
+                    int dir = (event.key.mod & SDL_KMOD_SHIFT) ? 3 : 1;
+                    lightShape = (lightShape + dir) % 4;
+                    float an, yo;
+                    switch (lightShape) {
+                        case 1:  an = 0.70f; yo = -10.0f; break;  // daha basık
+                        case 2:  an = 1.40f; yo =  12.0f; break;  // dikeye çek
+                        case 3:  an = 1.90f; yo =   0.0f; break;  // tam daire (tipi ez)
+                        default: an = 1.00f; yo =   0.0f; break;  // TİPİN kendi şekli
+                    }
+                    r2d_light_set_shape(an, yo);
+                    splashText = (lightShape == 0) ? "SEKIL: TIPIN KENDISI (kor basik, ates genis)"
+                               : (lightShape == 1) ? "SEKIL: daha BASIK"
+                               : (lightShape == 2) ? "SEKIL: DIKEYE cek"
+                                                   : "SEKIL: DAIREye yaklastir";
+                    splashTimer = 2.6f;
+                }
+                else if (event.key.key == SDLK_O &&
+                         (event.key.mod & SDL_KMOD_CTRL) &&
+                         gameState == GAME_PLAYING)
+                {
+                    // DEV: IŞIK TIKAMA aç/kapa (Ctrl+O). Nesne gövdeleri ışığı kesiyor;
+                    // kapatınca ışık eskisi gibi duvarlardan geçer.
+                    lightOccl = (lightOccl > 0.01f) ? 0.0f : 1.0f;
+                    splashText = (lightOccl > 0.01f) ? "TIKAMA: ACIK (isik govdelerden gecmez)"
+                                                     : "TIKAMA: KAPALI";
+                    splashTimer = 2.4f;
+                }
+                else if (event.key.key == SDLK_F12 && gameState == GAME_PLAYING)
+                {
+                    // DEV: A/B KARŞILAŞTIRMA — ekranın SOL yarısı orijinal
+                    // ayarlar, SAĞ yarısı seçili modlar. Varyantların çoğu tek
+                    // başına ayırt edilemiyor; yan yana bakınca fark görünür.
+                    lightSplit = !lightSplit;
+                    splashText = lightSplit ? "A/B: sol=ORIJINAL  sag=SECILI"
+                                            : "A/B: kapali";
+                    splashTimer = 2.4f;
+                }
+                else if (event.key.key == SDLK_F1 && gameState == GAME_PLAYING)
+                {
+                    // DEV: GAMMA MODU — en büyük görsel fark.
+                    // Işık katkıları sRGB kodunda toplanıyordu: merkez +0.22
+                    // fazla parlayıp KIRPILIYOR (düz beyaz plato), dış halka
+                    // 0.03 karanlık kalıyor. Fiziksel doğru olan lineer toplama.
+                    lightGamma = (lightGamma + 1) % 3;
+                    r2d_light_set_model((float)lightGamma, (float)lightFall,
+                                        (float)lightDither,
+                                        light_falloff_param());
+                    splashText = (lightGamma == 0) ? "GAMMA: sRGB toplama (eski/hatali)"
+                               : (lightGamma == 1) ? "GAMMA: LINEER toplama (fiziksel)"
+                                                   : "GAMMA: lineer + ACES tone map";
+                    splashTimer = 2.4f;
+                }
+                else if (event.key.key == SDLK_F2 && gameState == GAME_PLAYING)
+                {
+                    // DEV: DÜŞÜŞ EĞRİSİ. CPU ve GPU birlikte değişir — ayrışırsa
+                    // oyuncu aydınlık gördüğü yerde ölüyle karşılaşır.
+                    lightFall = (lightFall + 1) % 4;
+                    float fp = (lightFall == 1) ? 41.0f    // Karis d0 (px)
+                             : (lightFall == 2) ? 1.0f     // URP k (1 = lineer)
+                                                : 0.0f;
+                    light_set_falloff(lightFall, fp);
+                    r2d_light_set_model((float)lightGamma, (float)lightFall,
+                                        (float)lightDither, fp);
+                    splashText = (lightFall == 0) ? "DUSUS: plato + smoothstep (mevcut)"
+                               : (lightFall == 1) ? "DUSUS: Karis pencereli ters-kare"
+                               : (lightFall == 2) ? "DUSUS: URP pow(1-t,k) k=1 lineer"
+                                                  : "DUSUS: kenar dizi (knee)";
+                    splashTimer = 2.4f;
+                }
+                else if (event.key.key == SDLK_F3 && gameState == GAME_PLAYING)
+                {
+                    // DEV: DITHER. Bayer = 8-bit dönemi deseni; dünya-çivili
+                    // olan kamera hareketinde "crawl" etmiyor.
+                    lightDither = (lightDither + 1) % 4;
+                    r2d_light_set_model((float)lightGamma, (float)lightFall,
+                                        (float)lightDither, light_falloff_param());
+                    splashText = (lightDither == 0) ? "DITHER: IGN (gradient noise)"
+                               : (lightDither == 1) ? "DITHER: Bayer 4x4 ordered"
+                               : (lightDither == 2) ? "DITHER: dunya-civili IGN"
+                                                    : "DITHER: yok";
+                    splashTimer = 2.4f;
+                }
+                else if (event.key.key == SDLK_F11 && gameState == GAME_PLAYING)
+                {
+                    // DEV: FİZİKSEL RENK — ışık renkleri siyah cisim eğrisinden.
+                    // Elle seçtiğimiz kandil rengi ≈3130K (tungsten lamba);
+                    // fiziksel kor 2400K, mum 1900K, çıra 1700K.
+                    bool on = !light_physical_color();
+                    light_set_physical_color(on);
+                    splashText = on ? "RENK: FIZIKSEL (Kelvin siyah cisim)"
+                                    : "RENK: elle secilmis (sanat yonu)";
+                    splashTimer = 2.4f;
+                }
+                else if (event.key.key == SDLK_F4 && gameState == GAME_PLAYING)
+                {
+                    // DEV: IŞIK GÖRSEL MODU — üç mod arasında döner.
+                    // Yalnız görseli değiştirir; ölülerin bastırıldığı sınır
+                    // CPU'da (lamp_level_at) ve bundan bağımsız.
+                    lightMode = (lightMode + 1) % 3;
+                    switch (lightMode) {
+                        case 0:   // SERBEST: sürekli gradyan + dither
+                            r2d_light_set_mode(0.0f, 0.0f);
+                            splashText = "ISIK: SERBEST (surekli)";
+                            break;
+                        case 1:   // KADEMELİ ince: pixel-art hissi, teras kaba değil
+                            // 5 basamak çok azdı: farklı tonlardaki komşu zemin
+                            // karoları farklı basamağa düşüp karo ızgarasını
+                            // ışığın içinde görünür yapıyordu. 14 kademe hem
+                            // sürekli gradyanı kırıyor hem blok üretmiyor.
+                            // Izgara 8 px: retina'da sanat pikseli 4 MANTIKSAL
+                            // px = 8 framebuffer px (4 yazmak yarım karo oluyordu).
+                            r2d_light_set_mode(14.0f, 8.0f);
+                            splashText = "ISIK: KADEMELI 14 (sanat izgarasi)";
+                            break;
+                        default:  // KADEMELİ kaba: Rain World tarzı belirgin teras
+                            r2d_light_set_mode(7.0f, 8.0f);
+                            splashText = "ISIK: KADEMELI 7 (belirgin teras)";
+                            break;
+                    }
+                    splashTimer = 2.2f;
+                }
+                else if (event.key.key == SDLK_F6 && gameState == GAME_PLAYING)
+                {
+                    // DEV: saati 2 saat ilerlet — kandil/gece testini beklemeden
+                    // yapmak için (LORE §1.4). Yayında sökülecek.
+                    gametime_update(GAMETIME_DAY_SECONDS / 24.0f * 2.0f);
+                    gametime_format(splashOwn, sizeof(splashOwn));
+                    splashText = splashOwn;
+                    splashTimer = 1.6f;
                 }
                 else if (event.key.key == SDLK_F10 && gameState == GAME_PLAYING)
                 {
@@ -8191,6 +8394,18 @@ int main(int argc, char *argv[])
                 for (int pi = 0; pi < PICK_TRIES_CAP; pi++) pickTries[pi] = 0;   // cepler tazelenir
                 pickFailUsed = false;
 
+                // KANDİL YAKITI (LORE §1.1): gece geçti, yanan her direk bir
+                // gece yaktı. Sönen olduysa oyuncu sabah öğrenir — ve o direğin
+                // alanı bu akşamdan itibaren ölüyü bastırmaz (§1.4).
+                if (lamp_night_passed())
+                {
+                    SDL_Color cold = { 190, 190, 205, 255 };
+                    floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
+                                         player.rect.x + player.rect.w / 2.0f,
+                                         player.rect.y - 22.0f,
+                                         "Bir direk sondu.", cold);
+                }
+
                 // REVİR: 30 gün ödenmeyen yatış — köylüler toplar, NPC döner
                 // ama AFFETMEZ (kalıcı kırgınlık: soğuk selam + %25 zam) + itibar
                 for (int ni3 = 0; ni3 < NPC_COUNT; ni3++)
@@ -8516,6 +8731,68 @@ int main(int argc, char *argv[])
             // sancısı gecesi yankılar arada fısıldar (görsel büyüme render'da)
             {
                 bool nightNow = gametime_is_night();
+
+                // ══ SÖNÜK DİREK = KALKAN ÖLÜ (LORE §1.4) ══
+                // Dünya olayına bağlı DEĞİL: kural her gece işler, çünkü kural
+                // dünyanın fiziği. Yanan direğin halkasında hiçbir şey olmaz;
+                // sönük direğin dibinde toprak kabarır. Oyuncu bunu ilk gece
+                // tek kelime metin okumadan öğrenir — bir direk yanıyor, öbürü
+                // sönük, ve fark ekranda duruyor.
+                if (nightNow && !wasNightWE && map_current() == MAP_WORLD)
+                {
+                    int risenTotal = 0;
+                    const char *risenPlace = NULL;
+                    for (int li = 0; li < LAMP_COUNT; li++)
+                    {
+                        // §1.4: ölü GÖMÜLÜ OLDUĞU yerde kalkar. Direk yalnız
+                        // bastırır, kendisi ölü üretmez — meydanda gömü yoktur.
+                        if (!LAMPS[li].graves) continue;
+                        if (lamp_lit(li)) continue;
+                        // Komşu bir yanan direk buraya yetişiyorsa yine bastırır:
+                        // oyuncu bir direği besleyip yanındakini de koruyabilir.
+                        // Eşik AYRI BİR SAYI DEĞİL: ışık varsa bastırılmış.
+                        // Böylece görsel halka ile korunan halka asla ayrışamaz.
+                        if (lamp_level_at(LAMPS[li].x, LAMPS[li].y) > 0.0f) continue;
+                        if (risenPlace == NULL) risenPlace = LAMPS[li].place;
+
+                        int nRise = 1 + (randf() < 0.45f ? 1 : 0);
+                        for (int r = 0; r < nRise; r++)
+                        {
+                            float ang = randf() * 6.2831853f;
+                            float rad = 40.0f + randf() * 70.0f;
+                            int gid = mob_spawn(mobs, MAX_MOBS, &nextMobId,
+                                                &MOB_TYPES[12],
+                                                LAMPS[li].x + SDL_cosf(ang) * rad,
+                                                LAMPS[li].y + SDL_sinf(ang) * rad, -1);
+                            Mob *gm = mob_find_by_id(mobs, MAX_MOBS, gid);
+                            if (gm != NULL) { gm->risen = true; gm->alertFlash = 1.0f; }
+                            if (gid >= 0) risenTotal++;
+                        }
+                    }
+                    // Gece çökerken oyuncu NE olduğunu ve NEREDE olduğunu bilsin:
+                    // sönük direklerin adı sayılır. Bilgi olmadan kural
+                    // öğrenilemez (§14.4 beş dakika testi).
+                    {
+                        int dark = 0;
+                        for (int li = 0; li < LAMP_COUNT; li++)
+                            if (LAMPS[li].graves && !lamp_lit(li) &&
+                                lamp_level_at(LAMPS[li].x, LAMPS[li].y) <= 0.0f) dark++;
+                        if (dark > 0 && risenTotal > 0)
+                            snprintf(splashOwn, sizeof(splashOwn),
+                                     "Gece cokdu - %s sonuk. Toprak kabardi.",
+                                     risenPlace ? risenPlace : "bir direk");
+                        else if (dark > 0)
+                            snprintf(splashOwn, sizeof(splashOwn),
+                                     "Gece cokdu - %d direk sonuk.", dark);
+                        else
+                            snprintf(splashOwn, sizeof(splashOwn),
+                                     "Gece cokdu - hat aydinlik.");
+                        splashText = splashOwn;
+                        splashTimer = 6.0f;
+                        if (risenTotal > 0) audio_play(SFX_WHISPER);
+                    }
+                }
+
                 if (nightNow && !wasNightWE && map_current() == MAP_WORLD &&
                     worldevent_current() == WE_GRAVE)
                 {
@@ -10168,6 +10445,27 @@ int main(int argc, char *argv[])
             nearestNpc = npc_nearest_in_range(px, py);
             nearestRes = resource_nearest_available(px, py);
             nearestStation = station_nearest(px, py);
+            nearestLamp = (map_current() == MAP_WORLD) ? lamp_nearest(px, py) : -1;
+
+            // KARANLIĞIN SESİ (LORE §1.2): kandil halkasının dışında, geceleyin,
+            // taşın kaydı duyulur hale gelir — ışığa girince kesilir. Kalıcı
+            // uğultu katmanı yerine aralıklı fısıltı: yeni ses varlığı istemez.
+            if (map_current() == MAP_WORLD && gametime_is_night())
+            {
+                // Fısıltı da AYNI sınırı kullanır: ışığın bittiği yer.
+                // Üç ayrı eşik vardı (0.25 / 0.15 / ham yarıçap) — oyuncu
+                // fısıltıdan bir sınır öğrenip ölülerde başka sınır buluyordu.
+                if (lamp_level_at(px, py) <= 0.0f)
+                {
+                    whisperTimer -= dt;
+                    if (whisperTimer <= 0.0f)
+                    {
+                        audio_play(SFX_WHISPER);
+                        whisperTimer = 5.0f + randf() * 5.0f;
+                    }
+                }
+                else whisperTimer = 2.5f;   // halkaya girince sus
+            }
 
             // Köye varış (Faz B1): muhafız yaklaşan yabancıyı DURDURUR —
             // ilk karşılama diyaloğu kendiliğinden açılır (bir kez)
@@ -10217,6 +10515,42 @@ int main(int argc, char *argv[])
         tilemap_render(renderer, tile_textures, &camera);     // haritayı çiz
         if (map_current() == MAP_WORLD || map_current() == MAP_DOGU)
             tilemap_render_scatter(renderer, &camera);         // süs serpiştirmesi
+        // GÜNEŞ GÖLGELERİ: zeminin üstüne, dekorun ALTINA. Tek blok halinde
+        // çizilir — böylece bütün gölgeler bütün sprite'ların altında kalır ve
+        // mevcut çizim sırası bozulmaz (bir ağaç, bir karakterin gölgesini
+        // kapatır: fiziksel olarak doğru).
+        {
+            // KAPALI MEKÂN KAPISI: MapDef.ambient > 0 = sabit loşluk (zindan,
+            // konak, kuyu dibi) — güneş oraya girmez. Eskiden kuyunun dibinde
+            // 4h uzunluğunda güneş gölgesi çiziliyordu.
+            bool sunOK = (MAPS[map_current()].ambient == 0.0f);
+            float sdx, sdy, sLen, sStr;
+            if (sunOK && shadow_sun(&sdx, &sdy, &sLen, &sStr))
+                decor_render_shadows(renderer, decor_textures, &camera,
+                                     sdx, sdy, sLen, sStr);
+
+            // Karakter gölgeleri: temas gölgesi HER ZAMAN (gece dahil) —
+            // "zemine yapıştırılmış" hissini en çok karakterler veriyordu.
+            // Güneş kuyruğu shadow_blob içinde, gündüzse kendiliğinden ekleniyor.
+            // Sprite karesi ile GÖRÜNEN gövde aynı şey değil: ULPC 64px
+            // karesinde ayaklar ~y=60'ta, gövde ~44px. Ham rect kullanmak
+            // kuyruğu %45 uzatıyor ve lekeyi ayakların altına atıyordu.
+            #define SH_FOOT_PAD 0.06f   // kare yüksekliğinin altındaki boşluk
+            #define SH_BODY     0.70f   // görünen gövde / kare yüksekliği
+            #define SH_WIDE     0.55f   // görünen omuz / kare genişliği
+            shadow_blob(renderer, &camera,
+                        player.rect.x + player.rect.w * 0.5f,
+                        player.rect.y + player.rect.h * (1.0f - SH_FOOT_PAD),
+                        player.rect.w * SH_WIDE, player.rect.h * SH_BODY);
+            for (int mi = 0; mi < MAX_MOBS; mi++) {
+                if (!mobs[mi].e.alive) continue;
+                shadow_blob(renderer, &camera,
+                            mobs[mi].e.rect.x + mobs[mi].e.rect.w * 0.5f,
+                            mobs[mi].e.rect.y + mobs[mi].e.rect.h * (1.0f - SH_FOOT_PAD),
+                            mobs[mi].e.rect.w * SH_WIDE,
+                            mobs[mi].e.rect.h * SH_BODY);
+            }
+        }
         decor_render_all(renderer, decor_textures, &camera);  // evler (zemin üstü, entity altı)
         if (map_is_dungeon(map_current()))
             trap_render(renderer, map_current(), &camera);   // dikenler/plaka/arbalet (zemin)
@@ -10244,6 +10578,33 @@ int main(int argc, char *argv[])
                                (dialogNpc < 0 && nearestNpc < 0 && !craftOpen) ? nearestStation : -1,
                                (craftOpen && (craftRecipe >= 0 || plusForge || enchAction > 0))
                                    ? craftStation : -1);
+
+            // Kandil direkleri (LORE §1.1) — NPC/kaynak/istasyon önceliği
+            lamp_render(renderer, &camera, gameFont,
+                        (dialogNpc < 0 && nearestNpc < 0 && nearestRes < 0 &&
+                         nearestStation < 0 && !craftOpen) ? nearestLamp : -1,
+                        (float)SDL_GetTicks() / 1000.0f);
+
+            // IŞIK MODU GÖSTERGESİ (dev): hangi varyantların açık olduğu
+            // sürekli görünsün — yoksa hangi modda test ettiğin belirsiz kalıyor.
+            if (gameFont != NULL) {
+                char lmBuf[160];
+                snprintf(lmBuf, sizeof(lmBuf),
+                         "F1 gamma:%s  F2 dusus:%s  F3 dither:%s  F4 kademe:%s  F11 renk:%s  F12 A/B:%s  ^L sekil:%s  ^O tikama:%s",
+                         (lightGamma == 0) ? "sRGB(eski)" : (lightGamma == 1) ? "LINEER" : "LIN+ACES",
+                         (lightFall == 0) ? "plato+ss" : (lightFall == 1) ? "Karis" :
+                         (lightFall == 2) ? "URP" : "knee",
+                         (lightDither == 0) ? "IGN" : (lightDither == 1) ? "Bayer" :
+                         (lightDither == 2) ? "dunya" : "yok",
+                         (lightMode == 0) ? "yok" : (lightMode == 1) ? "14" : "7",
+                         light_physical_color() ? "FIZIKSEL" : "elle",
+                         lightSplit ? "ACIK" : "kapali",
+                         (lightShape == 0) ? "tip" : (lightShape == 1) ? "basik" :
+                         (lightShape == 2) ? "dikey" : "daire",
+                         (lightOccl > 0.01f) ? "ACIK" : "kapali");
+                SDL_Color lmC = { 190, 200, 215, 220 };
+                draw_text(renderer, gameFont, lmBuf, 12.0f, (float)winH - 26.0f, lmC);
+            }
 
             // KÖR KUYU ipucu: tanıtım sonrası — bekleyen kese / gece bırakma
             if (gameFont != NULL && dialogNpc < 0 &&
@@ -10912,10 +11273,15 @@ int main(int argc, char *argv[])
             }
             else
             {
-                // Zifiri gecede sahne çarpanı (mavi ağırlıklı ay ışığı)
-                ambR = 1.0f - dark01 * (1.0f - 0.30f);
-                ambG = 1.0f - dark01 * (1.0f - 0.33f);
-                ambB = 1.0f - dark01 * (1.0f - 0.55f);
+                // Zifiri gece çarpanı — KÜL GRİSİ, mavi değil.
+                // Eskiden (0.30, 0.33, 0.55) doygun maviydi ve turuncu kandille
+                // çarpıştığı için halkanın orta kuşağı çamura düşüyordu: iki
+                // doygun tümleyen renk karıştığı yerde gri üretir. Nötr bir
+                // zeminde ise kor rengi ÇOK DAHA doygun okunuyor (Albers kuralı).
+                // Genel seviye de düştü: kandilin kontrastı arttı.
+                ambR = 1.0f - dark01 * (1.0f - 0.24f);
+                ambG = 1.0f - dark01 * (1.0f - 0.25f);
+                ambB = 1.0f - dark01 * (1.0f - 0.30f);
 
                 // Altın saat: alacakaranlık/şafak ortasında sahne turuncuya ısınır
                 // (sin eğrisi: geçişin ortasında tepe, gündüz ve zifiri gecede sıfır)
@@ -10923,10 +11289,12 @@ int main(int argc, char *argv[])
                 ambR += golden;
                 ambG += golden * 0.45f;
 
-                // MEVSİM TONU (DOGU-P2): gündüze ince renk kimliği —
-                // sonbahar sıcak turuncu, kış soluk mavi, yaz doygun sıcak.
-                // Gece etkilenmesin diye gündüz ağırlığıyla (1-dark01) karışır.
-                float dayW = 1.0f - dark01;
+                // MEVSİM TONU: sonbahar sıcak, kış soluk, yaz doygun.
+                // ESKİDEN gündüz ağırlığıyla (1-dark01) çarpılıyordu — yani
+                // zifiri gecede etkisi MATEMATİKSEL OLARAK SIFIRDI. Oysa gece
+                // ambient görüntünün tamamı, mevsimin okunabileceği tek yer
+                // orası. Şimdi gece ağırlıklı: gündüz 0.4, gece 1.0.
+                float dayW = 0.4f + 0.6f * dark01;
                 switch (gametime_season()) {
                     case SEASON_AUTUMN:
                         ambR += 0.05f * dayW; ambB -= 0.07f * dayW; break;
@@ -10952,23 +11320,29 @@ int main(int argc, char *argv[])
                                        hasTorch, player.weaponFx);
             if (!inDungeon)
             {
+                // KANDİL DİREKLERİ (LORE §1.1): yanan direkler ışık verir,
+                // sönükler vermez. Aynı yarıçap ölüyü de bastırır (§1.4) —
+                // oyuncu gördüğü halka ile korunduğu halkayı ayırt etmesin.
+                lightN = lamp_append_lights(lights, lightN, R2D_MAX_LIGHTS,
+                                            &camera, winW, winH);
+
                 // K9 kandili (D1a): duruma göre ışık — yalan(2) = sönmüş
                 Uint8 k9L = player.storyFlags[SF_K9_KANDIL];
                 if (k9L == 1)      // tapınak ateşi: büyük, mavi-beyaz
                     lightN = light_append_point(lights, lightN, R2D_MAX_LIGHTS,
                                 &camera, winW, winH, KANDIL_X, KANDIL_Y,
-                                300.0f, 0.55f, 0.75f, 1.0f, 0.75f, 0.10f);
+                                300.0f, 0.55f, 0.75f, 1.0f, 0.75f, LK_MAGIC);
                 else if (k9L != 2) // normal kandil: küçük, sıcak
                     lightN = light_append_point(lights, lightN, R2D_MAX_LIGHTS,
                                 &camera, winW, winH, KANDIL_X, KANDIL_Y,
-                                140.0f, 1.0f, 0.62f, 0.26f, 0.55f, 0.10f);
+                                140.0f, 1.0f, 0.62f, 0.26f, 0.55f, LK_CANDLE);
 
                 // K2 sofra mumu (D1b): sofra kuruluysa küçük titrek ışık
                 if (player.storyFlags[SF_K2_NAZIFE] != 1 &&
                     player.storyFlags[SF_K2_NAZIFE] != 2)
                     lightN = light_append_point(lights, lightN, R2D_MAX_LIGHTS,
                                 &camera, winW, winH, SOFRA_X, SOFRA_Y - 30.0f,
-                                90.0f, 1.0f, 0.65f, 0.30f, 0.45f, 0.12f);
+                                90.0f, 1.0f, 0.65f, 0.30f, 0.45f, LK_CANDLE);
             }
             if (inDungeon)
             {
@@ -10985,6 +11359,21 @@ int main(int argc, char *argv[])
                         lightN = light_append_campfire(lights, lightN, R2D_MAX_LIGHTS,
                                                        &camera, winW, winH,
                                                        STATIONS[i].x, STATIONS[i].y - 24.0f);
+            }
+            r2d_light_set_camera(camera.x, camera.y);   // dünya-çivili dither
+            r2d_light_set_split(lightSplit ? (float)winW * 0.5f : 0.0f);
+
+            // IŞIK TIKAMA: nesnelerin gövdeleri ışığı kessin. Bu olmadan her
+            // ışık duvarların içinden geçip kusursuz bir oval boyuyordu.
+            // Dünyada dekor gövdeleri, zindanda kapalı (duvarlar tilemap'te —
+            // ayrı iş). lightOccl = 0 ile kapatılabilir (dev tuşu ']').
+            if (!inDungeon && lightOccl > 0.01f) {
+                SDL_FRect occ[R2D_MAX_OCCLUDERS];
+                int oc = decor_light_occluders(occ, R2D_MAX_OCCLUDERS, &camera,
+                                               player.rect.x, player.rect.y);
+                r2d_light_set_occluders(occ, oc, lightOccl);
+            } else {
+                r2d_light_set_occluders(NULL, 0, 0.0f);
             }
             r2d_light_pass(renderer, ambR, ambG, ambB, lights, lightN);
         }

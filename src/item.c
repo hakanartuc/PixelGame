@@ -76,7 +76,8 @@ const ItemType ITEM_TYPES[] = {
       .equipSpritePathBack = "assets/equipment/weapon/axe_bg.png",
       .equipZ = 140, .equipZBack = 9,
       .iconSpritePath = NULL, .iconSrc = {0,0,0,0} },   // tool_icons balta
-    { .name = "Bakır Cevheri", .material = true, .iconIndex = 0, .maxStack = 99, .value = 8,
+    // LORE §2: kor = soğumuş ejderha maddesi. Eski ad "Bakır Cevheri" (MVP).
+    { .name = "Kor Kırığı", .material = true, .iconIndex = 0, .maxStack = 99, .value = 8,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/resources.png", .iconSrc = { 16, 16, 16, 16 } },
     { .name = "Demir Cevheri", .material = true, .iconIndex = 0, .maxStack = 99, .value = 12,
