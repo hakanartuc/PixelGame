@@ -157,10 +157,36 @@ typedef struct {
     float posterize;       // 0 = yok; kanal başına renk kademesi (6-8 tipik, min 2)
     float aberration;      // 0 = yok; kromatik sapma, uv birimi (0.002 tipik)
     float grain;           // 0 = yok; animasyonlu film greni gücü (0.06 tipik)
+    // BLOOM — parlak yerlerin taşması. Skill efektlerinin "muhteşem" hissinin
+    // büyük kısmı buradan gelir: additive katman tek başına düz durur, taşma
+    // onu ışık yapar. Tek geçişli yaklaşım (ayrı render target YOK): parlak-geçiş
+    // eşiğinin üstündeki pikseller iki halka halinde 12 tap ile toplanır.
+    // DİKKAT: post-fx tüm kareyi (HUD dahil) filtreler — eşik yüksek tutulmalı,
+    // yoksa HUD'un beyaz yazısı da taşar. Sahne-only ayrımı: GDD §6.1 açık soru.
+    float bloom;           // 0 = yok; taşma gücü (0.35 tipik, 1.0 aşırı)
+    float bloomThreshold;  // parlak-geçiş eşiği, luma 0..1 (0.75 tipik)
+    float bloomRadius;     // taşma yarıçapı, uv birimi (0.004 tipik)
+    // ISI BÜKÜLMESİ — ekran-uzayı UV kaydırma. Volkan, gayzer, lav, alev damgası
+    // ve sıcak hava için. Ekranın ALTINA doğru güçlenir (sıcak hava yerden kalkar),
+    // böylece gökyüzü/HUD üstü daha az etkilenir.
+    // Dalga: iki farklı frekansta sinüs — tek frekans "akordeon" gibi duruyor.
+    float heat;            // 0 = yok; bükülme genliği uv birimi (0.0025 tipik)
+    float heatSpeed;       // dalga hızı (1.5 tipik)
 } R2DPostFX;
 
 // Değerler kopyalanır (her kare çağırmak gerekmez). NULL = filtreyi kapat.
 void r2d_postfx_set(R2D *ctx, const R2DPostFX *fx);
+
+// SAHNE-ONLY FİLTRE. Bu noktaya kadar çizilen her şey (dünya) offscreen'e akar,
+// filtreden geçer ve ekrana basılır; BUNDAN SONRAKİ çizimler (HUD, panel, yazı)
+// doğrudan ekrana gider ve FİLTRELENMEZ.
+//
+// Neden gerekli: ısı bükülmesi UV kaydırıyor, yani filtre HUD'u da büküyordu —
+// hotbar ve durum çubukları dalgalanıyordu. Shader hangi pikselin HUD olduğunu
+// bilemez, o yüzden ayrım çizim SIRASINDA yapılmak zorunda.
+//
+// Filtre kapalıysa hiçbir şey yapmaz (güvenli çağrı). Kare başına bir kez.
+void r2d_postfx_flush(R2D *ctx);
 
 // --- Sprite ---
 void r2d_draw_texture(R2D *ctx, R2DTexture *tex,

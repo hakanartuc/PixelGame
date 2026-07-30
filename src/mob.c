@@ -1068,6 +1068,9 @@ void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Ca
     int typeIndex = (int)(m->type - MOB_TYPES);
     R2DTexture *texture = mob_textures[typeIndex];
 
+    // VURUŞ FLAŞI iki kademeli: ilk ~2 kare BEYAZ-SICAK (aşağıda additive üst
+    // geçişle), kalanı kırmızı tint. Çarpımsal color_mod beyaza ÇIKAMAZ (255 =
+    // tint yok), o yüzden parlaklık additive ikinci çizimle geliyor.
     if (m->e.hitFlash > 0.0f)
         r2d_texture_set_color_mod(texture, 255, 150, 150);
     else if (m->type->tintR != 0 || m->type->tintG != 0 || m->type->tintB != 0)
@@ -1076,6 +1079,23 @@ void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Ca
         r2d_texture_set_color_mod(texture, 255, 255, 255);
 
     r2d_draw_texture_flip(renderer, texture, &src, &screen, flip == SDL_FLIP_HORIZONTAL);
+
+    // BEYAZ-SICAK FLAŞ: isabetin ilk ~2 karesinde silüetin üstüne ADDITIVE
+    // ikinci geçiş. Çarpımsal color_mod beyaza çıkamaz (255 = tint yok), o yüzden
+    // parlaklık ancak toplamayla gelir. Kısa tutuluyor — uzun sürerse mob
+    // "yanıyor" gibi durur, biz vuruşun keskinliğini istiyoruz.
+    // hitFlash 0.15 sn kuruluyor; ilk 0.06 sn beyaz-sıcak, kalanı kırmızı tint.
+    if (m->e.hitFlash > 0.09f) {
+        float k = (m->e.hitFlash - 0.09f) / 0.06f;   // 1 → 0
+        if (k > 1.0f) k = 1.0f;
+        Uint8 add = (Uint8)(200.0f * k);
+        r2d_set_blend(renderer, R2D_BLEND_ADD);
+        r2d_texture_set_color_mod(texture, add, add, add);
+        r2d_draw_texture_flip(renderer, texture, &src, &screen,
+                              flip == SDL_FLIP_HORIZONTAL);
+        r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+        r2d_texture_set_color_mod(texture, 255, 255, 255);
+    }
 
     // Şüphe göstergesi: fark etme süreci dolarken baş üstünde sarı çubuk;
     // alarm anında kısa süre kırmızı "!" (dikdörtgenlerle — font gerekmez)

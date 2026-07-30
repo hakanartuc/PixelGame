@@ -38,7 +38,8 @@
 #include "ally.h"
 #include "gametime.h"
 #include "decor.h"
-#include "shadow.h"   // gündüz güneş gölgeleri
+#include "shadow.h"
+#include "decal.h"   // gündüz güneş gölgeleri
 #include "audio.h"
 #include "music.h"
 #include "minimap.h"
@@ -316,6 +317,9 @@ static R2DTexture *g_hitWeaponTex = NULL, *g_hitMagicTex = NULL,
                   *g_sparkTex = NULL;
 static float g_hitStop = 0.0f;   // kalan donma süresi (dünya dt'si kısılır)
 static const Equipment *g_eqBridge = NULL;   // mob_die Nişan kontrolü için
+// Yer izi tipi için aktif silah efekti köprüsü (strike_fx_mob statik, player'a
+// erişimi yok). Her kare player.weaponFx'ten senkronlanır.
+static WeaponFxType g_fxBridge = WEAPON_FX_NONE;
 static void hitstop(float s) { if (s > g_hitStop) g_hitStop = s; }
 
 // İsabet efekti: silah patlaması / büyü çarpması + küçük kan + hit-stop.
@@ -325,12 +329,29 @@ static void strike_fx_mob(const Mob *m, bool magic, float stop)
     if (g_animFx == NULL || m == NULL) return;
     float cx = m->e.rect.x + m->e.rect.w / 2.0f;
     float cy = m->e.rect.y + m->e.rect.h / 2.0f;
+    // YER İZİ: damganın tipi zemine ne bıraktığını belirler. Ayak hizasına
+    // (rect'in altına) bırakılıyor — merkeze bırakılsa havada duruyor gibi olur.
+    {
+        float fy = m->e.rect.y + m->e.rect.h - 3.0f;
+        switch (g_fxBridge) {
+        case WEAPON_FX_FLAME:  decal_scorch(cx, fy, 16.0f); break;
+        case WEAPON_FX_ICE:    decal_frost (cx, fy, 15.0f); break;
+        case WEAPON_FX_POISON:
+        case WEAPON_FX_VENOM:  decal_poison(cx, fy, 14.0f); break;
+        default: break;
+        }
+    }
+    // Isabet patlamaları IŞIK YAYAR: duvarı aydınlatır, gölgeyi kaydırır.
+    // Renkler paletten — büyü soğuk mavi-beyaz, çelik sıcak kıvılcım; ikisi de
+    // kandil Kelvin eğrisine yakın kalıyor ki aynı sahnede iki dünya olmasın.
     if (magic)
-        animfx_spawn(g_animFx, g_hitMagicTex, 49, 7, 100.0f, 100.0f,
-                     cx, cy, 70.0f, 0.75f);
+        animfx_spawn_lit(g_animFx, g_hitMagicTex, 49, 7, 100.0f, 100.0f,
+                         cx, cy, 70.0f, 0.75f,
+                         0.62f, 0.78f, 1.00f, 120.0f, 0.55f);
     else
-        animfx_spawn(g_animFx, g_hitWeaponTex, 36, 6, 100.0f, 100.0f,
-                     cx, cy, 70.0f, 0.75f);
+        animfx_spawn_lit(g_animFx, g_hitWeaponTex, 36, 6, 100.0f, 100.0f,
+                         cx, cy, 70.0f, 0.75f,
+                         1.00f, 0.86f, 0.55f, 85.0f, 0.40f);
     animfx_spawn(g_animFx, g_splatSmallTex, 10, 10, 32.0f, 32.0f,
                  cx + (float)(rand() % 13 - 6), cy + (float)(rand() % 13 - 6),
                  30.0f, 1.3f);
@@ -355,6 +376,11 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
                      target->e.rect.x + target->e.rect.w / 2.0f,
                      target->e.rect.y + target->e.rect.h / 2.0f,
                      24.0f, 1.6f);
+        // Kalıcı kan izi: sıçrama animasyonu söner, leke kalır. Boyut mob
+        // gövdesiyle ölçekleniyor — trol lekesi kurt lekesinden büyük olsun.
+        decal_blood(target->e.rect.x + target->e.rect.w / 2.0f,
+                    target->e.rect.y + target->e.rect.h - 3.0f,
+                    10.0f + target->e.rect.w * 0.22f);
         hitstop(0.09f);
     }
 
@@ -718,7 +744,7 @@ static float ammo_consume(Inventory *inv, int *activeAmmo,
         if (found < 0) return 0.0f;
         *activeAmmo = found;
         char buf[FLOAT_TEXT_LEN];
-        snprintf(buf, sizeof(buf), "%s'na geçildi", ITEM_TYPES[found].name);
+        snprintf(buf, sizeof(buf), "Geçildi: %s", ITEM_TYPES[found].name);
         SDL_Color dim = { 200, 200, 160, 255 };
         floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS, px, py - 10.0f, buf, dim);
     }
@@ -1010,52 +1036,61 @@ int main(int argc, char *argv[])
 
     // Post-fx ön ayarları — F7 her basışta sıradakine geçer (0 = kapalı).
     // Alan sırası: doygunluk, sıcaklık, kontrast, parlaklık, vinyet, v.yarıçap,
-    //              scanline, gameboy, posterize, kromatik sapma, gren.
+    //              scanline, gameboy, posterize, kromatik sapma, gren,
+    //              BLOOM gücü, bloom eşiği, bloom yarıçapı, ISI genliği, ısı hızı.
+    // Isı bükülmesi bir TARZ değil DURUM efekti — çoğu preset'te 0. Asıl kullanımı
+    // volkan/gayzer yakınında dinamik olarak bindirmek; "VOLKAN" preset'i test için.
+    // Bloom eşiği YÜKSEK tutuluyor (0.72+): post-fx tüm kareyi filtrelediği için
+    // eşik düşerse HUD'un beyaz yazısı da taşar. Eşiğin üstünde pratikte yalnız
+    // kandil göbeği, lav, damga efektleri ve büyü kalıyor.
     // Sıralama: önce renk grade'leri, sonra film, en sonda retro/ekran efektleri.
     static const struct { const char *name; R2DPostFX fx; } POSTFX_PRESETS[] = {
-        { "POST-FX KAPALI", { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },   // fx kullanılmaz
+        { "POST-FX KAPALI", { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },   // fx kullanılmaz
         // Hafif sıcak dokunuş — pixel-art'ı boğmayan canlılık (varsayılan)
-        { "SICAK",        { 1.12f,  0.02f,  1.05f,  0.00f, 0.32f, 0.40f, 0, 0, 0, 0,       0 } },
+        { "SICAK",        { 1.12f,  0.02f,  1.05f,  0.00f, 0.32f, 0.40f, 0, 0, 0, 0,       0, 0.30f, 0.74f, 0.0035f, 0, 0 } },
         // Diablo/Souls havası — soluk soğuk renkler, sert kontrast, ağır vinyet
-        { "DARK FANTASY", { 0.78f, -0.04f,  1.18f, -0.03f, 0.50f, 0.30f, 0, 0, 0, 0,       0 } },
+        { "DARK FANTASY", { 0.78f, -0.04f,  1.18f, -0.03f, 0.50f, 0.30f, 0, 0, 0, 0,       0, 0.45f, 0.70f, 0.0045f, 0, 0 } },
         // Kasvetli kuzey — mavi ton, hafif soluk (Banished/Frostpunk havası)
-        { "SOGUK",        { 0.95f, -0.035f, 1.08f, -0.01f, 0.38f, 0.38f, 0, 0, 0, 0,       0 } },
+        { "SOGUK",        { 0.95f, -0.035f, 1.08f, -0.01f, 0.38f, 0.38f, 0, 0, 0, 0,       0, 0.28f, 0.75f, 0.0035f, 0, 0 } },
         // Soluk masal kitabı — düşük doygunluk, yumuşak kontrast, aydınlık
-        { "PASTEL",       { 0.82f,  0.01f,  0.92f,  0.04f, 0.18f, 0.50f, 0, 0, 0, 0,       0 } },
+        { "PASTEL",       { 0.82f,  0.01f,  0.92f,  0.04f, 0.18f, 0.50f, 0, 0, 0, 0,       0, 0.40f, 0.68f, 0.0055f, 0, 0 } },
         // Arcade — yüksek doygunluk + kontrast, renkler bağırsın
-        { "CANLI",        { 1.35f,  0.00f,  1.15f,  0.00f, 0.20f, 0.45f, 0, 0, 0, 0,       0 } },
+        { "CANLI",        { 1.35f,  0.00f,  1.15f,  0.00f, 0.20f, 0.45f, 0, 0, 0, 0,       0, 0.35f, 0.76f, 0.0032f, 0, 0 } },
         // Eski fotoğraf — griye çök + sıcak kahve tonu
-        { "SEPYA",        { 0.05f,  0.06f,  1.05f,  0.02f, 0.35f, 0.40f, 0, 0, 0, 0,       0 } },
+        { "SEPYA",        { 0.05f,  0.06f,  1.05f,  0.02f, 0.35f, 0.40f, 0, 0, 0, 0,       0, 0.22f, 0.76f, 0.0038f, 0, 0 } },
         // Siyah-beyaz film — sert kontrast, koyu kenarlar + ince gren
-        { "NOIR",         { 0.00f,  0.00f,  1.25f, -0.02f, 0.55f, 0.30f, 0, 0, 0, 0,       0.05f } },
+        { "NOIR",         { 0.00f,  0.00f,  1.25f, -0.02f, 0.55f, 0.30f, 0, 0, 0, 0,       0.05f, 0.30f, 0.78f, 0.0040f, 0, 0 } },
         // Korku — renkler çekilmiş, karanlık, kumlanma + hafif renk kayması
-        { "KORKU",        { 0.55f, -0.02f,  1.20f, -0.06f, 0.60f, 0.25f, 0, 0, 0, 0.0015f, 0.10f } },
+        { "KORKU",        { 0.55f, -0.02f,  1.20f, -0.06f, 0.60f, 0.25f, 0, 0, 0, 0.0015f, 0.10f, 0.20f, 0.80f, 0.0050f, 0.0012f, 0.7f } },
         // Eski tüplü ekran — tarama çizgileri + canlı fosfor renkleri
-        { "CRT",          { 1.15f,  0.00f,  1.08f,  0.02f, 0.35f, 0.45f, 0.35f, 0, 0, 0,   0 } },
+        { "CRT",          { 1.15f,  0.00f,  1.08f,  0.02f, 0.35f, 0.45f, 0.35f, 0, 0, 0,   0, 0.42f, 0.72f, 0.0040f, 0, 0 } },
         // VHS kaset — soluk, tarama + kromatik sapma + kumlanma
-        { "VHS",          { 0.85f,  0.01f,  0.95f,  0.03f, 0.30f, 0.45f, 0.20f, 0, 0, 0.0025f, 0.06f } },
+        { "VHS",          { 0.85f,  0.01f,  0.95f,  0.03f, 0.30f, 0.45f, 0.20f, 0, 0, 0.0025f, 0.06f, 0.38f, 0.70f, 0.0050f, 0.0008f, 2.2f } },
         // 8-bit konsol — kanal başına 6 renk kademesi, canlı
-        { "8-BIT",        { 1.25f,  0.00f,  1.10f,  0.00f, 0.15f, 0.50f, 0, 0, 6, 0,       0 } },
+        { "8-BIT",        { 1.25f,  0.00f,  1.10f,  0.00f, 0.15f, 0.50f, 0, 0, 6, 0,       0, 0.18f, 0.80f, 0.0028f, 0, 0 } },
         // Orijinal GameBoy — 4 kademeli DMG yeşili
-        { "GAMEBOY",      { 1.00f,  0.00f,  1.05f,  0.00f, 0.15f, 0.50f, 0, 1, 0, 0,       0 } },
+        { "GAMEBOY",      { 1.00f,  0.00f,  1.05f,  0.00f, 0.15f, 0.50f, 0, 1, 0, 0,       0, 0, 0, 0, 0, 0 } },
 
         // --- Ek tarzlar + kombinasyonlar (mevcutları ezmeden döngü sonuna) ---
         // Gün batımı — sıcak turuncu, canlı, yumuşak vinyet (kırsal akşam)
-        { "GUNBATIMI",    { 1.20f,  0.06f,  1.08f,  0.02f, 0.30f, 0.40f, 0, 0, 0, 0,       0 } },
+        { "GUNBATIMI",    { 1.20f,  0.06f,  1.08f,  0.02f, 0.30f, 0.40f, 0, 0, 0, 0,       0, 0.48f, 0.68f, 0.0048f, 0, 0 } },
         // Ay ışığı — soğuk mavi, karanlık, sakin gece + çok ince gren
-        { "AY ISIGI",     { 0.80f, -0.05f,  1.05f, -0.08f, 0.45f, 0.35f, 0, 0, 0, 0,       0.03f } },
+        { "AY ISIGI",     { 0.80f, -0.05f,  1.05f, -0.08f, 0.45f, 0.35f, 0, 0, 0, 0,       0.03f, 0.40f, 0.66f, 0.0055f, 0, 0 } },
         // Rüya — pastel + hafif renk kayması + ince gren (yumuşak, sisli)
-        { "RUYA",         { 0.75f,  0.02f,  0.90f,  0.05f, 0.25f, 0.55f, 0, 0, 0, 0.0018f, 0.04f } },
+        { "RUYA",         { 0.75f,  0.02f,  0.90f,  0.05f, 0.25f, 0.55f, 0, 0, 0, 0.0018f, 0.04f, 0.55f, 0.62f, 0.0070f, 0.0020f, 0.6f } },
         // Çorak toprak — soluk sıcak, ağır vinyet + gren (Fallout/Mad Max)
-        { "CORAK",        { 0.60f,  0.05f,  1.15f, -0.02f, 0.55f, 0.30f, 0, 0, 0, 0,       0.07f } },
+        { "CORAK",        { 0.60f,  0.05f,  1.15f, -0.02f, 0.55f, 0.30f, 0, 0, 0, 0,       0.07f, 0.25f, 0.78f, 0.0040f, 0.0015f, 1.4f } },
         // Retro arcade — CRT tarama + posterize + canlı (dolap oyunu; kombinasyon)
-        { "RETRO ARCADE", { 1.30f,  0.00f,  1.12f,  0.02f, 0.25f, 0.45f, 0.30f, 0, 8, 0,   0 } },
+        { "RETRO ARCADE", { 1.30f,  0.00f,  1.12f,  0.02f, 0.25f, 0.45f, 0.30f, 0, 8, 0,   0, 0.35f, 0.74f, 0.0035f, 0, 0 } },
         // Eski film makarası — sepya + tarama + gren + ağır vinyet (kombinasyon)
-        { "ESKI FILM",    { 0.10f,  0.06f,  1.10f,  0.00f, 0.55f, 0.30f, 0.15f, 0, 0, 0,   0.09f } },
+        { "ESKI FILM",    { 0.10f,  0.06f,  1.10f,  0.00f, 0.55f, 0.30f, 0.15f, 0, 0, 0,   0.09f, 0.28f, 0.74f, 0.0045f, 0, 0 } },
         // Sentetik dalga — yüksek doygunluk + kromatik sapma (neon/synthwave)
-        { "SYNTHWAVE",    { 1.40f,  0.02f,  1.15f,  0.02f, 0.35f, 0.40f, 0, 0, 0, 0.0022f, 0.03f } },
+        { "SYNTHWAVE",    { 1.40f,  0.02f,  1.15f,  0.02f, 0.35f, 0.40f, 0, 0, 0, 0.0022f, 0.03f, 0.60f, 0.60f, 0.0060f, 0, 0 } },
         // Kâbus — korku uçlara: renksiz, çok karanlık, ağır kumlanma + sapma (kombinasyon)
-        { "KABUS",        { 0.30f, -0.02f,  1.30f, -0.10f, 0.65f, 0.20f, 0, 0, 0, 0.0030f, 0.14f } },
+        // Volkan/gayzer: ısı bükülmesinin vitrini — sıcak grade + güçlü bükülme
+        // + cömert bloom (lav zaten eşiğin üstünde).
+        { "VOLKAN",       { 1.10f,  0.09f,  1.10f,  0.01f, 0.40f, 0.35f, 0, 0, 0, 0.0010f, 0.03f, 0.50f, 0.66f, 0.0050f, 0.0038f, 1.8f } },
+        { "KABUS",        { 0.30f, -0.02f,  1.30f, -0.10f, 0.65f, 0.20f, 0, 0, 0, 0.0030f, 0.14f, 0.22f, 0.82f, 0.0060f, 0.0026f, 0.9f } },
     };
     const int POSTFX_COUNT = (int)(sizeof(POSTFX_PRESETS) / sizeof(POSTFX_PRESETS[0]));
     int postfxIdx = 1;   // SICAK ile başla
@@ -1188,6 +1223,7 @@ int main(int argc, char *argv[])
         decor_textures[i] = load_texture(renderer, DECORS[i].texPath);
     decor_set_texture_sizes(decor_textures);
     shadow_init(renderer);   // gölge lekesi dokusu (radyal alpha gradyanı)
+    decal_init(renderer);    // yer izi dokusu (düzensiz kenarlı leke)
     r2d_light_set_model(1.0f, 0.0f, 0.0f, 41.0f);   // varsayılan: LİNEER toplama
     // Şekil artık ışık TİPİNE bağlı (light.c FLICKER tablosu). Global değerler
     // yalnız test çarpanı: 1.0 / 0 = tipin kendi şeklini kullan.
@@ -5617,6 +5653,7 @@ int main(int argc, char *argv[])
                 player.autoAttack = false;
                 gatherRes = -1;
                 fx_init(&weaponFx);   // partiküller haritayla gitsin
+                decal_reset();        // yer izleri de haritaya ait
 
                 // 3) Yeni haritanın kampları + sandıkları + tuzak durumu
                 if (to == MAP_WORLD)
@@ -8381,6 +8418,7 @@ int main(int argc, char *argv[])
             }
             fx_update(&weaponFx, dt);
             animfx_update(animFxPool, dt);
+            decal_update(dt);
 
             gametime_update(dt);                      // dünya saati
             npc_set_talking(dialogNpc);               // konuşan NPC yerinde durur
@@ -10554,6 +10592,11 @@ int main(int argc, char *argv[])
                             mobs[mi].e.rect.h * SH_BODY);
             }
         }
+        // YER İZLERİ: gölgelerden sonra, dekordan önce — zeminin üstünde ama
+        // her şeyin altında. Gölgeden sonra olması bilinçli: gölge zemine ait,
+        // iz onun üstüne biner (yanık taşın rengini değiştirir, gölgeyi değil).
+        decal_render(renderer, &camera);
+
         decor_render_all(renderer, decor_textures, &camera);  // evler (zemin üstü, entity altı)
         if (map_is_dungeon(map_current()))
             trap_render(renderer, map_current(), &camera);   // dikenler/plaka/arbalet (zemin)
@@ -11332,6 +11375,7 @@ int main(int argc, char *argv[])
                 if (inventory.slots[i].type == &ITEM_TYPES[ITEM_TORCH]) { hasTorch = true; break; }
 
             R2DLight lights[R2D_MAX_LIGHTS];
+            g_fxBridge = player.weaponFx;   // yer izi tipi için köprü senkronu
             int lightN = light_collect(lights, R2D_MAX_LIGHTS, &camera, winW, winH,
                                        !inDungeon,   // köy ışıkları yalnız dünyada
                                        player.rect.x + player.rect.w / 2.0f,
@@ -11394,6 +11438,11 @@ int main(int argc, char *argv[])
             } else {
                 r2d_light_set_occluders(NULL, 0, 0.0f);
             }
+            // EFEKT IŞIKLARI: aktif AnimFx'ler sönen nokta ışık yayar.
+            // En sonda ekleniyor — statik/oyuncu ışıkları tavanı doldurursa
+            // kaybedilecek ilk şey geçici bir patlama parıltısı olsun.
+            lightN = animfx_append_lights(g_animFx, lights, lightN,
+                                          R2D_MAX_LIGHTS, &camera, winW, winH);
             r2d_light_pass(renderer, ambR, ambG, ambB, lights, lightN);
         }
 
@@ -11492,6 +11541,16 @@ int main(int argc, char *argv[])
             r2d_texture_set_color_mod(vignetteTex, 255, 255, 255);
             r2d_texture_set_alpha_mod(vignetteTex, 255);
         }
+
+        // ═══ SAHNE / HUD SINIRI ═══
+        // Buraya kadar olan her şey DÜNYA: tilemap, varlıklar, ışık pass'i, hava,
+        // hasar vinyeti. Post-fx filtresi yalnız onlara uygulanır ve burada
+        // ekrana basılır. Bundan sonrası HUD — filtresiz, bükülmesiz, net.
+        // Sebep: ısı bükülmesi UV kaydırıyordu ve hotbar/çubuklar dalgalanıyordu
+        // (ekranın altı bükülmenin en güçlü olduğu yer). Shader HUD'u ayırt
+        // edemez, o yüzden ayrım çizim sırasında yapılıyor.
+        // Filtre kapalıysa bu çağrı hiçbir şey yapmaz.
+        r2d_postfx_flush(renderer);
 
         // Tok buffu göstergesi (M2): sol üst barların altında
         if (player.foodBuffTimer > 0.0f && player.foodBuffName != NULL &&

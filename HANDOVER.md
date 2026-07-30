@@ -27,6 +27,10 @@ Güncelleme: 2026-07-30 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumla
 - **Asistan kodu yazar** (2026-07-09'dan beri), faz faz ilerler; her faz sonunda durur, Hakan test eder, onayla commit atılır.
 - **TÜM tasarım kararları Hakan'a sorulur** (AskUserQuestion) — denge değerleri, UX, kapsam. İnisiyatif alınmaz.
 - Derleme hep `-Wall -Wextra` sıfır uyarı. Her çalışan aşama sonrası commit önerilir.
+- **r2d tuzağı:** `flush_to()` vertex sayacını sıfırlamaz (sıfırlama `r2d_begin_frame`'de), aralığı
+  `firstVert` ile seçer. Kare içinde ikinci bir flush yapan kod, ayrım noktasındaki `vertCount`'u
+  saklayıp `firstVert` olarak vermek zorunda — yoksa aynı çizimler iki kez basılır. Bu bir kez
+  ısırdı (sahne-only post-fx). Doğru desen: `r2d_target_begin`'in `savedVertCount`'u.
 - Felsefe "no hidden machinery": sihirli soyutlama yok; sprite batch, shader, parser — hepsi görünürde.
 - Oyun proje kökünden çalıştırılır: `./build/game` (asset yolları göreli).
 - Test kalıbı: `pkill -x game; (./build/game &); sleep 5; kill -TERM $(pgrep -x game)` — temiz kapanış = cleanup yolu sağlıklı.

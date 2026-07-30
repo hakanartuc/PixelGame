@@ -263,7 +263,10 @@ int light_collect(R2DLight *out, int cap, const Camera *cam, int sw, int sh, boo
     }
 
     // Silah efekti geceye kendi renginde ışık verir: alev güçlü, diğerleri sönük parıltı
-    if (weaponFx != WEAPON_FX_NONE && n < cap) {
+    // VENOM = Kısıklar damgası: IŞIK YAYMAZ. Gizlenme damgasının gece parlaması
+    // kendi işini bozar (LORE: Kabukçu damgası parlar ve çağırır, Kısık damgası
+    // sessizdir). Eskiden default dalına düşüp PEMBE ışık yayıyordu — hataydı.
+    if (weaponFx != WEAPON_FX_NONE && weaponFx != WEAPON_FX_VENOM && n < cap) {
         R2DLight l = { psx, psy, 120.0f * zoom, 1.0f, 1.0f, 1.0f, 0.40f,
                        0.0f, 0.0f, 0.0f, 1.0f, 0.0f };
         float flicker = 0.06f;   // enerji efektleri hafif nefes alır
@@ -283,9 +286,12 @@ int light_collect(R2DLight *out, int cap, const Camera *cam, int sw, int sh, boo
             l.r = 1.00f; l.g = 0.38f; l.b = 0.80f;
             break;
         }
+        // flicker: efekt başına ek titreşim genliği. flicker_apply tipin kendi
+        // eğrisini uyguluyor; bu değer onun ÜSTÜNE yarıçap nefesi ekliyor.
+        // (Eskiden hesaplanıp (void) ile çöpe atılıyordu — ölü koddu.)
+        l.radius *= 1.0f + flicker * SDL_sinf(t * 6.0f);
         out[n++] = flicker_apply(l, (weaponFx == WEAPON_FX_FLAME) ? LK_TORCH : LK_MAGIC,
                                  t, zoom, 4321.0f, 8765.0f);
-        (void)flicker;
     }
     return n;
 }

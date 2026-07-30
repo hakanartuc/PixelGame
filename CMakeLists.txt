@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 4.3.3)
 project(PixelGame C)
 
-set(C_MAKE_STANDARD 11)
-set(C_MAKE_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 11)          # DİKKAT: değişken adı C_MAKE_* değil CMAKE_C_*
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 set(SDLTTF_VENDORED ON CACHE BOOL "" FORCE)
 
@@ -57,6 +57,7 @@ add_executable(game
     src/light.c
     src/lamp.c
     src/shadow.c
+    src/decal.c
     src/crime.c
     src/guard.c
     src/sneak.c

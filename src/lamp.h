@@ -21,7 +21,7 @@
 #define LAMP_INTERACT_RANGE  76.0f
 #define LAMP_RADIUS          122.0f  // ışık = bastırma yarıçapı (bilinçli aynı)
 // 210 idi (3.3 karo): komşu halkalar birleşip tek aydınlık alan oluyordu ve
-// gece 'karanlık' hissi kayboluyordu. 165 = 2.6 karo — halkalar ayrı okunuyor.
+// gece 'karanlık' hissi kayboluyordu. 122 ≈ 1.9 karo — halkalar ayrı okunuyor.
 #define LAMP_NIGHTS_PER_KOR  3       // bir kor kaç gece yakar
 
 // Direği kim besliyor — bileziğe vurulan damga (§5.1).

@@ -254,19 +254,53 @@ static const char *MSL_SOURCE =
     "    float4 a;\n"   // x=doygunluk y=sıcaklık z=kontrast w=parlaklık
     "    float4 b;\n"   // x=vinyet gücü y=vinyet yarıçapı z=scanline w=gameboy
     "    float4 c;\n"   // x=posterize y=kromatik sapma z=gren w=zaman (kare sayacı)
+    "    float4 d;\n"   // x=bloom gücü y=bloom eşiği z=bloom yarıçapı w=ısı genliği
+    "    float4 e;\n"   // x=ısı hızı y,z,w=(boş)
     "};\n"
     "fragment float4 fs_postfx(VSOut in [[stage_in]],\n"
     "                          constant PostU &u [[buffer(0)]],\n"
     "                          texture2d<float> tex [[texture(0)]],\n"
     "                          sampler smp [[sampler(0)]]) {\n"
+    // ISI BÜKÜLMESİ: uv'yi kaydır. Aşağı doğru güçlenir (sıcak hava yerden kalkar).
+    // İki frekans üst üste — tek sinüs akordeon gibi duruyor.
+    "    float2 uv = in.uv;\n"
+    "    if (u.d.w > 0.0) {\n"
+    "        float tt = u.c.w * u.e.x * 0.06;\n"
+    "        float depth = uv.y;\n"                 // 0 üst, 1 alt
+    "        float w1 = sin(uv.y * 38.0 + tt * 3.1) * 0.6;\n"
+    "        float w2 = sin(uv.y * 91.0 - tt * 5.7) * 0.4;\n"
+    "        uv.x += (w1 + w2) * u.d.w * depth;\n"
+    "        uv.y += sin(uv.x * 55.0 + tt * 2.3) * u.d.w * 0.35 * depth;\n"
+    "    }\n"
     // Kromatik sapma: R sola, B sağa kaymış örneklenir (VHS/retro kenar taşması)
     "    float3 c;\n"
     "    if (u.c.y > 0.0) {\n"
-    "        c.r = tex.sample(smp, in.uv - float2(u.c.y, 0.0)).r;\n"
-    "        c.g = tex.sample(smp, in.uv).g;\n"
-    "        c.b = tex.sample(smp, in.uv + float2(u.c.y, 0.0)).b;\n"
+    "        c.r = tex.sample(smp, uv - float2(u.c.y, 0.0)).r;\n"
+    "        c.g = tex.sample(smp, uv).g;\n"
+    "        c.b = tex.sample(smp, uv + float2(u.c.y, 0.0)).b;\n"
     "    } else {\n"
-    "        c = tex.sample(smp, in.uv).rgb;\n"
+    "        c = tex.sample(smp, uv).rgb;\n"
+    "    }\n"
+    // BLOOM: iki halka × 6 tap = 12 örnek. Eşiğin üstündeki fazla toplanıp eklenir.
+    // Halkalar farklı yarıçapta (r ve 2r) — tek halka yıldız deseni yapıyor.
+    "    if (u.d.x > 0.0) {\n"
+    "        float3 bl = float3(0.0);\n"
+    "        const float2 dirs[6] = { float2(1.0, 0.0), float2(0.5, 0.866),\n"
+    "                                 float2(-0.5, 0.866), float2(-1.0, 0.0),\n"
+    "                                 float2(-0.5, -0.866), float2(0.5, -0.866) };\n"
+    "        for (int i = 0; i < 6; i++) {\n"
+    "            float2 o = dirs[i] * u.d.z;\n"
+    "            float3 s1 = tex.sample(smp, uv + o).rgb;\n"
+    "            float3 s2 = tex.sample(smp, uv + o * 2.0).rgb;\n"
+    "            float l1 = dot(s1, float3(0.299, 0.587, 0.114));\n"
+    "            float l2 = dot(s2, float3(0.299, 0.587, 0.114));\n"
+    // Parlak-geçiş: eşiğin altındaki hiç katkı vermez (max ile kesiliyor).
+    // Renk korunur: fazlayı luma oranıyla ölçekliyoruz, böylece kırmızı alev
+    // kırmızı taşıyor — beyaza doymuyor.
+    "            bl += s1 * max(l1 - u.d.y, 0.0);\n"
+    "            bl += s2 * max(l2 - u.d.y, 0.0) * 0.5;\n"   // dış halka yarım ağırlık
+    "        }\n"
+    "        c += bl * (u.d.x / 9.0);\n"   // 6*(1.0+0.5) = 9 normalizasyon
     "    }\n"
     "    float luma = dot(c, float3(0.299, 0.587, 0.114));\n"
     "    c = mix(float3(luma), c, u.a.x);\n"
@@ -313,8 +347,17 @@ static SDL_GPUGraphicsPipeline *postfxPipeline = NULL;
 static SDL_GPUBuffer *fsQuadBuf = NULL;      // statik tam-ekran quad (pos 0..1)
 static R2DTexture *sceneTex = NULL;          // pencere boyutunda; resize'da yeniden kurulur
 static bool postfxOn = false;
-typedef struct { float a[4]; float b[4]; float c[4]; } R2DPostFXU;   // MSL PostU ile birebir
+typedef struct { float a[4]; float b[4]; float c[4]; float d[4]; float e[4]; } R2DPostFXU;   // MSL PostU ile birebir
 static R2DPostFXU postfxU;
+// Sahne-only ayrımı bu karede yapıldı mı? Yapıldıysa end_frame kalan çizimleri
+// (HUD) doğrudan swapchain'e, TEMİZLEMEDEN basar — postfx_pass her pikseli
+// çoktan yazdı, temizlemek sahneyi silerdi.
+static bool postfxSplit = false;
+// Ayrımın yapıldığı andaki vertex sayısı. flush_to sayacı SIFIRLAMAZ (sıfırlama
+// r2d_begin_frame'de), aralığı firstVert ile seçer — r2d_target_begin'in deseni.
+// Bu olmadan son flush firstVert=0 ile DÜNYAYI FİLTRESİZ YENİDEN ÇİZİYOR ve
+// filtreli görüntünün üstünü kapatıyordu (bütün filtreler çalışmaz görünüyordu).
+static int postfxSplitVert = 0;
 static Uint32 frameNo = 0;   // gren animasyonu için kare sayacı (postfx zamanı)
 
 // Işık uniform'ları — MSL'deki LightU ile birebir aynı düzen (float4 hizalı).
@@ -1165,6 +1208,16 @@ bool r2d_begin_frame(R2D *ctx, Uint8 clearR, Uint8 clearG, Uint8 clearB)
     return true;
 }
 
+// Sahne target'ını pencere boyutunda hazırla (resize'da yeniden kurulur)
+static void scene_target_ensure(void)
+{
+    if (sceneTex == NULL ||
+        (Uint32)sceneTex->w != swapW || (Uint32)sceneTex->h != swapH) {
+        if (sceneTex) r2d_texture_destroy(NULL, sceneTex);   // ertelenir
+        sceneTex = texture_create((int)swapW, (int)swapH, true);
+    }
+}
+
 // Post-fx pass'i: sceneTex'i tam-ekran quad'la swapchain'e bas (fs_postfx)
 static void postfx_pass(void)
 {
@@ -1188,20 +1241,48 @@ static void postfx_pass(void)
     SDL_EndGPURenderPass(pass);
 }
 
+void r2d_postfx_flush(R2D *ctx)
+{
+    (void)ctx;
+    // curTarget: bir render target pass'i açıkken ayrım yapılamaz (o pass kendi
+    // vertex aralığını tutuyor, araya girmek ikisini de bozar).
+    if (cmdBuf == NULL || !postfxOn || postfxSplit || curTarget != NULL) return;
+    scene_target_ensure();
+    if (sceneTex == NULL) return;
+    // Sahneyi offscreen'e yaz (temizleyerek), filtreden geçirip ekrana bas.
+    flush_to(cmdBuf, sceneTex->tex, (float)swapW, (float)swapH, true,
+             clearColor, targetPipeline, 0);
+    postfx_pass();
+    postfxSplit = true;        // bundan sonrası doğrudan ekrana, filtresiz
+    postfxSplitVert = vertCount;   // HUD bu noktadan sonra başlar
+}
+
 void r2d_end_frame(R2D *ctx)
 {
     (void)ctx;
     if (cmdBuf == NULL) return;
 
+    // Sahne-only ayrımı yapıldıysa: kalan çizimler HUD'dur, doğrudan ekrana ve
+    // TEMİZLEMEDEN gider (postfx_pass her pikseli yazdı).
+    if (postfxSplit) {
+        flush_to(cmdBuf, swapTex, (float)swapW, (float)swapH, false, clearColor,
+                 pipeline, postfxSplitVert);   // YALNIZ HUD aralığı
+        SDL_SubmitGPUCommandBuffer(cmdBuf);
+        cmdBuf = NULL;
+        inFrame = false;
+        postfxSplit = false;
+        postfxSplitVert = 0;
+        for (int i = 0; i < deadCount; i++) {
+            SDL_ReleaseGPUTexture(gpu, deadList[i]->tex);
+            SDL_free(deadList[i]);
+        }
+        deadCount = 0;
+        return;
+    }
+
     // Post-fx açıkken sahne offscreen target'a akar, oradan filtreyle ekrana.
     // Sahne target'ı pencere boyutunu izler (resize'da yeniden kurulur).
-    if (postfxOn) {
-        if (sceneTex == NULL ||
-            (Uint32)sceneTex->w != swapW || (Uint32)sceneTex->h != swapH) {
-            if (sceneTex) r2d_texture_destroy(NULL, sceneTex);   // ertelenir
-            sceneTex = texture_create((int)swapW, (int)swapH, true);
-        }
-    }
+    if (postfxOn) scene_target_ensure();
     if (postfxOn && sceneTex != NULL) {
         flush_to(cmdBuf, sceneTex->tex, (float)swapW, (float)swapH, true,
                  clearColor, targetPipeline, 0);
@@ -1280,5 +1361,11 @@ void r2d_postfx_set(R2D *ctx, const R2DPostFX *fx)
     postfxU.c[1] = fx->aberration;
     postfxU.c[2] = fx->grain;
     // c[3] = zaman — her kare postfx_pass içinde basılır
+    postfxU.d[0] = fx->bloom;
+    postfxU.d[1] = fx->bloomThreshold;
+    postfxU.d[2] = fx->bloomRadius;
+    postfxU.d[3] = fx->heat;
+    postfxU.e[0] = fx->heatSpeed;
+    postfxU.e[1] = postfxU.e[2] = postfxU.e[3] = 0.0f;
     postfxOn = true;
 }

@@ -72,11 +72,28 @@ typedef struct {
     float fps;
     float scale;         // dünya ölçeği (çizim = fw*scale)
     bool active;
+    // EFEKT IŞIĞI: efekt oynarken dünyaya ışık yayar ve SÖNEREK biter.
+    // Bunun olmaması efekti "sahnenin üstüne yapıştırılmış çıkartma" yapıyordu;
+    // ışık yayan efekt duvarı aydınlatır, gölgeyi kaydırır, atmosfere girer.
+    // lightR/G/B 0 ise ışık yok (varsayılan — eski çağrılar aynen çalışır).
+    float lightR, lightG, lightB;
+    float lightRadius;      // dünya px, tepe değer
+    float lightIntensity;   // tepe güç (0..1 tipik)
 } AnimFx;
 
 void animfx_init(AnimFx *pool);
 void animfx_spawn(AnimFx *pool, R2DTexture *tex, int frames, int cols,
                   float fw, float fh, float x, float y, float fps, float scale);
+// Işıklı sürüm: aynı iş + efekt boyunca sönen bir nokta ışık.
+// Işık eğrisi: ilk %20'de hızlı yükselir, sonra efekt bitene kadar söner —
+// patlama önce parlar, sonra kor gibi çekilir.
+void animfx_spawn_lit(AnimFx *pool, R2DTexture *tex, int frames, int cols,
+                      float fw, float fh, float x, float y, float fps, float scale,
+                      float r, float g, float b, float radius, float intensity);
+// Aktif efektlerin ışıklarını ekran-uzayı listesine ekler (light_collect'ten sonra).
+// Dönen: out'a yazılan yeni adet (n ya da daha fazla).
+int animfx_append_lights(const AnimFx *pool, R2DLight *out, int n, int cap,
+                         const Camera *cam, int sw, int sh);
 void animfx_update(AnimFx *pool, float dt);
 void animfx_render(AnimFx *pool, R2D *renderer, const Camera *camera);
 

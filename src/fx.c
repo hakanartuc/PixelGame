@@ -123,8 +123,9 @@ void animfx_init(AnimFx *pool)
         pool[i].active = false;
 }
 
-void animfx_spawn(AnimFx *pool, R2DTexture *tex, int frames, int cols,
-                  float fw, float fh, float x, float y, float fps, float scale)
+void animfx_spawn_lit(AnimFx *pool, R2DTexture *tex, int frames, int cols,
+                      float fw, float fh, float x, float y, float fps, float scale,
+                      float r, float g, float b, float radius, float intensity)
 {
     if (tex == NULL) return;
     int slot = -1;
@@ -134,7 +135,51 @@ void animfx_spawn(AnimFx *pool, R2DTexture *tex, int frames, int cols,
     pool[slot] = (AnimFx){ .tex = tex, .frames = frames, .cols = cols,
                            .fw = fw, .fh = fh, .x = x, .y = y,
                            .t = 0.0f, .fps = fps, .scale = scale,
-                           .active = true };
+                           .active = true,
+                           .lightR = r, .lightG = g, .lightB = b,
+                           .lightRadius = radius, .lightIntensity = intensity };
+}
+
+void animfx_spawn(AnimFx *pool, R2DTexture *tex, int frames, int cols,
+                  float fw, float fh, float x, float y, float fps, float scale)
+{
+    // Işıksız sürüm: renk sıfır → animfx_append_lights bu slotu atlar
+    animfx_spawn_lit(pool, tex, frames, cols, fw, fh, x, y, fps, scale,
+                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+}
+
+// Aktif efektlerin ışıkları. Eğri: ilk %20 hızlı yükseliş, sonra sönüş.
+// Patlama önce parlar, sonra kor gibi çekilir — düz sönüş "kapandı" gibi duruyor.
+int animfx_append_lights(const AnimFx *pool, R2DLight *out, int n, int cap,
+                         const Camera *cam, int sw, int sh)
+{
+    if (pool == NULL || out == NULL || cam == NULL) return n;
+    float total, z = cam->zoom;
+    for (int i = 0; i < MAX_ANIM_FX && n < cap; i++) {
+        const AnimFx *a = &pool[i];
+        if (!a->active) continue;
+        if (a->lightR <= 0.0f && a->lightG <= 0.0f && a->lightB <= 0.0f) continue;
+        if (a->fps <= 0.0f || a->frames <= 0) continue;
+        total = (float)a->frames / a->fps;          // efektin toplam süresi
+        if (total <= 0.0f) continue;
+        float u = a->t / total;                      // 0..1 ilerleme
+        if (u < 0.0f) u = 0.0f;
+        if (u > 1.0f) continue;
+        float k = (u < 0.2f) ? (u / 0.2f)             // yükseliş
+                             : (1.0f - (u - 0.2f) / 0.8f);   // sönüş
+        if (k <= 0.01f) continue;
+        k = k * k;   // kare: sönüş göze doğrusaldan daha doğal gelir
+        float sx = (a->x - cam->x) * z;
+        float sy = (a->y - cam->y) * z;
+        float sr = a->lightRadius * z * (0.6f + 0.4f * k);   // yarıçap da nefes alır
+        // Ekran dışı atla (yarıçap payıyla)
+        if (sx + sr < 0.0f || sx - sr > (float)sw ||
+            sy + sr < 0.0f || sy - sr > (float)sh) continue;
+        out[n++] = (R2DLight){ sx, sy, sr, a->lightR, a->lightG, a->lightB,
+                               a->lightIntensity * k, 0.0f, 0.0f, 0.0f,
+                               0.85f, -6.0f };   // hafif basık, biraz yukarı
+    }
+    return n;
 }
 
 void animfx_update(AnimFx *pool, float dt)

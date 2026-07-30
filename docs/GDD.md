@@ -335,8 +335,9 @@ Cute Fantasy ailesi (16px, 4x) + ULPC oyuncu · dual-grid autotile standardı
 Tam-ekran post-process filtre altyapısı kodda (bkz. §8, F7 döngüsü); 20 hazır
 ön ayar tarz denemesi için (SICAK varsayılan · DARK FANTASY · CRT · VHS · NOIR
 · GAMEBOY · SYNTHWAVE · KORKU · kombinasyonlar). Oyunun KALICI görsel imzası
-Hakan testinden sonra seçilecek — muhtemelen SICAK/DARK FANTASY ekseni. Filtre
-şu an HUD dahil tüm kareye uygulanıyor (sahne-only varyantı açık soru).
+Hakan testinden sonra seçilecek — muhtemelen SICAK/DARK FANTASY ekseni. ~~Filtre
+şu an HUD dahil tüm kareye uygulanıyor (sahne-only varyantı açık soru).~~
+**ÇÖZÜLDÜ 2026-07-30:** `r2d_postfx_flush()` ile sahne/HUD ayrımı yapıldı — bkz. §6.5 Karar 1b.
 
 ### 6.2 Işık & gölge modeli [KODDA — varyantlar test bekliyor]
 Işık bu oyunda dekor değil **mekanik**: LORE §1.5 "eşik = ışığın bittiği yer".
@@ -493,6 +494,75 @@ aklama + Kılıçartıkları kontrat eritmesi · kelle panosu (3 hedef) · kayı
   bağlı NPC'ler rep −3). Suç değil, iz.
 - ⚠ `guard_index()` tek NPC + tek statik state → altı şehir için `GuardUnit guards[12]` (şehir başına
   2 + kırsal devriye), birim başına `postX/postY` + `lawId`.
+
+### 6.5 VFX his katmanı v2 [KODDA — Hakan testi bekliyor]
+Hedef (Hakan): *"Muhteşem skill efektlerimiz olmalı. Oyun ve atmosfer ile uyumlu, pürüzsüz."*
+
+**Karar 1 — BLOOM tek geçişli, ayrı render target YOK.** Post-fx shader'ında iki halka × 6 tap = 12
+örnek. Parlak-geçiş eşiğinin üstündeki fazla, **luma oranıyla ölçeklenerek** eklenir — böylece kırmızı
+alev kırmızı taşar, beyaza doymaz. Grade'den ÖNCE uygulanır: grade kontrast/parlaklık oynatınca eşik
+kayar, ham sahneden okumak kararlıdır. 21 preset'in her birine ayrı ayar (GAMEBOY'da 0 — 4 renk
+paleti taşmayı yutar; 8-BIT'te düşük — posterize ile çatışmasın).
+**Karar 1b — SAHNE-ONLY FİLTRE (§6.1'in açık sorusu KAPANDI).** Hakan testi: *"VOLKAN'da tüm UI
+dalgalanıyor normal mi?"* Hayır — ve en kötü hali: bükülme ekranın altına doğru güçlendiği için
+(sıcak hava yerden kalkar) hotbar ve durum çubukları tam bükülmenin merkezinde kalıyordu.
+Shader hangi pikselin HUD olduğunu bilemez, o yüzden ayrım **çizim sırasında** yapılmak zorunda.
+`r2d_postfx_flush()` eklendi: o noktaya kadarki çizimler (tilemap, varlıklar, ışık pass'i, hava,
+hasar vinyeti) offscreen'e akar, filtreden geçer, ekrana basılır; sonraki çizimler (HUD, panel, menü)
+doğrudan ekrana gider ve **filtrelenmez**. Sınır main.c'de hasar vinyetinin hemen ardında.
+Uygulama detayı: HUD flush'ı `clear=false` ile yapılıyor — `postfx_pass` her pikseli çoktan yazdı,
+temizlemek sahneyi silerdi. Ayrım flush'ı ise `clear=true`, böylece hiç çizim olmayan karede
+(menü ekranı) bayat sahne örneklenmiyor. Filtre kapalıysa çağrı hiçbir şey yapmaz.
+**Yan kazanç:** bloom eşikleri artık HUD'u korumak zorunda değil — istenirse düşürülebilir.
+**Tuzak (bir kez ısırdı):** `flush_to()` vertex sayacını SIFIRLAMAZ — sıfırlama `r2d_begin_frame`'de.
+Aralık `firstVert` ile seçilir. İlk denemede son HUD flush'ı `firstVert=0` ile çağrıldı ve **bütün
+dünyayı filtresiz yeniden çizip filtreli görüntünün üstünü kapattı** → "hiçbir filtre çalışmıyor"
+görünümü. Doğru desen `r2d_target_begin`'de zaten vardı (`savedVertCount`). Kare içinde ikinci bir
+flush yapan her kod bu sayacı saklamak zorunda.
+
+**Karar 2 — EFEKT IŞIĞI: her AnimFx sönen bir nokta ışık yayar.** Bu turun en değerli parçası:
+ışık yaymayan efekt "sahnenin üstüne yapıştırılmış çıkartma" gibi duruyordu; ışık yayan efekt duvarı
+aydınlatır, **gölgeyi kaydırır**, atmosfere girer. Eğri ilk %20'de yükselip kare eğriyle söner —
+patlama önce parlar, sonra kor gibi çekilir (düz sönüş "kapandı" gibi duruyor).
+`animfx_spawn_lit()` eklendi, eski `animfx_spawn()` ona delege ediyor → **17 çağrı noktası bozulmadı.**
+Işıklar listenin SONUNDA ekleniyor: tavan dolarsa kaybedilecek ilk şey geçici parıltı olsun, kandil değil.
+
+**Karar 3 — BEYAZ-SICAK FLAŞ additive üst geçişle.** Çarpımsal `color_mod` beyaza ÇIKAMAZ (255 =
+tint yok); parlaklık ancak toplamayla gelir. İsabetin ilk ~2 karesinde silüetin üstüne additive ikinci
+çizim, sonra mevcut kırmızı tint.
+**Ayar borcu:** `hitFlash` kodda üç değerle kuruluyor (0.12/0.15/0.2) → beyaz faz uzunluğu tutarsız.
+
+**Karar 4 — ISI BÜKÜLMESİ durum efekti, tarz değil.** Post-fx'te ekran-uzayı UV kaydırma, iki
+frekanslı sinüs (tek sinüs akordeon gibi duruyor) ve **ekranın altına doğru güçleniyor** (sıcak hava
+yerden kalkar) — böylece HUD üstü daha az etkilenir. En başta uygulanıyor: sapma ve bloom bükülmüş
+görüntü üstünden çalışıyor, fiziksel sıra bu. Vinyet bilinçli olarak bükülmüyor (ekran kenarı sabittir).
+Test için **VOLKAN** preset'i eklendi; KORKU/RUYA/CORAK/VHS/KABUS'a küçük değerler.
+
+**Karar 5 — YER İZLERİ (yeni sistem: `decal.h/.c`).** AnimFx patlamanın KENDİSİ, decal patlamanın
+BIRAKTIĞI şey. Doku kodda üretiliyor (asset beklemez) ve kenarı **bilinçli düzensiz** — üç farklı
+frekansta açı modülasyonu; kusursuz daire yapay duruyor (ışık halkalarından öğrenilen ders).
+Çizim sırası: gölgelerden SONRA, dekordan ÖNCE — gölge zemine ait, iz onun üstüne biner.
+Ömürler bilinçli farklı (yanık 45s taş kararır · kan 30s kurur · kırağı 18s erir · zehir 12s
+buharlaşır); aynı süre verilseydi hepsi "aynı sistem" gibi okunurdu. Solma ömrün son %35'inde başlar —
+iz bir süre gerçekten DURSUN. Havuz dolarsa en eskiyi ezer: oyuncunun az önce yaptığı şeyin izi
+sessizce kaybolmasın.
+Tetikleyici damga tipine bağlı (`g_fxBridge`): alev→yanık · buz→kırağı · zehir/ağı→birikinti ·
+ölüm→kan. Harita geçişinde temizlenir.
+
+**Zaten kodda olduğu bulunanlar (eklenmedi):** hit-stop (`g_hitStop`, `dt *= 0.08f` — dondurmak yerine
+yavaşlatıyor, daha iyisi) · ekran sarsıntısı sönümüyle · `mob.e.hitFlash`.
+
+**Kapatılan kod borçları:**
+- ⚠ `CMakeLists.txt:4-5` **`C_MAKE_STANDARD` → `CMAKE_C_STANDARD`** (iki satır). Değişken adı yanlış
+  olduğu için **C standardı hiç uygulanmıyordu**; artık `-std=gnu11` gerçekten geçiyor ve derleme
+  yine sıfır uyarı.
+- ⚠ `WEAPON_FX_VENOM` `default:` dalına düşüp **pembe ışık yayıyordu** → artık hiç ışık yaymıyor
+  (Kısıklar damgası gizlenme damgası; LORE: Kabukçu damgası parlar ve çağırır, Kısık sessizdir).
+- ⚠ `light.c` içinde `flicker` hesaplanıp `(void)flicker` ile çöpe atılıyordu (**ölü kod**) → artık
+  yarıçap nefesi olarak kullanılıyor.
+- ⚠ `main.c` `"%s'na geçildi"` → **`"Geçildi: %s"`**. Eskisi ekranda `Yay'na`, `Balta'na` yazıyordu;
+  Türkçe ünlü uyumu kodla üretilemez (dil standardının 1 numaralı kuralı).
+- `lamp.h` bayat yorum (165 → 122).
 
 ## 7. UI / UX [KODDA]
 WoW hotbar · HUD (mevsimli saat, kontrat takipçisi) · panel ailesi
