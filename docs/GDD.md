@@ -286,6 +286,11 @@ kırgınlık) · yankesicilik · kilit/tuzak/sneak.
 Bölgesel dükkanlar + kervan + loca dükkanı (rütbe kapılı) · bölgeler arası
 kâr marjları (köy↔Taşdurak) · itibar + mevsim fiyatları · kirli para +
 aklama · craft istasyonları + blueprint.
+- **Aklama/loca eşiği [ONAYLI 2026-07-24]**: launderedTotal aklamaya VERİLEN
+  kirli değerle artar (kesinti ÖNCESİ; kuyuda bırakma anında, kervanda satış
+  anında) — örgüt kestiğini de sayar ("Hepsi sayılıyor"). Kuyuda bekleyen
+  kese yeni bırakmayı engellemez: üstüne eklenir, birleşik kese geç olanın
+  şafağını bekler. İp eşiği 500g (kirli) + gece.
 
 ### 4.6 Yaşayan dünya [KODDA]
 Ekoloji (yuva/göç/rutin/dinamik kontrat) · dünya olayları (şafak zarı) ·
