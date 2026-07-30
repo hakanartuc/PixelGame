@@ -1,6 +1,6 @@
 # PROGRESS — Yapılanlar ve Kalanlar
 
-Güncelleme: 2026-07-29
+Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
@@ -940,6 +940,103 @@ sonra genişleme, en son ana hattın kapanışı ("coğrafya hikayeyle büyür")
 - İkon atlası 29→31; ritüel unlocks P2 büyülerini de açar (echo_apply_unlocks).
 - TEST NOTU: P1 ritüeli HÂLÂ TEST EDİLMEDİ — P1+P2 tek turda test edilebilir
   (F10 → taş halkası T108,7 → gece [E] → ritüel → 4 büyü + K'da Yankı ağacı).
+
+### Faz REBOOT — KANON SIFIRDAN: "DEMİRBOYUN" (2026-07-30)
+
+**Hakan üç turu üst üste reddetti; dördüncü tur tuttu.** 24 aday, 6 kurgu mimarı × 4 tur,
+her turda bağımsız klişe avcıları + tarafsız hakem.
+
+- **Tur 1** (6 aday): altı mimarın altısı da "ölüler kalkıyor + ejderha + toprak" ailesine indi.
+  Hakem 1.'si "Et Durmaz" (yaşlanmasızlık yasası). **Hepsi reddedildi.**
+- **Tur 2** (6 aday): o aile yasaklandı, iskelet/mumya/hortlak görsellerine ölü-olmayan kimlik
+  bulmak zorunlu kılındı (kabukçu, kemikçil, bedel, kurma, Solgun kabuk zırhı). Hakem 1.'si
+  "Aynadeniz". **Hepsi reddedildi** — teşhis: *"Çok fazla fantastik kurgu üstüne kuruyorsun.
+  Skyrim'de böyle mi? İnsan ilişkileri üzerine kur, fantastik merak ve ekstra güç sağlasa."*
+- **Tur 3** (6 aday): insan omurgası + fantastik ≤%15 + **silme testi** (bütün fantastiği sil,
+  hikâye ayakta mı?). Altısı da testi geçti. Hakem 1.'si "Kırkbin". **Hepsi reddedildi** —
+  DÖRT kusur birden: ölçek çok küçük · fazla kuru/bürokratik · fantastik fazla azaldı ·
+  büyüme hedefi yok.
+- **Tur 4** (6 aday): krallık ölçeği + **iki katman** + 4+ örgüt + rütbe merdiveni + 3 "vay be" anı
+  + zindan gerekçesi. Hakem elemesi: bir aday Skyrim'in birebir kopyası çıktı (Konuk Evlat), biri
+  fantastiği gizlice omurga yapmış (Öte — Perde'yi ölen bir ejderha kraliçesi tutuyordu), biri
+  kuruluk+isim kusurunu geri getirdi (Akocak). **Kazanan: DEMİRBOYUN.**
+
+**DEMİRBOYUN — kanon:** Sarp Yalınkılıç 26 yıl önce altı şehri birleştirdi, birini hiç alamadı.
+İki kış önce felç geçirdi — konuşamıyor, aklı yerinde. Taç giyme töreni hiç yapılmadı. Meşruiyet üç
+somut nesne: çatısız taht salonuna asılacak altı sancak, sürgünün kaçırdığı taç, tapınağın
+kutsaması — **ilerleme çubuğu duvarda asılı.** Odada altı ağız onun adına konuşuyor; "istediğini"
+uydurabiliyorlar, **"istemediğini" uyduramıyorlar** (gözünü kapatıyor). Anahtar karakter: onu
+sırtında taşıyan okuma yazma bilmeyen eski yoldaş.
+
+İkinci katman paralel: ölü imparatorluk Akkemer ejderhaları öldüremedi, uyuttu ve mührü dinlemek
+için altına adam bağladı; **Sarkaç** takvimi harita ömrünce 7 mühür çürütüyor — geciktirilebilir,
+geri alınamaz. Damar taşı 14 becerinin hepsini besliyor ve **kazıldığı gece o civarın mezarlığı
+kalkıyor** (kaynak toplama = tehdit, aynı fiil).
+
+**Uygulanan hakem aşıları:** ikinci rehin çocuk Tuğrul (ilk saate ceset — mahzende gömülmemiş,
+buz eriyor, "6 akçe" kontratı) · damar-hortlak yan etkisi · tören öncesi ateşkes bayramı gecesi.
+**Uygulanan uyarı:** dünya asla "taç töreni" diye tanıtılmayacak — açılış cümlesi *"felçli fatihin
+sandalyesi ve onun adına konuşan altı ağız."*
+
+**Çıktılar:** `docs/LORE.md` v2 (16 bölüm) · `docs/konsept/reboot/` (24 aday + 4 değerlendirme) ·
+Sudowrite Story Bible prompt paketi · eski kanon arşive alındı (silinmedi).
+
+**B. SİSTEM TASARIMI — beceri/meslek/damga/hat (4 paralel tasarımcı)**
+Hakan: *"22 olmak zorunluluğumuz yok, skill yapısı baştan sona tekrar çalışabilir. Ama varlıkları
+olmalı. Balıkçılık da olmalı — oyuncu sürekli stresli olmamalı. Silaha rün basma olayı olmalı,
+onun için VFX yaptık zaten."*
+- **Hiçbir beceri silinmedi.** 23 → **25**: 3 yeniden adlandırma (ENCHANTING→**Damgacılık**,
+  ECHO→**Ejder Sesi**, LIGHT→**Kutsama**, ayrıca SPEECH→Pazarlık, ASSASSIN→Kısık), 2 ağaç metni
+  düzeltmesi (TWO_HANDED mızrak dayatması, MEDIUM_ARMOR kimliksizliği → Ak Nöbet kar zırhı),
+  2 yeni (Balıkçılık, **Aşçılık** — `STATION_CAMPFIRE`'ın becerisi yoktu, XP Simya'ya düşüyordu).
+- **Balıkçılık mevcut toplama sistemine BAĞLANMAYACAK:** `ResourceDef`'in sözleşmesi "hareket/hasar
+  süreci keser" — gerginliğin kaynağı bu, rahat fiil onu miras almamalı. Ayrı durum makinesi
+  (~50 satır), sesli işaret, kesintisiz, kaçırınca ceza yok, mob spawn'ı bastırılıyor.
+  Kanon bağı: **Tuğrul'u öldüren delik balıkçı deliğiydi** (LORE §8).
+- **Rahat oynanış boşa gitmiyor:** odun→kandil→gece güvenli ada; balık+yemek→soğuk direnci ve gece
+  görüşü→**damar kazısını mümkün kılan şey.** Oyuncu mola veriyor sanıyor, ekipman üretiyor.
+- **"Rün" gitti, "DAMGA" geldi.** Mühür büyük, damga onun kılıca sığanı; hammadde "öz" değil **harf**.
+  Kanon gerekçesi: Akkemer'in mührü bir emirdir (*dur*); kılıca sığan yazı ancak bir şeyi ancak bir an
+  tutar — kılıcın istediği tam olarak bu. **Beş VFX'in beşi de yerini buldu**; PINK = Sarkaç'ın
+  çürüyen mühründen kesilen, olaya bağlı ve **sonlu** diri damga.
+- **Damga Sarkaç'a dokunmuyor** — her damga basanı dünyayı bozmakla suçlamak fatura refleksi olurdu;
+  bedel zaten dünyada (kazdığın gece mezarlık kalkıyor). Yalnız diri damga *hasadı* takvimi öne çeker.
+- **Hat formülü değişti: EL + FİİL + TANIK.** Eski formül eksikti — kesişim sessiz, eylem kimliği
+  duyurmuyor. Kural: kimlik davranıştan doğar, **ad başkasından gelir** (Kırca Ana unvanını hiç
+  sormaz). **13 açık + 2 gizli hat** (her örgüte iki + bir örgütsüz). Hat kapanması yok, **sahne
+  tükenir.** Barışçıl hattın ödülü güç değil **bilgi**.
+- Detay: `docs/konsept/beceri-meslek-sinif-v2.md`, kararlar GDD §6.3.
+
+**C. SİSTEM TASARIMI — suç/kelle/itibar** (Hakan: *"bounty vs duracak değil mi? Özgürlük sunuyoruz"*)
+- **Kelle parası ceza değil BORÇ SENEDİ.** Yakalama panelindeki üç düğmeye **şehir başına değişen
+  dördüncü düğme**: Yenitaç deftere yaz · Tuzkapı senet (ödemezsen liman kalıcı kapanır, sonradan
+  ödemek AÇMAZ) · Yedisunak kefaret ("öde" gri) · Karaocak ocakta çalış · Karduvar mahkeme+**kefil** ·
+  Kumkapı kan bedeli (vali siler, aşiret hatırlar).
+- **Yargı çevresi ≠ coğrafi bölge:** `Region.lawId` + `MAX_LAWS 8` → coğrafi bölge serbest, save
+  tamponuna dokunulmuyor (uyum kodda doğrulandı).
+- **Haber yayılımı oynanış:** kurye NPC'si (haritada görünür, 1-3 gün). Kesersen kayıt yok olmaz,
+  **sahibi değişir** — Kırk Kese bilgi olarak alır. Kanundan kurtulup örgüte borçlanırsın.
+- **Hapis reddedildi** (odada bekletmek oynanış değil). Yerine borç işi/el koyma/sürgün; tek istisna
+  **ölüm yerine yakalanmak** (karakolda uyanırsın, üç çıkış) — hapsi ödüle çevirir.
+- **Kelle avcılığı vs suikast ayrımı tek kelime: KAYIT.** Avcılıkta tanık iyidir, suikastta ölümdür.
+  Mevcut `crime_witnessed` sözleşmesine hiç dokunmadan çalışıyor.
+- **Düşük itibar bir sınıf: "korkulan adam"** (rep ≤ −40: haydut saldırmaz, haraç diyalogları,
+  muhafız takviye bekler; görev/şifa/Makam kapanır). **En zayıf konum orta itibar.**
+- Detay: `docs/konsept/suc-kelle-itibar-v2.md`, kararlar GDD §6.4.
+- NOT: kaosçu bölümü (§10-13) alt ajan **harcama limitine takıldığı için** orkestratör tarafından
+  yazıldı, ajan denetimi geçmedi — belgede işaretli.
+
+**Bulunan kod borçları (henüz düzeltilmedi):**
+- `WEAPON_FX_VENOM` `light.c`'de default dalına düşüp **pembe ışık yayıyor** (gizlenme damgası için hata)
+- `main.c:67` bölge `-1`'i **0'a katlıyor** → ıssız arazide işlenen suç Köy'ün defterine yazılıyor
+- **Tanıksız cinayet tamamen bedava** → "kayıp" mekaniği önerildi (bir gün sonra NPC kayıp, rep −3)
+- `guard_index()` tek NPC + tek statik state → altı şehir için `GuardUnit guards[12]`
+- Damga eşyaları main.c'de iki taneye sabit (`CRAFT_ROW_RUNE0/RUNE1`) → paralel dizi tavanı dersi
+
+**Kalan:** LORE §16'da 7 açık soru (Kavurgan'ın 99 yıllık şartı, gizli sınıf kapıları, 7 mührün
+haritadaki yeri, Şirin Hatun'un planı, Kabukçular'ın haklı olduğu yer). Kod tarafı henüz
+dokunulmadı — mevcut MVP kurgusu (isimler/diyaloglar/haritalar) yeni kanona göre yeniden
+adlandırılacak; **boşa çıkan mekanik silinmeyecek, rafa kalkacak.**
 
 ### Faz KANON+IŞIK — "SÖNEN KANDİLLER" KANONU + IŞIK/GÖLGE ELDEN GEÇİRME (2026-07-29)
 

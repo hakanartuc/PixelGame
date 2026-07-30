@@ -1,6 +1,6 @@
 # HANDOVER — Pixe Game
 
-Güncelleme: 2026-07-29 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
+Güncelleme: 2026-07-30 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
 
 ## Çalışma kuralları
 - **KOD EN SON GELİR (2026-07-28 Hakan direktifi)**: kod faturası tasarım
@@ -10,9 +10,16 @@ Güncelleme: 2026-07-29 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumla
 - **BOŞA ÇIKAN KODU SİLME (2026-07-28)**: kanon değişince sahipsiz kalan
   mekanik/ağaç/bayrak silinmez — gerekçesiyle yorumlanır ya da rafa kalkar.
   Yeniden yazmak yerine **yeniden adlandır/yeniden yorumla**.
-- **docs/LORE.md = kanon kilidi (2026-07-28)**: dünya/halk/örgüt/ölü/zanaat/
-  hat/final çelişkisinde LORE kazanır. §0 iptal listesi (12 reddedilmiş fikir)
-  ve §14 yazım kuralları (FATURA REFLEKSİ testi, ROL ÖZGÜRLÜĞÜ) bağlayıcı.
+- **docs/LORE.md v2 = kanon kilidi (2026-07-30, "DEMİRBOYUN")**: çelişkide LORE kazanır.
+  §15 yazım kuralları bağlayıcı (FATURA REFLEKSİ testi, ROL ÖZGÜRLÜĞÜ, isim anlaşılırlığı).
+  **v1 "Sönen Kandiller" HÜKÜMSÜZ** — `docs/konsept/arsiv-sonen-kandiller-lore-v1.md`'de rafta.
+- **KANON YAPISI — iki katman (bağlayıcı)**: omurga İNSAN siyasi çatışması, fantastik PARALEL
+  katman. Fantastik ana zincirin hiçbir düğümünde zorunlu olamaz. Üç tur bu kuralı ihlal ettiği
+  için reddedildi. Dünyayı tanıtma cümlesi: "felçli fatihin sandalyesi ve onun adına konuşan
+  altı ağız" — asla "taç töreni" diye açma.
+- **KANON ÜRETİM YÖNTEMİ**: 6 paralel kurgu mimarı (çapa yasağıyla — eski kanonu görmezler)
+  → bağımsız klişe avcıları → tarafsız hakem → Hakan'a sunum. 4 tur, 24 aday. Süreç
+  `docs/konsept/reboot/` altında; tekrar gerekirse aynı kalıp kullanılır.
 - **docs/GDD.md = tasarım anayasası (2026-07-24)**: her tasarım kararı önce
   GDD'ye işlenir ([ONAYLI]/[KODDA]/[TASLAK]/[AÇIK] etiketleriyle), kod onu
   izler; yol haritası GDD §9. PROGRESS üretim günlüğü, HANDOVER devir notu

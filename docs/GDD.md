@@ -6,7 +6,24 @@
 > Bu belge canlıdır: her tasarım kararı önce buraya işlenir, kod onu izler.
 > Bakış TEPEDEN: burada iskelet kurulur; karakter/görev yazımı iskelete sonra asılır.
 > Üretim geçmişi PROGRESS.md'de, teknik devir HANDOVER.md'de, derin kurgu **LORE.md**'de.
-> **LORE.md kuruldu (2026-07-28) ve kanon kilidi orasıdır** — dünya/halk/örgüt/ölü/zanaat/
+> ## ⚠️ KANON REBOOT — 2026-07-30 [Hakan direktifi]
+> **"Sönen Kandiller" kanonu (LORE v1) HÜKÜMSÜZ.** Dört turluk bir elemede 24 aday üretildi;
+> kazanan **DEMİRBOYUN** ve LORE.md v2 onu tutuyor. Eski kanon
+> `docs/konsept/arsiv-sonen-kandiller-lore-v1.md`'de rafta (silinmedi).
+>
+> **Reddedilme gerekçeleri sırayla:** tur 1-2 fantastik mekanizmayı omurga yaptı ("Skyrim'de böyle
+> mi?"); tur 3 insan omurgasına geçti ama köy ölçeğinde kaldı — dört kusur birden: ölçek çok küçük ·
+> fazla kuru/bürokratik · fantastik fazla azaldı · büyüme hedefi yok. Referans **Skyrim**.
+>
+> **DEMİRBOYUN modeli — bağlayıcı yapı:** omurga İNSAN siyasi çatışması (felçli fatihin sandalyesi,
+> onun adına konuşan altı ağız, hiç yapılmamış taç töreni) · **paralel** ve görkemli fantastik katman
+> (Akkemer mühürleri çürüyor, ejderhalar yerden çıkıyor; Sarkaç geri alınamaz) · 6 şehir · 6
+> katılınabilir örgüt (rütbe merdivenli, 22 hat + 2 gizli sınıfa yuva) · 4 kademeli mülk/komuta
+> merdiveni. Fantastik ana zincirin hiçbir düğümünde ZORUNLU değil.
+>
+> Süreç ve elenen 23 aday: `docs/konsept/reboot/`. Sudowrite prompt paketi aynı klasörde.
+
+> **LORE.md v2 kanon kilidi (2026-07-30)** — dünya/halk/örgüt/ölü/zanaat/
 > hat/final çelişkisi çıkarsa LORE.md kazanır. Bu belge **tasarım kararlarını**, LORE.md
 > **dünyayı** tutar. Sıra: LORE → GDD → yapı → hikaye → görev → **kod en son**.
 
@@ -28,7 +45,7 @@
 > Aşağıdaki §3.3 ırk matrisi ve somut yer/hizip adları **MVP kalıntısıdır**;
 > yeni kanon geldiğinde tamamen değişecek.
 >
-> ### ✅ YENİ KANON GELDİ — "SÖNEN KANDİLLER" (2026-07-28)
+> ### ~~YENİ KANON GELDİ — "SÖNEN KANDİLLER" (2026-07-28)~~ [HÜKÜMSÜZ — bkz. reboot 2026-07-30]
 > Beş tur sonunda kanon `docs/LORE.md`'ye kilitlendi. Dört tur reddedildi
 > (bürokratik · soyut · meslek dayatan · alet dayatan) ve gerekçeleri
 > LORE.md §0 + §14'te kalıcı kural olarak duruyor.
@@ -362,6 +379,115 @@ seçilmiş renk ≈3130K (tungsten masa lambası). F11 iki modu değiştiriyor;
 bayrak şart — yoksa göl opaklaşır) · çift-karartma için ayrı hedefe çizip tek
 kompozit (Factorio'nun belgelenmiş çözümü) · düşük çözünürlüklü lightmap
 (1 texel = 1 sanat pikseli) · kandil durumu save'e girmiyor.
+
+### 6.3 Beceri / meslek / damga / hat sistemi v2 [TASLAK — onaya]
+Kanon reboot'undan sonra baştan çalıştırıldı (Hakan: *"22 olmak zorunluluğumuz yok, mantığı baştan
+sona değişebilir, ama varlıkları olmalı"*). Tam tasarım: `docs/konsept/beceri-meslek-sinif-v2.md`.
+
+**Karar 1 — HİÇBİR BECERİ SİLİNMEZ.** 23 mevcut beceri kalıyor; 3 yeniden adlandırılıyor
+(ENCHANTING→**Damgacılık**, ECHO→**Ejder Sesi**, LIGHT→**Kutsama**, ayrıca SPEECH→Pazarlık,
+ASSASSIN→Kısık), 2 ağaç metni düzeltiliyor (TWO_HANDED mızrak dayatması, MEDIUM_ARMOR kimliksizliği),
+**2 yeni** eklenir → **25 beceri**. Sayı hedefi değil fiil hedefi: bir istasyon = bir beceri.
+
+**Karar 2 — BALIKÇILIK mevcut toplama sistemine BAĞLANMAZ.** `ResourceDef`'in sözleşmesi
+"hareket/hasar süreci keser" — gerginliğin kaynağı bu. Rahat fiil o kuralı miras almamalı.
+Ayrı `FishingSpot` durum makinesi (~50 satır): sesli işaret, kesintisiz, tek tuş, kaçırınca ceza yok.
+Kanon bağı sert: **Tuğrul'u öldüren delik balıkçı deliğiydi** (LORE §8).
+
+**Karar 3 — RAHAT OYNANIŞ BOŞA GİTMEZ.** Odun → kandil → gece güvenli ada; balık + yemek → soğuk
+direnci ve gece görüşü → **damar kazısını mümkün kılan şey.** Oyuncu mola veriyor sanıyor, aslında
+bir sonraki gerginliğin ekipmanını üretiyor. `STATION_CAMPFIRE`'ın becerisi yoktu (XP Simya'ya
+düşüyordu) → **SKILL_COOKING**.
+
+**Karar 4 — "RÜN" GİTTİ, "DAMGA" GELDİ.** Mühür büyük, **damga** onun kılıca sığanı; "damga basmak"
+hazır Türkçe fiil. Hammadde "öz" değil **harf**. Kanon gerekçesi: Akkemer'in mührü bir emirdir
+(*dur*); bir kılıca sığan yazı ancak küçük bir şeyi ancak bir an tutar — **kılıcın istediği tam
+olarak bu.** Beş VFX'in hepsi bir yere oturuyor: FLAME=Ocak (volkan) · ICE=Buz (donmuş göl, "dur"un
+en dürüst görüntüsü) · POISON=Ağı (harf gerektirmez, sistemin giriş kapısı) · VENOM=Kısıklar
+(ışıksız) · PINK=**Diri Damga** (yalnız taze mühür çatlağından, olaya bağlı ve **sonlu**).
+
+**Karar 5 — DAMGA SARKAÇ'A DOKUNMAZ.** Her damga basanı dünyayı bozmakla suçlamak fatura refleksidir
+(LORE §15.1). Bedel zaten dünyada: **damar taşı kazdığın gece mezarlık kalkıyor.** Yalnız diri damga
+**hasadı** takvimi öne çekiyor — mühür sayısını değiştirmiyor.
+
+**Karar 6 — HAT FORMÜLÜ: EL + FİİL + TANIK.** Eski formül ("beceri kesişimi + dünya eylemi") eksikti:
+kesişim sessiz, eylem kimliği duyurmuyor. Kural şu: kimlik davranıştan doğar, **ad başkasından gelir**
+(Kırca Ana unvanını hiç sormaz; §11'in ilk kademesi "nöbetçinin selamı"). Tanık çoğunlukla örgüt
+rütbesidir **ama şart değil** — yoksa altı örgüte üyelik zorunlu olur ve rol özgürlüğü ölür.
+
+**Karar 7 — 13 AÇIK + 2 GİZLİ HAT.** 22 fazla (yarısı "%5 hasar" olur, unvan sisteminin kopyası
+çıkar), 6 az. Her örgüte iki hat (dışa/içe dönük yüz) + **bir örgütsüz hat** (Ocak Sahibi — sistemin
+örgüt gerektirmediğinin kanıtı). Barışçıl oynanışın da hattı var: **Buz Balıkçısı** güç değil
+**bilgi** veriyor — yüz saat kimseyi öldürmemiş oyuncu elinde siyasi bir bomba ile törene girebilir.
+
+**Karar 8 — HAT KAPANMASI YOK, SAHNE TÜKENİR.** Dünya eylemleri geri alınamaz ve tek seferlik.
+Derinlik kısıtlayıcı kuraldan değil **fiilin tükenmesinden** geliyor; kapıyı tasarımcı değil
+oyuncunun eli kapatıyor (§15.7 korunur).
+
+**[AÇIK]** Asa/Yıkım birleştirme kararı · Orta Zırh item'ı yazılacak mı yoksa Ağır Zırh'a mı
+katılacak · Buz Balıkçısı hat mı unvan mı · Zehirci'nin gecikmeli ölüm sistemi yapılacak mı.
+
+**MVP:** 25 beceri + balıkçılık + aşçılık + üç damga (tek yuva, yalnız silah) + **4 açık hat
+(Siper Tutan / Lağımcı / İz Süren / Kemer Okuyan) + 1 gizli (Dinleyici)**.
+
+**Kod borcu — dikkat:** `WEAPON_FX_VENOM` şu an `light.c`'de default dalına düşüp **pembe ışık
+yayıyor** (gizlenme damgası için hata) · damga eşyaları main.c'de iki taneye sabit
+(`CRAFT_ROW_RUNE0/RUNE1`) → paralel dizi tavanları dersi: ITEM_TYPES + panel + **save.c tamponları
+birlikte**.
+
+### 6.4 Suç / kelle / itibar sistemi v2 [TASLAK — onaya]
+Tam tasarım: `docs/konsept/suc-kelle-itibar-v2.md`. Hakan: *"speech, pickpocketing, bounty duracak
+değil mi? Onlar olmalı. Oyuncuya özgürlük sunuyoruz."* — üçü de duruyor, sistem büyüyor.
+
+**Karar 1 — KELLE PARASI CEZA DEĞİL, BORÇ SENEDİ.** Devredilebilir, satılabilir, işle ödenebilir,
+affedilebilir. Oyuncu "yakalandı" değil, **bir alacaklı buldu.**
+
+**Karar 2 — ALTI ŞEHİR, ALTI HUKUK.** Yakalama panelindeki üç düğmeye (öde/direnç/rüşvet) **şehir
+başına değişen dördüncü düğme** eklenir — bir enum + altı diyalog dalı, ama tadı bütün sistemi
+taşıyor: Yenitaç *deftere yaz* (kontrat borcuna çevir) · Tuzkapı *senet imzala* (ödemezsen liman
+kalıcı kapanır, sonradan ödemek AÇMAZ) · Yedisunak *kefaret* ("öde" düğmesi gri, akçe geçmez) ·
+Karaocak *ocakta çalış* (krallık akçesiyle ×1.5) · Karduvar **mahkeme + kefil** (kelle parası hiç
+yok, kapı kapanır) · Kumkapı *kan bedeli* (vali siler, **aşiret hatırlar**).
+
+**Karar 3 — YARGI ÇEVRESİ ≠ COĞRAFİ BÖLGE.** `Region`'a `lawId` eklenir; `bounty[]`/`reputation[]`
+`MAX_LAWS 8`'e bağlanır. Coğrafi bölge sayısı serbest kalır, **save tamponuna dokunmadan** (uyum
+kodda doğrulandı: save.c sayıyı yazıyor, yalnız fazlasını reddediyor). Paralel dizi tavanı dersi
+baştan çözülür.
+
+**Karar 4 — HABER YAYILIMI OYNANIŞ.** Bounty kopyalanmaz; **kurye NPC'si** yola çıkar (haritada
+görünür, 1-3 gün). Ulaşırsa hedef şehirde bounty'nin %40'ı yazılır. Kuryeyi kesebilirsin — ama kayıt
+yok olmaz, **sahibi değişir**: Kırk Kese onu bilgi olarak alır. Kanundan kurtulup örgüte borçlanırsın.
+
+**Karar 5 — HAPİS YOK.** Oyuncuyu odada bekletmek oynanış değil (§15.7 ihlali). Yerine: borç işi ·
+zorla el koyma · sürgün. Tek istisna **ölüm yerine yakalanmak** — karakolda uyanırsın, eşyalar
+veznede, üç çıkış. Hapsi ödüle çevirir.
+
+**Karar 6 — KELLE AVCILIĞI ve SUİKAST AYRIMI TEK KELİME: KAYIT.** Avcılıkta tanık **iyidir**
+(kontrat panoda, ödeme veznede, öldürme suç değil); suikastta tanık **ölümdür**. Aynı fiil, ters
+işaretli tanık — mevcut `crime_witnessed` sözleşmesine birebir oturuyor, yeni sistem gerekmiyor.
+
+**Karar 7 — DÜŞÜK İTİBAR BİR SINIF: "KORKULAN ADAM".** rep ≤ −40'ta haydutlar saldırmaz, haraç
+diyalogları açılır, muhafız **takviye bekler**; karşılığında görev/şifa/Makam kapanır. Ve en zayıf
+konum **orta itibar** — ne sevilen ne korkulan adam hiçbir kapıyı açmıyor. `REP_DAILY` yalnız
+`|rep| < 50` aralığında çalışsın, yoksa korkulan adam olmak "itibar bakımı" grind'ine döner.
+
+**Karar 8 — MAKAM: kanunun kendisi olmak.** Kapı ağası olunca başkasının bounty'sini görürsün, geçir
+ya da çevir; geçirdiğin adam suç işlerse bir dilim **sana** yazılır (Karduvar kefil mantığı oyuncunun
+elinde). Af yetkisi denetimli, ve **kendi adını kendi defterine yazamazsın.**
+
+**[AÇIK]** Kaosçu bölümü (§10-13) harcama limiti yüzünden ajan denetiminden geçmedi — `REP_TALK_REFUSE
+−50` duvarının yumuşatılması ("konuşmaz ama korkar") ve on kaos eyleminin dengesi doğrulanmalı.
+
+**MVP:** dördüncü düğme (6 varyant) · `lawId` · `guards[]` dizisi · kurye (tek hat) · Kırk Kese
+aklama + Kılıçartıkları kontrat eritmesi · kelle panosu (3 hedef) · kayıp mekaniği · REP_DAILY eşiği.
+
+**Kod borcu — dikkat:**
+- ⚠ [main.c:67](src/main.c#L67) bölge `-1`'i **0'a katlıyor** → ıssız arazide işlenen suç Köy'ün
+  defterine yazılıyor. `-1 → LAW_NONE` olmalı.
+- ⚠ **Tanıksız cinayet şu an tamamen bedava** → "kayıp" mekaniği (bir gün sonra NPC kayıp sayılır,
+  bağlı NPC'ler rep −3). Suç değil, iz.
+- ⚠ `guard_index()` tek NPC + tek statik state → altı şehir için `GuardUnit guards[12]` (şehir başına
+  2 + kırsal devriye), birim başına `postX/postY` + `lawId`.
 
 ## 7. UI / UX [KODDA]
 WoW hotbar · HUD (mevsimli saat, kontrat takipçisi) · panel ailesi
