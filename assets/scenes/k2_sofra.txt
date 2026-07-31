@@ -1,4 +1,10 @@
 # K2 Son Müşteri — kapanış vinyeti (yalnız k2:1: süt kanıtıyla söylenen gerçek).
+# 2026-07-31 v0 TEMİZLİĞİ: sfx: heartbeat ve son satırdaki fısıltı atıfı
+# ("her yankının dibinde bekleyen o ses") KALDIRILDI. İkisi de v0 kurgusuna aitti;
+# fantastik katmanı zorunlu kılıyorlardı (LORE §1.8) ve bu sahne insani bir sahne.
+# Sahne şimdi "Süt ısındı, buharı yükseldi..." ile kapanıyor — fısıltı o kapanışın
+# üstüne biniyor ve zayıflatıyordu. GERİ EKLEMEYİN.
+#
 # Diyalogdaki "bu gece son kez kuruyorum, ikimize" çizgisinden devam eder;
 # ertesi günden itibaren sofra dünyadan kalkar (SF_K2_NAZIFE == 1).
 # fx YOK — karar diyalogda verildi, burası yalnız yaşanır.
@@ -12,9 +18,7 @@ opt: (Dinle. Sonuna kadar dinle.) -> sut
 
 [sut]
 image: assets/scenes/k2_sut.png
-sfx: heartbeat
 duck: 0.1
 text: Kalkarken ocağa bir kap süt koydu — dikkatle, taşırmadan. "Hep unuturdu," dedi, sırtı sana dönük. "Koca adam. Bundan sonra ben hatırlarım."
 text: Süt ısındı, buharı yükseldi. Han o gece boştu ama ilk kez terk edilmiş kokmuyordu.
-text: Ve fısıltı — her yankının dibinde bekleyen o ses — bu kez hiçbir şey demedi.
 opt: (Sofradan sessizce ayrıl.) -> end

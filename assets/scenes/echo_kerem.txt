@@ -1,30 +1,52 @@
-# K9 Kandil (D1a): F2 nöbetçi odası — Kerem'in sonu.
-# İki hat: Tanık (dinle) — Sömüren (çek). Fatma diyaloğu yankı SONRASI açılır.
+# Zindan F2 nöbetçi odası — Kerem. DEMİRBOYUN kanonuna göre yeniden yazıldı.
+#
+# ESKİSİ NEDEN GİTTİ: bkz. echo_cart.txt başlığı (göğüsteki mühür + oyuncuya
+# seslenen fısıltı = seçilmişlik; LORE §1.8/§1.9 ve "kimlik davranıştan doğar"
+# ihlali). Ek olarak eski metin K9 Kandil zincirinin v0 olaylarını anlatıyordu
+# (yemin, kandil, saflara yürüyen çocuk). O zincir henüz DEMİRBOYUN'a göre revize
+# EDİLMEDİ (NPC kadrosu bekleniyor), bu yüzden sahne artık hiçbir zincir olayına
+# atıf yapmıyor ve kendi başına ayakta duruyor. Zincir revize edilince buraya
+# bağlanacak — o zamana kadar Kerem'in hikayesini YENİDEN İCAT ETMEYİN.
+#
+# Kerem adı KORUNDU; hikayesi anlatılmıyor, oyuncu ismi duvardaki kazımadan
+# öğreniyor. Duyulan soluk Kerem'in DEĞİL — duvarın öbür yüzünde nöbette biri var
+# (§9 bağlıları). Bu ayrım önemli: sahne bir hayaletle konuşmuyor, bir DİRİYİ
+# duyuyor.
+#
+# ALET BİLEREK BELİRSİZ: eskiden "çakıyla kazınmış" yazıyordu ama çıkındaki çakı
+# TAHTADAN ve tahta çakı taşı kazımaz. Aleti söylemiyoruz; tahta çakı bir çocuğun
+# oyuncağı olarak kalıyor ve yanındaki kemikleri daha ağır yapıyor.
+#
+# sfx: heartbeat ve sfx: whisper SİLİNDİ (v0 sesleri). Motorda başka sfx yok,
+# sahne sessiz kalıyor. Yerine ses EKLEMEYİN.
+#
+# fx satırları, düğüm adları ve opt hedefleri KODA BAĞLI — dokunulmadı.
+# Bu sahnede fx: essence YOK (yalnız echo_cart'ta var) — eklemeyin.
 
 [giris]
 image: assets/scenes/echo_kerem.png
 duck: 0.15
-sfx: heartbeat
-text: Nöbetçi odası. Köşede küçük bir çıkın: kuru ekmek, bir sapan, tahta bir çakı — bir çocuğun hazinesi. Kemiklerin en ufağının göğsünde mor bir soluk titriyor.
-text: Mühür ısınıyor. Bu soluk ötekilerden farklı — daha... genç.
-opt: Elini mühre koy, dinle. -> yanki
-opt: Soluğu kendine çek. -> somur
+text: Nöbetçi odası. Duvara bir isim kazınmış: Kerem. Harfler aşağı doğru küçülüyor, yer yetmemiş.
+text: Köşede bir çıkın var: kuru ekmek, bir sapan, tahtadan bir çakı. Yanında kemikler. En uzunu senin kolun kadar.
+text: Taban taşlarının arası açılmış. Aralıktan mor bir ışık, bir de kuru bir hava geliyor.
+opt: Kulağını taşa daya. -> yanki
+opt: Taşı yerinden sök. -> somur
 opt: Geri çekil. -> end
 
 [yanki]
 image: assets/scenes/echo_kerem_memory.png
 duck: 0.08
-sfx: whisper
-text: Bir çocuk, karanlıkta merdiven iniyor — korkudan değil, karar vermiş gibi. Yukarıda annesinin kandili; aşağıda taş salonda dizilmiş nöbetçiler ve o derin, taş gibi yemin: "Kapı tutulur."
-text: Kerem yemini üç gece dinlemiş. Dördüncü gece saflara yürümüş — "ben de tutarım" demek için. Küçük gövdesi taş salona uymamış; ama son düşüncesi kaçmak değil: kapıyı tutanların arasında durabilmek.
-text: Fısıltı, ona, neredeyse şefkatle: "...henüz değil."
-opt: (Elini çek.) -> end
+text: Taş serin. Bir süre hiçbir şey yok, sonra bir soluk duyuyorsun. Duvarın öbür yüzünden geliyor, aşağıdan.
+text: Zincir sesi de var. Geriliyor, bir halka kayıyor, yine geriliyor. Hep aynı aralıkla, saymaya alışmış biri gibi.
+text: Duyduğun ses bir çocuğun değil. Sana da seslenmiyor.
+opt: (Kulağını çek.) -> end
 fx: witness
 
 [somur]
 image: assets/scenes/echo_kerem_drain.png
 duck: 0.08
-text: Soluğu çekiyorsun. Genç güç, taze — mühür açlıkla içiyor. Çocuğun son kararı, cesareti, o küçük "ben de tutarım"ı... artık senin.
-text: Kemiklerin üstündeki çıkın bir anda çok daha küçük görünüyor. Yukarıda bir kandil yanıyor ve sen artık nedenini eskisi kadar iyi hatırlamıyorsun.
+text: Elini aralığa sokup taşı çekiyorsun. Taban taşı oynuyor, damar taşı yerinden çıkıyor. Sıcak, kalp gibi değil, ateşe yakın durmuş demir gibi.
+text: Işık avucunda. Aralıktan gelen hava soğudu; soluk yerinde.
+text: Çıkarken merdivenin yanındaki taş yığınlarına bakıyorsun. Moloz mu, mezar mı — inerken bakmamıştın.
 opt: (Arkana bakma.) -> end
 fx: consume

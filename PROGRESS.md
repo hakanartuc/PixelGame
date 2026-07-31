@@ -4,6 +4,161 @@ Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
+### Faz AÇILIŞ — v0 kanon katmanı söküldü, açılış yeniden kuruldu (2026-07-31)
+Kararlar GDD §1.2d (ilk yirmi dakika) ve §1.2e (karşılaşma sistemi)'nde.
+
+**ÜÇ KATMANLI KANON YIĞINI BULUNDU.** Depo kökünde `STORY.md` ("Anlatı Tasarımı
+**(kanon)**", omurga "Sessiz Gün + Yankı"), `LORE_SECRET.md` ("Sır **Anayasası**",
+sır = "Geri Sayan") ve `STORY_CARDS.md` duruyordu — tarihleri **11-13 Temmuz**, yani
+hem v1 "Sönen Kandiller"den (29 Tem) hem v2 DEMİRBOYUN'dan (30 Tem) ÖNCE. Başlıklarında
+"kanon" ve "anayasa" yazıyordu ve **oyunda çalışan içeriği besliyorlardı**: "Sessiz Gün"
+`intro_sessiz_gun.txt`, `elder.txt`, `zehra.txt`, `nuh.txt` ve `journal.c`'de geçiyor —
+LORE v2'de ise SIFIR kez. Üçü `docs/konsept/arsiv-*-v0.md` olarak arşivlendi ve
+başlarına gerekçeli HÜKÜMSÜZ uyarısı yazıldı (reddedilenler ve sebepleri dahil).
+Bu, HANDOVER'a yeni bir çalışma kuralı doğurdu — kanon değişirse dosyalar da değişir.
+
+**KURTARMA TARAMASI.** Dört maddelik ölçüt (DEMİRBOYUN'la çelişmeyecek · oyuncuya
+SEÇİLMİŞLİK vermeyecek · fatura refleksi taşımayacak · rol özgürlüğünü bozmayacak).
+Hakan **temiz sayfa** seçti: hikaye kartları NPC kadrosundan sonra tekrar bakılacak.
+Kesin çöp ve sebepleri: **Sessiz Gün** (§1.9 kıyamet dili + ölçek şişmesi — *"bir tören
+yapılamıyor diye kurulmuş dünyanın açılışına 'dünya durdu' konmaz"*) · **"Geri Sayan"**
+(fatura refleksi + seçilmişlik + §1.8 + **silme testini geçemiyor**) · göğüsteki mühür
+ve "…henüz değil" fısıltısı · amnezi (oyuncunun geçmişini oyun yazıyor) · Tanık/Sömüren
+iki AYRI yazılmış hat (fikir değil, üretim kararı olarak çöp: her fazda iki hat yazma
+faturası).
+
+**YANKI = BAĞLI (kapsam düzeltmesi).** İlk soru eksik sorulmuştu: "Yankı" bir sahne
+fiili değil, `SKILL_ECHO` adında **bir büyü okulu** — 26 kod referansı, 4 beceri
+(Fısıltı Patlaması/Gölge Formu/Can Emme/Yankı Çağırma), kendi puanlı ağacı.
+`skill.c:62` yorumu koddaki iki gizli sınıfı "Yankı + Suikast" diye sayıyor; kanondaki
+ikisi ise "Bağlı + Yedinci Ağız". Suikast→Kısıklar zaten oturuyor. Karar: **okul, ağaç
+ve dört beceri KALIR, kurgusu DEMİRBOYUN'a taşınır.**
+Ve kodda hazır olan şey tam olarak gizli sınıfın mekaniği: `echoesWitnessed` /
+`echoesConsumed` sayaçları, `echoesConsumed >= 3` eşiği, journal + save alanları. LORE
+§10'a bugün yazdığımız Bağlı kapısı (*"taşı KIRMADAN kulak dayamak, üç ayrı mühürde"*)
+zaten üçe sayıyor; "kaçırılmaz, kirletilir" kuralının kirlenme sayacı da orada.
+Todo'daki "Yankıcı P1+P2 hiç test edilmedi" maddesi böylece kapandı — test edilerek
+değil, yeniden yorumlanarak.
+
+**AÇILIŞ VİNYETİ YENİDEN YAZILDI.** `intro_sessiz_gun.txt` → `intro_demirboyun.txt`
+(dosya adı kanona yalan söylemesin), `main.c:4462` yolu ve `main.c:12506` başlık ekranı
+alt yazısı güncellendi. Yeni alt yazı: *"Bir fatih konuşamıyor; adına altı ağız
+konuşuyor."* Dört panel, ANLATICI YOK: her satır bir insanın ağzından ya duvardaki
+yazıdan geliyor. Panel 2'de kimsenin ADI geçmiyor — oyuncu ilk 60 saniyede isim
+öğrenmez, ROL sayar (altı ağız, bir sandalye). Panel 4'te buz ilanı **okunuyor,
+alınmıyor** — pano 19. dakikada doğrulama olarak tanışılıyor.
+`sfx:` hiç kullanılmadı: motorda yalnız `whisper` ve `heartbeat` var, ikisi de v0
+sesiydi (fısıltı = seslenen şey, kalp atışı = dokuz atım).
+
+**ECHO SAHNELERİ (3) DEMİRBOYUN'A ÇEVRİLDİ.** Mekanik dokunulmadı — `fx: witness` /
+`fx: consume` / `fx: essence`, düğüm adları ve `opt:` hedefleri aynen. Kurgu değişti:
+mor ışık MEKÂNDA (damar taşı, §2), oyuncunun bedeninde işaret yok. Karşılaştırma:
+eskisi *"göğsündeki mühür ısınıyor — sanki bir şey nefes alıyor, **senin nefesinle
+aynı anda**"*; yenisi *"bir soluk çıkıyor: yavaş, senden derin, **seninkine hiç
+uymuyor**"* ve *"**Ses senin tarafına dönmüyor. Senin orada olduğunu bilmiyor.**"*
+Aynı mekanik, ters anlam — merak var, seçilmişlik yok.
+Sökme dalı uyarı kutusu koymuyor, ima ediyor: *"İki tarla ötede mezarlığın alçak
+duvarı görünüyor. **Kuşlar orada oturmuyor.**"* (§9 damar taşı yan etkisi, kodda var.)
+Gömme dalı mistisizmden arındı: *"Ellerin çamurlu, sırtın ağrıyor"* + *"Aşağıdan bir
+katırcı geçti. **Bir şey demedi, yalnız yavaşladı.**"* — TANIK KURALI'nın küçük hâli
+ve teşekkür DEĞİL.
+
+**`k2_sofra.txt` temizlendi** ve sahne İYİLEŞTİ: fısıltı satırı kozmik makineyi içeri
+sokup kapanışı zayıflatıyordu. Şimdi *"Han o gece boştu ama ilk kez terk edilmiş
+kokmuyordu"* ile bitiyor.
+
+**DİL KONTROLÜ İKİ KEZ ÇALIŞTI** (Hakan'ın açık talimatı: TR+EN yazım denetimi).
+Vinyette 10, echo sahnelerinde 10 düzeltme. Öne çıkanlar:
+- **"taş su alıyor"** yanlış deyim (o tekne deyimi) → *taş su ÇEKER*. Aynı aile:
+  taş **çıkar/sökülür** ("gelmez") · tekerlek **gömülür** ("saplanmaz") · güneş
+  **batar** ("inmez") · *katır sürücüsü* → **katırcı** (mesleğin gerçek adı).
+- **"Asılan: yok"** tebeşir notu *"asılan (adam) yok"* diye okunuyordu → **"Asılı
+  sancak: yok"** ve böylece §1.4'ün sancak SAYMA motifine bağlandı.
+- Tellal **"okunacaktır"** diyordu; kanon taç giyenin adları **kendi sesiyle
+  söylediğini** yazıyor → **"söylenecektir"**. Dil geçişinde çıkan kanon hatası.
+- **"kimseye bakmadan"** üç panelde üç kez (§1.2b kalıp tekrarı + üçleme) → biri
+  korundu, ikisi değişti; panel 4'te *bir ses* için zaten mantıksızdı.
+- **Üç üçlemeden biri kesildi, ikisi bırakıldı** ve gerekçesi yazıldı: kesilen
+  *"duymuyor, sormuyor, beklemiyor"* — ortadaki hem soyut hem ritmi AI kalıbına
+  düşürüyordu; bırakılanlar son öğenin cinsini değiştirip kalıbı kırıyor.
+- **Mantık hatası:** isim duvara *"çakıyla"* kazınmış ama çıkındaki çakı TAHTADAN.
+  Alet belirsiz bırakıldı; tahta çakı çocuğun oyuncağı olarak kaldı.
+- **LORE §0'ın kendi açılış cümlesinde ihlal:** *"sandalyesi**, ve** onun"* — Türkçede
+  virgül + "ve" olmaz. Uzun çizgiyle düzeltildi, duraklama korundu.
+- Çeviri kararları: `bey` ve `akçe` ÇEVRİLMİYOR ("lord" bey/kral ayrımını öldürür) ·
+  `damar taşı` → **veinstone** ("bloodstone" gerçek mineral, ayrıca "kan" yanlış
+  anlam — damar ejderhanın) · **"beyimiz" / "Bey" ayrımı TEKLEŞTİRİLMEYECEK**: Rüstem
+  ve hekim "beyimiz" diyor, Şirin "Bey" diyor ve bu bir karakter beati (§7 — Şirin
+  onun ADINA bir şey istemiyor).
+
+**KALAN BORÇ (açıldı, kapanmadı):** `ritual.txt` (taş halkası ritüeli — Yankı okulunu
+açıyor, KALMASI gerekiyor ama kurgusu revize edilecek) · `ruya_muhur/cukur/fisilti.txt`
+(rüya vinyetleri — kurtarma taramasında ÇÖP: *"yabancının hayatını izlemek =
+seçilmişlik + fatura"*; `main.c:3791`'de üçü birlikte çağrılıyor) · `kayit_odasi.txt`
+("dokuz atım") · `elder/zehra/nuh.txt` + `journal.c`'de "Sessiz Gün" atıfları. Bunlar
+Bağlı hattının kurgusuyla birlikte, NPC kadrosundan sonra çözülecek.
+
+**AÇILIŞ GÖRSELİ [AÇIK]:** dört panelin PNG'si yok ve `image:` satırları yorumda
+(motor eksik dosyada uyarı basıp önceki fonda kalıyor — vinyet siyah zeminde metinle
+çalışıyor). Her yorumun altına ressam briefi yazıldı. Karar: **taht salonu dünyada
+İNŞA EDİLECEK**, vinyet PNG yerine cine moduyla canlı mekânda geçecek. Salon zaten
+zorunlu (§1.4: *"salona her girişte kaç sancak asılı olduğunu sayarsın"* — dekor
+değil ilerleme göstergesi). ERW koleksiyonunda taht salonu/kale iç mekânı YOK; en
+yakını yoldaki "The Headquarters". Salonun ayırt edici parçaları prop (iskele, vinç,
+altı çivi), tileset değil — düzen/çarpışma/kamera şimdi yapılır, karo kimlikleri ERW
+gelince değişir.
+
+### Faz ANLATIM-STANDARDI — "görev değil, hikayenin parçası" (2026-07-31, TASARIM)
+Kod yazılmadı; yedi ONAYLI kural GDD §1.2c'de. Uygulama sıradaki fazlarda.
+
+**Ölçüm önce yapıldı.** `ContractDef` yalnız `targetMob`/`fetchItem`/`count`/`gold`/
+`rep`/`tier` taşıyor — dokuz kontrat, hepsi kes-ya-getir. `QuestDef` yalnız KILL ve
+FETCH. Ama görev günlüğü metinleri niyeti ZATEN taşıyor: *"Baran kazanı için üç
+kızılot istedi. Tüccar dediğin önce seni tartar — **otlar bahane sanki**."* Yani
+anlatı bir BOYA, altındaki yapı sayaç. Buna karşılık K9/K2/S3/Suikastçi zincirleri
+karar+tanık+kalıcı sonuç üstüne kurulu — **oyunda iki ayrı kalite vardı.**
+
+**MİMARİ SORUSU YANLIŞ SORULDU (asistan hatası).** Ajana "hikaye anlatım mimarisini
+tasarla" denildi; ESO/WoW zinciri kararının ZATEN alınmış olduğu (GDD §1.2, ESO
+sunum v2 KODDA) söylenmedi. Ajan görev sistemini yeniden icat eden üç mimari önerdi
+(Dosya / Talep / Sahne). Hakan düzeltti: *"ESO ve WOW gibi görev zincirleri
+yapacaktık. Sunum ESO gibi olacaktı ama kendi tarzımızı katabiliriz."*
+Mimari değişikliği REDDEDİLDİ; ajanların ürettiği kurallar zincirin İÇİNE giren
+kalite kuralları olarak alındı.
+
+**Teşhis (ajanın en iyi cümlesi):** yapı `kabul → sayaç → teslim`; sorun ortada
+değil İKİ UÇTA. "Kabul" oyuncuyu memur yapıyor, "teslim" işi kapatıp dünyayı
+değiştirmiyor. **Sayaç suçlu değil; sayacın etrafındaki tören suçlu.**
+
+**Yedi karar** (ayrıntı GDD §1.2c): TANIK KURALI bağlayıcı · sayaç hedefse görünür
+yöntemse gizli · kabul adımı zincirde var panoda yok · her zincir bir iz bırakır
+(phasing) · duyum kanalı (`AmbientHook`), ünlem işareti en zayıf kanal · her işin
+ikinci doğru tarafı KONUŞABİLİR (**yeni mekanik onaylı:** `mob.isTalkable` +
+`dialogFile` + hostile→neutral) · kes/getir silinmez, hedef olmaktan çıkar.
+
+**KENDİ TARZIMIZIN ADAYI: phasing.** ESO dünyayı değiştiremiyor (paylaşımlı dünya),
+WoW phasing'i o kısıtın etrafından dolanan bir hile — oyun OFFLINE ve tek oyunculu
+olduğu için bizde kalıcılık BEDAVA. Altyapı da hazır (storyFlags, dekor, bölgesel
+fiyat çarpanı, dünya olayları) ve zaten çalışan bir örnek var: Nazife'nin sofrası
+K2'den sonra sonsuza dek kurulu kalıyor.
+
+**Üç somut dönüşüm yazıldı** (zincir senaristi, uygulanmayı bekliyor):
+- "Goblin sorunu" → **Çivi Hesabı.** İş panoda değil: 06-08 iskelede kalfa
+  bağırıyor, direkte tebeşir çentiği tutuyor. İki hırsız var ve **biri diğerini
+  aklamıyor** — goblinler de çalıyor, Nazlı da. Sayaç HUD'da değil tebeşirde;
+  kalıcı iz iskelenin bir katı + surda bir sıra daha meşale.
+- "Baran'ın Kazanı" → **Ağrı Şerbeti.** Revirdeki gazi iş vermiyor HABER veriyor.
+  Baran şerbeti parasız olana veriyor (tezgâh altında on yedi isim). Kızılot
+  mezarlıkta tarla gibi — gece çok bulursun, ölü kalkar. İkinci alıcı altı kat
+  veriyor ve HAKLI (sefer çıkarsa ağrı ilacı üçe katlanır). Satarsan izin yine
+  verilir ama "evlat" biter, "müşteri" başlar.
+- "Geçit temizliği" → **Geçidin Bacı.** Geçit ağzında üç yüklü araba bekliyor
+  (manzara sayaç). İki kamp: gerçek orklar VE terhis edilmemiş on bir aç adam —
+  anlaşmalı değil, birbirine muhtaç. Dört geri alınamaz çözüm. Ajanın kuralı:
+  **acıma çözüm değil** — Zülfü'yü anlamak geçidi açmıyor, ona maaş bulmak açıyor.
+
+**Kalan altı kontrata çeviri kuralı** ve "BU OYUNA UYMAZ" listesi GDD §1.2c'de.
+
 ### Faz KANON-KAPANIŞ — LORE §16'nın yedi açık sorusu kapandı (2026-07-31)
 Kod değişmedi (tek istisna: suç defteri, aşağıda). Kararlar `docs/LORE.md`'de.
 

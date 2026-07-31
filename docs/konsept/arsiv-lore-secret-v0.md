@@ -1,3 +1,24 @@
+> ## ⚠️ HÜKÜMSÜZ — bu belge kanon DEĞİL
+>
+> Bu dosya **11-13 Temmuz 2026** tarihli, DEMİRBOYUN'dan ÖNCEKİ kanon katmanına ait
+> ("Sessiz Gün + Yankı" omurgası, sır olarak "Geri Sayan"). Başlığında "kanon" ya da
+> "anayasa" yazması bu katmandan kalmadır.
+>
+> **Geçerli kanon: `docs/LORE.md` v2 "DEMİRBOYUN"** (2026-07-30). Çelişkide LORE kazanır.
+> Bu belgedeki hiçbir isim, hiçbir mekanizma, hiçbir sır geçerli değildir.
+>
+> **Neden burada:** kanon kuralı gereği boşa çıkan iş SİLİNMEZ, rafa kalkar (§15.8).
+> 2026-07-31'de kurtarma taraması yapıldı; DEMİRBOYUN'a taşınabilir bulunanlar
+> PROGRESS "Faz KANON-YIĞINI"nda listeli. Sahibi temiz sayfa seçti — hiçbiri
+> taşınmadı, NPC kadrosu çıktıktan sonra tekrar bakılacak.
+>
+> **Reddedilenler ve sebepleri:** Sessiz Gün (§1.9 kıyamet dili + ölçek şişmesi) ·
+> "Geri Sayan" (fatura refleksi + seçilmişlik + §1.8 + silme testini geçemiyor) ·
+> göğüsteki mühür ve "…henüz değil" fısıltısı (seçilmişlik) · amnezi (§15.5 +
+> rol özgürlüğü: oyuncunun geçmişini oyun yazmış oluyor).
+
+---
+
 # LORE_SECRET — Sır Anayasası ⚠️ SPOILER
 
 ⚠️ Bu dosyadaki hiçbir bilgi oyuncuya DOĞRUDAN verilmez. Vinyet/diyalog yazarken

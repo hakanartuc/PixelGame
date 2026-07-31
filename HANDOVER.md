@@ -20,6 +20,15 @@ Güncelleme: 2026-07-31 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumla
 - **KANON ÜRETİM YÖNTEMİ**: 6 paralel kurgu mimarı (çapa yasağıyla — eski kanonu görmezler)
   → bağımsız klişe avcıları → tarafsız hakem → Hakan'a sunum. 4 tur, 24 aday. Süreç
   `docs/konsept/reboot/` altında; tekrar gerekirse aynı kalıp kullanılır.
+- **KANON DEĞİŞİRSE DOSYALAR DA DEĞİŞİR (2026-07-31 — bugün ÜÇ KEZ ısırdı)**:
+  kanon değiştiğinde ona dayanan dosyalar AYNI commit'te ya güncellenir ya
+  **HÜKÜMSÜZ** damgası alır. Üç vaka: (1) `docs/konsept/kanon-taslak/` 15 dosya
+  v1 LAMPWICK kadrosunu tutuyordu ve adları ("04-npc-kadrosu") hazır sanmaya çok
+  müsaitti · (2) oyundaki 18 NPC + diyalogları reboot ÖNCESİ · (3) depo kökünde
+  `STORY.md`/`LORE_SECRET.md` başlıklarında "kanon" ve "anayasa" yazıyordu ve
+  DEMİRBOYUN'dan İKİ kanon öncesine aitti. Üçünün sebebi aynı: **kanon üç kez
+  değişti, ona dayanan içerik yerinde kaldı.** Yeni kanon yazarken `grep -rl` ile
+  eski terimleri ara; bulduğun her dosyayı ya düzelt ya damgala.
 - **docs/GDD.md = tasarım anayasası (2026-07-24)**: her tasarım kararı önce
   GDD'ye işlenir ([ONAYLI]/[KODDA]/[TASLAK]/[AÇIK] etiketleriyle), kod onu
   izler; yol haritası GDD §9. PROGRESS üretim günlüğü, HANDOVER devir notu
@@ -185,6 +194,30 @@ Bölgesiz haritalarda (zindan/konak/mezarlık/**loca**) işlenen suç Köy'ün d
 yazılıyordu — locada Neriman'a vurunca köy muhtarı bounty istiyordu. Dört yeni bölge,
 `MAX_REGIONS` 8→16 (save.c sayacı yazdığı için toleranslı), bölge indeksleri adlandırıldı.
 Kararlar GDD §8.2. Muhafız sistemi ÇOĞULLANMADI — kanon kadrosunu bekliyor (guard.h notu).
+
+**ANLATIM STANDARDI GENİŞLEDİ (2026-07-31, GDD §1.2c — yedi ONAYLI kural)**:
+Hakan'ın direktifi *"oyuncu görev yapıyorum değil hikayenin parçasıyım diye
+hissetmeli"*. **MİMARİ DEĞİŞMEDİ** — ESO/WoW zinciri + ESO sunumu yerinde; görev
+sistemini "dosya/talep" modeliyle değiştirme önerisi REDDEDİLDİ. Bunlar zincirin
+İÇİNE giren kalite kuralları. Kısaca:
+1. **TANIK KURALI** (bağlayıcı, test edilebilir): ilerlemeyi ondan İSTEMEMİŞ en az
+   bir NPC fark etmiş olmalı ve ilk cümlesi değişmeli. Değişen cümle TEŞEKKÜR OLMAZ.
+2. **Sayaç** hedefse görünür, yöntemse gizli. "Kaç öldür" ASLA hedef değil. HUD
+   sayacı olmayan iş ilerlemeyi DÜNYADA okunabilir bırakmak zorunda.
+3. **Kabul adımı** zincirde var (söz), PANODA YOK — `contract_on_kill`'deki
+   "kabul edilmiş mi" kontrolü kalkacak, her öldürme sayılacak.
+4. **PHASING:** her zincir bir iz bırakır (`storyFlag → decorPatch` + kalıcı
+   fiyat/olay/yol). Harita aynı görünüyorsa zincir kapatılmış, bitmemiş.
+   ESO bunu YAPAMIYOR (paylaşımlı dünya), WoW hileyle yapıyor, biz offline
+   olduğumuz için bedavaya yapıyoruz — **kendi tarzımızın ana adayı bu**.
+5. **Duyum kanalı:** `AmbientHook` eklenecek; ünlem işareti EN ZAYIF kanal olur,
+   pano ilan değil DOĞRULAMA olur.
+6. Her işin ikinci bir DOĞRU tarafı var ve **konuşabilir** →
+   **YENİ MEKANİK ONAYLI: `mob.isTalkable` + `dialogFile` + hostile→neutral.**
+7. Kes/getir silinmez, HEDEF olmaktan çıkar (sayı direncin ölçüsü).
+Ayrıca GDD §1.2c'de "BU OYUNA UYMAZ" listesi: sesli diyalog, dallanan sinematik,
+anlatıcı prologu, **ekranda ahlaki seçim kutusu** (sayaçlar gizli oldukları için
+çalışıyor), "SÜRE DOLDU" kutusu, harita ikonu çorbası.
 
 **SIRADA — İÇERİK ÜRETİMİ (kod değil, LORE v2 üstüne):**
 DEMİRBOYUN kanonu KİLİTLİ ama **hikaye/zincir/NPC kadrosu/diyalog HENÜZ YOK.**

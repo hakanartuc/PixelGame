@@ -1,0 +1,75 @@
+# DEMİRBOYUN açılış vinyeti — dört panel, ANLATICI YOK.
+#
+# Her text: satırı ya bir insanın ağzından ya duvardaki/defterdeki yazıdan gelir.
+# Panel 1 bitmemiş iş · 2 sandalye (LORE §0) · 3 ertelenen tarih (§7) · 4 kalabalık.
+# Oyuncuya kimse bakmıyor, kimse ondan bir şey beklemiyor — ROL ÖZGÜRLÜĞÜ buradan kurulur.
+# Panel 4'ten sonra tuş kilidi kalkar; oyuncu Yenitaç surunun dibinde ayağa kalkar.
+#
+# NEDEN sfx YOK: motorda yalnız whisper ve heartbeat var; ikisi de v0 kurgusunun sesiydi
+# (fısıltı = sana seslenen bir şey, kalp atışı = "dokuz atım"). İkisi de SEÇİLMİŞLİK ima
+# ediyor; LORE §1.8 (fantastik asla zorunluluk değil) ve §1.9 (kimse kıyamet konuşmuyor)
+# yasaklıyor.
+#
+# NEDEN panel 2'de kimsenin ADI geçmiyor: oyuncu ilk 60 saniyede isim öğrenmez, ROL sayar.
+# Altı ağız, bir sandalye — §0 anlatıcısız kuruluyor.
+#
+# NEDEN "our bey" / "the bey" ayrımı (EN çeviride): Mareşal ve Hekim "beyimiz" diyor,
+# Hatun sadece "Bey" diyor. Bu bir karakter beati — Hatun onun ADINA bir şey istemiyor
+# (LORE §7, Şirin'in takvimi). Çeviride TEKLEŞTİRİLMEYECEK.
+#
+# NEDEN panel 4'te buz ilanı var: LORE §8'in birinci saat kancası. Oyuncu onu OKUYOR,
+# ALMIYOR — ve yarım saat sonra aynı kâğıdı panoda yeniden görecek (GDD §1.2c: pano
+# ilan değil DOĞRULAMA olur).
+#
+# GÖRSELLER HENÜZ YOK: dördü de yeniden üretilecek (sahibi kararı). image:
+# satırları YORUMDA — motor eksik dosyada uyarı basıp önceki fonda kalıyor,
+# yani vinyet şimdilik siyah zeminde metinle çalışıyor. PNG'ler gelince
+# yorumlar açılacak.
+#
+# v0 metni 2026-07-31'de ATILDI: "Sessiz Gün", göğüste atan mühür, dokuz atım,
+# "...henüz değil" fısıltısı, amnezi. Hepsi seçilmişlik dayatıyordu.
+# Eski metin git geçmişinde: assets/scenes/intro_sessiz_gun.txt
+
+[bitmemis]
+# image: assets/scenes/intro_bitmemis.png
+# GEREKLİ GÖRSEL: çatısız taht salonu, aşağıdan yukarı bakış — vinç ipinde
+# kıpırdamayan kocaman taş taht, açık gökten inen yağmur çizgileri, sağ duvarda
+# ALTI BOŞ ÇİVİ, iskele direğinde tebeşir yazısı.
+duck: 0.15
+text: İskelenin üst katından bir işçi aşağıya bağırıyor: "Örtüyü üstüne çekin! Taş su çekiyor, ipin yediği yerden akıyor!"
+text: Kalfa ipe bakmıyor bile: "İndirme emri yok. On bir yıl havada durdu, bir kış daha durur."
+text: İskelenin aynı direğinde, eski bir yazının üstüne tebeşirle yazılmış: "Çatı — sancaklar asılınca. Asılı sancak: yok."
+opt: (Aşağı bak.) -> sandalye
+
+[sandalye]
+# image: assets/scenes/intro_sandalye.png
+# GEREKLİ GÖRSEL: aynı salon, göz hizası — tahtın ARKASINDAKİ sade sandalyede
+# oturan yaşlı adam, gözleri açık; çevresinde ayakta altı silüet, biri eli havada,
+# HİÇBİRİNİN YÜZÜ ONA DÖNÜK DEĞİL.
+duck: 0.1
+text: Mareşal elini kaldırıyor; tek kolu var: "Beyimiz sefer istiyor. Yirmi altı yıl yürüyen adam sandalyede ölmeyi istemez."
+text: Hekim mareşale dönüyor: "Beyimiz konuşamıyor, dolayısıyla istemiyor. Hastanın iradesi hekimindir."
+text: Hatun ayağa kalkıyor, kimseye bakmadan: "Bey dinlenmek istiyor. Bugün olmaz."
+opt: (Kâtibe bak.) -> tarih
+
+[tarih]
+# image: assets/scenes/intro_tarih.png
+# GEREKLİ GÖRSEL: yakın plan — kâtibin defterinde üstü çizilmiş ÜÇ tarih ve
+# mürekkebi ıslak dördüncüsü; kenarda kurumuş keskisiyle taş ustası ve hiç
+# oyulmamış boş taş.
+duck: 0.1
+text: Kâtip yazarken kendi kendine dikte ediyor: "Üstü çizildi. Sebep: beyimizin sağlığı. Yeni gün: kırk gün sonra."
+text: Avluda tellal, elindeki kâğıttan okuyor: "*Altı Ad*, beyimiz şifa bulunca söylenecektir! Davetler geçerlidir, kimse yolunu değiştirmesin!"
+text: Taş ustası boş taşın yanında, başını kaldırmadan: "Parayı on bir yıl önce aldım."
+opt: (Dışarı çık.) -> disari
+
+[disari]
+# image: assets/scenes/intro_disari.png
+# GEREKLİ GÖRSEL: sur dibi, kalabalığın İÇİNDEN bakış — gazi kuyruğu, çiviyle
+# kâğıt tutturulmuş kontrat panosu, iskelede ip çeken işçiler; hiçbir yüz
+# kameraya dönük değil.
+duck: 0.3
+text: Kuyruktaki bir gazi önündekine söylüyor: "Beşinci kez sayıyorum. Defter açılmadan sıra ilerlemiyor."
+text: Kışla panosunda, çiviyle çakılı bir kâğıt: "Mahzene buz taşı — *6 akçe*. Kışla kâtibine sorulur."
+text: Arkadan bir ses, kime söylediği belirsiz: "Çekil! İp geliyor!"
+opt: (Kenara çekil.) -> end

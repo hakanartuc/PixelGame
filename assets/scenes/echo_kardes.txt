@@ -1,31 +1,46 @@
-# S3 (D1c): Eşikçi Konağı — Nuh'un kardeşi İdris'in yankısı.
-# Tanık: kayıt düzeninin anlamını gösterir. Sömüren: fısıltı İLK KEZ bir yan
-# hikayeye karışır — "ondan uzak dur" (açıklanmaz; ürkütücü sinyal).
+# Eşikçi Konağı, büyük salon — İdris. DEMİRBOYUN kanonuna göre yeniden yazıldı.
+#
+# ESKİSİ NEDEN GİTTİ: bkz. echo_cart.txt başlığı. İki ek ihlal vardı:
+#   1. Fısıltı oyuncuya DOĞRUDAN bir NPC hakkında uyarı veriyordu ("sayan adamdan
+#      uzak dur"). Artık hiçbir ses oyuncuya hitap etmiyor.
+#   2. "dokuz atım" v0 kavramıydı — LORE v2'de yok, kaldırıldı.
+# S3 zinciri henüz DEMİRBOYUN'a göre revize edilmedi (NPC kadrosu bekleniyor), o
+# yüzden sahne zincir olaylarına atıf yapmıyor ve Nuh'un adı geçmiyor.
+#
+# İdris adı KORUNDU, defter kapağından öğreniliyor. Tanık dalının işi eskisiyle
+# AYNI: kayıt tutmanın NEDEN bir iş olduğunu sezdirmek. Aşağıdaki sayım ile
+# yukarıdaki defter TUTMUYOR ve bu AÇIKLANMIYOR — LORE §2'deki Sarkaç ("takvim
+# sende") ve §9'daki nöbet çizelgesi buraya bağlanacak.
+#
+# sfx: heartbeat ve sfx: whisper SİLİNDİ (v0 sesleri). Yerine ses EKLEMEYİN.
+#
+# fx satırları, düğüm adları ve opt hedefleri KODA BAĞLI — dokunulmadı.
+# Bu sahnede fx: essence YOK (yalnız echo_cart'ta var) — eklemeyin.
 
 [giris]
 image: assets/scenes/echo_kardes.png
 duck: 0.15
-sfx: heartbeat
-text: Büyük salonun köşesinde, devrilmiş bir yazı masasının altında mor bir soluk. Masanın çekmecesi açık; içinde kurumuş bir hokka ve yarıda kalmış bir satır: "...ve sayı düşerse—"
-opt: Elini mühre koy, dinle. -> yanki
-opt: Soluğu kendine çek. -> somur
+text: Salonun köşesinde bir yazı masası devrilmiş. Çekmecesi açık, hokka kurumuş. Yerde bir defter, kapağında bir isim: İdris.
+text: Son satır bitmemiş: "...ve sayı düşerse—"
+text: Masanın altındaki döşeme taşı kalkmış. Altından mor bir ışık geliyor. Konak bir kemerin üstüne kurulmuş, kimse bunu söylemeye gerek duymamış.
+opt: Kulağını taşa daya. -> yanki
+opt: Taşı yerinden sök. -> somur
 opt: Geri çekil. -> end
 
 [yanki]
 image: assets/scenes/echo_kardes_memory.png
 duck: 0.08
-sfx: whisper
-text: Bir adam görüyorsun — Nuh'un yüzü ama daha genç, daha yorgun. İdris. Defterlere yazıyor, durmadan: doğumlar, ölümler, geçitten esen rüzgarlar, dokuz atım. "Kayıt kopmasın," diye mırıldanıyor, "kopan kayıt geri örülmez."
-text: Son anında elinde kalem var. Son yazdığı satır bitmemiş. Son düşüncesi bir sayı değil — kardeşinin adı: "Nuh sayar. Nuh unutmaz."
-text: Fısıltı, sana: "...henüz değil."
-opt: (Elini çek.) -> end
+text: Taşın yüzü serin, içi ılık. Aşağıda biri sayıyor. Duraklıyor, geri dönüyor, aynı yerden başlıyor — yanlış saymaktan korkan bir adamın sesi.
+text: Sonra susuyor. Bir soluk alıyor, kaldığı yerden saymaya devam ediyor. Seni duymuyor, beklemiyor.
+text: Doğrulup deftere bakıyorsun, sonra döşemeye. İki sayı birbirini tutmuyor. Kimse sana bunun ne demek olduğunu söylemedi.
+opt: (Kulağını çek.) -> end
 fx: witness
 
 [somur]
 image: assets/scenes/echo_kardes_drain.png
 duck: 0.08
-text: Soluğu çekiyorsun. Kırk yıllık kayıt disiplini, o sarsılmaz düzen hissi — içine akıyor. Ama bu kez fısıltı DURAKSIYOR. İlk kez sana bir şey söylüyor; bir yankı hakkında, bir İNSAN hakkında:
-text: "...sayan adamdan uzak dur."
-text: Neden? Cevap yok. Fısıltı sustu. Ama mühür, Nuh'un adı geçince... küçülür gibi oldu.
+text: Döşeme taşını kaldırıp aşağıdaki damar taşını söküyorsun. Kökü kemerin içine gidiyor; kopunca ışık bir daralıyor, bir genişliyor.
+text: Salonun havası değişmiyor. Elinde bir ağırlık, bir sıcaklık, bir de birdenbire fazla gelen bir güç var.
+text: Pencereden dışarı bakıyorsun: konağın arkasında dört mezar, dördü de düzgün, dördü de bakımlı. Akşam oluyor.
 opt: (Arkana bakma.) -> end
 fx: consume

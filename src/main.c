@@ -4459,7 +4459,7 @@ int main(int argc, char *argv[])
 
                             // Sessiz Gün açılış vinyeti — bitince köy doğusunda "uyanış"
                             gameState = GAME_PLAYING;
-                            scene_start("assets/scenes/intro_sessiz_gun.txt");
+                            scene_start("assets/scenes/intro_demirboyun.txt");
                         
                         // --- Kimlik uygulanır (yaratma ekranı) ---
                         SDL_strlcpy(player.name,
@@ -12503,7 +12503,7 @@ int main(int argc, char *argv[])
             draw_text(renderer, splashFont, tt,
                       (winW - tw) / 2.0f, winH * 0.34f, pale);
 
-            const char *st = "Sessiz Gün'den beri dünya nefesini tutuyor.";
+            const char *st = "Bir fatih konuşamıyor; adına altı ağız konuşuyor.";
             TTF_GetStringSize(gameFont, st, 0, &tw, &th);
             SDL_Color dimc = { 120, 105, 145, 255 };
             draw_text(renderer, gameFont, st,

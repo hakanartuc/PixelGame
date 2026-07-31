@@ -1,42 +1,58 @@
-# İlk yankı: devrik araba (köy doğusu, yol kenarı)
-# İki hat: Tanık (dinle/defnet) — Sömüren (çek/al). İkisi de "...henüz değil" ile kapanır.
+# Devrik yük arabası (köy doğusu, yol kenarı) — DEMİRBOYUN kanonuna göre yeniden yazıldı.
+#
+# ESKİSİ NEDEN GİTTİ: v0 metni oyuncunun GÖĞSÜNDE bir mühür varsayıyordu ("elini
+# mühre koy") ve ona seslenen bir fısıltı vardı ("...henüz değil"). LORE v2'de
+# oyuncunun bedeninde işaret YOK ve hiçbir ses ona hitap etmiyor (§1.8, §1.9,
+# "kimlik davranıştan doğar"). GERİ ALMAYIN.
+#
+# ŞİMDİ: mor ışık MEKÂNDA. Yol bir Akkemer kemerinin üstünden geçiyor, damar taşı
+# topraktan yarı çıkmış (§2). Kulağını dayamak = taşı KIRMADAN dinlemek; duyulan
+# şey BAŞKA BİRİNİN nöbeti ve oyuncuyu tanımıyor (§9). Sökmek = taşı almak; o gece
+# civarın mezarlığı kalkar (§9 bağlayıcı yan etki, kodda zaten var) — sahne bunu
+# İMA eder, uyarı kutusu koymaz.
+#
+# sfx: heartbeat ve sfx: whisper SİLİNDİ; ikisi de v0 sesiydi (kalp atışı =
+# "dokuz atım", fısıltı = seslenen şey). Motorda başka sfx yok, sahne sessiz
+# kalıyor. Yerine ses EKLEMEYİN.
+#
+# fx satırları, düğüm adları ve opt hedefleri KODA BAĞLI — dokunulmadı.
+# fx: witness → echoesWitnessed (üçü BAĞLI gizli sınıfının kapısı, §10)
+# fx: consume → echoesConsumed (KİRLETME sayacı; oyun bunu SÖYLEMEZ, §10)
 
 [giris]
 image: assets/scenes/echo_cart.png
 duck: 0.2
-sfx: heartbeat
-text: Yol kenarında bir araba. Devrilmiş; tekerleklerinden biri hala dönüyor gibi duruyor ama dönmüyor. Sandıklar dağılmış, ot bürümüş.
-text: Kemiklerin arasında mor bir soluk titreşiyor. Yaklaştıkça göğsündeki mühür ısınıyor — sanki bir şey nefes alıyor, senin nefesinle aynı anda.
-opt: Elini mühre koy, dinle. -> yanki
-opt: Soluğu kendine çek. -> somur
+text: Yol kenarında bir yük arabası. Devrilmiş, ön tekerleği çamura gömülmüş. Sandıklar dağılmış, aralarından otlar bitmiş; kemikler tekerleğin yanında duruyor.
+text: Yolun döşemesi burada çökmüş. Çukurun dibinden mor bir ışık geliyor — topraktan yarı çıkmış bir damar taşı, avuç içi kadar. Elini yaklaştırınca ılık.
+opt: Kulağını taşa daya. -> yanki
+opt: Taşı yerinden sök. -> somur
 opt: Geri çekil. -> end
 
 [yanki]
 image: assets/scenes/echo_cart_memory.png
 duck: 0.12
-sfx: whisper
-text: Karanlık. Sonra bir sabah: eller dizginlerde, kızının ördüğü yün eldivenler. Pazara yetişmeliydi — bal küpleri kışı çıkarmazdı.
-text: Sonra tekerlek sesi kesiliyor. Ok değil, düşüş değil; sadece bir duraksama. Dünya bir nefeslik duruyor ve o nefes geri gelmiyor.
-text: Son düşüncesi bir isim değil, bir koku: ocakta unutulmuş süt. Sonra fısıltı, sana değil ona: "...henüz değil."
+text: İlk duyduğun kendi kanın. Sonra altından bir soluk çıkıyor: yavaş, senden derin, seninkine hiç uymuyor.
+text: Bir de sayı sesi var. Aşağıda biri sayıyor — kırk bir, kırk iki — sonra baştan. Ses senin tarafına dönmüyor. Senin orada olduğunu bilmiyor.
+text: Doğrulduğunda kemikler hâlâ orada. Kimse toplamamış.
 opt: Kemikleri toprağa göm. -> defin
-opt: Elini çek. -> end
+opt: Kalk, yoluna git. -> end
 fx: witness
 
 [defin]
 image: assets/scenes/echo_cart_burial.png
 duck: 0.3
-text: Toprak yumuşak; uzun sürmüyor. Üstüne bir taş koyuyorsun — isimsiz, ama artık sahipsiz değil.
-text: Mühür soğuyor. Mor soluk sönerken bir an, sadece bir an, omzunda bir el ağırlığı hissediyorsun. Teşekkür gibi. Ya da veda.
+text: Yol kenarındaki toprak yumuşak, uzun sürmüyor. Üstüne bir taş dikiyorsun. İsimsiz, ama artık ortada değil.
+text: Çukurdaki ışık yerinde. Ne söndü ne parladı. Ellerin çamurlu, sırtın ağrıyor, arkanda düzgün bir yığın kaldı.
+text: Aşağıdan bir katırcı geçti. Bir şey demedi, yalnız yavaşladı.
 opt: Yola devam et. -> end
 fx: witness
 
 [somur]
 image: assets/scenes/echo_cart_drain.png
 duck: 0.12
-sfx: whisper
-text: Mühür ısınıyor — bu sefer içeri doğru. Mor soluk direniyor, bir balığın oltada direnmesi gibi; sonra kopuyor ve sana akıyor.
-text: Bir sabahın, bir kokunun, bir ismin kırıntıları damarlarında eriyor. Güç. Soğuk ve pürüzsüz.
-text: Fısıltı bu kez sana yakın, kulağının hemen dibinde, neredeyse memnun: "...henüz değil."
+text: Taş kolay çıkmıyor; kökü var, damar gibi toprağa iniyor. Kırılırken kısa bir çıtırtı, sonra elinde.
+text: Ağırlığı var, sıcaklığı da. Yolun altındaki soluk kesilmedi ama artık daha uzaktan geliyor.
+text: Kalkarken güneş batmış. İki tarla ötede mezarlığın alçak duvarı görünüyor. Kuşlar orada oturmuyor.
 opt: Avucunu kapat, kalanı al. -> end
 fx: consume
 fx: essence

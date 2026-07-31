@@ -85,6 +85,201 @@ inşa ettiğin, offline, top-down 2D pixel-art RPG — "Skyrim ruhu, KO dövüş
 ESO tarzı sunum: kişilikli, sorgulanabilir diyaloglar; sinematik perde,
 *altın vurgu*, typewriter; voice acting yok; Türkçe metin, dosya tabanlı.
 
+### 1.2c ZİNCİR KALİTE KURALLARI [ONAYLI — Hakan 2026-07-31]
+Hakan'ın direktifi: *"Oyuncu **görev yapıyorum** değil, **hikayenin parçasıyım**
+diye hissetmeli. 'Git 10 orc kes, 5 çiçek topla' değil — bunlar belki yolda
+giderken yaptığı, belki hikaye parçası olarak yaptığı işler olmalı."*
+
+**MİMARİ DEĞİŞMEDİ.** ESO/WoW tarzı görev zinciri + ESO sunumu (§1.2) yerinde.
+Görev sistemini "dosya" ya da "talep" modeliyle DEĞİŞTİRME önerisi reddedildi —
+aşağıdakiler zincirin İÇİNE giren kalite kuralları, mimari değil.
+
+**Teşhis:** yapı `kabul → sayaç → teslim`. Sorun ortada değil, **iki uçta**:
+"kabul" oyuncuyu memur yapıyor, "teslim" işi kapatıp dünyayı değiştirmiyor.
+Sayaç suçlu değil; sayacın etrafındaki tören suçlu.
+
+**1. [ONAYLI] TANIK KURALI — bağlayıcı ve test edilebilir.**
+> Oyuncu bir zinciri ilerlettiğinde, o ilerlemeyi **ondan istememiş en az bir
+> NPC** bunu fark etmiş olmalı ve bir sonraki karşılaşmada **ilk cümlesi**
+> değişmeli. Fark eden yoksa o iş görevdir, hikaye değildir.
+
+Değişen cümle **teşekkür OLMAMALI** (ucuz versiyonu "teşekkür bandı"). Kasap
+fiyatı düşürür, seyis bakışını kaçırır, gardiyan yol açar, Baran "evlat" demeyi
+bırakıp "müşteri" der.
+
+**2. [ONAYLI] SAYAÇ: hedefse görünür, yöntemse gizli.**
+- Envanterde ZATEN sayılan şey (3 ot, 8 deri) görünür — saklamak sahtekârlık.
+- **"Kaç tane öldür" asla hedef değildir** ve görünmez. Hedef yuva, totem, reis,
+  sandık, adam ya da karardır. Sayı direncin ölçüsü.
+- Zincir görevinde sayaç görünür çünkü **verilen sözün kaydı** — süre işliyorsa
+  ya da bir kademe (izin/berat/rütbe) hedefleniyorsa da görünür.
+- **ZORUNLU:** HUD sayacı olmayan her iş, ilerlemeyi DÜNYADA okunabilir bırakmak
+  zorunda — direkteki tebeşir çentiği, yamaçta bekleyen araba sayısı, dolan raf.
+
+**3. [ONAYLI] KABUL ADIMI: zincirde var, panoda yok.**
+Pano bir ilan panosu, NPC bir insan — iki farklı şey, iki farklı kural.
+- **Zincir (NPC):** kabul VAR. NPC anlatır, oyuncu kabul eder, bu bir sözdür.
+- **Pano (kontrat):** kabul YOK. Her öldürme sayılır; panoya hiç bakmadıysan da
+  iş görülmüş olur, sonradan bakınca "bu iş görülmüş" der ve parası tezgâhta
+  bekler. `contract_on_kill`'deki "kabul edilmiş mi" kontrolü kalkacak.
+
+**4. [ONAYLI] PHASING — her zincir bir iz bırakır.**
+> Bir zincir bittiğinde harita eskisiyle aynı görünüyorsa o zincir bitmemiş,
+> **kapatılmıştır.**
+
+Çıkışta bir `storyFlag → decorPatch` (bayrak açıkken şu karo bloğu şu prop
+setiyle çizilir) VE mümkünse kalıcı bir fiyat / olay-sıklığı / yol değişimi.
+**Bu bizim yapısal avantajımız:** ESO dünyayı değiştiremiyor (paylaşımlı),
+WoW phasing'i o kısıtın etrafından dolanan bir hile; oyun OFFLINE ve tek
+oyunculu olduğu için bizde kalıcılık bedava. Altyapı hazır: storyFlags, dekor
+sistemi, bölgesel fiyat çarpanı, dünya olayları. Zaten çalışan örnek: Nazife'nin
+sofrası K2'den sonra sonsuza dek kurulu kalıyor.
+
+**5. [ONAYLI] DUYUM KANALI — ünlem işareti en zayıf kanal.**
+İşi panodan ya da ünlem işaretinden ÖNCE dünyada duyarsın. `AmbientHook
+{ npcId, hourFrom, hourTo, dialogNode }` — NPC yakınından geçerken saat
+aralığına bağlı kendiliğinden tek satır. Örnekler: 06-08 iskelede kalfa
+*"Dün yüz elli çivi saydım, bu sabah yüz on iki"*; öğleden sonra revirde gazi
+*"Baran'a söyle bu ay gelmeyeceğim, maaş çıkmadı"*; geçit ağzında üç yüklü araba
+(replik yok — manzara soruyor). Pano ilan değil **doğrulama** olur: oyuncu işi
+insanın rutininde ya da manzarada görür, panoda adını okur.
+
+**6. [ONAYLI] Her işin ikinci bir DOĞRU tarafı var ve o taraf KONUŞABİLİR.**
+Sivil değil ama düşman da olmayan biri: alıcı, bölük başı, çocuk. Kaba/açgözlü
+oyuncuya kapı KAPANMAZ — hitap değişir, fiyat değişir, kışlada kimse yanına
+oturmaz. Kaybedilen içerik değil, **sıcaklık**.
+Bunun için **YENİ MEKANİK** onaylandı: `mob.isTalkable` + `dialogFile` +
+"hostile → neutral" geçişi. İkinci taraf konuşamazsa öldürmekten başka yol
+kalmıyor; Speech/itibar/altın çözümleri bu kapıdan geçiyor.
+
+**7. [ONAYLI] Kes/getir SİLİNMEZ, hedef olmaktan çıkar.**
+Beş goblin hâlâ ölür — ama sayısı değil **reis** umurundadır; yolda gelenler
+ölür çünkü aralarından geçmen gerekir. Üç ot hâlâ toplanır — ama toplama yeri
+mezarlık olduğu için toplamanın kendisi sahnedir ve otun **ikinci bir alıcısı**
+olduğu için üç ot bir bilet değil bir karardır.
+
+**BU OYUNA UYMAZ [ONAYLI]:** tam sesli diyalog (metin tavanı zaten taşıyordu;
+ses girerse yazar cümleyi kısaltır ve doku ölür) · dallanan sinematikler (on
+karar otuz sahne eder; karar aracımız kalıcı NPC tavrı, o bedava) · anlatıcı
+sesi / açılış prologu (LORE §0 dünyayı "tören" diye açmayı yasaklıyor, anlatıcı
+tam onu yapmak zorunda) · **ekranda ahlaki seçim kutusu** (kişilik sayaçları
+GİZLİ oldukları için çalışıyor; etiket koyduğun an oyuncu sayacı optimize eder)
+· "SÜRE DOLDU" kutusu (dünyanın değişmiş hâli haberdir) · harita ikonu çorbası
+(işaretçi ancak oyuncu bir yer adını DUYDUYSA düşer).
+
+### 1.2d İLK YİRMİ DAKİKA [ONAYLI — Hakan 2026-07-31]
+Hakan'ın gerekçesi: *"İlk dakikalar aslında tutorial gibi adaptasyon. **Panodan iş
+almak angarya hissettirir.** İlk 15-20 dk çok önemli — kullanıcı devam veya bırakma
+kararını alacak, sevmezse oyunu bırakıp iade edebilir."*
+
+- **[ONAYLI] Panodan iş alma ilk 20 dakikada YOK.** Pano dünyada durur ama açılışın
+  omurgası olamaz. **19. dakikada** ilk kez görünür ve üstünde oyuncunun ZATEN yaptığı
+  işin ilanı asılıdır (*"Mahzene buz taşı — 6 akçe"*). Oyuncu ilanı okur ve bir işi
+  **almadan** yaptığını anlar — pano böylece görev kaynağı değil **doğrulama** olarak
+  tanışılır (§1.2c kural 5). Bu tanışma sırası sistemin kalan ömrünü belirliyor.
+- **[ONAYLI] 90 SANİYE KURALI:** ekranda hiçbir an **cevapsız bir görüntü olmadan**
+  90 saniye geçmez. Can sıkıntısı sessizlikten değil, **soru üretmeyen sessizlikten**
+  doğar. Çizelge: 90 sn havada kıpırdamayan taş taht · 3. dk ilk insan sesi (sana
+  DEĞİL) · 5. dk seni gören ilk göz · 7. dk oyunun konusu (oda) · 9. dk ilk talep.
+- **[ONAYLI] Tutorial metin kutusu YASAK.** "WASD ile yürü" yok. Öğretme dünyanın
+  içinden gelir: tek çıkış yol olduğu için yürüme, nöbetçi cümlesini bitirip
+  sustuğu için E, kız ayakta yaklaşınca kaçtığı için **çömelme** öğrenilir.
+- **[ONAYLI] İlk seçim 5. dakikada** (iskele ayağından çivi söken çocuk) ve
+  **bedeli yok, hafızası var.** Hiçbir kapı kapanmaz; sadece o çocuk oyuncu
+  hakkında bir şey bilir. Oyuncu kaybetmeyi öğrenmeden **hatırlanmayı** öğrenir.
+- **[ONAYLI] İlk ölüm riski 15-18. dakika ve kasten yumuşak:** tek düşman, geniş
+  koridor, açık kaçış, refakatçi kandili tutuyor. **Korku sesten gelir, mobtan
+  değil** — duvarın ardındaki soluk. Zorluk coğrafyaya sabit (level scaling yok),
+  ama Yenitaç mahzeni coğrafyanın en yumuşak noktası.
+- **[ONAYLI] Mahzene DÖRT giriş** (rol özgürlüğü): kızak kayışına yardım eden ·
+  akşam kışla kapısından geçerken nöbetçinin barkını duyan · gece gizlenerek giren
+  hırsız (refakatçiyi hiç görmez, hikayeyi yalnız çizmeden alır — kısıtlı değil,
+  **daha soğuk** bir versiyon) · panodan öğrenen (20. dakikadan sonra, en zayıf).
+- **[ONAYLI] 20. dakikada oyuncunun elinde:** bir soru (neden gömülmüyor), bir
+  kelime (çizmenin içine kazınmış *"Ben rehin değilim"*), bir ses (duvarın ardı),
+  bir tanıdık, ve **kimsenin vermediği iki hedef**. Hiçbir zincir başlatılmadı,
+  hiçbir günlük satırı bir kişinin ricası değil.
+- **[ONAYLI] Kasten ÖĞRETİLMEYENLER:** craft istasyonları, kontrat kademeleri,
+  beceri ağacı, itibar sayısı, bounty, mevsim, örgütler, yankesicilik. Bunlar
+  oyuncunun SEÇTİĞİ rolün araçları; ilk çeyrek saatte açılırsa oyun bir menü oyunu
+  gibi başlar ve "kimlik davranıştan doğar" sütunu ilk yirmi dakikada yalanlanır.
+  **Oyuncu kim olacağına karar vermeden ona alet kutusu göstermiyoruz.**
+- **[AÇIK]** Açılış vinyeti (`assets/scenes/intro_demirboyun.txt`) yazıldı ve
+  kodda, ama **dört paneli de görselsiz** (PNG'ler üretilecek). Karar: taht salonu
+  dünyada İNŞA EDİLECEK ve vinyet PNG panelleri yerine cine moduyla **canlı
+  mekânda** geçecek. Salon zaten zorunlu — §1.4 "salona her girişte kaç sancak
+  asılı olduğunu sayarsın" diyor, yani dekor değil ilerleme göstergesi.
+
+### 1.2e KARŞILAŞMA SİSTEMİ [ONAYLI — Hakan 2026-07-31]
+Hakan'ın isteği: *"Görevler sadece NPC'ye giderek veya pano aracılığı ile değil, bir
+NPC'nin yanına yaklaşıp ondan yardım istemesi… Skyrim gibi bir yere giderken başına
+başka olay gelmeli ve başka yönlere gitmeli. (tabi zorunlu olarak değil)"*
+
+**Teşhis — Skyrim neden şakaya döndü:** *"eskiden ben de maceracıydım"* üç hatanın
+birleşimiydi: replik bir **havuzdan** çekildi, konuşan aktörün **kimliği yoktu**, ve
+üretim **sonsuzdu**. Tekrarın sebebi içeriğin azlığı değil — içeriğin *bir yere ve
+bir kişiye bağlı olmaması*. Buradan çıkan kural:
+
+> **Karşılaşma ya bir YERE ait olur ya bir KİMLİĞE. İkisine de ait değilse gürültüdür.**
+
+- **[ONAYLI] YOL DÜĞÜMÜ omurga (yere ait).** `RoadNode { mapId, x, y, radius,
+  hourFrom, hourTo, reqFlags, weatherMask, seasonMask, kind, npcId|sceneFile,
+  traceDecor }`. Elle yerleştirilmiş, SONLU (ilk sürüm 20-24). Bir kez çalışır,
+  sonra yerinde `traceDecor` kalır (sönmüş ateş, devrilmiş tekerlek) — onuncu
+  geçişinde yol sana kendi geçmişini gösterir. Tür örnekleri: UYARI · İMDAT ·
+  EMANET · SUÇLAMA · TANIKLIK · İŞE ALMA · MEYDAN OKUMA · SATIŞ/BORÇ.
+- **[ONAYLI] GEZGİN KADRO doku (kimliğe ait).** 8-12 rotalı NPC (`NpcDef`'e
+  `traveler` + `TravelLeg route[8]`). İçerik havuzdan DEĞİL, **gezginin o anki
+  durumundan** türer: dün hangi bölgedeydi, orada hangi `WorldEvent` yaşandı,
+  oyuncuyla kaç kez konuştu, o bölgedeki itibarı. Bu yüzden aynı gezgin iki kez
+  aynı şeyi söylemez ve **değişimin sebebi sayılabilir**. Yaklaşma biçimi farklı:
+  sana doğru yürümez, **yanında yürür** (30-40 sn eşlik, iki bark, sonra yol ayrılır).
+  `worldevent.c`'yi konuşan bir ağza çevirir — Karaocak galerisi çöktüyse bunu
+  panodan değil, yolda karşılaştığın adamdan **çelik fiyatı yükselmeden ÖNCE** duyarsın.
+- **[ONAYLI] PERDE OYUNCUNUN ELİNDE — bağlayıcı yasa.**
+  > Hiçbir karşılaşma oyuncu girdisi olmadan diyalog perdesi açmaz, kamerayı almaz,
+  > oyuncuyu durdurmaz. NPC en fazla **iki bark** atar ve **iki-üç adım** yaklaşır.
+  > 12 saniyede cevap gelmezse rutinine döner.
+
+  Bu, Hakan'ın *"tabi zorunlu olarak değil"* cümlesinin mekanik garantisi.
+- **[ONAYLI] IMMERSION KİLİTLERİ (hepsi zorunlu).** NPC yalnız kendi haritasında ve
+  rutin poligonunda yaklaşır — **zindanda, mağarada, mühür odasında karşılaşma YOK.**
+  `indoors` saatinde yaklaşma yok. Fırtınada yol kenarı boş (`npc_set_shelter` zaten
+  yapıyor). **Ekran dışı spawn YASAK.** Ve ulak kuralı: **kimse seni aramaya gelmez**
+  — yolda denk gelir. (Skyrim'in ulağı seni mağarada buluyor; bizde bulmaz.)
+- **[ONAYLI] SIKLIK ve SUSMA.** 15 dakikada en fazla **2** karşılaşma; aynı türden
+  ikisi arası en az 20 dakika (iki "yardım isteyen" arka arkaya gelirse dünya yaşayan
+  değil **dilenen** olur). İlk 20 dakikada iki tane, asla üç; zincir başlatan
+  karşılaşma ilk yarım saatte ÇIKMAZ.
+  **En önemli kural: bütçe doldurmak için karşılaşma UYDURULMAZ** — koşulu tutan
+  düğüm yoksa o gün sessiz geçer. İhlal edilirse sistem Skyrim'e döner.
+  **Sistem şu üç anda susar:** (1) oyuncu aktif zincir düğümü taşıyorsa (bir hedefe
+  yürüyor, elinde teslim edilecek bir şey var) → yalnız MANZARA tipi devam eder,
+  çünkü manzara müdahale istemez · (2) dövüşten çıkalı 60 sn olmamışsa ya da can
+  yarının altındaysa — *kanlı oyuncudan kimse yardım istemez; hem gerçekçi hem
+  merhametli* · (3) gece, kandil hattının dışında → yalnız manzara ve tehdit.
+- **[ONAYLI] SAPMA: ikinci hedef İŞARETÇİ ALMAZ.** J kitabına satır düşer, dünyada
+  görünür bir iz kalır (duman, kandil, iz dekoru). Takipçi bandı değişmez; oyuncu
+  isterse J'den kendi değiştirir. Orijinal hedefte hiçbir sayaç işlemez — süre
+  baskısı yok, "kaçırdın" kutusu yok.
+- **[ONAYLI] TEKRAR DEĞİL, İLERLEME.** Hiçbir karşılaşma aynı repliğiyle ikinci kez
+  gelmez: ya bir kademe ileri **sayar** (yolcu: "çizelge üç haftadır boş" → "çizelgeyi
+  kaldırmışlar" → "sunağın birini örttüler"), ya **başka bir insana devreder**, ya
+  bir daha hiç gelmez. *"Eskiden ben de maceracıydım" tuzağı tekrardan değil,
+  DEĞİŞMEYEN tekrardan çıkar.*
+- **[ONAYLI] Karşılaşma da iz bırakır** ama zincir kadar sert değil: her karşılaşma
+  ya bir **dekor izi** ya bir **NPC ilk-cümle değişimi** bırakmak zorunda. İkisinden
+  hiçbiri yoksa o karşılaşma kesilir. Fiyat/olay-sıklığı değişimi karşılaşma
+  seviyesinde gerekmiyor (o zincirlerin işi — §1.2c kural 4).
+- **[ONAYLI] KALICILIK ve SAVE.** Düğüm başına 2 bit (yaşanmadı/yaşandı/kaçırıldı/
+  sonucu görüldü). İleriye pay: `encState[32]` (24 kullanılır), `travelerState[16]`
+  (12 kullanılır) — save sürümü **bir kez** artar, bir daha artmaz.
+  **UYARI:** save.c'nin TÜM paralel tamponları grep'lenip büyütülecek. Bu tuzak bu
+  projede DÖRT kez ısırdı (item/decor/pickTries/save tamponu).
+- **"NPC oyuncuya gelir"in yarısı BEDAVA:** `npc_walk_to`, `npc_bark`,
+  `npc_walk_cancel`, `npc_set_shelter` zaten `npc.h`'ta ve çalışıyor. Eksik olan
+  tek şey **tetik**.
+
 ### 1.2b İNSAN ELİ KURALI [ONAYLI — Hakan 2026-07-24]
 **Oyundaki ve belgelerdeki her metin insan yazmış gibi okunmalı.** Yapay
 zekâ metninin tanınabilir izleri yasaktır:

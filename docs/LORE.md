@@ -19,7 +19,7 @@ Skyrim'den en çok ayrılan aday olarak seçildi. Süreç `docs/konsept/reboot/`
 
 Bu dünyayı birine anlatırken **asla "taç giyme töreni" diye açma.** Doğru açılış:
 
-> **Felçli bir fatihin sandalyesi, ve onun adına konuşan altı ağız.**
+> **Felçli bir fatihin sandalyesi — ve onun adına konuşan altı ağız.**
 
 Sebebi: mesele kâğıt üstünde protokol gibi görünüyor, ama oynanan şey bir odada altı kişinin
 konuşamayan bir adamın ağzından konuşması. Tören sonuç; sandalye sahne.
