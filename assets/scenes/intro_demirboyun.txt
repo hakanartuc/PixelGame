@@ -21,17 +21,19 @@
 # ALMIYOR — ve yarım saat sonra aynı kâğıdı panoda yeniden görecek (GDD §1.2c: pano
 # ilan değil DOĞRULAMA olur).
 #
-# GÖRSELLER HENÜZ YOK: dördü de yeniden üretilecek (sahibi kararı). image:
-# satırları YORUMDA — motor eksik dosyada uyarı basıp önceki fonda kalıyor,
-# yani vinyet şimdilik siyah zeminde metinle çalışıyor. PNG'ler gelince
-# yorumlar açılacak.
+# GÖRSELLER: dördü de PROSEDÜREL üretildi — `python3 scripts/gen_intro_demirboyun.py`
+# (saf Python, dış bağımlılık yok; gen_intro.py'nin kardeşi). Kaynak: House_1
+# limestone duvarı, dungeon_arch, NPC sayfaları (karartılarak silüet).
+# Bunlar YER TUTUCU: ERW asset paketi gelince yeniden üretilecek. Panel başına
+# GEREKLİ GÖRSEL notu aşağıda duruyor — brief o zaman da geçerli.
+# Panelde MOR/mühür imgesi YASAK; o v0 diliydi.
 #
 # v0 metni 2026-07-31'de ATILDI: "Sessiz Gün", göğüste atan mühür, dokuz atım,
 # "...henüz değil" fısıltısı, amnezi. Hepsi seçilmişlik dayatıyordu.
 # Eski metin git geçmişinde: assets/scenes/intro_sessiz_gun.txt
 
 [bitmemis]
-# image: assets/scenes/intro_bitmemis.png
+image: assets/scenes/intro_bitmemis.png
 # GEREKLİ GÖRSEL: çatısız taht salonu, aşağıdan yukarı bakış — vinç ipinde
 # kıpırdamayan kocaman taş taht, açık gökten inen yağmur çizgileri, sağ duvarda
 # ALTI BOŞ ÇİVİ, iskele direğinde tebeşir yazısı.
@@ -42,7 +44,7 @@ text: İskelenin aynı direğinde, eski bir yazının üstüne tebeşirle yazıl
 opt: (Aşağı bak.) -> sandalye
 
 [sandalye]
-# image: assets/scenes/intro_sandalye.png
+image: assets/scenes/intro_sandalye.png
 # GEREKLİ GÖRSEL: aynı salon, göz hizası — tahtın ARKASINDAKİ sade sandalyede
 # oturan yaşlı adam, gözleri açık; çevresinde ayakta altı silüet, biri eli havada,
 # HİÇBİRİNİN YÜZÜ ONA DÖNÜK DEĞİL.
@@ -53,7 +55,7 @@ text: Hatun ayağa kalkıyor, kimseye bakmadan: "Bey dinlenmek istiyor. Bugün o
 opt: (Kâtibe bak.) -> tarih
 
 [tarih]
-# image: assets/scenes/intro_tarih.png
+image: assets/scenes/intro_tarih.png
 # GEREKLİ GÖRSEL: yakın plan — kâtibin defterinde üstü çizilmiş ÜÇ tarih ve
 # mürekkebi ıslak dördüncüsü; kenarda kurumuş keskisiyle taş ustası ve hiç
 # oyulmamış boş taş.
@@ -64,7 +66,7 @@ text: Taş ustası boş taşın yanında, başını kaldırmadan: "Parayı on bi
 opt: (Dışarı çık.) -> disari
 
 [disari]
-# image: assets/scenes/intro_disari.png
+image: assets/scenes/intro_disari.png
 # GEREKLİ GÖRSEL: sur dibi, kalabalığın İÇİNDEN bakış — gazi kuyruğu, çiviyle
 # kâğıt tutturulmuş kontrat panosu, iskelede ip çeken işçiler; hiçbir yüz
 # kameraya dönük değil.

@@ -1,4 +1,22 @@
 #!/usr/bin/env python3
+# ============================================================================
+# HUKUMSUZ — 2026-07-31. Yerine: scripts/gen_intro_demirboyun.py
+#
+# Bu uretec v0 kanonuna ("Sessiz Gun + Yanki") ait dort paneli uretiyordu:
+#   intro_frozen (donmus dunya) / intro_pulse (dokuz atim, mor muhur halkasi) /
+#   intro_memory (baskasinin anisi, cukur) / intro_wake (uyanis + gogusteki muhur)
+#
+# Uc panel de oyuncuya SECILMISLIK dayatiyordu; LORE v2 (DEMIRBOYUN) bunu yasakliyor
+# (1.8 fantastik asla zorunluluk degil, 1.9 kimse kiyamet konusmuyor, ve "kimlik
+# davranistan dogar" sutunu). "Sessiz Gun" kavrami LORE v2'de HIC gecmiyor.
+#
+# SILINMEDI (kanon kurali 15.8: bosa cikan is rafa kalkar). Ciktilari da
+# assets/scenes/intro_{frozen,pulse,memory,wake}.png olarak duruyor ama artik
+# hicbir sahne dosyasi onlara BASVURMUYOR. intro_pulse.png kurtarilamaz
+# (esmerkezli mor halka = muhur atimi); digerleri baska sahnelerde kullanilabilir.
+#
+# BU URETECI CALISTIRMAYIN — ciktilari kanona aykiri.
+# ============================================================================
 # Sessiz Gun acilis vinyeti panelleri (Faz B1): 4 sahne.
 # gen_diorama.py'nin kardesi — ayni minimal PNG yaklasimi, dis bagimlilik yok.
 # [giris] donmus dunya / [atim] dokuz atim / [ani] baskasinin anisi / [uyanis] uyanis

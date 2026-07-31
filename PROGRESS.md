@@ -98,15 +98,35 @@ seçilmişlik + fatura"*; `main.c:3791`'de üçü birlikte çağrılıyor) · `k
 ("dokuz atım") · `elder/zehra/nuh.txt` + `journal.c`'de "Sessiz Gün" atıfları. Bunlar
 Bağlı hattının kurgusuyla birlikte, NPC kadrosundan sonra çözülecek.
 
-**AÇILIŞ GÖRSELİ [AÇIK]:** dört panelin PNG'si yok ve `image:` satırları yorumda
-(motor eksik dosyada uyarı basıp önceki fonda kalıyor — vinyet siyah zeminde metinle
-çalışıyor). Her yorumun altına ressam briefi yazıldı. Karar: **taht salonu dünyada
-İNŞA EDİLECEK**, vinyet PNG yerine cine moduyla canlı mekânda geçecek. Salon zaten
-zorunlu (§1.4: *"salona her girişte kaç sancak asılı olduğunu sayarsın"* — dekor
-değil ilerleme göstergesi). ERW koleksiyonunda taht salonu/kale iç mekânı YOK; en
-yakını yoldaki "The Headquarters". Salonun ayırt edici parçaları prop (iskele, vinç,
-altı çivi), tileset değil — düzen/çarpışma/kamera şimdi yapılır, karo kimlikleri ERW
-gelince değişir.
+**AÇILIŞ GÖRSELLERİ ÜRETİLDİ — asistanın kendi hatası düzeltildi.** Hakan'a "dört
+PNG'yi ben üretemiyorum, görsel üretme aracım yok" denmişti. **YANLIŞTI:**
+`scripts/gen_intro.py` ve `gen_diorama.py` sahne panellerini PROSEDÜREL üretiyor —
+saf Python (`zlib` + `struct`), dış bağımlılık yok, mevcut PNG'lerden parça kesip
+`Canvas.blit/rect/glow/vignette` ile birleştiriyor. Yeni üretec yazıldı:
+`scripts/gen_intro_demirboyun.py` → `intro_{bitmemis,sandalye,tarih,disari}.png`.
+Kaynak: House_1 limestone duvarı, dungeon_arch, altı NPC sayfası (karartılarak silüet).
+
+İki tur revizyon gerekti ve ikisi de göze bakarak yapıldı (üretilen PNG'ler okundu):
+- **Altı çivi görünmüyordu** (2×3 px, meşgul taş dokusunda kayboluyordu) — oysa
+  panelin BÜTÜN amacı §1.4'ün sancak sayacı. Çözüm: arkasına düz bir sıva bandı,
+  çiviler 3×5 px parlak metal + eğik baş + gölge + zayıf parlama. Şimdi sayılabiliyor.
+- **Duvar şeridi tekrarı** aynı kapı/pencereyi yedi kez basıp kolonad gibi
+  okunuyordu — her kolonda kaynak ofseti değiştirildi.
+- Panel 3'te üç çizik 1 px'ti, 2 px kırmızıya çıkarıldı; panel 2'de oturan adam
+  tahtın gölgesinde kalıyordu, sandalye sağa alınıp adam aydınlatıldı.
+
+`gen_intro.py` **HÜKÜMSÜZ damgası aldı** (silinmedi, §15.8): başına neden hükümsüz
+olduğu ve yerine ne geçtiği yazıldı. Çıktıları (`intro_frozen/pulse/memory/wake.png`)
+duruyor ama artık hiçbir sahne onlara başvurmuyor; `intro_pulse.png` kurtarılamaz
+(eşmerkezli mor halka = mühür atımı).
+
+**Bu görseller YER TUTUCU.** ERW asset paketi gelince yeniden üretilecek; panel başına
+ressam briefi sahne dosyasında duruyor. **Taht salonu inşası kararı GEÇERLİ** ve ayrı
+bir iş olarak duruyor — §1.4 sancak sayacı dünyada da gerekiyor ve vinyetin cine
+moduyla canlı mekânda geçmesi hâlâ daha iyi. Ama artık siyah ekran engeli yok.
+ERW'de taht salonu/kale iç mekânı YOK (en yakını yoldaki "The Headquarters"); salonun
+ayırt edici parçaları prop (iskele, vinç, altı çivi), tileset değil — düzen/çarpışma/
+kamera şimdi yapılır, karo kimlikleri paket gelince değişir.
 
 ### Faz ANLATIM-STANDARDI — "görev değil, hikayenin parçası" (2026-07-31, TASARIM)
 Kod yazılmadı; yedi ONAYLI kural GDD §1.2c'de. Uygulama sıradaki fazlarda.
