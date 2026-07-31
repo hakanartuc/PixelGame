@@ -568,6 +568,44 @@ yavaşlatıyor, daha iyisi) · ekran sarsıntısı sönümüyle · `mob.e.hitFla
 WoW hotbar · HUD (mevsimli saat, kontrat takipçisi) · panel ailesi
 (tooltip/drag&drop) · minimap · menü + 20+1 slot + yaratma-lite.
 
+### 7.1 YERLEŞİM VERİDEN GELİR [KODDA 2026-07-31]
+HUD konumları koddan çıktı: `assets/ui/layout.json` (23 öğe) + oyun içi
+düzenleyici (Ctrl+U). Kararlar:
+
+- **[ONAYLI] ÇAPA merkezde.** Konum, pencerenin hangi kenarına/köşesine göre
+  ölçüldüğünü söyler (9 çapa: `sol-ust` … `sag-alt`) + yatay `hiza` +
+  dikey `dikey`. Yeniden boyutlandırma bedavaya doğru çalışır; öğe başına
+  formül yazılmaz. **Yanlış çapanın belirtisi görüntüde YOK** — ancak pencere
+  boyutlanınca ortaya çıkar; bu yüzden düzenleyicide "en uygun çapa" (E) ve
+  şüpheli-ofset uyarısı var.
+- **[ONAYLI] BOYUT çoğu öğede veriye ALINMAZ.** Can barı genişliği max stat'la
+  BÜYÜR (kasıtlı geri bildirim), panel yükseklikleri satır sayısından türer
+  (`stockCount × ROW_H`), envanter yüksekliği çanta kapasitesinden. Bunları
+  dosyaya çivilemek özelliği öldürürdü. Veriye giren: panel **genişlikleri**
+  (SHOP_W/CT_W/… gerçek tasarım kararı), minimap kutusu, yakalama paneli
+  (tek sabit-boyutlu panel).
+- **[ONAYLI] Düzenleyici oyun içinde, web/masaüstü değil.** Konumun doğruluğu
+  FONTUN kendisine bağlı; gerçek ölçü, gerçek pencere, gerçek post-fx altında
+  bakılmadan "16 mı 20 mi" cevaplanamaz. Dışarıda yapılan her ölçüm tahmindir.
+- **[ONAYLI] Tutamaklar öğenin CANLI olmasını beklemez** — düzenleyici yerleşim
+  *verisini* dolaşır. Tok buffunu dizmek için yemek yemek gerekmiyor. Paneller
+  için ön izleme (P): seçili panel kapalı olsa bile gerçek içeriğiyle çizilir.
+- **[ONAYLI] Tek kaynak zorunluluğu.** Konum formülü çizim VE tıklama testini
+  besliyorsa iki yerde durmaz. Hotbar'da üç, envanterde beş kopya vardı;
+  panelleri taşınabilir yapmak onları sessiz sapma noktasına çevirirdi (panel
+  taşınır, tıklama eski yerde kalır, derleyici susar).
+- **[ONAYLI] Yorum kuralı.** Değere ait not → alan (`"_not"`); dosyaya ait not
+  → koda/GDD'ye. Yorum yalnız oyunun ÜSTÜNE YAZMADIĞI dosyalarda; `layout.json`
+  düzenleyici tarafından yeniden yazıldığı için yorumsuz (`jsonx` JSONC
+  desteği duruyor — çeviri dosyaları gibi elle-yönetilen dosyalar için).
+- **[AÇIK]** Tam ekran öğeler (ölüm ekranı, menü, yaratma, vinyet sahnesi),
+  imleci izleyenler (tooltip, sürükleme hayaleti), dünyaya bağlı olanlar
+  (hedef HP barı, kamp ateşi barı) ve letterbox yerleşim dışı — letterbox'ın
+  düzenlenecek konumu yok, tek değişkeni sinematik bant yüksekliği.
+- **[AÇIK]** Beceri AĞACI paneli (`tree_panel_render`) hâlâ kodda: konumu
+  beceri paneline göreli (`40 + SKILL_PANEL_W + 10`). Diyalog paneli de
+  taşınmadı (`dialog_render` kendi yerleşimini winW/winH'ten kuruyor).
+
 ## 8. TEKNİK [KODDA]
 C + SDL3 (vendored) + r2d GPU renderer (SDL_GPU/Metal; MSL shader — Vulkan/D3D
 SPIR-V yayın fazına ertelendi) · post-fx pass (offscreen target + fs_postfx:

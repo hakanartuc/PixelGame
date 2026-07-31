@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>   // strncat (hedef satırı stat etiketi)
 #include "craft.h"
+#include "uilayout.h"
 #include "item.h"
 #include "font.h"
 #include "ui_theme.h"
@@ -294,7 +295,7 @@ void station_render_all(R2D *renderer, R2DTexture **textures,
 // --- Panel yerleşimi (render ve tıklama AYNI ölçüler) ---
 #define CRAFT_ROW_H 44.0f
 #define CRAFT_PAD 16.0f
-#define CRAFT_W 380.0f
+#define CRAFT_W 380.0f   // varsayılan; yerleşimde "craft_paneli".w kazanır
 #define CRAFT_MAX_VIS 16   // panelde aynı anda görünen satır (900px penceresi)
 
 // Bu istasyonun kaç tarifi var + n'inci tarifin RECIPES indeksi
@@ -327,6 +328,14 @@ int craft_panel_max_scroll(int stationIdx)
     return (total > CRAFT_MAX_VIS) ? total - CRAFT_MAX_VIS : 0;
 }
 
+// Panelin konumu + genişliği (yerleşim: "craft_paneli"). Çizim ve
+// craft_panel_recipe_at aynı çağrıdan geçiyor — panel taşındığında tarif
+// satırı tıklaması beraber taşınsın. panelX/panelY artık VARSAYILAN değer.
+static SDL_FRect cr_rect(float panelX, float panelY)
+{
+    return uilayout_panel("craft_paneli", panelX, panelY, CRAFT_W);
+}
+
 void craft_panel_render(int stationIdx, const Inventory *inv,
                         const Inventory *inv2, const Skill *skills, int scroll,
                         int selRecipe, float plusChancePct, int plusCost,
@@ -344,7 +353,10 @@ void craft_panel_render(int stationIdx, const Inventory *inv,
     float clipTop = panelY + CRAFT_PAD + 30.0f;             // satır alanı
     float clipBot = clipTop + visRows * CRAFT_ROW_H;
 
-    ui_panel(renderer, panelX, panelY, CRAFT_W, panelH);
+    SDL_FRect pr = cr_rect(panelX, panelY);
+    panelX = pr.x; panelY = pr.y;   // gerisi bu ikisinden türüyor
+    const float craftW = pr.w;
+    ui_panel(renderer, panelX, panelY, craftW, panelH);
     if (font == NULL) return;
 
     SDL_Color white = { 255, 255, 255, 255 };
@@ -364,7 +376,7 @@ void craft_panel_render(int stationIdx, const Inventory *inv,
 
         if (!CROW_ON) { rowY += CRAFT_ROW_H; continue; }
 
-        SDL_FRect row = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
+        SDL_FRect row = { panelX + 8.0f, rowY, craftW - 16.0f, CRAFT_ROW_H - 6.0f };
         if (ri == selRecipe) ui_cell_hi(renderer, row.x, row.y, row.w, row.h);
         else                 ui_cell_gray(renderer, row.x, row.y, row.w, row.h);
 
@@ -409,7 +421,7 @@ void craft_panel_render(int stationIdx, const Inventory *inv,
 
     // '+basma' satırı (yalnız ocak): kuşanılı GERÇEK silah gerekir
     if (smith && CROW_ON) {
-        SDL_FRect row = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
+        SDL_FRect row = { panelX + 8.0f, rowY, craftW - 16.0f, CRAFT_ROW_H - 6.0f };
         ui_cell_gray(renderer, row.x, row.y, row.w, row.h);
         char line[96];
         if (weapon->type == NULL || weapon->type->weaponType == WEAPON_TOOL)
@@ -433,7 +445,7 @@ void craft_panel_render(int stationIdx, const Inventory *inv,
         // Hedef satırı (tıkla: kuşanılı ekipmanlar arasında döner)
         if (!CROW_ON) goto ench_target_done;
         {
-        SDL_FRect row = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
+        SDL_FRect row = { panelX + 8.0f, rowY, craftW - 16.0f, CRAFT_ROW_H - 6.0f };
         ui_cell_hi(renderer, row.x, row.y, row.w, row.h);
         char line[112];
         if (weapon->type == NULL)
@@ -468,7 +480,7 @@ ench_target_done:
                                    "Rün Bas: Zehir (vuruşta DoT)" };
         for (int rn = 0; rn < 2; rn++) {
             if (!CROW_ON) { rowY += CRAFT_ROW_H; continue; }
-            SDL_FRect rrow = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
+            SDL_FRect rrow = { panelX + 8.0f, rowY, craftW - 16.0f, CRAFT_ROW_H - 6.0f };
             ui_cell_gray(renderer, rrow.x, rrow.y, rrow.w, rrow.h);
             bool haveRune = inventory_count(inv, &ITEM_TYPES[runeItem[rn]]) +
                             inventory_count(inv2, &ITEM_TYPES[runeItem[rn]]) >= 1;
@@ -485,7 +497,7 @@ ench_target_done:
                                             ITEM_STONE_INT };
         for (int s = 0; s < STAT_COUNT; s++) {
             if (!CROW_ON) { rowY += CRAFT_ROW_H; continue; }
-            SDL_FRect srow = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
+            SDL_FRect srow = { panelX + 8.0f, rowY, craftW - 16.0f, CRAFT_ROW_H - 6.0f };
             ui_cell_gray(renderer, srow.x, srow.y, srow.w, srow.h);
 
             // Hedefteki mevcut kademe + boş slot durumu
@@ -529,9 +541,9 @@ ench_target_done:
     // Kaydırma göstergeleri: liste taşıyorsa yukarı/aşağı ipucu
     int maxScroll = craft_panel_max_scroll(stationIdx);
     if (scroll > 0)
-        draw_text(renderer, font, "▲", panelX + CRAFT_W - 26.0f, clipTop - 22.0f, hint);
+        draw_text(renderer, font, "▲", panelX + craftW - 26.0f, clipTop - 22.0f, hint);
     if (scroll < maxScroll)
-        draw_text(renderer, font, "▼ tekerlek", panelX + CRAFT_W - 110.0f,
+        draw_text(renderer, font, "▼ tekerlek", panelX + craftW - 110.0f,
                   clipBot + 6.0f, hint);
     #undef CROW_ON
 }
@@ -544,6 +556,9 @@ int craft_panel_recipe_at(int stationIdx, float x, float y, float panelX, float 
     int extraRows = smith ? 1 : (ench ? (1 + 2 + STAT_COUNT) : 0);
     int visRows = rows + extraRows;
     if (visRows > CRAFT_MAX_VIS) visRows = CRAFT_MAX_VIS;
+    SDL_FRect pr = cr_rect(panelX, panelY);
+    panelX = pr.x; panelY = pr.y;
+    const float craftW = pr.w;
     float clipTop = panelY + CRAFT_PAD + 30.0f;
     float clipBot = clipTop + visRows * CRAFT_ROW_H;
 
@@ -553,7 +568,7 @@ int craft_panel_recipe_at(int stationIdx, float x, float y, float panelX, float 
             rowY += CRAFT_ROW_H;
             continue;   // klip dışı satır tıklanamaz (render ile aynı)
         }
-        SDL_FRect row = { panelX + 8.0f, rowY, CRAFT_W - 16.0f, CRAFT_ROW_H - 6.0f };
+        SDL_FRect row = { panelX + 8.0f, rowY, craftW - 16.0f, CRAFT_ROW_H - 6.0f };
         if (x >= row.x && x < row.x + row.w && y >= row.y && y < row.y + row.h) {
             if (n < rows) return station_recipe(stationIdx, n);
             int e = n - rows;   // özel satır sırası

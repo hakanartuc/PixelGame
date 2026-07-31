@@ -2,6 +2,7 @@
 #include "minimap.h"
 #include "tilemap.h"
 #include "npc.h"
+#include "uilayout.h"   // konum + kutu boyutu (layout.json)
 
 #define REVEAL_RADIUS 12     // oyuncu çevresinde kaç tile açılır
 #define MINIMAP_SIZE 170.0f  // ekrandaki kenar uzunluğu (uzun kenara göre ölçek)
@@ -128,10 +129,26 @@ void minimap_render(R2D *renderer, float playerX, float playerY,
     if (mapTex == NULL) return;
 
     int mw = map_width(), mh = map_height();
-    float scale = MINIMAP_SIZE / (float)((mw > mh) ? mw : mh);
+    // Yerleşimden bir KUTU gelir; harita oranını koruyarak o kutuya sığar.
+    // Kutu = düzenleyicinin gösterdiği sınır, harita ise içinde ortalanmadan
+    // sol-üste oturur (haritanın kendi oranı kutuyu tam doldurmayabilir).
+    float boxW = MINIMAP_SIZE, boxH = MINIMAP_SIZE;
+    uilayout_get_size("minimap", MINIMAP_SIZE, MINIMAP_SIZE, &boxW, &boxH);
+    float sx = boxW / (float)mw, sy = boxH / (float)mh;
+    float scale = (sx < sy) ? sx : sy;
     float w = mw * scale, h = mh * scale;
-    float x0 = winW - w - MINIMAP_PAD;
-    float y0 = winH - h - MINIMAP_PAD;
+    // Çapa sağ-alt, hiza sag + dikey alt: dönen nokta kutunun SOL-ÜST köşesi
+    float x0, y0;
+    uilayout_get_aligned("minimap",
+                         (float)winW - boxW - MINIMAP_PAD,
+                         (float)winH - boxH - MINIMAP_PAD,
+                         boxW, boxH, &x0, &y0);
+    // Harita kutunun SAĞ-ALTINA yapışır. Oran korunduğu için harita kutuyu bir
+    // eksende doldurmuyor (200×150 harita 170 kare kutuda 170×127 çıkıyor) ve
+    // artan boşluk sol-üstte kalmalı: minimap sağ-alt köşeye çivili bir öğe,
+    // boşluğu ekran kenarıyla arasına koymak onu köşeden ayırırdı.
+    x0 += boxW - w;
+    y0 += boxH - h;
 
     SDL_FRect dst = { x0, y0, w, h };
     r2d_draw_texture(renderer, mapTex, NULL, &dst);

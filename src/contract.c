@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "contract.h"
+#include "uilayout.h"
 #include "worldevent.h"
 #include "ecology.h"   // dinamik ilan: nüfussuz türe kontrat yok (E2)
 #include "region.h"    // söylenti: koloninin bölge adı
@@ -131,12 +132,23 @@ void contract_save_set(int day, const int *st, const int *prog)
 #define CT_PAD 16.0f
 #define CT_W 520.0f
 
+// Panelin konumu + genişliği (yerleşim: "ilan_panosu"). Çizim ve
+// contract_panel_slot_at aynı çağrıdan geçiyor: panel taşındığında satır
+// tıklaması beraber taşınsın. panelX/panelY artık VARSAYILAN değer.
+static SDL_FRect ct_rect(float panelX, float panelY)
+{
+    return uilayout_panel("ilan_panosu", panelX, panelY, CT_W);
+}
+
 void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
                            const Inventory *inv2,
                            float rep, float panelX, float panelY)
 {
     float panelH = CONTRACT_ACTIVE * CT_ROW_H + CT_PAD * 2 + 56.0f + 64.0f;   // +söylentiler
-    ui_panel(renderer, panelX, panelY, CT_W, panelH);
+    SDL_FRect pr = ct_rect(panelX, panelY);
+    panelX = pr.x; panelY = pr.y;   // gerisi bu ikisinden türüyor
+    const float ctW = pr.w;
+    ui_panel(renderer, panelX, panelY, ctW, panelH);
     if (font == NULL) return;
 
     SDL_Color white = { 255, 255, 255, 255 };
@@ -149,9 +161,10 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
     snprintf(title, sizeof(title), "İlan Panosu — Gün %d", curDay);
     draw_text(renderer, font, title, panelX + CT_PAD, panelY + 8.0f, white);
 
+    // pr yukarıda çözüldü; panelX/panelY zaten ondan geliyor
     float rowY = panelY + CT_PAD + 30.0f;
     for (int s = 0; s < CONTRACT_ACTIVE; s++) {
-        SDL_FRect row = { panelX + 8.0f, rowY, CT_W - 16.0f, CT_ROW_H - 6.0f };
+        SDL_FRect row = { panelX + 8.0f, rowY, ctW - 16.0f, CT_ROW_H - 6.0f };
         int ci = contract_today(s);
         if (ci < 0) {
             ui_cell_gray(renderer, row.x, row.y, row.w, row.h);
@@ -247,9 +260,10 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
 
 int contract_panel_slot_at(float x, float y, float panelX, float panelY)
 {
-    float rowY = panelY + CT_PAD + 30.0f;
+    SDL_FRect pr = ct_rect(panelX, panelY);
+    float rowY = pr.y + CT_PAD + 30.0f;
     for (int s = 0; s < CONTRACT_ACTIVE; s++) {
-        SDL_FRect row = { panelX + 8.0f, rowY, CT_W - 16.0f, CT_ROW_H - 6.0f };
+        SDL_FRect row = { pr.x + 8.0f, rowY, pr.w - 16.0f, CT_ROW_H - 6.0f };
         if (x >= row.x && x < row.x + row.w && y >= row.y && y < row.y + row.h)
             return s;
         rowY += CT_ROW_H;

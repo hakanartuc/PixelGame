@@ -1,6 +1,6 @@
 # HANDOVER — Pixe Game
 
-Güncelleme: 2026-07-30 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
+Güncelleme: 2026-07-31 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
 
 ## Çalışma kuralları
 - **KOD EN SON GELİR (2026-07-28 Hakan direktifi)**: kod faturası tasarım
@@ -33,7 +33,10 @@ Güncelleme: 2026-07-30 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumla
   ısırdı (sahne-only post-fx). Doğru desen: `r2d_target_begin`'in `savedVertCount`'u.
 - Felsefe "no hidden machinery": sihirli soyutlama yok; sprite batch, shader, parser — hepsi görünürde.
 - Oyun proje kökünden çalıştırılır: `./build/game` (asset yolları göreli).
-- Test kalıbı: `pkill -x game; (./build/game &); sleep 5; kill -TERM $(pgrep -x game)` — temiz kapanış = cleanup yolu sağlıklı.
+- Test kalıbı: `pkill -x game; (PIXE_HIDDEN=1 ./build/game &); sleep 5; kill -TERM $(pgrep -x game)` — temiz kapanış = cleanup yolu sağlıklı.
+  **PIXE_HIDDEN=1 (2026-07-31 Hakan isteği)**: duman testi penceresi ekranda GÖRÜNMEZ
+  (SDL_WINDOW_HIDDEN; GPU yolu normal işler). `SDL_VIDEODRIVER=dummy` KULLANMA — dummy
+  sürücüde SDL_GPU cihazı açılmıyor.
 
 ## Proje
 C + SDL3 (3.4.8 vendored) + SDL_ttf + stb_image + CMake. Top-down 2D pixel-art RPG.
@@ -62,6 +65,9 @@ Cute_Fantasy paketleri (`/Users/hakanartuc/Cute Fantasy` — NPC, ev, düşman, 
   · craft (istasyonlar/tarifler/sunak) · resource (toplama düğümleri) · region (bölgesel bounty/itibar)
   · contract (pano: 9 kontrat, 3 kademe, günlük rotasyon) · light (gece ışık kaynakları + kamp ateşi)
   · ui_theme (9-grid paneller) · font (ttf→GPU upload) · tooltip · ambience · journal.
+  · **jsonx** (cJSON sarmalayıcı: JSONC yorum temizliği + satır/kolon hatası + varsayılanlı getter)
+  · **uilayout** (HUD yerleşimi veriden: çapa/hiza/dikey/boyut — `assets/ui/layout.json`)
+  · **uieditor** (oyun içi yerleşim düzenleyicisi, Ctrl+U).
 - **main.c** — tüm bağlantı/orkestrasyon burada (~5000 satır; ileride bölünebilir).
 
 ## Tuşlar
@@ -74,13 +80,31 @@ hotbara SÜRÜKLE) · J Yolculuk günlüğü (Tab: Görevler/Günlük/Ünvanlar/
 Hotbar: düz TIK = becerine bas (click-to-cast); SHIFT+sürükle = taşı/takas;
 kaldırma YALNIZ sürüklerken beliren ✕ hedefine (dışarı=iptal — yanlış atma yok);
 silaha uymayan beceri SOLUK çizilir (kullanım engeli hotbarPressed akışında)
-· M minimap · C eğilme · **F7 post-fx filtre döngüsü** (20 tarz + kapalı: SICAK/DARK FANTASY/CRT/VHS/NOIR/GAMEBOY... splash'ta ad; SICAK açılışta aktif — kalıcı tarz seçilmedi) · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 AKTİF slota kaydet/yükle (slot yoksa — otomatik kayıttan yüklendiyse — F5 kayıt ekranını açar, seçilen slot aktif olur) · ESC katmanlı kapatma/menü
+· M minimap · C eğilme · **Ctrl+U YERLEŞİM DÜZENLEYİCİSİ** (sürükle/oklar 1px, Shift 10px;
+G ızgara 8/16/32, Alt yapıştırmayı kapat; Tab sonraki, A çapa, **E en uygun çapa**, H hiza;
+Ctrl+oklar & köşe tutamağı boyut; **P ön izleme** — seçili panel kapalı olsa bile gerçek
+içeriğiyle çizilir; Ctrl+S kaydet, R diskten geri, Esc kapat. Açıkken oyuncu girdisi DURUR)
+· **F7 post-fx filtre döngüsü** (20 tarz + kapalı: SICAK/DARK FANTASY/CRT/VHS/NOIR/GAMEBOY... splash'ta ad; SICAK açılışta aktif — kalıcı tarz seçilmedi) · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 AKTİF slota kaydet/yükle (slot yoksa — otomatik kayıttan yüklendiyse — F5 kayıt ekranını açar, seçilen slot aktif olur) · ESC katmanlı kapatma/menü
 (K = skill listesi + ağaç paneli; ok mühimmatı sağ tıkla seçilir)
 (F efekt önizleme KALDIRILDI 2026-07-10 — rünün instance efektini eziyordu)
 AÇILIŞ AKIŞI (Faz B1): başlık ekranı → ana menü (Yeni Oyun/Yükle/Çıkış) → 20+1 slot;
 vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü).
 
 ## Kritik bilinenler
+- **YERLEŞİM TUZAĞI (2026-07-31)**: bir konum formülü çizim VE tıklama testini besliyorsa
+  TEK yerde durmak zorunda. Hotbar'da üç (`slot_rect` + kaldırma hedefi + main.c ✕),
+  envanterde beş kopya vardı; panelleri veriden taşınabilir yapmak onları sessiz sapma
+  noktasına çevirdi — panel taşınır, tıklama eski yerde kalır, derleyici SUSAR. Desen:
+  modül içinde tek `*_rect()` / `*_origin()`, çizim ve hit-test ikisi de oradan.
+  Çıkan gerçek hata: main.c envanter yuva tıklaması `panelY` yerine sabit `20` kullanıyordu.
+- **YERLEŞİM: olayı yutmak YETMEZ (2026-07-31)**: hareket/saldırı `SDL_GetKeyboardState`
+  ile anlık tuş durumundan okunuyor, olay döngüsünü BAYPAS ediyor. Düzenleyici açıkken
+  oyuncu girdisi `!uieditor_active()` ile kapatılıyor — yoksa 'A' (çapa) karakteri sola
+  yürütür, 'S' (kaydet) aşağı indirirdi. Yeni bir modal araç eklerken aynı kapı gerekir.
+- **YANLIŞ ÇAPANIN BELİRTİSİ GÖRÜNTÜDE YOK**: çapa değiştirince öğe yerinde kalır (ofset
+  yeni çapaya göre yeniden hesaplanır), hata ancak pencere boyutlanınca çıkar. Bu bir kez
+  ısırdı (saat `sol-orta` + x=1580 kaydedildi → 1280 genişlikte ekran dışı). Koruma:
+  düzenleyicide `E` (en uygun çapa) + ofset pencereye göre büyükse kırmızı uyarı.
 - **Kanama/perk VFX'leri olay bazlı**; F10 sonrası moblar tek vuruşta ölürse kanama görülmez (Orc'ta dene).
 - Partiküller mob/NPC'lerin ÜSTÜNE çizilir (altında kalıp kayboluyordu).
 - CuteFantasy-5x9.ttf glyph seti eksik (boşluk yok) — font PublicPixel'de kaldı.
@@ -127,6 +151,22 @@ vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü
   `fx: kaba += 1` biçimiyle işler, req ile okunur).
 
 ## Sıradaki iş
+**FAZ UI-LAYOUT TAMAM (2026-07-31, save DEĞİŞMEDİ)**: HUD konumları koddan veriye
+(`assets/ui/layout.json`, 23 öğe) + oyun içi düzenleyici (Ctrl+U). Kararlar GDD §7.1'de.
+Yeni modüller: jsonx (cJSON + JSONC + satır/kolon hatası), uilayout (çapa/hiza/dikey/boyut),
+uieditor (ızgara, hizalama kılavuzu, boyut tutamağı, ön izleme).
+Ayrıca: çözünme ölümü (mob.c banded dissolve, 14 şerit) bu commit'te; PIXE_HIDDEN dev kancası.
+
+**SIRADA — KARAR BEKLEYEN İKİ İŞ (metin mimarisi analizi hazır, ajan raporu):**
+1. **NpcDef'e `.id`** — 15 yerde içerik GÖRÜNEN TÜRKÇE ADIYLA aranıyor
+   (`SDL_strcmp(NPCS[i].name, "'Dilsiz' Neriman")`, `recipe_index_by_name("İğne Zehri")`),
+   79 kullanım noktası. DEMİRBOYUN kanonuna göre NPC'ler yeniden adlandırılacağı için bu
+   İŞ O ADLANDIRMADAN ÖNCE yapılmalı: sonra yapılırsa zincirler sessizce kopar (derleyici
+   susar, oyun çökmez, sadece NPC konuşmaz). `.id` içerik değil MEKANİZMA — lore'u beklemez.
+2. **`DIALOG_TEXT_LEN` 220 → 512** — 134 diyalog satırının **27'si** bu sınırı aşıyor
+   (en uzunu 325 bayt) ve `dialog.c:110` snprintf ile SESSİZCE kesiyor; bayt sınırında
+   kestiği için UTF-8 karakteri ortadan bölebiliyor. Bugün, Türkçe oynarken 27 replik eksik.
+
 **MOB EKOLOJİSİ TAMAM (E1+E2, save v20-21)**: KO slot spawn'ı dünyadan söküldü
 (ecology.c) — yuva/popülasyon (şafakta +1), aileye göre yıkım (Reis/Totem/gölcük/
 mezar/sürü), göç kolonileri + panoda söylentiler, RUTİNLER (goblin gececi uyuklar

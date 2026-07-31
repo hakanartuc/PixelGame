@@ -146,7 +146,18 @@ typedef struct {
     bool risen;           // huzursuz mezarlık mobu (WE_GRAVE): şafakta 2+ sağsa
                           // mezar yeniden yuva olur (koloni), sonra geri çekilir
     float searchTimer;    // MOB_SEARCH kalan süre (bakınma)
+    // ÇÖZÜNME: ölüm animasyonu bittikten sonra 0→1 ilerler. Eskiden mob son
+    // karede PAT diye kayboluyordu; şimdi yatay bantlara ayrılıp bant bant
+    // eriyor. 0 = çözünme yok. Mob save'e yazılmıyor, alan eklemek güvenli.
+    float dissolve;
 } Mob;
+
+// Çözünme süresi (sn) ve bant sayısı. Bant sayısı bilinçli AZ: kalın piksel
+// sanatında pürüzsüz gürültü eşiği bulanık duruyor, kalın bantlar "dağılıyor"
+// hissini daha net veriyor. 14 bant, ölüm başına 14 çizim — yalnız çözünme
+// süresince, aynı anda az mob.
+#define MOB_DISSOLVE_TIME  0.85f
+#define MOB_DISSOLVE_BANDS 14
 
 
 

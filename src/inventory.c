@@ -3,6 +3,16 @@
 #include "font.h"
 #include "item_textures.h"
 #include "ui_theme.h"
+#include "uilayout.h"
+
+void inventory_panel_origin(int winW, int winH, float *outX, float *outY)
+{
+    (void)winH;   // panel dikeyde ortalanmıyor (720px'e ancak y=20 ile sığıyor)
+    // Hiza "orta" ise panel genişliğine göre ortalanır; varsayılan davranış
+    // eskisiyle birebir aynı (yatayda ortalı, y=20)
+    uilayout_get_aligned("envanter", ((float)winW - (float)INV_PANEL_W) * 0.5f,
+                         20.0f, (float)INV_PANEL_W, 0.0f, outX, outY);
+}
 
 void inventory_render(const Inventory *inv, R2D *renderer,
                       R2DTexture *itemIconTex, const ItemTextures *itemTex,

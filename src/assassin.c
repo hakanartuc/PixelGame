@@ -1,4 +1,5 @@
 #include "assassin.h"
+#include "uilayout.h"
 #include "mob.h"
 #include "font.h"
 #include "ui_theme.h"
@@ -65,6 +66,14 @@ int assassin_next_threshold(int rank)
 #define ROW_H 62.0f
 #define ROW_STEP (ROW_H + 14.0f)
 
+// Panonun konumu + genişliği (yerleşim: "suikast_panosu"). Çizim ve
+// assassin_board_row_at aynı çağrıdan geçiyor — pano taşındığında kontrat
+// satırı tıklaması beraber taşınsın. px/py artık VARSAYILAN değer.
+static SDL_FRect ab_rect(float px, float py)
+{
+    return uilayout_panel("suikast_panosu", px, py, BOARD_W);
+}
+
 void assassin_board_render(int playerPoints, int active, int progress,
                            bool ready, R2D *renderer, TTF_Font *font,
                            float px, float py)
@@ -75,7 +84,10 @@ void assassin_board_render(int playerPoints, int active, int progress,
         if (ASSASSIN_CONTRACTS[i].minRank <= rank) shown++;
 
     float panelH = 96.0f + (float)shown * (ROW_H + 14.0f) + 40.0f;
-    ui_panel(renderer, px, py, BOARD_W, panelH);
+    SDL_FRect pr = ab_rect(px, py);
+    px = pr.x; py = pr.y;   // gerisi bu ikisinden türüyor
+    const float boardW = pr.w;
+    ui_panel(renderer, px, py, boardW, panelH);
     if (font == NULL) return;
 
     SDL_Color gold = { 255, 210, 60, 255 };
@@ -99,7 +111,7 @@ void assassin_board_render(int playerPoints, int active, int progress,
     for (int i = 0; i < ASSASSIN_CONTRACT_COUNT; i++) {
         const AssassinContract *c = &ASSASSIN_CONTRACTS[i];
         if (c->minRank > rank) continue;
-        ui_cell_gray(renderer, px + 10.0f, rowY, BOARD_W - 20.0f, ROW_STEP - 8.0f);
+        ui_cell_gray(renderer, px + 10.0f, rowY, boardW - 20.0f, ROW_STEP - 8.0f);
 
         bool isActive = (active == i);
         SDL_Color tc = isActive ? gold : white;
@@ -134,7 +146,9 @@ int assassin_board_row_at(int playerPoints, int active, bool ready,
 {
     (void)active; (void)ready;
     int rank = assassin_rank(playerPoints);
-    if (x < px + 10.0f || x > px + BOARD_W - 10.0f) return -1;
+    SDL_FRect pr = ab_rect(px, py);
+    px = pr.x; py = pr.y;
+    if (x < px + 10.0f || x > px + pr.w - 10.0f) return -1;
     float rowY = py + 70.0f;
     for (int i = 0; i < ASSASSIN_CONTRACT_COUNT; i++) {
         if (ASSASSIN_CONTRACTS[i].minRank > rank) continue;

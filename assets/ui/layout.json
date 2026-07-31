@@ -1,0 +1,139 @@
+{
+	"version":	1,
+	"ogeler":	{
+		"can_bar":	{
+			"capa":	"sol-ust",
+			"x":	20,
+			"y":	20
+		},
+		"mana_bar":	{
+			"capa":	"sol-ust",
+			"x":	20,
+			"y":	48
+		},
+		"stam_bar":	{
+			"capa":	"sol-ust",
+			"x":	20,
+			"y":	72
+		},
+		"altin":	{
+			"capa":	"sol-ust",
+			"x":	20,
+			"y":	90
+		},
+		"tok_buff":	{
+			"capa":	"sol-ust",
+			"x":	20,
+			"y":	120
+		},
+		"unvan":	{
+			"capa":	"sol-ust",
+			"x":	20,
+			"y":	152
+		},
+		"durum_yigin":	{
+			"capa":	"sol-ust",
+			"x":	20,
+			"y":	184
+		},
+		"igne_sarj":	{
+			"capa":	"sol-ust",
+			"x":	20,
+			"y":	216
+		},
+		"saat":	{
+			"capa":	"sag-ust",
+			"hiza":	"sag",
+			"x":	-20,
+			"y":	19
+		},
+		"gorev_takip":	{
+			"capa":	"sag-ust",
+			"hiza":	"sag",
+			"x":	-20,
+			"y":	48
+		},
+		"boss_bar":	{
+			"capa":	"ust-orta",
+			"hiza":	"orta",
+			"x":	0,
+			"y":	56
+		},
+		"gorev_bandi":	{
+			"capa":	"ust-orta",
+			"hiza":	"orta",
+			"x":	0,
+			"y":	90
+		},
+		"bolge_splash":	{
+			"capa":	"ust-orta",
+			"hiza":	"orta",
+			"x":	0,
+			"y":	108
+		},
+		"hotbar":	{
+			"capa":	"alt-orta",
+			"hiza":	"orta",
+			"x":	0,
+			"y":	-8
+		},
+		"ok_sayaci":	{
+			"capa":	"alt-orta",
+			"x":	-40,
+			"y":	-194
+		},
+		"minimap":	{
+			"capa":	"sag-alt",
+			"hiza":	"sag",
+			"dikey":	"alt",
+			"x":	-16,
+			"y":	-16,
+			"w":	170,
+			"h":	170
+		},
+		"envanter":	{
+			"capa":	"ust-orta",
+			"hiza":	"orta",
+			"x":	72,
+			"y":	152
+		},
+		"dukkan":	{
+			"capa":	"sol-ust",
+			"x":	40,
+			"y":	40,
+			"w":	300
+		},
+		"ilan_panosu":	{
+			"capa":	"sol-ust",
+			"x":	40,
+			"y":	40,
+			"w":	520
+		},
+		"beceri_paneli":	{
+			"capa":	"sol-ust",
+			"x":	40,
+			"y":	40,
+			"w":	430
+		},
+		"craft_paneli":	{
+			"capa":	"sol-ust",
+			"x":	40,
+			"y":	40,
+			"w":	380
+		},
+		"suikast_panosu":	{
+			"capa":	"sol-ust",
+			"x":	40,
+			"y":	40,
+			"w":	480
+		},
+		"yakalama_paneli":	{
+			"capa":	"orta",
+			"hiza":	"orta",
+			"x":	0,
+			"y":	-98,
+			"w":	480,
+			"h":	208
+		}
+	}
+}

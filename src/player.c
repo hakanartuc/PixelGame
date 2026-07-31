@@ -7,6 +7,7 @@
 #include "equipment.h" // ← EKLE: Equipment tam tanim + EQUIP_SLOT_COUNT + EquipSlot + slot_zorder
 #include "item.h"      // ← EKLE: ItemStack + ITEM_TYPES
 #include "font.h"      // HUD bar değer yazıları (draw_text)
+#include "uilayout.h"  // can/mana/stamina barlarının konumu (layout.json)
 #include <stdio.h>     // snprintf (bar değerleri)
 
 // 0.0..1.0 arasi rastgele float
@@ -392,7 +393,11 @@ void health_bar_render(const Player *p, R2D *renderer, TTF_Font *font)
     // Bar ölçüleri (ekran pikseli - doğrudan, kamera yok).
     // GENİŞLİK max değerle büyür: takı/stat taşı takınca bar UZAR (görünür
     // geri bildirim — Hakan isteği); taban 200px, tavan 340px.
-    float barX = 20.0f, barY = 20.0f;  // sol üst köşeden offset
+    // Konum yerleşim dosyasından ("can_bar"). GENİŞLİK veriden GELMİYOR: max
+    // değerle büyümesi kasıtlı bir geri bildirim, onu dosyaya çivilemek özelliği
+    // öldürürdü. Yerleşim nereye, kod ne kadar geniş.
+    float barX, barY;
+    uilayout_get("can_bar", 20.0f, 20.0f, &barX, &barY);
     float barW = 200.0f + (p->maxHealth - 100.0f) * 0.6f;
     float barH = 24.0f;
     if (barW < 200.0f) barW = 200.0f;
@@ -441,7 +446,10 @@ void health_bar_render(const Player *p, R2D *renderer, TTF_Font *font)
     float mBarW = 200.0f + (p->maxMana - 50.0f) * 0.6f;
     if (mBarW < 120.0f) mBarW = 120.0f;
     if (mBarW > 340.0f) mBarW = 340.0f;
-    SDL_FRect mBg = { barX, barY + barH + 4.0f, mBarW, 8.0f };
+    // Mana AYRI öğe: varsayılanı can barının altı, ama bağımsız taşınabilir
+    float mX, mY;
+    uilayout_get("mana_bar", barX, barY + barH + 4.0f, &mX, &mY);
+    SDL_FRect mBg = { mX, mY, mBarW, 8.0f };
     r2d_set_color(renderer, 20, 25, 55, 255);
     r2d_fill_rect(renderer, &mBg);
     // M4: dost rezervi — barın sonu KİLİTLİ bölme (mor); dolum kalan bölgeye
@@ -466,7 +474,10 @@ void health_bar_render(const Player *p, R2D *renderer, TTF_Font *font)
     float sBarW = 200.0f + (p->maxStamina - 100.0f) * 0.6f;
     if (sBarW < 120.0f) sBarW = 120.0f;
     if (sBarW > 340.0f) sBarW = 340.0f;
-    SDL_FRect sBg = { barX, mBg.y + 12.0f, sBarW, 8.0f };
+    // Stamina de ayrı öğe: varsayılanı mananın altı
+    float sX, sY;
+    uilayout_get("stam_bar", mBg.x, mBg.y + 12.0f, &sX, &sY);
+    SDL_FRect sBg = { sX, sY, sBarW, 8.0f };
     r2d_set_color(renderer, 50, 45, 15, 255);
     r2d_fill_rect(renderer, &sBg);
     SDL_FRect sFill = { sBg.x, sBg.y, sBarW * sRatio, sBg.h };

@@ -39,7 +39,9 @@
 #include "gametime.h"
 #include "decor.h"
 #include "shadow.h"
-#include "decal.h"   // gündüz güneş gölgeleri
+#include "decal.h"
+#include "uilayout.h"   // HUD konumları (assets/ui/layout.json)
+#include "uieditor.h"   // Ctrl+U: oyun içi yerleşim düzenleyicisi
 #include "audio.h"
 #include "music.h"
 #include "minimap.h"
@@ -988,6 +990,16 @@ static void craft_finish_recipe(int ri, Player *player,
                          player->rect.y - 10.0f, buf, green);
 }
 
+// DÜZENLEYİCİ ÖN İZLEMESİ: seçili panel, kapalı olsa bile GERÇEK içeriğiyle
+// çizilir. Tutamağa bakarak panel dizmek körlemedir — genişliği, satır sayısı
+// ve metni görünmeden konumun doğru olduğu anlaşılamaz.
+// Düzenleyici kapalıyken NULL döner, yani hiçbir çizim koşulu değişmez.
+static bool ed_prev(const char *name)
+{
+    const char *p = uieditor_preview();
+    return p != NULL && SDL_strcmp(p, name) == 0;
+}
+
 int main(int argc, char *argv[])
 {
     (void)argc; (void)argv;   // SDL_main bu imzayı şart koşar, argüman kullanmıyoruz
@@ -1016,7 +1028,13 @@ int main(int argc, char *argv[])
     }
 
     // 2) Pencere oluştur.
-    SDL_Window *window = SDL_CreateWindow("Pixe Game", 1600, 900, 0);
+    // DEV kancası PIXE_HIDDEN=1: pencere GİZLİ açılır. Duman testi (aç, birkaç
+    // saniye koş, kapat) ekranı kapatmasın diye. GPU yolu normal çalışmaya
+    // devam eder — yalnız pencere görünmez, yani test ettiği şey aynı kalır.
+    // (SDL_VIDEODRIVER=dummy yerine bu: dummy sürücüde SDL_GPU cihazı açılmaz.)
+    Uint64 winFlags = 0;
+    if (SDL_getenv("PIXE_HIDDEN") != NULL) winFlags |= SDL_WINDOW_HIDDEN;
+    SDL_Window *window = SDL_CreateWindow("Pixe Game", 1600, 900, winFlags);
     if (window == NULL)
     {
         SDL_Log("SDL_CreateWindow basarısız: %s", SDL_GetError());
@@ -1224,6 +1242,9 @@ int main(int argc, char *argv[])
     decor_set_texture_sizes(decor_textures);
     shadow_init(renderer);   // gölge lekesi dokusu (radyal alpha gradyanı)
     decal_init(renderer);    // yer izi dokusu (düzensiz kenarlı leke)
+    // UI yerleşimi: yüklenemezse oyun çalışmaya devam eder, konumlar koddaki
+    // varsayılanlara düşer (yerleşim verisi kolaylık, zorunluluk değil).
+    uilayout_load(UI_LAYOUT_PATH);   // düzenleyici de aynı sabite kaydediyor
     r2d_light_set_model(1.0f, 0.0f, 0.0f, 41.0f);   // varsayılan: LİNEER toplama
     // Şekil artık ışık TİPİNE bağlı (light.c FLICKER tablosu). Global değerler
     // yalnız test çarpanı: 1.0 / 0 = tipin kendi şeklini kullan.
@@ -1745,14 +1766,29 @@ int main(int argc, char *argv[])
         int hotbarPressed = -1;   // bu kare basılan hotbar yuvası (tuş/tık; -1 = yok)
         // 4a) INPUT: OS'in bu kare için kuyruğa attığı tüm olayları boşalt.
         SDL_Event event;
+        // Çapa çözümü pencere boyutunu izler ve düzenleyicinin TIKLAMA testi de
+        // ona bakıyor — bu yüzden olaylardan ÖNCE güncelleniyor. (Çizim için
+        // aşağıda winW/winH yeniden okunuyor; ikisi aynı kare içinde aynı değer.)
+        {
+            int ewW = 0, ewH = 0;
+            SDL_GetWindowSize(window, &ewW, &ewH);
+            uilayout_set_window(ewW, ewH);
+        }
+
         while (SDL_PollEvent(&event))
         {
 
             if (event.type == SDL_EVENT_QUIT)
             {                    // Kullanıcı pencereyi kapatmak istedi mi?
                 running = false; // Oyun döngüsünden çık
+                continue;        // QUIT her şeyin önünde: düzenleyiciye sorulmaz
             }
-            else if (event.type == SDL_EVENT_TEXT_INPUT &&
+            // YERLEŞİM DÜZENLEYİCİSİ (Ctrl+U) — QUIT'ten SONRA, oyun girdisinden
+            // ÖNCE. Açıkken olayları yutar: sürüklerken karakter yürümesin, ok
+            // tuşları günlük sayfası çevirmesin, rakamlar hotbar tetiklemesin.
+            if (uieditor_handle_event(&event))
+                continue;
+            if (event.type == SDL_EVENT_TEXT_INPUT &&
                      gameState == GAME_CREATE)
             {
                 // İsim girişi (UTF-8; 23 bayt tavan)
@@ -4166,9 +4202,11 @@ int main(int argc, char *argv[])
                 int dwW, dwH;
                 SDL_GetWindowSize(window, &dwW, &dwH);
                 float ux = (float)event.button.x, uy = (float)event.button.y;
-                int dpx = (dwW - INV_PANEL_W) / 2, dpy = 20;
+                float dpxF, dpyF;
+                inventory_panel_origin(dwW, dwH, &dpxF, &dpyF);
+                int dpx = (int)dpxF, dpy = (int)dpyF;
                 int tInv = inventoryOpen
-                         ? inventory_slot_at(ux, uy, (float)dpx, (float)(dpy + 340)) : -1;
+                         ? inventory_slot_at(ux, uy, (float)dpx, (float)(dpy + INV_EQUIP_H)) : -1;
                 EquipSlot tEq = inventoryOpen
                               ? equipment_slot_at(ux, uy, dpx, dpy) : EQUIP_NONE;
                 int tHb = hotbar_slot_at(ux, uy, dwW, dwH);
@@ -4182,7 +4220,7 @@ int main(int argc, char *argv[])
                     // ucundaki Çöp hücresi = İMHA (geri dönüşü yok)
                     bool onTabs = inventoryOpen && ux >= dpx &&
                                   ux <= dpx + INV_PANEL_W &&
-                                  uy >= dpy + 340 - 28 && uy < dpy + 340;
+                                  uy >= dpy + INV_EQUIP_H - 28 && uy < dpy + INV_EQUIP_H;
                     bool onTrash = onTabs && ux >= dpx + INV_PANEL_W - 84.0f;
                     if (src->type != NULL)
                     {
@@ -4258,7 +4296,7 @@ int main(int argc, char *argv[])
                 else if (dragEquipSlot != EQUIP_NONE)
                 {
                     // Ekipmandan envantere (panelin herhangi bir yerine bırak = çıkar)
-                    if (tInv >= 0 || (ux >= dpx && ux <= dpx + INV_PANEL_W && uy >= dpy + 340))
+                    if (tInv >= 0 || (ux >= dpx && ux <= dpx + INV_PANEL_W && uy >= dpy + INV_EQUIP_H))
                     {
                         unequip_slot(&equipment, &inventory, dragEquipSlot);
                         audio_play(SFX_UI);
@@ -4657,11 +4695,13 @@ int main(int argc, char *argv[])
                     {
                         int dwW, dwH;
                         SDL_GetWindowSize(window, &dwW, &dwH);
-                        int dpx = (dwW - INV_PANEL_W) / 2, dpy = 20;
+                        float dpxF, dpyF;
+                        inventory_panel_origin(dwW, dwH, &dpxF, &dpyF);
+                        int dpx = (int)dpxF, dpy = (int)dpyF;
                         // Sekme şeridine tıklama: sekme değiştir (drag başlatmaz)
                         {
                             float cx2 = (float)event.button.x, cy2 = (float)event.button.y;
-                            float tabY = (float)(dpy + 340 - 28);
+                            float tabY = (float)(dpy + INV_EQUIP_H - 28);
                             if (cy2 >= tabY && cy2 < tabY + 26.0f)
                                 for (int t = 0; t < 2; t++)
                                     if (cx2 >= dpx + t * 120.0f &&
@@ -4675,7 +4715,7 @@ int main(int argc, char *argv[])
                         Inventory *ab = (invTab == 1) ? &craftBag : &inventory;
                         int dsl = inventory_slot_at((float)event.button.x,
                                                     (float)event.button.y,
-                                                    (float)dpx, (float)(dpy + 340));
+                                                    (float)dpx, (float)(dpy + INV_EQUIP_H));
                         if (!handled && dsl >= 0 && dsl < ab->cap &&
                             ab->slots[dsl].type != NULL)
                         {
@@ -5303,7 +5343,9 @@ int main(int argc, char *argv[])
                     {
                         int winW, winH;
                         SDL_GetWindowSize(window, &winW, &winH);   // ← EKLE
-                        int panelX = (winW - INV_PANEL_W) / 2;
+                        float panelXF, panelYF;
+                        inventory_panel_origin(winW, winH, &panelXF, &panelYF);
+                        int panelX = (int)panelXF;
 
                         // 1) Once ekipman paneline mi tiklandi? (panelY = 20 — render ile aynı;
                         //    35 slotluk çanta 720px pencereye ancak böyle sığıyor)
@@ -5315,10 +5357,14 @@ int main(int argc, char *argv[])
                         }
                         else
                         {
-                            // 2) Degilse envantere mi? (panelY = 20+340)
+                            // 2) Degilse envantere mi? Çanta ızgarası ekipman
+                            //    bölümünün altında başlıyor. panelYF kullanılıyor:
+                            //    burada sabit 20 yazılıydı ve panel konumu veriden
+                            //    gelince tıklama çizimden kopardı.
                             Inventory *ab = (invTab == 1) ? &craftBag : &inventory;
                             int slot = inventory_slot_at((float)event.button.x, (float)event.button.y,
-                                                         (float)panelX, (float)(20 + 340));
+                                                         (float)panelX,
+                                                         panelYF + (float)INV_EQUIP_H);
                             if (slot >= 0 && slot < ab->cap)
                             {
                                 ItemStack *st = &ab->slots[slot];
@@ -5565,6 +5611,8 @@ int main(int argc, char *argv[])
 
         int winW, winH;
         SDL_GetWindowSize(window, &winW, &winH); // pencere boyutunu al (dinamik olarak, pencere yeniden boyutlandırılabilir)
+        // uilayout_set_window BURADA DEĞİL: olay döngüsünden önce yapılıyor
+        // (düzenleyicinin tıklama testi de çapa çözümüne bakıyor)
 
         // DEV kancası: PIXE_AUTOPLAY=1 → dolaş + sürekli saldır (ASan stres
         // koşusu savaş/FX/loot yollarını menüsüz tetikleyebilsin)
@@ -5629,7 +5677,13 @@ int main(int argc, char *argv[])
                 activeEcho = -1;   // sahne kapandı — müzik duck'ı motor geri açtı
         }
 
-        if (gameState == GAME_PLAYING && deathTimer <= 0.0f && !scene_active())
+        // !uieditor_active(): yerleşim düzenleyicisi açıkken oyuncu girdisi DURUR.
+        // Olayı yutmak yetmiyor — hareket ve saldırı SDL_GetKeyboardState ile
+        // anlık durumdan okunuyor, yani olay döngüsünü baypas ediyor. Kapı
+        // burada kapanmasa düzenleyicide 'A' (çapa) tuşu karakteri sola yürütür,
+        // 'S' (kaydet) aşağı indirirdi.
+        if (gameState == GAME_PLAYING && deathTimer <= 0.0f && !scene_active() &&
+            !uieditor_active())
         {
 
             const bool *keys = SDL_GetKeyboardState(NULL); // basılı tuşların anlık görüntüsü (SDL'e ait, free etme)
@@ -11560,7 +11614,9 @@ int main(int argc, char *argv[])
             snprintf(tokBuf, sizeof(tokBuf), "Tok: %s (%ds)",
                      player.foodBuffName, (int)player.foodBuffTimer + 1);
             SDL_Color warm = { 255, 205, 130, 230 };
-            draw_text(renderer, gameFont, tokBuf, 16.0f, 96.0f, warm);
+            float tx, ty;
+            uilayout_get("tok_buff", 16.0f, 96.0f, &tx, &ty);
+            draw_text(renderer, gameFont, tokBuf, tx, ty, warm);
         }
         if (player.carriedTitle >= 0 && gameFont != NULL &&
             gameState == GAME_PLAYING)
@@ -11568,7 +11624,9 @@ int main(int argc, char *argv[])
             char ttl[48];
             snprintf(ttl, sizeof(ttl), "- %s -", TITLES[player.carriedTitle].name);
             SDL_Color tgold = { 235, 195, 90, 210 };
-            draw_text(renderer, gameFont, ttl, 16.0f, 118.0f, tgold);
+            float ux, uy;
+            uilayout_get("unvan", 16.0f, 118.0f, &ux, &uy);
+            draw_text(renderer, gameFont, ttl, ux, uy, tgold);
         }
 
         // Hedef HP bar (seçili mob varsa)
@@ -11583,7 +11641,10 @@ int main(int argc, char *argv[])
                 if (!mobs[i].e.alive || mobs[i].type == NULL || !mobs[i].type->isBoss)
                     continue;
                 float bw = 420.0f, bh = 16.0f;
-                float bx = (winW - bw) / 2.0f, by = 54.0f;
+                float bx, by;
+                uilayout_get_aligned("boss_bar", ((float)winW - bw) * 0.5f, 54.0f,
+                                     bw, bh, &bx, &by);
+                float bcx = bx + bw / 2.0f;   // ad bu merkeze hizalanır
                 r2d_set_color(renderer, 30, 15, 40, 255);
                 r2d_fill_rect(renderer, &(SDL_FRect){ bx, by, bw, bh });
                 float ratio = mobs[i].e.health / mobs[i].e.maxHealth;
@@ -11597,8 +11658,10 @@ int main(int argc, char *argv[])
                     int tw = 0, th = 0;
                     TTF_GetStringSize(gameFont, mobs[i].type->name, 0, &tw, &th);
                     SDL_Color purple = { 220, 190, 255, 255 };
+                    // Ad BARIN merkezine hizalanır (pencerenin değil) — bar
+                    // taşınırsa yazısı beraber gitsin
                     draw_text(renderer, gameFont, mobs[i].type->name,
-                              (winW - tw) / 2.0f, by + bh + 4.0f, purple);
+                              bcx - (float)tw / 2.0f, by + bh + 4.0f, purple);
                 }
                 break;
             }
@@ -11612,29 +11675,38 @@ int main(int argc, char *argv[])
             char goldBuf[48];
             snprintf(goldBuf, sizeof(goldBuf), "Gold %d", player.gold);
             SDL_Color goldCol = { 255, 210, 60, 255 };
-            draw_text(renderer, gameFont, goldBuf, 20.0f, 76.0f, goldCol);   // mana/stamina barlarının altı
+            float gx, gy;
+            uilayout_get("altin", 20.0f, 76.0f, &gx, &gy);   // mana/stamina barlarının altı
+            draw_text(renderer, gameFont, goldBuf, gx, gy, goldCol);
             if (player.dirtyGold > 0)
             {
-                // Kirli kese: harcanamaz — aklayıcıya götür (kırmızı ek)
+                // Kirli kese: harcanamaz — aklayıcıya götür (kırmızı ek).
+                // Altının SAĞINA yapışır: kendi yerleşim girdisi yok, çünkü
+                // konumu altın metninin genişliğine bağlı (bağımsız taşınamaz).
                 char dirtyBuf[24];
                 snprintf(dirtyBuf, sizeof(dirtyBuf), "(+%d kirli)", player.dirtyGold);
                 int gw2 = 0, gh2 = 0;
                 TTF_GetStringSize(gameFont, goldBuf, 0, &gw2, &gh2);
                 SDL_Color dirtyCol = { 255, 110, 90, 255 };
-                draw_text(renderer, gameFont, dirtyBuf, 26.0f + (float)gw2, 76.0f,
+                draw_text(renderer, gameFont, dirtyBuf, gx + 6.0f + (float)gw2, gy,
                           dirtyCol);
             }
 
             // Bounty + itibar göstergesi (bulunduğun bölgenin değerleri)
             int hudRegion = region_of(player.rect.x + player.rect.w / 2.0f,
                                       player.rect.y + player.rect.h / 2.0f);
-            float hudY = 100.0f;
+            // Değişken yükseklikli YIĞIN: bounty / itibar / gizli sırayla alt alta
+            // dizilir, koşulu sağlamayan satır yer tutmaz. Yerleşimde tek girdi
+            // var (yığının başlangıcı); satır aralığı kodda kalıyor çünkü font
+            // yüksekliğine bağlı, konuma değil.
+            float hudX = 20.0f, hudY = 140.0f;
+            uilayout_get("durum_yigin", 20.0f, 140.0f, &hudX, &hudY);
             if (player.bounty[hudRegion] > 0)
             {
                 char bountyBuf[32];
                 snprintf(bountyBuf, sizeof(bountyBuf), "Bounty %d", player.bounty[hudRegion]);
                 SDL_Color bountyCol = { 255, 90, 90, 255 };
-                draw_text(renderer, gameFont, bountyBuf, 20.0f, hudY, bountyCol);
+                draw_text(renderer, gameFont, bountyBuf, hudX, hudY, bountyCol);
                 hudY += 24.0f;
             }
             if (player.reputation[hudRegion] <= -1.0f || player.reputation[hudRegion] >= 1.0f)
@@ -11644,7 +11716,7 @@ int main(int argc, char *argv[])
                 SDL_Color repCol = player.reputation[hudRegion] < 0.0f
                                  ? (SDL_Color){ 255, 140, 100, 255 }
                                  : (SDL_Color){ 140, 230, 140, 255 };
-                draw_text(renderer, gameFont, repBuf, 20.0f, hudY, repCol);
+                draw_text(renderer, gameFont, repBuf, hudX, hudY, repCol);
                 hudY += 24.0f;
             }
 
@@ -11652,7 +11724,7 @@ int main(int argc, char *argv[])
             if (player.sneaking)
             {
                 SDL_Color sneakCol = { 170, 170, 190, 255 };
-                draw_text(renderer, gameFont, "[Gizli]", 20.0f, hudY, sneakCol);
+                draw_text(renderer, gameFont, "[Gizli]", hudX, hudY, sneakCol);
             }
 
             char clockBuf[40];   // "Gün 999 · İlkbahar  23:59" UTF-8 sığsın
@@ -11660,7 +11732,11 @@ int main(int argc, char *argv[])
             SDL_Color clockCol = { 220, 220, 235, 255 };
             int tw = 0, th = 0;
             TTF_GetStringSize(gameFont, clockBuf, 0, &tw, &th);
-            draw_text(renderer, gameFont, clockBuf, winW - tw - 20.0f, 20.0f, clockCol);
+            // SAĞA HİZALI: genişliği veriyoruz, çıkarmayı yerleşim yapıyor
+            float ckx, cky;
+            uilayout_get_aligned("saat", (float)winW - (float)tw - 20.0f, 20.0f,
+                                 (float)tw, (float)th, &ckx, &cky);
+            draw_text(renderer, gameFont, clockBuf, ckx, cky, clockCol);
 
             // ESO HEDEF İŞARETÇİSİ: aktif görev hedefi (minimap + dünya oku)
             {
@@ -11779,13 +11855,21 @@ int main(int argc, char *argv[])
                 if (qtTitle != NULL) {
                     SDL_Color qgold = { 255, 210, 60, 255 };
                     SDL_Color qwhite = { 225, 225, 235, 255 };
+                    // Sağa hizalı İKİ satır: her satır kendi genişliğiyle
+                    // hizalanır, o yüzden ayrı ayrı çözülüyor. Satır aralığı
+                    // (22px) fonta bağlı, yerleşime değil — kodda kalıyor.
                     int qw = 0, qh = 0;
+                    float qtx, qty;
                     TTF_GetStringSize(gameFont, qtTitle, 0, &qw, &qh);
-                    draw_text(renderer, gameFont, qtTitle,
-                              winW - (float)qw - 20.0f, 48.0f, qgold);
+                    uilayout_get_aligned("gorev_takip",
+                                         (float)winW - (float)qw - 20.0f, 48.0f,
+                                         (float)qw, (float)qh, &qtx, &qty);
+                    draw_text(renderer, gameFont, qtTitle, qtx, qty, qgold);
                     TTF_GetStringSize(gameFont, qtObj, 0, &qw, &qh);
-                    draw_text(renderer, gameFont, qtObj,
-                              winW - (float)qw - 20.0f, 70.0f, qwhite);
+                    uilayout_get_aligned("gorev_takip",
+                                         (float)winW - (float)qw - 20.0f, 48.0f,
+                                         (float)qw, (float)qh, &qtx, &qty);
+                    draw_text(renderer, gameFont, qtObj, qtx, qty + 22.0f, qwhite);
                 }
             }
 
@@ -11801,21 +11885,31 @@ int main(int argc, char *argv[])
                 int bw = 0, bh = 0;
                 TTF_GetStringSize(gameFont, questBannerTitle, 0, &bw, &bh);
                 SDL_Color bgold = { 255, 210, 60, qalpha };
-                draw_text(renderer, gameFont, questBannerTitle,
-                          (winW - (float)bw) / 2.0f, 90.0f, bgold);
-                // süs çizgileri (ESO dokusu)
+                float qbx, qby;
+                uilayout_get_aligned("gorev_bandi",
+                                     (winW - (float)bw) / 2.0f, 90.0f,
+                                     (float)bw, (float)bh, &qbx, &qby);
+                draw_text(renderer, gameFont, questBannerTitle, qbx, qby, bgold);
+                // süs çizgileri (ESO dokusu) — başlığın iki yanına, ona göre
                 r2d_set_blend(renderer, R2D_BLEND_ALPHA);
                 r2d_set_color(renderer, 255, 210, 60, (Uint8)(qalpha / 2));
-                SDL_FRect ql = { (winW - (float)bw) / 2.0f - 60.0f, 99.0f, 50.0f, 2.0f };
-                SDL_FRect qr = { (winW + (float)bw) / 2.0f + 10.0f, 99.0f, 50.0f, 2.0f };
+                float qly = qby + 9.0f;
+                SDL_FRect ql = { qbx - 60.0f, qly, 50.0f, 2.0f };
+                SDL_FRect qr = { qbx + (float)bw + 10.0f, qly, 50.0f, 2.0f };
                 r2d_fill_rect(renderer, &ql);
                 r2d_fill_rect(renderer, &qr);
                 if (questBannerSub != NULL)
                 {
                     TTF_GetStringSize(gameFont, questBannerSub, 0, &bw, &bh);
                     SDL_Color bwhite = { 230, 230, 240, qalpha };
+                    // Alt satır başlığa GÖRE (26px altı): bandı taşıdığında
+                    // ikisi beraber gitsin, ayrı yerleşim girdisi gerekmesin
+                    float qsx, qsy;
+                    uilayout_get_aligned("gorev_bandi",
+                                         (winW - (float)bw) / 2.0f, 90.0f,
+                                         (float)bw, (float)bh, &qsx, &qsy);
                     draw_text(renderer, gameFont, questBannerSub,
-                              (winW - (float)bw) / 2.0f, 116.0f, bwhite);
+                              qsx, qsy + 26.0f, bwhite);
                 }
             }
         }
@@ -11824,11 +11918,11 @@ int main(int argc, char *argv[])
         // Hotbar sürüklemesi: ✕ kaldırma hedefi (yalnız sürüklerken görünür)
         if (dragHbSlot >= 0)
         {
-            float hbX0 = winW / 2.0f - 24.0f;
-            float hbY0 = winH - 12.0f - 3.0f * (48.0f + 6.0f);
-            ui_cell_gray(renderer, hbX0, hbY0, 48.0f, 48.0f);
+            // Dikdörtgen hotbar'dan gelir: tıklama hedefiyle aynı kaynak
+            SDL_FRect hbRm = hotbar_remove_zone_rect(winW, winH);
+            ui_cell_gray(renderer, hbRm.x, hbRm.y, hbRm.w, hbRm.h);
             if (gameFont != NULL)
-                draw_text(renderer, gameFont, "X", hbX0 + 18.0f, hbY0 + 14.0f,
+                draw_text(renderer, gameFont, "X", hbRm.x + 18.0f, hbRm.y + 14.0f,
                           (SDL_Color){ 255, 110, 90, 255 });
         }
         // İĞNE ŞARJ GÖSTERGESİ: iğne takılıyken barların altında 3 kare
@@ -11836,12 +11930,18 @@ int main(int argc, char *argv[])
             equipment.slots[EQUIP_SHIELD].type == &ITEM_TYPES[ITEM_POISON_NEEDLE])
         {
             int vCount = bag_count(&ITEM_TYPES[ITEM_NEEDLE_VENOM]);
+            // Eski konum (20,78) ALTIN göstergesiyle (20,76) çakışıyordu: iğne
+            // takılıyken iki metin üst üste biniyordu. Yerleşimde yığının altına
+            // alındı. Kareler etikete GÖRE duruyor (58,4) — tek girdi yeter.
+            float nx, ny;
+            uilayout_get("igne_sarj", 20.0f, 216.0f, &nx, &ny);
             if (gameFont != NULL)
-                draw_text(renderer, gameFont, "Zehir", 20.0f, 78.0f,
+                draw_text(renderer, gameFont, "Zehir", nx, ny,
                           (SDL_Color){ 170, 100, 230, 255 });
             for (int vq = 0; vq < 3; vq++)
             {
-                SDL_FRect vc = { 78.0f + (float)vq * 16.0f, 82.0f, 10.0f, 10.0f };
+                SDL_FRect vc = { nx + 58.0f + (float)vq * 16.0f, ny + 4.0f,
+                                 10.0f, 10.0f };
                 r2d_set_blend(renderer, R2D_BLEND_ALPHA);
                 if (vq < vCount) r2d_set_color(renderer, 150, 70, 190, 255);
                 else             r2d_set_color(renderer, 60, 45, 75, 255);
@@ -11893,8 +11993,10 @@ int main(int argc, char *argv[])
             SDL_Color ammoCol = ammo_any(&inventory)
                               ? (SDL_Color){ 230, 220, 180, 255 }
                               : (SDL_Color){ 255, 120, 100, 255 };
-            draw_text(renderer, gameFont, ammoBuf,
-                      winW / 2.0f - 40.0f, winH - 96.0f, ammoCol);
+            float amx, amy;
+            uilayout_get("ok_sayaci", winW / 2.0f - 40.0f, (float)winH - 96.0f,
+                         &amx, &amy);
+            draw_text(renderer, gameFont, ammoBuf, amx, amy, ammoCol);
         }
 
         lockpick_render(renderer, gameFont, winW, winH, &perkFx,
@@ -11950,21 +12052,27 @@ int main(int argc, char *argv[])
             TTF_GetStringSize(splashFont, splashText, 0, &tw, &th);
             float alpha = (splashTimer < 1.0f) ? splashTimer : 1.0f;
             SDL_Color col = { 240, 235, 210, (Uint8)(255 * alpha) };
-            draw_text(renderer, splashFont, splashText,
-                      (winW - tw) / 2.0f, winH * 0.15f, col);
+            // DAVRANIŞ DEĞİŞTİ: eski y = winH*0.15 (oransal), yeni y = 108 (sabit).
+            // 720px'te aynı yer; daha uzun pencerede splash aşağı kaymaz — üst
+            // kenardan sabit uzaklıkta durur. Duyuru öğesi için doğrusu bu.
+            float spx, spy;
+            uilayout_get_aligned("bolge_splash", ((float)winW - (float)tw) * 0.5f,
+                                 108.0f, (float)tw, (float)th, &spx, &spy);
+            draw_text(renderer, splashFont, splashText, spx, spy, col);
         }
         
 
-        if (inventoryOpen)
+        if (inventoryOpen || ed_prev("envanter"))
         {
-            int panelX = (winW - INV_PANEL_W) / 2;
-            int panelY = 20;   // çanta 720px'e ancak böyle sığıyor
+            float panelXF, panelYF;
+            inventory_panel_origin(winW, winH, &panelXF, &panelYF);
+            int panelX = (int)panelXF, panelY = (int)panelYF;
             equipment_render(&equipment, renderer, itemIconTex, &itemTex,
                              built, builtCount, panelX, panelY, gameFont);
 
             // Sekme şeridi: [Eşya] [Malzeme] — I döngüsü / tıklama / sürükle-bırak hedefi
             {
-                float tabY = (float)(panelY + 340 - 28);
+                float tabY = (float)(panelY + INV_EQUIP_H - 28);
                 const char *tabNames[2] = { "Eşya", "Malzeme" };
                 for (int t = 0; t < 2; t++)
                 {
@@ -11996,7 +12104,7 @@ int main(int argc, char *argv[])
 
             inventory_render((invTab == 1) ? &craftBag : &inventory,
                              renderer, itemIconTex, &itemTex, gameFont,
-                             (float)panelX, (float)(panelY + 340),
+                             (float)panelX, (float)(panelY + INV_EQUIP_H),
                              (invTab == 1) ? "Malzeme" : "Eşya");
 
             // Çöp onayı: küçük panel — [1] yok et · [2] vazgeç
@@ -12032,7 +12140,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (skillsOpen)
+        if (skillsOpen || ed_prev("beceri_paneli"))
         {
             // Envanter paneliyle çakışmasın diye sol tarafta
             skill_panel_render(player.skills, renderer, gameFont, 40.0f, 40.0f);
@@ -12065,7 +12173,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (shopOpen)
+        if (shopOpen || ed_prev("dukkan"))
             shop_render(renderer, gameFont, itemIconTex, &itemTex, player.gold,
                         rep_buy_mult(player.reputation[region_of(player.rect.x, player.rect.y)])
                             * (shopCaravan ? 1.15f : 1.0f)
@@ -12075,13 +12183,16 @@ int main(int argc, char *argv[])
                         (shopCaravan||shopLoca||shopDogu) ? caravanStockN : 0);
 
         // Craft paneli + aktif sürecin ilerleme barı
-        if (craftOpen && craftStation >= 0)
+        if ((craftOpen && craftStation >= 0) || ed_prev("craft_paneli"))
         {
+            // Ön izlemede istasyon kapalı olabilir (craftStation = -1); panelin
+            // çizilebilmesi için geçerli bir istasyon gerekiyor, 0'ıncısı seçilir.
+            int edStation = (craftStation >= 0) ? craftStation : 0;
             // Sunakta 'hedef' satırı seçili ekipmanı gösterir; diğerlerinde kuşanılı silah
-            const ItemStack *pw = (STATIONS[craftStation].type == STATION_ENCHANT)
+            const ItemStack *pw = (STATIONS[edStation].type == STATION_ENCHANT)
                                 ? &equipment.slots[enchTarget]
                                 : &equipment.slots[EQUIP_WEAPON];
-            craft_panel_render(craftStation, &craftBag, &inventory, player.skills,
+            craft_panel_render(edStation, &craftBag, &inventory, player.skills,
                                craftScroll,
                                craftRecipe,
                                plus_chance(equipment.slots[EQUIP_WEAPON].plusLevel + 1,
@@ -12106,7 +12217,7 @@ int main(int argc, char *argv[])
         }
 
         // İlan panosu paneli (Faz 6): günün kontratları + kabul/teslim
-        if (locaBoardOpen)
+        if (locaBoardOpen || ed_prev("suikast_panosu"))
         {
             bool cReady2 = player.contractActive >= 0 &&
                 player.contractProgress >=
@@ -12115,7 +12226,7 @@ int main(int argc, char *argv[])
                                   player.contractProgress, cReady2,
                                   renderer, gameFont, 40.0f, 40.0f);
         }
-        if (boardOpen)
+        if (boardOpen || ed_prev("ilan_panosu"))
             contract_panel_render(renderer, gameFont, &craftBag, &inventory,
                                   player.reputation[region_of(BOARD_X, BOARD_Y)],
                                   40.0f, 40.0f);
@@ -12156,10 +12267,16 @@ int main(int argc, char *argv[])
         }
 
         // Muhafız yakalama paneli: öde / karşı koy / rüşvet
-        if (catchOpen && gameFont != NULL)
+        if ((catchOpen || ed_prev("yakalama_paneli")) && gameFont != NULL)
         {
+            // Bu panelin HEM genişliği HEM yüksekliği sabit (içerik üç seçenek,
+            // satır sayısı değişmiyor) — yerleşimde tam boyutlu tek öğe.
+            // Tıklama bağı yok: seçim 1/2/3 tuşlarıyla yapılıyor.
             float pw = 480.0f, ph = 168.0f;
-            float pX = (winW - pw) / 2.0f, pY = winH / 3.0f;
+            uilayout_get_size("yakalama_paneli", pw, ph, &pw, &ph);
+            float pX, pY;
+            uilayout_get_aligned("yakalama_paneli", ((float)winW - pw) / 2.0f,
+                                 (float)winH / 3.0f, pw, ph, &pX, &pY);
             ui_panel(renderer, pX, pY, pw, ph);
 
             SDL_Color white = { 240, 240, 245, 255 };
@@ -12240,8 +12357,10 @@ int main(int argc, char *argv[])
             if (inventoryOpen)
             {
                 const Inventory *tb = (invTab == 1) ? &craftBag : &inventory;
-                int tpx = (winW - INV_PANEL_W) / 2, tpy = 20;
-                int sl = inventory_slot_at(tmx, tmy, (float)tpx, (float)(tpy + 340));
+                float tpxF, tpyF;
+                inventory_panel_origin(winW, winH, &tpxF, &tpyF);
+                int tpx = (int)tpxF, tpy = (int)tpyF;
+                int sl = inventory_slot_at(tmx, tmy, (float)tpx, (float)(tpy + INV_EQUIP_H));
                 if (sl >= 0 && sl < tb->cap && tb->slots[sl].type != NULL)
                 {
                     tip = &tb->slots[sl];
@@ -12395,6 +12514,12 @@ int main(int argc, char *argv[])
             draw_text(renderer, gameFont, pr,
                       (winW - tw) / 2.0f, winH * 0.72f, call);
         }
+
+        // YERLEŞİM DÜZENLEYİCİSİ en son çizilir: menü, tooltip, ölüm ekranı —
+        // hepsinin üstünde olmalı, yoksa düzenlediğin tutamak altta kalır.
+        // Post-fx ayrımının HUD tarafında olduğu için filtreden de etkilenmez
+        // (ölçüm aracı filtrelenirse ölçüm bozulur).
+        uieditor_render(renderer, gameFont, winW, winH);
 
         r2d_end_frame(renderer); // batch'i GPU'ya gönder + ekrana bas
     }

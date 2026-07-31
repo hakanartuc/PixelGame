@@ -58,6 +58,10 @@ add_executable(game
     src/lamp.c
     src/shadow.c
     src/decal.c
+    src/jsonx.c
+    src/uilayout.c
+    src/uieditor.c
+    vendor/cjson/cJSON.c
     src/crime.c
     src/guard.c
     src/sneak.c
@@ -75,6 +79,10 @@ add_executable(game
 
 # Vendored decoder: kendi uyarıları bizi ilgilendirmez (-Wall/-Wextra dışı)
 set_source_files_properties(src/stb_vorbis.c PROPERTIES COMPILE_OPTIONS "-w")
+# cJSON (MIT, vendor/cjson) — veri formatı ayrıştırıcısı. Aynı gerekçe: vendored
+# kodun uyarıları bizim değil. src/jsonx.c bunun üstüne ince sarmalayıcı.
+set_source_files_properties(vendor/cjson/cJSON.c PROPERTIES COMPILE_OPTIONS "-w")
+target_include_directories(game PRIVATE vendor/cjson)
 target_link_libraries(game PRIVATE SDL3::SDL3) # SDL3' linkle
 target_link_libraries(game PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)   # ← SDL3_ttf
 

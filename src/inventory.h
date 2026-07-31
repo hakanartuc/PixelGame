@@ -11,6 +11,22 @@
 #define INVENTORY_SIZE 60   // slot DİZİ tavanı (aktif slot sayısı = cap, craft'la büyür)
 #define INV_COLS 10         // panel sütun sayısı (render + slot_at aynı kaynak)
 #define INV_PANEL_W (INV_COLS * 56 + 32)   // panel genişliği (main çapaları bununla ortalar)
+#define INV_EQUIP_H 340                    // ekipman bölümünün yüksekliği; çanta
+                                           // ızgarası ve sekme şeridi bunun altında
+
+// Envanter panelinin sol-üst köşesi — TEK KAYNAK.
+//
+// Neden fonksiyon: bu köşe çizimi, yuva tıklamasını, sürükle-bırak hedeflerini,
+// sekme şeridini, çöp hücresini ve tooltip'i besliyor — formül main.c'de BEŞ
+// yere kopyalanmıştı. Paneli veriden taşınabilir yapmak o kopyaları sessiz
+// sapma noktasına çevirirdi: panel taşınır, yuvalar eski yerinde tıklanmaya
+// devam ederdi ve hiçbir uyarı çıkmazdı.
+//
+// BOYUT YOK, bilinçli: panel genişliği INV_COLS × 56'dan, yüksekliği çanta
+// KAPASİTESİNDEN çıkıyor (çanta yükseltmesiyle satır ekleniyor). Boyut burada
+// bir tasarım kararı değil, içeriğin sonucu — veriye taşımak ya hiçbir şey
+// yapmaz ya yuva ızgarasını panelden koparır.
+void inventory_panel_origin(int winW, int winH, float *outX, float *outY);
 
 // Çanta kademe boyutları (ÇANTA SEKMELERİ fazı): iki çanta ayrı büyür.
 // Eşya:   30 → +10 (Deri Çanta) → +10 (Gezgin Çantası) = max 50

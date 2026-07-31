@@ -53,6 +53,9 @@ bool hotbar_assign_item(Hotbar *hb, const ItemType *type);
 // (row*10+col döner). removeZone: sürükleme sırasında ✕ hedefi (-2 döner)
 int hotbar_slot_at(float x, float y, int winW, int winH);
 bool hotbar_remove_zone_at(float x, float y, int winW, int winH);   // ✕ hedefi
+// ✕ hedefinin dikdörtgeni. Çizim ve tıklama AYNI kaynaktan beslenmek zorunda:
+// bar yerleşim dosyasından taşınabiliyor, formül kopyası sessizce kayar.
+SDL_FRect hotbar_remove_zone_rect(int winW, int winH);
 
 
 

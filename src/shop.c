@@ -2,6 +2,7 @@
 #include "shop.h"
 #include "font.h"
 #include "ui_theme.h"
+#include "uilayout.h"
 
 // Satır yerleşimi — çizim ve tıklama aynı ölçüleri kullanır (desenkron olmaz)
 #define SHOP_ROW_H 44.0f
@@ -45,6 +46,15 @@ const ShopEntry CARAVAN_STOCK[] = {
 };
 const int CARAVAN_STOCK_COUNT = (int)(sizeof(CARAVAN_STOCK) / sizeof(CARAVAN_STOCK[0]));
 
+// Panelin konumu + genişliği (yerleşim dosyası: "dukkan"). Çizim ve
+// shop_entry_at AYNI çağrıyı yapıyor — panel taşındığında satır tıklaması
+// beraber taşınsın. panelX/panelY parametreleri artık VARSAYILAN: anahtar
+// dosyada varsa o kazanır, yoksa çağıranın verdiği eski konum geçerli.
+static SDL_FRect shop_rect(float panelX, float panelY)
+{
+    return uilayout_panel("dukkan", panelX, panelY, SHOP_W);
+}
+
 void shop_render(R2D *renderer, TTF_Font *font,
                  R2DTexture *itemIconTex, const ItemTextures *itemTex,
                  int playerGold, float buyMult, float panelX, float panelY,
@@ -53,7 +63,10 @@ void shop_render(R2D *renderer, TTF_Font *font,
     if (stock == NULL) { stock = SHOP_STOCK; stockCount = SHOP_STOCK_COUNT; }
     float panelH = stockCount * SHOP_ROW_H + SHOP_PAD * 2 + 56.0f;
 
-    ui_panel(renderer, panelX, panelY, SHOP_W, panelH);
+    SDL_FRect pr = shop_rect(panelX, panelY);
+    panelX = pr.x; panelY = pr.y;   // gerisi bu iki değerden türüyor
+    const float SHOP_PANEL_W = pr.w;
+    ui_panel(renderer, panelX, panelY, SHOP_PANEL_W, panelH);
 
     if (font == NULL) return;
 
@@ -68,7 +81,7 @@ void shop_render(R2D *renderer, TTF_Font *font,
         const ItemType *it = stock[i].type;
 
         // Satır zemini (tema hücresi)
-        SDL_FRect row = { panelX + 8.0f, rowY, SHOP_W - 16.0f, SHOP_ROW_H - 6.0f };
+        SDL_FRect row = { panelX + 8.0f, rowY, SHOP_PANEL_W - 16.0f, SHOP_ROW_H - 6.0f };
         ui_cell_gray(renderer, row.x, row.y, row.w, row.h);
 
         // İkon (envanterle aynı fallback zinciri)
@@ -100,9 +113,10 @@ void shop_render(R2D *renderer, TTF_Font *font,
 int shop_entry_at(float x, float y, float panelX, float panelY, int stockCount)
 {
     if (stockCount <= 0) stockCount = SHOP_STOCK_COUNT;
-    float rowY = panelY + SHOP_PAD + 30.0f;
+    SDL_FRect pr = shop_rect(panelX, panelY);
+    float rowY = pr.y + SHOP_PAD + 30.0f;
     for (int i = 0; i < stockCount; i++) {
-        SDL_FRect row = { panelX + 8.0f, rowY, SHOP_W - 16.0f, SHOP_ROW_H - 6.0f };
+        SDL_FRect row = { pr.x + 8.0f, rowY, pr.w - 16.0f, SHOP_ROW_H - 6.0f };
         if (x >= row.x && x < row.x + row.w && y >= row.y && y < row.y + row.h)
             return i;
         rowY += SHOP_ROW_H;

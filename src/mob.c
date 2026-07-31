@@ -1078,6 +1078,42 @@ void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Ca
     else
         r2d_texture_set_color_mod(texture, 255, 255, 255);
 
+    if (m->dissolve > 0.0f) {
+        // ÇÖZÜNME: sprite yatay bantlara ayrılır, her bant KENDİ eşiğinde yok
+        // olur. Eşik bant indeksi + mob id'sinden türetiliyor, yani iki mob aynı
+        // desende erimiyor. Ölen bant kaybolmadan önce yukarı süzülüp soluyor
+        // (kül gibi) ve karararak gidiyor.
+        // Bantlar 0.75 katsayısıyla dağıtılıyor: son çeyrekte hepsi birlikte
+        // biter, yoksa tek bant en sonda asılı kalıyor.
+        const int N = MOB_DISSOLVE_BANDS;
+        float bh = src.h / (float)N;          // kaynak bant yüksekliği
+        float dh = screen.h / (float)N;       // ekran bant yüksekliği
+        for (int b = 0; b < N; b++) {
+            // Basit tamsayı karıştırma — bant başına sabit ama düzensiz eşik
+            unsigned h = (unsigned)(b * 2654435761u) ^ (unsigned)(m->id * 40503u);
+            h ^= h >> 13; h *= 2246822519u; h ^= h >> 16;
+            float thr = (float)(h & 1023u) / 1023.0f;
+            float local = (m->dissolve - thr * 0.75f) / 0.25f;
+            if (local >= 1.0f) continue;      // bu bant gitti
+            SDL_FRect sb = { src.x, src.y + bh * (float)b, src.w, bh };
+            SDL_FRect db = { screen.x, screen.y + dh * (float)b, screen.w, dh };
+            Uint8 a = 255;
+            if (local > 0.0f) {
+                a = (Uint8)(255.0f * (1.0f - local));
+                db.y -= local * 7.0f * zoom;                       // yukarı süzülür
+                db.x += SDL_sinf(local * 3.0f + (float)b) * 2.0f * zoom;  // yana savrulur
+                Uint8 dark = (Uint8)(255.0f - 90.0f * local);      // kararır (kül)
+                r2d_texture_set_color_mod(texture, dark, dark, dark);
+            }
+            r2d_texture_set_alpha_mod(texture, a);
+            r2d_draw_texture_flip(renderer, texture, &sb, &db,
+                                  flip == SDL_FLIP_HORIZONTAL);
+            r2d_texture_set_color_mod(texture, 255, 255, 255);
+        }
+        r2d_texture_set_alpha_mod(texture, 255);
+        return;   // çözünürken şüphe göstergesi/flaş çizilmez
+    }
+
     r2d_draw_texture_flip(renderer, texture, &src, &screen, flip == SDL_FLIP_HORIZONTAL);
 
     // BEYAZ-SICAK FLAŞ: isabetin ilk ~2 karesinde silüetin üstüne ADDITIVE
@@ -1164,10 +1200,17 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
             m->animTimer -= clip->frameDuration;
             m->currentFrame++;
             if (m->currentFrame >= clip->frameCount) {
-                // Death animasyonu bitti → mob tamamen kayboldu
-                m->dying = false;
-                m->currentFrame = clip->frameCount - 1;  // son karede kal (ya da kaybol)
+                // Death animasyonu bitti → PAT diye kaybolmak yerine ÇÖZÜNMEYE
+                // başla. dying true kalıyor ki çizim sürsün (render koşulu buna
+                // bakıyor); çözünme dolduğunda gerçekten yok olur.
+                m->currentFrame = clip->frameCount - 1;   // son karede kal
+                if (m->dissolve <= 0.0f) m->dissolve = 0.0001f;
             }
+        }
+        // Çözünme ilerlemesi — ölüm animasyonundan SONRA işliyor
+        if (m->dissolve > 0.0f) {
+            m->dissolve += dt / MOB_DISSOLVE_TIME;
+            if (m->dissolve >= 1.0f) { m->dissolve = 0.0f; m->dying = false; }
         }
         return;   // dying'de AI yok
     }

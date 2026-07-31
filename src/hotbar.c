@@ -3,6 +3,7 @@
 #include "hotbar.h"
 #include "font.h"
 #include "ui_theme.h"
+#include "uilayout.h"
 
 #define CELL 48.0f
 #define GAP 6.0f
@@ -73,14 +74,33 @@ static int inv_total_count(const Inventory *inv, const ItemType *type)
     return total;
 }
 
+#define BAR_W (HOTBAR_COLS * CELL + (HOTBAR_COLS - 1) * GAP)
+
+// Barın TABAN NOKTASI: sol kenar + alt kenar. Yerleşim dosyasından gelir
+// ("hotbar", alt-orta çapa, orta hiza). Anahtar yoksa varsayılan eski
+// davranışın birebir aynısı: (winW-barW)/2 ve winH-12.
+//
+// Neden ayrı fonksiyon: bu nokta slot_rect'i, kaldırma hedefini VE main.c'deki
+// ✕ çizimini besliyor. Formül kopyalanırsa bar taşındığında tıklama alanı
+// görselden ayrılır — hata da sessiz olur (bar görünür, tıklama tutmaz).
+static void bar_origin(int winW, int winH, float *x0, float *yBase)
+{
+    // Dikey hizası "ust" (varsayılan): dönen y BARIN TABANI, yükseklik
+    // çıkarması slot_rect'te yapılıyor (bar 4 sıra + dikey kanatlar, tek bir
+    // "yükseklik" sayısı onu temsil etmiyor)
+    uilayout_get_aligned("hotbar", ((float)winW - BAR_W) * 0.5f,
+                         (float)winH - 12.0f, BAR_W, 0.0f, x0, yBase);
+}
+
 // YERLEŞİM (tek kaynak): slot i → ekran dikdörtgeni.
 // 0-7 alt bar, 8-15 üst bar (ortada alt alta); 16-23 sağ dikey 2×4;
 // 24-31 sol dikey 2×4 (dikeyler ana barların bitişiğinde, alt hizalı)
 static SDL_FRect slot_rect(int i, int winW, int winH)
 {
-    float barW = HOTBAR_COLS * CELL + (HOTBAR_COLS - 1) * GAP;
-    float x0 = (winW - barW) / 2.0f;
-    float yBot = (float)winH - CELL - 12.0f;
+    float barW = BAR_W;
+    float x0, yBase;
+    bar_origin(winW, winH, &x0, &yBase);
+    float yBot = yBase - CELL;
     if (i < 8)           // alt ana bar
         return (SDL_FRect){ x0 + i * (CELL + GAP), yBot, CELL, CELL };
     if (i < 16)          // üst ana bar
@@ -89,15 +109,13 @@ static SDL_FRect slot_rect(int i, int winW, int winH)
     if (i < 24) {        // sağ dikey 2×4
         int k = i - 16;
         float rx = x0 + barW + GAP * 3 + (float)(k % 2) * (CELL + GAP);
-        float ry = (float)winH - 12.0f - CELL
-                 - (float)(3 - k / 2) * (CELL + GAP);
+        float ry = yBot - (float)(3 - k / 2) * (CELL + GAP);
         return (SDL_FRect){ rx, ry, CELL, CELL };
     }
     {                    // sol dikey 2×4
         int k = i - 24;
         float lx = x0 - GAP * 3 - CELL - (float)(k % 2) * (CELL + GAP);
-        float ly = (float)winH - 12.0f - CELL
-                 - (float)(3 - k / 2) * (CELL + GAP);
+        float ly = yBot - (float)(3 - k / 2) * (CELL + GAP);
         return (SDL_FRect){ lx, ly, CELL, CELL };
     }
 }
@@ -112,12 +130,21 @@ int hotbar_slot_at(float x, float y, int winW, int winH)
     return -1;
 }
 
-// ✕ kaldırma hedefi: üst ana barın ÜSTÜNDE ortada (yalnız sürüklerken)
+// ✕ kaldırma hedefi: üst ana barın ÜSTÜNDE ortada (yalnız sürüklerken).
+// Dikdörtgeni döndürüyoruz çünkü main.c bunu ÇİZİYOR da — formülü orada
+// tekrarlamak bar taşınınca çizim ile tıklamayı ayırırdı.
+SDL_FRect hotbar_remove_zone_rect(int winW, int winH)
+{
+    float x0, yBase;
+    bar_origin(winW, winH, &x0, &yBase);
+    return (SDL_FRect){ x0 + BAR_W / 2.0f - CELL / 2.0f,
+                        yBase - 3.0f * (CELL + GAP), CELL, CELL };
+}
+
 bool hotbar_remove_zone_at(float x, float y, int winW, int winH)
 {
-    float rx = (float)winW / 2.0f - CELL / 2.0f;
-    float ry = (float)winH - 12.0f - 3.0f * (CELL + GAP);
-    return x >= rx && x < rx + CELL && y >= ry && y < ry + CELL;
+    SDL_FRect r = hotbar_remove_zone_rect(winW, winH);
+    return x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
 }
 
 void hotbar_render(const Hotbar *hb, R2D *renderer,

@@ -4,6 +4,55 @@ Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
+### Faz UI-LAYOUT — HUD YERLEŞİMİ VERİYE + OYUN İÇİ DÜZENLEYİCİ (2026-07-31)
+Kararlar GDD §7.1'de. Save DEĞİŞMEDİ (yerleşim kayda girmiyor).
+
+**Altyapı**
+- `vendor/cjson/` (MIT, stb_vorbis deseni: `-w` ile uyarısız derlenir)
+- `src/jsonx` — cJSON üstüne üç eksik: (1) JSONC yorumları **boşlukla** değiştirilir,
+  silinmez → karakter ofsetleri korunur, hata satırı ORİJİNAL dosyayla eşleşir;
+  dize içindeki `//` korunur (`http://` bozulmasın). (2) satır/kolon + hatalı satır +
+  "sondaki fazla virgül" ipucu. (3) varsayılanlı getter'lar — eksik alan çökertmez.
+- `src/uilayout` — 9 çapa (`sol-ust`…`sag-alt`) + yatay `hiza` (sol/orta/sag) +
+  dikey `dikey` (ust/orta/alt) + isteğe bağlı `w`/`h`. Eksik anahtar → kod varsayılanı
+  + BİR KEZ uyarı. Bozuk JSON → oyun varsayılanlarla çalışmaya DEVAM eder (test edildi).
+- `src/uieditor` — Ctrl+U. Tutamaklar yerleşim VERİSİNİ dolaşır, öğenin canlı olmasını
+  beklemez (tok buffunu dizmek için yemek yemek gerekmiyor). Izgara 8/16/32 (G),
+  hizalama kılavuzu (başka öğeyle aynı hizaya yapışır + yeşil çizgi — yapışmanın
+  SEBEBİ görünmeli), Alt yapıştırmayı kapatır, `E` en uygun çapa, boyut tutamağı,
+  `P` ön izleme (seçili panel kapalı olsa bile gerçek içeriğiyle çizilir),
+  üst üste binen tutamaklarda tekrar-tıklama alttakini seçer.
+
+**Taşınan 23 öğe** — barlar (can/mana/stamina AYRI), altın, tok, unvan, durum yığını,
+iğne şarjı, saat, görev takipçisi, boss barı, görev bandı, bölge splash'i, hotbar,
+ok sayacı, minimap (kutu), envanter, 5 panel (dükkan/ilan/beceri/craft/suikast — her
+biri kendi genişliğiyle), yakalama paneli.
+
+**Bulunan gerçek hatalar**
+- main.c envanter yuva tıklaması `panelY` yerine sabit `20` kullanıyordu → panel
+  konumu veriden gelince kesin ayrışacaktı. `340` sabitine ad verildi (`INV_EQUIP_H`
+  — panel yüksekliği DEĞİL, ekipman bölümünün yüksekliği).
+- Sol-üst kolonda çakışma: altın `y=76` ile iğne "Zehir" `y=78`, tok `y=96` ile
+  durum yığını `y=100`. Kolon sıraya dizildi.
+- Hotbar konum formülü ÜÇ yere kopyalanmıştı (`slot_rect` + kaldırma hedefi +
+  main.c ✕); envanterde BEŞ. Hepsi tek kaynağa indi.
+- Düzenleyici açıkken olayı yutmak yetmiyordu: hareket `SDL_GetKeyboardState` ile
+  anlık durumdan okunuyor, olay döngüsünü baypas ediyor → oyuncu girdisi
+  `!uieditor_active()` ile kapatıldı.
+- Minimap kutu semantiğinde 42px yukarı kayıyordu (harita oranı kutuyu doldurmuyor);
+  harita kutunun sağ-altına yapıştırıldı, eski konumla birebir aynı.
+
+**Bilinçli KAPSAM DIŞI** — letterbox (düzenlenecek konumu yok, tek değişkeni bant
+yüksekliği), envanter/panel YÜKSEKLİKLERİ (satır sayısı ve çanta kapasitesinden
+türüyor), can barı GENİŞLİĞİ (max stat'la büyümesi kasıtlı geri bildirim), tam ekran
+öğeler, imleci izleyenler, dünyaya bağlı barlar. Hâlâ kodda: beceri AĞACI paneli
+(konumu beceri paneline göreli) + diyalog paneli.
+
+**Ek**: çözünme ölümü (mob.c, 14 yatay şerit + hash eşikli dağılma, sağ kalan
+şeritler yukarı süzülür) bu commit'te. DEV kancası `PIXE_HIDDEN=1` — duman testi
+penceresi ekranda görünmez (SDL_WINDOW_HIDDEN; `SDL_VIDEODRIVER=dummy` çalışmaz,
+dummy sürücüde SDL_GPU cihazı açılmıyor).
+
 ### Temel (GPU geçişi öncesi tarihçe)
 - LPC paper-doll oyuncu (katmanlı ekipman, z-order, oversize slash, silah partikül fx)
 - Envanter + ekipman UI, loot döngüsü, pause menüsü

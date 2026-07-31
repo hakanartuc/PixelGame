@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include "skill.h"
+#include "uilayout.h"
 #include "font.h"
 #include "ui_theme.h"
 
@@ -98,6 +99,14 @@ const char *skill_name(SkillType t)
     }
 }
 
+// Panelin konumu + genişliği (yerleşim: "beceri_paneli"). Çizim ve
+// skill_panel_row_at aynı çağrıdan geçiyor — panel taşındığında satır
+// tıklaması beraber taşınsın. panelX/panelY artık VARSAYILAN değer.
+static SDL_FRect sk_rect(float panelX, float panelY)
+{
+    return uilayout_panel("beceri_paneli", panelX, panelY, SKILL_PANEL_W);
+}
+
 void skill_panel_render(const Skill *skills, R2D *renderer,
                         TTF_Font *font, float panelX, float panelY)
 {
@@ -105,7 +114,9 @@ void skill_panel_render(const Skill *skills, R2D *renderer,
     // perk pip'leri ve tıklama testi de aynı ölçüleri kullanır)
     float pad = SKILL_PANEL_PAD;
     float rowH = SKILL_PANEL_ROW_H;
-    float panelW = SKILL_PANEL_W;
+    SDL_FRect pr = sk_rect(panelX, panelY);
+    panelX = pr.x; panelY = pr.y;   // gerisi bu ikisinden türüyor
+    float panelW = pr.w;
     float panelH = (skill_rows() + 1) * rowH + pad * 2 + SKILL_PANEL_HEADER + 20.0f;   // +Kader satırı + alt ipucu
 
     ui_panel(renderer, panelX, panelY, panelW, panelH);
@@ -165,8 +176,9 @@ void skill_panel_render(const Skill *skills, R2D *renderer,
 
 int skill_panel_row_at(float x, float y, float panelX, float panelY)
 {
-    float gridY = panelY + SKILL_PANEL_PAD + SKILL_PANEL_HEADER;
-    if (x < panelX || x > panelX + SKILL_PANEL_W) return -1;
+    SDL_FRect pr = sk_rect(panelX, panelY);
+    float gridY = pr.y + SKILL_PANEL_PAD + SKILL_PANEL_HEADER;
+    if (x < pr.x || x > pr.x + pr.w) return -1;
     int row = (int)((y - gridY) / SKILL_PANEL_ROW_H);
     if (y < gridY || row < 0 || row > skill_rows()) return -1;
     if (row == skill_rows()) return SKILL_COUNT;   // Kader satırı (özel — kaysa da anlamı sabit)
