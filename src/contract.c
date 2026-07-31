@@ -85,22 +85,36 @@ int contract_progress(int slot)
     return (slot >= 0 && slot < CONTRACT_ACTIVE) ? progress[slot] : 0;
 }
 
+// KULLANILMIYOR (2026-07-31): pano kabul adımını kaldırdı (GDD §1.2c kural 3).
+// SİLİNMEDİ — kanon kuralı boşa çıkan kodu silmiyor, ve ZİNCİR görevlerinde kabul
+// adımı DURUYOR ("bir sözdür"), yani bu fonksiyon oraya bağlanabilir.
 void contract_accept(int slot)
 {
     if (slot >= 0 && slot < CONTRACT_ACTIVE && states[slot] == CONTRACT_AVAILABLE)
         states[slot] = CONTRACT_ACCEPTED;
 }
 
+// AVAILABLE'ı da kapatır. Eskiden yalnız ACCEPTED'ı kapatıyordu; kabul adımı
+// kalkınca bu bir ALTIN BASMA açığı olurdu — hiç alınmamış ama tamamlanmış ilan
+// ödeme yapıp AVAILABLE kalır, oyuncu tekrar tıklar, para yine gelir.
 void contract_turn_in(int slot)
 {
-    if (slot >= 0 && slot < CONTRACT_ACTIVE && states[slot] == CONTRACT_ACCEPTED)
+    if (slot < 0 || slot >= CONTRACT_ACTIVE) return;
+    if (states[slot] == CONTRACT_ACCEPTED || states[slot] == CONTRACT_AVAILABLE)
         states[slot] = CONTRACT_DONE;
 }
 
+// PANODA KABUL YOK (GDD §1.2c kural 3). Eskiden bu döngü `states[s] !=
+// CONTRACT_ACCEPTED` diye eleniyordu; yani panoya gitmediysen goblin öldürmen
+// sayılmıyordu. Oyuncuyu memur yapan şey buydu: iş yapmak için önce izin almak.
+// Şimdi her öldürme sayılıyor. Panoya sonradan bakınca "görülmüş" yazıyor ve
+// parası tezgâhta bekliyor.
+// DONE olanı saymıyoruz (bugünlük kapandı); ACCEPTED hâlâ sayılıyor çünkü eski
+// kayıtlarda o durumda kontratlar olabilir.
 void contract_on_kill(const MobType *type)
 {
     for (int s = 0; s < CONTRACT_ACTIVE; s++) {
-        if (states[s] != CONTRACT_ACCEPTED) continue;
+        if (states[s] == CONTRACT_DONE) continue;
         int ci = contract_today(s);
         if (ci < 0 || CONTRACTS[ci].targetMob != type) continue;
         if (progress[s] < CONTRACTS[ci].count)
@@ -175,7 +189,11 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
         const ContractDef *c = &CONTRACTS[ci];
         bool locked = rep < CONTRACT_TIER_REP[c->tier];
 
-        if (states[s] == CONTRACT_ACCEPTED) ui_cell_hi(renderer, row.x, row.y, row.w, row.h);
+        // Vurgu: hem ACCEPTED hem "görülmüş ama alınmamış" ilan öne çıkar —
+        // oyuncu panoya baktığında parasının beklediğini görmeli
+        bool spot = (states[s] == CONTRACT_ACCEPTED) ||
+                    (states[s] == CONTRACT_AVAILABLE && progress[s] >= c->count);
+        if (spot) ui_cell_hi(renderer, row.x, row.y, row.w, row.h);
         else                                ui_cell_gray(renderer, row.x, row.y, row.w, row.h);
 
         char line[112];
@@ -201,13 +219,12 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
                       row.x + 12.0f, rowY + 28.0f, dim);
         }
         else if (c->targetMob != NULL) {
-            int cur = (states[s] == CONTRACT_ACCEPTED) ? progress[s] : 0;
+            int cur = (states[s] == CONTRACT_DONE) ? c->count : progress[s];
             snprintf(line, sizeof(line), "%s x%d  (%d/%d)%s",
                      c->targetMob->name, c->count, cur, c->count,
-                     states[s] == CONTRACT_AVAILABLE ? "   > kabul et"
-                     : (cur >= c->count ? "   > TESLİM ET" : ""));
+                     cur >= c->count ? "   > PARASINI AL" : "");
             draw_text(renderer, font, line, row.x + 10.0f, rowY + 28.0f,
-                      (states[s] == CONTRACT_ACCEPTED && cur >= c->count) ? green : cyan);
+                      (cur >= c->count) ? green : cyan);
         }
         else {
             int have = inventory_count(inv, &ITEM_TYPES[c->fetchItem]) +
@@ -215,10 +232,9 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
             snprintf(line, sizeof(line), "%dx %s getir  (%d/%d)%s",
                      c->count, ITEM_TYPES[c->fetchItem].name,
                      have > c->count ? c->count : have, c->count,
-                     states[s] == CONTRACT_AVAILABLE ? "   > kabul et"
-                     : (have >= c->count ? "   > TESLİM ET" : ""));
+                     have >= c->count ? "   > TESLİM ET" : "");
             draw_text(renderer, font, line, row.x + 12.0f, rowY + 28.0f,
-                      (states[s] == CONTRACT_ACCEPTED && have >= c->count) ? green : cyan);
+                      (have >= c->count) ? green : cyan);
         }
         rowY += CT_ROW_H;
     }
@@ -254,7 +270,9 @@ void contract_panel_render(R2D *renderer, TTF_Font *font, const Inventory *inv,
     rowY += 64.0f;
 
     SDL_Color hint = { 170, 200, 255, 255 };
-    draw_text(renderer, font, "Kabul + teslim: satıra tıkla   ESC: kapat",
+    // İpucu artık "kabul" demiyor: pano kabul adımı kaldırıldı (GDD §1.2c kural 3).
+    // Oyuncu işi zaten yapmış olabilir; pano bir ilan panosu değil FİYAT LİSTESİ.
+    draw_text(renderer, font, "İş görüldüyse satıra tıkla, parasını al   ESC: kapat",
               panelX + CT_PAD, rowY + 6.0f, hint);
 }
 

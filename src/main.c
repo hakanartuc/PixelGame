@@ -4980,19 +4980,7 @@ int main(int argc, char *argv[])
                                                      player.rect.x + player.rect.w / 2.0f,
                                                      player.rect.y - 10.0f, buf, red);
                             }
-                            else if (ci >= 0 && contract_state(slot) == CONTRACT_AVAILABLE)
-                            {
-                                contract_accept(slot);
-                                audio_play(SFX_UI);
-                                char buf[FLOAT_TEXT_LEN];
-                                snprintf(buf, sizeof(buf), "Kontrat alındı: %s",
-                                         CONTRACTS[ci].name);
-                                SDL_Color cyan = { 90, 220, 255, 255 };
-                                floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
-                                                     player.rect.x + player.rect.w / 2.0f,
-                                                     player.rect.y - 10.0f, buf, cyan);
-                            }
-                            else if (ci >= 0 && contract_state(slot) == CONTRACT_ACCEPTED)
+                            else if (ci >= 0 && contract_state(slot) != CONTRACT_DONE)
                             {
                                 const ContractDef *c = &CONTRACTS[ci];
                                 // Getir kontratı: İKİ çantaya bak (malzeme craft

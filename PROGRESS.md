@@ -4,6 +4,31 @@ Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
+### Faz PANO — kontratta kabul adımı kaldırıldı (2026-07-31)
+GDD §1.2c kural 3'ün ilk uygulaması. Save formatı DEĞİŞMEDİ (durum enum'u aynı).
+
+**Sorun:** `contract_on_kill` döngüsü `states[s] != CONTRACT_ACCEPTED` diye eliyordu —
+yani panoya gitmediysen goblin öldürmen SAYILMIYORDU. Oyuncuyu memur yapan şey buydu:
+iş yapmak için önce izin almak.
+
+**Şimdi:** her öldürme sayılıyor (yalnız DONE elenir). Panoya sonradan bakınca ilerleme
+görünüyor, satır vurgulanıyor ve *"> PARASINI AL"* yazıyor. Tek tıkla ödeme.
+Tıklama akışı da birleşti: eskiden AVAILABLE'a tıklamak "kabul et", ACCEPTED'a tıklamak
+"teslim et"ti — artık tek dal var, hazırsa öder, değilse *"Henüz hazır değil"* der.
+
+**KENDİ ÇIKARDIĞIM AÇIK, aynı turda yakalandı:** `contract_turn_in` yalnız ACCEPTED'ı
+DONE yapıyordu. Kabul adımı kalkınca bu bir **altın basma açığı** olurdu — hiç alınmamış
+ama tamamlanmış ilan ödeme yapıp AVAILABLE kalır, oyuncu tekrar tıklar, para yine gelir.
+Fonksiyon AVAILABLE'ı da kapatacak şekilde düzeltildi.
+
+**Panel metinleri de eskimişti:** *"Kabul + teslim: satıra tıkla"* → *"İş görüldüyse
+satıra tıkla, parasını al"*. Pano artık ilan panosu değil **fiyat listesi**.
+
+`contract_accept()` SİLİNMEDİ (kanon kuralı) ve gerekçesi yazıldı: ZİNCİR görevlerinde
+kabul adımı DURUYOR ("bir sözdür", GDD §1.2c kural 3), yani fonksiyon oraya bağlanabilir.
+Suikastçi panosu (`player.contractActive`, Kısıklar loncası) ayrı sistem — dokunulmadı;
+lonca kontratı bir söz olduğu için kabul adımı orada anlamlı.
+
 ### Faz AÇILIŞ — v0 kanon katmanı söküldü, açılış yeniden kuruldu (2026-07-31)
 Kararlar GDD §1.2d (ilk yirmi dakika) ve §1.2e (karşılaşma sistemi)'nde.
 
