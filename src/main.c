@@ -304,10 +304,15 @@ static bool player_behind_mob(const Mob *m, float px2, float py2)
 }
 
 // İsimden tarif indeksi (Sessiz El tarifleri görev/sınıfla öğrenilir)
-static int recipe_index_by_name(const char *nm)
+// Tarif indeksi KİMLİKLE bulunur, görünen adla DEĞİL: dört tarif adı iki kez
+// geçiyor (kampateşi/simya varyantları) ve ada göre arama ilk eşleşmeyi
+// döndürüyordu. Bulunamayan id sessiz kalmaz.
+static int recipe_index_by_id(const char *rid)
 {
+    if (rid == NULL) return -1;
     for (int r = 0; r < RECIPE_COUNT; r++)
-        if (SDL_strcmp(RECIPES[r].name, nm) == 0) return r;
+        if (RECIPES[r].id != NULL && SDL_strcmp(RECIPES[r].id, rid) == 0) return r;
+    SDL_Log("craft: '%s' tarif id'si TABLODA YOK", rid);
     return -1;
 }
 
@@ -1393,29 +1398,18 @@ int main(int argc, char *argv[])
     // ESO görev sunumu: kabul/aşama değişiminde ekran üstünde büyük bant
     const char *questBannerTitle = NULL, *questBannerSub = NULL;
     float questBannerTimer = 0.0f;
-    for (int i = 0; i < NPC_COUNT; i++)
-        if (SDL_strcmp(NPCS[i].name, "Fatma") == 0) { fatmaIdx = i; break; }
-    for (int i = 0; i < NPC_COUNT; i++)
-        if (SDL_strcmp(NPCS[i].name, "Şifacı Ela") == 0) { sifaciIdx = i; break; }
-    for (int i = 0; i < NPC_COUNT; i++)
-        if (SDL_strcmp(NPCS[i].name, "'Dilsiz' Neriman") == 0) { nerimanIdx = i; break; }
-    for (int i = 0; i < NPC_COUNT; i++)
-        if (SDL_strcmp(NPCS[i].name, "Yaşlı Kemal") == 0) { kemalIdx = i; break; }
-    int nazifeIdx = -1;  // K2 Son Müşteri (D1b)
-    for (int i = 0; i < NPC_COUNT; i++)
-        if (SDL_strcmp(NPCS[i].name, "Nazife") == 0) { nazifeIdx = i; break; }
-    int kervanIdx = -1;  // Dünya Olayı: gezgin kervan tüccarı (WE_CARAVAN)
-    int yabanciIdx = -1; // Kör Kuyu tanıtıcısı (bir kez, gece — sonra kaybolur)
-    for (int i = 0; i < NPC_COUNT; i++)
-        if (SDL_strcmp(NPCS[i].name, "Yabancı") == 0) { yabanciIdx = i; break; }
-    for (int i = 0; i < NPC_COUNT; i++)
-        if (SDL_strcmp(NPCS[i].name, "Kervancı Selim") == 0) { kervanIdx = i; break; }
-    int nuhIdx = -1, zehraIdx = -1;   // S3 Sayan Adam (D1c)
-    for (int i = 0; i < NPC_COUNT; i++)
-    {
-        if (SDL_strcmp(NPCS[i].name, "Nuh") == 0)   nuhIdx = i;
-        if (SDL_strcmp(NPCS[i].name, "Zehra") == 0) zehraIdx = i;
-    }
+    // NPC indeksleri KİMLİKLE bulunur, görünen adla DEĞİL (npc.h'taki gerekçe:
+    // ad hem gösterim hem kimlik olunca yeniden adlandırma zinciri sessizce
+    // koparıyordu). Sekiz ayrı tarama döngüsü de tek yardımcıya indi.
+    fatmaIdx    = npc_index_by_id("dunya_koy_kandilci");
+    sifaciIdx   = npc_index_by_id("dunya_koy_sifaci");
+    nerimanIdx  = npc_index_by_id("loca_salon_usta");
+    kemalIdx    = npc_index_by_id("dunya_koy_ihtiyar");
+    int nazifeIdx  = npc_index_by_id("dunya_koy_sofraci");   // K2 Son Müşteri (D1b)
+    int kervanIdx  = npc_index_by_id("dunya_koy_kervanci");  // WE_CARAVAN gezgin tüccar
+    int yabanciIdx = npc_index_by_id("dunya_ova_yabanci");   // Kör Kuyu tanıtıcısı (bir kez, gece)
+    int nuhIdx     = npc_index_by_id("dunya_ova_sayan");     // S3 Sayan Adam (D1c)
+    int zehraIdx   = npc_index_by_id("dunya_koy_torun");     // S3 — Nuh'un torunu
     int nuhLockDay = -1;   // yanlış cevap: o gün kilit (save'e girmez — zar kilidi gibi)
     #define SOFRA_X (19.4f * TILE_SIZE)   // han önü (köy GD) — gece kurulur
     #define SOFRA_Y (13.1f * TILE_SIZE)
@@ -2327,9 +2321,9 @@ int main(int argc, char *argv[])
                                 shopOpen = true;
                                 shopCaravan = (dialogNpc == kervanIdx);
                                 shopLoca = (nerimanIdx >= 0 && dialogNpc >= 0 &&
-                                    SDL_strcmp(NPCS[dialogNpc].name, "Zehirci İğne") == 0);
+                                    SDL_strcmp(NPCS[dialogNpc].id, "loca_hucre_zehirci") == 0);
                                 shopDogu = (dialogNpc >= 0 &&
-                                    SDL_strcmp(NPCS[dialogNpc].name, "Tüccar Ferah") == 0);
+                                    SDL_strcmp(NPCS[dialogNpc].id, "tasdurak_dukkan_tuccar") == 0);
                                 shopVendorIdx = dialogNpc;   // kırgınlık zammı için
                                 if (shopDogu)
                                 {
@@ -2446,7 +2440,7 @@ int main(int argc, char *argv[])
                             else if (strcmp(target, "as3:ver") == 0)
                             {
                                 player.storyFlags[SF_ASSASSIN] = 7;
-                                int r3 = recipe_index_by_name("Dilsiz Şişe");
+                                int r3 = recipe_index_by_id("alch_dilsiz_sise");
                                 if (r3 >= 0) craft_learn_recipe(r3);
                                 questBannerTitle = "DİLSİZ ŞİŞE";
                                 questBannerSub =
@@ -2504,7 +2498,7 @@ int main(int argc, char *argv[])
                                 bag_add(&ITEM_TYPES[ITEM_DAGGER_UNSIGNED], 1, 0);
                                 bag_add(&ITEM_TYPES[ITEM_POISON_NEEDLE], 1, 0);
                                 bag_add(&ITEM_TYPES[ITEM_NEEDLE_VENOM], 3, 0);
-                                int r4 = recipe_index_by_name("İğne Zehri");
+                                int r4 = recipe_index_by_id("alch_igne_zehri");
                                 if (r4 >= 0) craft_learn_recipe(r4);
                                 player.gold += 300;
                                 tree_compute_effects(player.treeTaken,
@@ -3318,7 +3312,7 @@ int main(int argc, char *argv[])
                             else               entry = "usta";
                         }
                         else if (nearestNpc >= 0 &&
-                                 SDL_strcmp(NPCS[nearestNpc].name, "Zehirci İğne") == 0)
+                                 SDL_strcmp(NPCS[nearestNpc].id, "loca_hucre_zehirci") == 0)
                         {
                             if (player.storyFlags[SF_ASSASSIN] == 7 &&
                                 bag_count(&ITEM_TYPES[ITEM_QUIET_VIAL]) > 0)
@@ -3506,8 +3500,12 @@ int main(int argc, char *argv[])
 
                         if (pq >= 0 && questStatus[pq].state != QUEST_REWARDED)
                         {
+                            // Ad NPC tablosundan: istasyon tablosunda ad KOPYASI
+                            // tutmuyoruz, yoksa NPC yeniden adlandırılınca eskir
                             char buf[FLOAT_TEXT_LEN];
-                            snprintf(buf, sizeof(buf), "Önce %s ile konuş", sd->ownerName);
+                            int oi = npc_index_by_id(sd->ownerNpcId);
+                            snprintf(buf, sizeof(buf), "Önce %s ile konuş",
+                                     (oi >= 0) ? NPCS[oi].name : "sahibi");
                             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                                  player.rect.x + player.rect.w / 2.0f,
                                                  player.rect.y - 10.0f, buf, red);
@@ -5742,7 +5740,7 @@ int main(int argc, char *argv[])
                     player.storyFlags[SF_ASSASSIN] = 1;
                     int celmeIdx2 = -1;
                     for (int ci = 0; ci < NPC_COUNT; ci++)
-                        if (SDL_strcmp(NPCS[ci].name, "Gözcü Çelme") == 0)
+                        if (SDL_strcmp(NPCS[ci].id, "loca_tunel_gozcu") == 0)
                         { celmeIdx2 = ci; break; }
                     if (celmeIdx2 >= 0)
                         npc_bark(celmeIdx2,

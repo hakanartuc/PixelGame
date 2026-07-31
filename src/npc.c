@@ -15,7 +15,7 @@
 // Ev kapıları decor.c'deki evlerin önü.
 #define T(n) ((n) * (float)TILE_SIZE)
 const NpcDef NPCS[] = {
-    { .name = "Tüccar Baran",
+    { .id = "dunya_koy_tuccar", .name = "Tüccar Baran",
       .sheetPath = "assets/characters/npcs/Bartender_Bruno.png",
       .dialogFile = "assets/dialogs/merchant.txt",
       .isVendor = true, .questId = "simya_masa",
@@ -23,7 +23,7 @@ const NpcDef NPCS[] = {
           { .hour =  8.0f, .x = T(10),   .y = T(5),   .indoors = false },  // dükkan başı
           { .hour = 20.0f, .x = T(10),   .y = T(4.2f), .indoors = true },  // eve girer
       }, .stopCount = 2 },
-    { .name = "Yaşlı Kemal",
+    { .id = "dunya_koy_ihtiyar", .name = "Yaşlı Kemal",
       .sheetPath = "assets/characters/npcs/Farmer_Bob.png",
       .dialogFile = "assets/dialogs/elder.txt",
       .isVendor = false, .questId = "goblin_derdi",
@@ -33,7 +33,7 @@ const NpcDef NPCS[] = {
           { .hour = 16.0f, .x = T(7),     .y = T(12),    .indoors = false }, // tarla kıyısı
           { .hour = 21.0f, .x = T(14),    .y = T(6.2f),  .indoors = true },
       }, .stopCount = 4 },
-    { .name = "Köylü Osman",
+    { .id = "dunya_koy_koylu", .name = "Köylü Osman",
       .sheetPath = "assets/characters/npcs/Farmer_Buba.png",
       .dialogFile = "assets/dialogs/villager.txt",
       .isVendor = false, .questId = NULL,
@@ -43,7 +43,7 @@ const NpcDef NPCS[] = {
           { .hour = 15.0f, .x = T(7),    .y = T(11),   .indoors = false }, // tarlaya dönüş
           { .hour = 19.0f, .x = T(6),    .y = T(10.2f), .indoors = true },
       }, .stopCount = 4 },
-    { .name = "Demirci Mahir",
+    { .id = "dunya_koy_demirci", .name = "Demirci Mahir",
       .sheetPath = "assets/characters/npcs/Miner_Mike.png",
       .dialogFile = "assets/dialogs/demirci.txt",
       .isVendor = false, .questId = "demirci_ocak",
@@ -51,7 +51,7 @@ const NpcDef NPCS[] = {
           { .hour =  7.0f, .x = T(8), .y = T(7.6f), .indoors = false },  // ocak başı
           { .hour = 21.0f, .x = T(8), .y = T(6.4f), .indoors = true },   // gece kapanır
       }, .stopCount = 2 },
-    { .name = "Muhafız",
+    { .id = "dunya_koy_muhafiz", .name = "Muhafız",
       .sheetPath = "assets/characters/npcs/Guard_Swordman.png",
       .dialogFile = "assets/dialogs/guard.txt",
       .isVendor = false, .questId = NULL,
@@ -62,7 +62,7 @@ const NpcDef NPCS[] = {
 
     // K9 Kandil (D1a): oğlunu Eski Geçit'te kaybeden ana — gündüz köyde,
     // akşam geçit kapısına yürür (kandilin başında bekler)
-    { .name = "Fatma",
+    { .id = "dunya_koy_kandilci", .name = "Fatma",
       .sheetPath = "assets/characters/npcs/Bartender_Katy.png",
       .dialogFile = "assets/dialogs/fatma.txt",
       .isVendor = false, .questId = NULL,
@@ -72,7 +72,7 @@ const NpcDef NPCS[] = {
       }, .stopCount = 2 },
 
     // K2 Son Müşteri (D1b): hancı — kervancının karısı; gece sofra kurar
-    { .name = "Nazife",
+    { .id = "dunya_koy_sofraci", .name = "Nazife",
       .sheetPath = "assets/characters/npcs/Chef_Chloe.png",
       .dialogFile = "assets/dialogs/nazife.txt",
       .isVendor = false, .questId = NULL,
@@ -82,7 +82,7 @@ const NpcDef NPCS[] = {
       }, .stopCount = 2 },
 
     // S3 Sayan Adam (D1c): Nuh — gündüz sunak yolunda sayarak volta, gece köy kenarı
-    { .name = "Nuh",
+    { .id = "dunya_ova_sayan", .name = "Nuh",
       .sheetPath = "assets/characters/npcs/Fisherman_Fin.png",
       .dialogFile = "assets/dialogs/nuh.txt",
       .isVendor = false, .questId = NULL,
@@ -93,7 +93,7 @@ const NpcDef NPCS[] = {
           { .hour = 20.0f, .x = T(21), .y = T(12),   .indoors = false },  // gece köy kenarı
       }, .stopCount = 4 },
     // Zehra — Nuh'un torunu; köy meydanında dedesini dert eder
-    { .name = "Zehra",
+    { .id = "dunya_koy_torun", .name = "Zehra",
       .sheetPath = "assets/characters/npcs/Desert_Person_2.png",
       .dialogFile = "assets/dialogs/zehra.txt",
       .isVendor = false, .questId = NULL,
@@ -105,7 +105,7 @@ const NpcDef NPCS[] = {
 
     // KÖR KUYU tanıtıcısı: gece kuyu civarında BİR KEZ belirir, anlatır, kaybolur.
     // Kim olduğu söylenmez — 'sayanlar'dan biri (yeraltı örgütü tohumu).
-    { .name = "Yabancı",
+    { .id = "dunya_ova_yabanci", .name = "Yabancı",
       .sheetPath = "assets/characters/npcs/Desert_Person_3.png",
       .dialogFile = "assets/dialogs/yabanci.txt",
       .isVendor = false, .questId = NULL,
@@ -115,7 +115,7 @@ const NpcDef NPCS[] = {
       .frameSize = 32, .drawScale = 2.8f },
 
     // Dünya Olayı: Gezgin Kervan tüccarı — yalnız kervan günlerinde görünür
-    { .name = "Kervancı Selim",
+    { .id = "dunya_koy_kervanci", .name = "Kervancı Selim",
       .sheetPath = "assets/characters/npcs/Desert_Trader_1.png",
       .dialogFile = "assets/dialogs/kervanci.txt",
       .isVendor = true, .questId = NULL,
@@ -127,7 +127,7 @@ const NpcDef NPCS[] = {
     // --- SESSİZ EL LOCASI (Suikastçi P1 — map 5 = MAP_LOCA) ---
     // Usta: az konuşur, görevleri verir. Eski saray celladı — ESO derinliği
     // diyalogda (neriman.txt).
-    { .name = "'Dilsiz' Neriman",
+    { .id = "loca_salon_usta", .name = "'Dilsiz' Neriman",
       .sheetPath = "assets/characters/npcs/Pharaoh.png",
       .dialogFile = "assets/dialogs/neriman.txt",
       .isVendor = false, .questId = NULL,
@@ -135,7 +135,7 @@ const NpcDef NPCS[] = {
           { .hour = 0.0f, .x = T(28), .y = T(14), .indoors = false },  // salon başköşe
       }, .stopCount = 1,
       .map = 5, .frameSize = 32, .drawScale = 2.8f },
-    { .name = "Gözcü Çelme",
+    { .id = "loca_tunel_gozcu", .name = "Gözcü Çelme",
       .sheetPath = "assets/characters/npcs/Desert_Person_1.png",
       .dialogFile = "assets/dialogs/celme.txt",
       .isVendor = false, .questId = NULL,
@@ -143,7 +143,7 @@ const NpcDef NPCS[] = {
           { .hour = 0.0f, .x = T(21), .y = T(12), .indoors = false },  // tünel ağzı
       }, .stopCount = 1,
       .map = 5, .frameSize = 32, .drawScale = 2.8f },
-    { .name = "Zehirci İğne",
+    { .id = "loca_hucre_zehirci", .name = "Zehirci İğne",
       .sheetPath = "assets/characters/npcs/Desert_Person_4.png",
       .dialogFile = "assets/dialogs/igne.txt",
       .isVendor = false, .questId = NULL,
@@ -155,7 +155,7 @@ const NpcDef NPCS[] = {
     // --- TAŞDURAK (Faz DOGU — map 6 = MAP_DOGU) ---
     // Sınır kasabası: ticaret kimliği; Sultanlık'ın ucu ama kimseye tam bağlı
     // değil. Kervancı Selim'in memleketi.
-    { .name = "Tüccar Ferah",
+    { .id = "tasdurak_dukkan_tuccar", .name = "Tüccar Ferah",
       .sheetPath = "assets/characters/npcs/Desert_Trader_2.png",
       .dialogFile = "assets/dialogs/ferah.txt",
       .isVendor = true, .questId = NULL,
@@ -163,7 +163,7 @@ const NpcDef NPCS[] = {
           { .hour = 0.0f, .x = T(14), .y = T(30), .indoors = false },  // dükkan önü
       }, .stopCount = 1,
       .map = 6, .frameSize = 32, .drawScale = 2.8f },
-    { .name = "Hancı Duman",
+    { .id = "tasdurak_han_hanci", .name = "Hancı Duman",
       .sheetPath = "assets/characters/npcs/Desert_Trader_3.png",
       .dialogFile = "assets/dialogs/duman.txt",
       .isVendor = false, .questId = NULL,
@@ -173,7 +173,7 @@ const NpcDef NPCS[] = {
       .map = 6, .frameSize = 32, .drawScale = 2.8f },
     // Sultanlık Kâtibi: Doğu bloğunun ilk resmî yüzü (Kıta planı tohum).
     // Sprite Çelme'yle ortak (Desert_Person_1) — çöl halkı; ayrı sheet gelince değişir.
-    { .name = "Kâtip Rüstem",
+    { .id = "tasdurak_konak_katip", .name = "Kâtip Rüstem",
       .sheetPath = "assets/characters/npcs/Desert_Person_1.png",
       .dialogFile = "assets/dialogs/rustem.txt",
       .isVendor = false, .questId = NULL,
@@ -184,7 +184,7 @@ const NpcDef NPCS[] = {
 
     // ŞİFACI (Faz REVIR): revirin sahibi — yaralı köylüler ona yatar,
     // masraf ödemesi + oyuncuya paralı tedavi. Revir köy kuzeybatısında.
-    { .name = "Şifacı Ela",
+    { .id = "dunya_koy_sifaci", .name = "Şifacı Ela",
       .sheetPath = "assets/characters/npcs/Healer_Witch.png",
       .dialogFile = "assets/dialogs/sifaci.txt",
       .isVendor = false, .questId = NULL,
@@ -194,6 +194,26 @@ const NpcDef NPCS[] = {
       .frameSize = 32, .drawScale = 2.8f },
 };
 const int NPC_COUNT = (int)(sizeof(NPCS) / sizeof(NPCS[0]));
+
+int npc_index_by_id(const char *id)
+{
+    if (id == NULL) return -1;
+    for (int i = 0; i < NPC_COUNT; i++)
+        if (NPCS[i].id != NULL && SDL_strcmp(NPCS[i].id, id) == 0)
+            return i;
+    // Bulunamayan id SESSİZ kalmamalı: bu hatanın (ad ile arama) bütün maliyeti
+    // sessiz olmasıydı — zincir kopuyor, hiçbir yerde iz kalmıyordu.
+    // Oturumda bir kez basılır; her karede aramaya giren çağrı yerleri var.
+    static const char *warned[16];
+    static int warnedCount = 0;
+    for (int i = 0; i < warnedCount; i++)
+        if (SDL_strcmp(warned[i], id) == 0) return -1;
+    if (warnedCount < 16) {
+        warned[warnedCount++] = id;   // literal işaretçi: ömrü program boyu
+        SDL_Log("npc: '%s' id'si TABLODA YOK — bagli gorev/diyalog calismayacak", id);
+    }
+    return -1;
+}
 
 // Def'teki 0 alanlar → varsayılanlar (eski NPC girdileri dokunulmadan kaldı)
 static int def_frame(int i)     { return NPCS[i].frameSize > 0 ? NPCS[i].frameSize : NPC_FRAME; }

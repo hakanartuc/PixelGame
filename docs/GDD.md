@@ -617,6 +617,30 @@ F8/F10) ·
 disiplinler: paralel dizi tavanları (5 vaka), sıfır yeni uyarı, CSV=GID+1,
 her committe doküman güncellemesi.
 
+### 8.1 KİMLİK ALANI ZORUNLU [ONAYLI 2026-07-31]
+İçerik tablolarında **görünen ad kimlik değildir.** Kod `.id` ile arar, `.name`
+yalnız gösterimdir.
+
+- **Biçim — NPC:** `<harita>_<yer>_<rol>` (`dunya_koy_demirci`,
+  `loca_salon_usta`, `tasdurak_han_hanci`). Rol seçildi çünkü ad değişse bile
+  rol aynı kalır; önek seçildi çünkü altı şehirli kanonda iki demirci olacak.
+- **Biçim — tarif:** `<istasyon>_<slug>` (`alch_pismis_et`,
+  `campfire_pismis_et`). İstasyon öneki ZORUNLU: dört tarif adı iki kez geçiyor
+  ve ada göre arama ilk eşleşmeyi döndürüyordu — varyantların biri erişilemezdi.
+- **Neden:** ad hem gösterim hem kimlik olunca yeniden adlandırma zinciri
+  SESSİZCE koparıyor (derleyici susar, oyun çökmez, NPC konuşmaz). DEMİRBOYUN
+  kanonuna geçerken tüm adlar değişeceği için bu bomba önce söküldü.
+- **Ad KOPYASI tutulmaz:** başka tablo bir NPC'ye atıfta bulunacaksa id tutar,
+  adı `NPCS[]`'ten okur (`StationDef.ownerNpcId`). Kopya, NPC yeniden
+  adlandırılınca eskir ve oyuncuya var olmayan bir ad gösterir.
+- **Bulunamayan id SESSİZ KALMAZ** — `npc_index_by_id` / `recipe_index_by_id`
+  loga yazar. Bu hata sınıfının bütün maliyeti sessiz olmasıydı.
+- **Save'e girmez:** kayıtta NPC yok, görevler `QUESTS[]` SIRASIYLA tutuluyor.
+  Donmuş olan şey ad değil SIRA — id'ler tek commit + grep ile yeniden
+  adlandırılabilir. Tabloya ORTADAN giriş eklemek save'i bozar, sona eklemek güvenli.
+- **[AÇIK]** item/mob/unvan/görev tablolarında henüz `.id` yok — bugün ada göre
+  aranmıyorlar. Metin katmanı geldiğinde çeviri anahtarı olarak gerekecek.
+
 ---
 
 ## 9. YOL HARİTASI [TASLAK v2 — onaya]

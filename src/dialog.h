@@ -27,8 +27,14 @@
 #define DIALOG_MAX_NODES 32
 #define DIALOG_MAX_OPTS 5   // S3: 3 yorum + Speech + ipucu
 #define DIALOG_ID_LEN 32
-#define DIALOG_TEXT_LEN 220
-#define DIALOG_OPT_LEN 80
+// TAVANLAR — 2026-07-31'de yükseltildi. Eski 220/80 ile 134 repliğin 26'sı ve
+// 1 seçenek SESSİZCE kesiliyordu (en uzunu 325 bayt): oyuncu yazarın yazdığı
+// cümlenin sonunu hiç görmüyordu. Kesme artık loga UYARI basıyor (dialog.c) ve
+// UTF-8 karakteri ortadan bölmüyor. Panel zaten kendini metne göre büyütüyor
+// (draw_markup_wrapped ölçer, panelH ona göre uzar), o yüzden tavanı yükseltmek
+// görsel taşma yaratmıyor — tek sınır winH*0.6.
+#define DIALOG_TEXT_LEN 512
+#define DIALOG_OPT_LEN 128
 #define DIALOG_MAX_REQS 3   // seçenek başına koşul/efekt tavanı
 #define DIALOG_MAX_FX 3
 

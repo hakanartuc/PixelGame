@@ -63,6 +63,18 @@ static bool parse_cond_line(const char *body, DialogVar *var,
     return true;
 }
 
+// UTF-8 GÜVENLİ KESME: bayt tavanına vurunca son karakteri ortadan bölmemek
+// için devam baytlarından (10xxxxxx) geriye yürür. Bölünmüş karakter geçersiz
+// bir dizi bırakır ve font onu bozuk çizer.
+static void utf8_trim(char *s, size_t cap)
+{
+    size_t n = SDL_strlen(s);
+    if (n + 1 < cap) return;                       // kesilme olmadı
+    while (n > 0 && ((unsigned char)s[n - 1] & 0xC0) == 0x80) n--;   // devam baytları
+    if (n > 0) n--;                                // baş bayt da gitsin
+    s[n] = '\0';
+}
+
 bool dialog_load(Dialog *d, const char *path)
 {
     d->nodeCount = 0;
@@ -107,7 +119,13 @@ bool dialog_load(Dialog *d, const char *path)
                 fclose(f);
                 return false;
             }
-            snprintf(cur->text, DIALOG_TEXT_LEN, "%s", skip_ws(p + 5));
+            const char *srcTxt = skip_ws(p + 5);
+            int needTxt = snprintf(cur->text, DIALOG_TEXT_LEN, "%s", srcTxt);
+            if (needTxt >= DIALOG_TEXT_LEN) {
+                utf8_trim(cur->text, DIALOG_TEXT_LEN);
+                SDL_Log("Diyalog UYARI (%s:%d): metin %d bayt, tavan %d — KESILDI",
+                        path, lineNo, needTxt, DIALOG_TEXT_LEN - 1);
+            }
         }
         else if (strncmp(p, "opt:", 4) == 0) {
             if (cur == NULL || cur->optCount >= DIALOG_MAX_OPTS) {
@@ -126,9 +144,15 @@ bool dialog_load(Dialog *d, const char *path)
             DialogOpt *o = &cur->opts[cur->optCount++];
             size_t tlen = (size_t)(arrow - body);
             while (tlen > 0 && body[tlen-1] == ' ') tlen--;   // ok öncesi boşluk
-            if (tlen >= DIALOG_OPT_LEN) tlen = DIALOG_OPT_LEN - 1;
+            bool optCut = (tlen >= DIALOG_OPT_LEN);
+            if (optCut) tlen = DIALOG_OPT_LEN - 1;
             memcpy(o->text, body, tlen);
             o->text[tlen] = '\0';
+            if (optCut) {
+                utf8_trim(o->text, DIALOG_OPT_LEN);
+                SDL_Log("Diyalog UYARI (%s:%d): secenek tavani (%d) asildi — KESILDI",
+                        path, lineNo, DIALOG_OPT_LEN - 1);
+            }
             snprintf(o->target, DIALOG_ID_LEN, "%s", skip_ws(arrow + 2));
             lastOpt = o;
         }

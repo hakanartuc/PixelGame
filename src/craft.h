@@ -45,7 +45,10 @@ typedef struct {
     float x, y;             // dünya taban-orta
     float scale;
     const char *permQuest;  // izin görevi id'si (REWARDED = izin)
-    const char *ownerName;  // yönlendirme mesajı için ("Demirci Mahir")
+    // Sahibin NPC KİMLİĞİ (görünen ad değil). Yönlendirme mesajı adı NPCS[]'ten
+    // okur — ad burada tekrarlanırsa NPC yeniden adlandırıldığında bu kopya
+    // eskir ve oyuncuya artık var olmayan bir isim gösterilir.
+    const char *ownerNpcId;
 } StationDef;
 
 // DİKKAT: const değil — oyuncu kamp ateşinin (STATION_PLAYER_FIRE_IDX) x/y'sini
@@ -55,8 +58,16 @@ extern const int STATION_COUNT;
 
 // Tarifler: en çok 2 girdi → 1 çıktı. work: demircilikte vuruş, simyada saniye.
 typedef struct {
+    // KİMLİK — kod bu alanla arar, name ile DEĞİL. Biçim: <istasyon>_<slug>.
+    //
+    // İstasyon öneki ZORUNLU: DÖRT tarif adı iki kez geçiyor (Pişmiş Et, Avcı
+    // Yahnisi, Ot Çorbası, Gezgin Kavurması — kampateşi ve simya varyantları).
+    // Ada göre arama ilk eşleşmeyi döndürdüğü için o varyantların biri fiilen
+    // erişilemezdi; ad bu tabloda kimlik OLAMAZ, bugün de değil.
+    // İleride çeviri anahtarı da bu olacak: recipe.<id>.name
+    const char *id;
     StationType station;
-    const char *name;
+    const char *name;       // YALNIZ gösterim (panel satırı)
     int in1Item, in1Count;
     int in2Item, in2Count;   // in2Item = -1 → tek girdi
     int outItem, outCount;

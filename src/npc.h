@@ -23,7 +23,23 @@ typedef struct {
 } NpcStop;
 
 typedef struct {
-    const char *name;         // baş üstü + diyalog panelinde
+    // KİMLİK — kod bu alanla arar, ASLA name ile. Biçim: <harita>_<yer>_<rol>
+    // (ör. "dunya_koy_demirci", "loca_salon_usta", "tasdurak_han_hanci").
+    //
+    // Neden ad DEĞİL: 13 yerde `SDL_strcmp(NPCS[i].name, "Fatma")` vardı. Görünen
+    // ad hem gösterim hem kimlik olunca, adı değiştirmek görev zincirini SESSİZCE
+    // koparıyordu — derleyici susar, oyun çökmez, NPC sadece konuşmaz. DEMİRBOYUN
+    // kanonuna geçerken tüm adlar değişeceği için bu bomba mutlaka önce sökülmeliydi.
+    //
+    // Neden ROL, ad değil: ad değişse bile rol aynı kalır ("demirci" kim olursa
+    // olsun demircidir). Neden ÖNEK: altı şehirli kanonda iki demirci olacak;
+    // harita+yer öneki tekilliği yapı gereği sağlıyor.
+    //
+    // Save'e GİRMEZ: kayıtta NPC yok, görevler QUESTS[] sırasıyla tutuluyor —
+    // yani id'ler serbestçe yeniden adlandırılabilir (tek commit + grep).
+    // İleride çeviri anahtarı da bu olacak: npc.<id>.name
+    const char *id;
+    const char *name;         // YALNIZ gösterim: baş üstü + diyalog panelinde
     const char *sheetPath;    // sprite sheet (Cute_Fantasy NPC düzeni)
     const char *dialogFile;   // assets/dialogs/*.txt
     bool isVendor;            // dükkan açabilir (shop hedefi çalışır)
@@ -42,6 +58,11 @@ typedef struct {
 
 extern const NpcDef NPCS[];
 extern const int NPC_COUNT;
+
+// id ile NPC indeksi (-1 = yok). Bulunamazsa BİR KEZ uyarı basar: id'i yeniden
+// adlandırıp bir çağrı yerini güncellemeyi unutmak sessiz kalmamalı — bu hatanın
+// tüm maliyeti tam olarak sessiz olmasıydı.
+int npc_index_by_id(const char *id);
 
 // Harita geçişi: dünyada değilken NPC'ler tamamen devre dışı
 // (update/render/nearest/visible hepsi boş döner)

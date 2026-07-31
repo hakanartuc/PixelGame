@@ -157,15 +157,22 @@ Yeni modüller: jsonx (cJSON + JSONC + satır/kolon hatası), uilayout (çapa/hi
 uieditor (ızgara, hizalama kılavuzu, boyut tutamağı, ön izleme).
 Ayrıca: çözünme ölümü (mob.c banded dissolve, 14 şerit) bu commit'te; PIXE_HIDDEN dev kancası.
 
-**SIRADA — KARAR BEKLEYEN İKİ İŞ (metin mimarisi analizi hazır, ajan raporu):**
-1. **NpcDef'e `.id`** — 15 yerde içerik GÖRÜNEN TÜRKÇE ADIYLA aranıyor
-   (`SDL_strcmp(NPCS[i].name, "'Dilsiz' Neriman")`, `recipe_index_by_name("İğne Zehri")`),
-   79 kullanım noktası. DEMİRBOYUN kanonuna göre NPC'ler yeniden adlandırılacağı için bu
-   İŞ O ADLANDIRMADAN ÖNCE yapılmalı: sonra yapılırsa zincirler sessizce kopar (derleyici
-   susar, oyun çökmez, sadece NPC konuşmaz). `.id` içerik değil MEKANİZMA — lore'u beklemez.
-2. **`DIALOG_TEXT_LEN` 220 → 512** — 134 diyalog satırının **27'si** bu sınırı aşıyor
-   (en uzunu 325 bayt) ve `dialog.c:110` snprintf ile SESSİZCE kesiyor; bayt sınırında
-   kestiği için UTF-8 karakteri ortadan bölebiliyor. Bugün, Türkçe oynarken 27 replik eksik.
+**FAZ KİMLİK TAMAM (2026-07-31, save DEĞİŞMEDİ)**: içerik tablolarında `.id`
+(18 NPC `<harita>_<yer>_<rol>`, 41 tarif `<istasyon>_<slug>`), 13 ad karşılaştırması
++ 2 tarif araması id'ye çevrildi, `StationDef.ownerName` → `ownerNpcId`.
+Diyalog tavanı 220→512 / 80→128 + sesli & UTF-8 güvenli kesme (26 replik + 1 seçenek
+sessizce kesiliyordu). Kararlar GDD §8.1'de.
+**KANON YENİDEN ADLANDIRMASI ARTIK GÜVENLİ** — adlar `.name`'de, kod `.id` kullanıyor.
+
+**SIRADA — İÇERİK ÜRETİMİ (kod değil, LORE v2 üstüne):**
+DEMİRBOYUN kanonu KİLİTLİ ama **hikaye/zincir/NPC kadrosu/diyalog HENÜZ YOK.**
+`docs/konsept/kanon-taslak/` (04-npc-kadrosu, 03-hikaye-isleyisi, 07-anlati-tasarimcisi,
+08-15 meslek/sınıf hatları) **v1 LAMPWICK üstüne** kurulu — Hald Ironkiln/Coldhearth/
+Emberlaw isimleri geçiyor, yani HÜKÜMSÜZ kanona ait. Yeniden üretilmeleri gerekiyor.
+Oyundaki mevcut içerik (K9 Kandil, K2 Son Müşteri, S3 Sayan Adam, Suikastçi zinciri,
+18 NPC) da reboot ÖNCESİ — kanona göre revize edilecek.
+Önce LORE §16'daki 7 açık soru kapanmalı (§15.6: "Kabukçular'ın gerçekten haklı olduğu
+yer henüz yazılmadı ve YAZILMALI").
 
 **MOB EKOLOJİSİ TAMAM (E1+E2, save v20-21)**: KO slot spawn'ı dünyadan söküldü
 (ecology.c) — yuva/popülasyon (şafakta +1), aileye göre yıkım (Reis/Totem/gölcük/

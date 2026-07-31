@@ -4,6 +4,48 @@ Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
+### Faz KİMLİK — İÇERİK TABLOLARINDA .id + DİYALOG TAVANI (2026-07-31)
+Kararlar GDD §8.1'de. Save DEĞİŞMEDİ. **Kanon yeniden adlandırmasının ÖN KOŞULU**
+— DEMİRBOYUN'a geçerken adlar değişince zincirlerin kopmaması için önce yapıldı.
+
+**NpcDef.id** — 18 NPC, biçim `<harita>_<yer>_<rol>`. Alt-mekânlar uydurulmadı,
+tablodaki yorumlardan alındı (*salon başköşe* → `loca_salon_usta`, *tünel ağzı* →
+`loca_tunel_gozcu`, *zehir hücresi* → `loca_hucre_zehirci`, *dükkan önü* →
+`tasdurak_dukkan_tuccar`, *han kapısı* → `tasdurak_han_hanci`, *konak önü* →
+`tasdurak_konak_katip`). Roller diyalog dosyası + görev bağından, yerler ilk
+durağın koordinatından (Yabancı T(27,16) ve Nuh T(60,18) Köy dışında → Yeşil Ova).
+13 `SDL_strcmp(NPCS[i].name, "...")` çevrildi; sekiz tarama döngüsü tek
+`npc_index_by_id()`'ye indi.
+
+**RecipeDef.id** — 41 tarif, biçim `<istasyon>_<slug>`. Neden istasyon öneki:
+**dört tarif adı iki kez geçiyor** (Pişmiş Et, Avcı Yahnisi, Ot Çorbası, Gezgin
+Kavurması — kampateşi + simya varyantları) ve `recipe_index_by_name` ilk
+eşleşmeyi döndürüyordu, yani o varyantlardan biri FİİLEN ERİŞİLEMEZDİ. Ad bu
+tabloda bugün de kimlik değil. İki konumsal tablo girişi designated forma
+çevrildi (başa `.id` eklemek onları sessizce kaydırırdı).
+
+**StationDef.ownerName → ownerNpcId** — ad KOPYASI kaldırıldı; yönlendirme
+mesajı adı `NPCS[]`'ten okuyor. Kopya kalsa NPC yeniden adlandırılınca oyuncuya
+var olmayan bir ad gösterilirdi.
+
+**Bulunamayan id sessiz kalmaz** — `npc_index_by_id`/`recipe_index_by_id` loga
+yazar (oturumda bir kez). Bu hata sınıfının bütün maliyeti sessiz olmasıydı.
+
+**Diyalog tavanı** — `DIALOG_TEXT_LEN` 220→512, `DIALOG_OPT_LEN` 80→128.
+Ölçüm: 134 replikten **26'sı** (en uzunu 325 bayt) ve **1 seçenek** (84 bayt,
+nuh.txt:16) sessizce kesiliyordu — oyuncu yazarın cümlesinin sonunu hiç
+görmüyordu. Kesme artık (a) loga `dosya:satır + bayt` yazıyor, (b) UTF-8
+karakterini ortadan BÖLMÜYOR (`utf8_trim` devam baytlarından geriye yürür;
+bölünmüş karakter geçersiz dizi bırakıp bozuk çiziliyordu).
+Panel için ayrı taşma denetçisi YAZILMADI: `draw_markup_wrapped` metni ölçüyor
+ve `panelH` ona göre büyüyor (tek sınır `winH*0.6`), 325 bayt ~3 satır — olmayan
+soruna denetçi spekülatif olurdu.
+
+**Doğrulama** — denetçi tavanı geçici 220'ye indirilerek test edildi: tam **26**
+uyarı bastı, bağımsız statik ölçümle birebir aynı. 512'de 0. (Uyarı: `sed -i.bak`
++ `mv` başlığı ESKİ mtime'ıyla geri koyuyor, make yeniden derlemiyor — ilk ölçüm
+bu yüzden yanlış çıktı, `touch` gerekti.)
+
 ### Faz UI-LAYOUT — HUD YERLEŞİMİ VERİYE + OYUN İÇİ DÜZENLEYİCİ (2026-07-31)
 Kararlar GDD §7.1'de. Save DEĞİŞMEDİ (yerleşim kayda girmiyor).
 
