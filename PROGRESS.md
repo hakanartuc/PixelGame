@@ -4,6 +4,82 @@ Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
+### Faz KANON-KAPANIŞ — LORE §16'nın yedi açık sorusu kapandı (2026-07-31)
+Kod değişmedi (tek istisna: suç defteri, aşağıda). Kararlar `docs/LORE.md`'de.
+
+**Yöntem (kanon üretim kalıbı, HANDOVER'da tanımlı):** 4 paralel ajan yedi soruya
+seçenek üretti → her seçenek KENDİ klişe eleştirisini yazdı (üç turun reddedilme
+sebebi buydu) → Hakan seçti → kurgucu kanon metnini yazdı → **isim danışmanı**
+terimleri düzeltti (TR+EN) → **Türkçe editörü** dil geçişi yaptı → **kanon editörü**
+çelişki taradı → bulunan çelişkiler düzeltildi. Metni asistan YAZMADI (Hakan kuralı).
+
+**Yedi karar:** S1 Bey→Kral, engel törende altı şehrin adını sesle saymak · S2 bir
+imparator + 99 Ocak, vadeli Kumkapı Senedi · S3 Bağlı + Yedinci Ağız · S4 yedi mühür
+KITAYA YAYILMIŞ (6 yeni harita gerekiyor) · S5 Şirin = Takvim · S6 kar sürmek + kalıp
+zinciri · S7 yamalı mühür gövdesi + diri bağlı rengi.
+
+**TERİM DÜZELTMELERİ — ikisi gerçek çakışmaydı, üslup değil:**
+- "İşaret Okuyan" → **Yedinci Ağız** / *Seventh Mouth*. Sebep: "Okuyan" ZATEN
+  Mühürcüler'in ikinci rütbesi (§10 tablosu). Yeni ad odanın aritmetiğinden.
+- "Dinleyici" → **Bağlı** / *the Bound*. Sebep: **Skyrim'in Karanlık Kardeşlik lideri
+  birebir "the Listener"** — kanonun açık hedefi Skyrim'den ayrılmak, bu ad tersini
+  yapıyordu. "Bağlı" hem zinciri hem "bize bağlı çırak"ı taşıyor; kamuflaj çift-anlamı
+  İngilizcede de sağ kalıyor (*bound apprentice*).
+- "sesle saymak" → **Altı Ad** / *the Six Names*.
+
+**DİL GEÇİŞİ 7 kategoride düzeltme yaptı:** özne-yüklem uyumu ("Ocaklar bildiği için"
+→ biliyor), hâl ekleri ("göğsünde işlenmiş" → göğsüne), Türkçede olmayan ", ve" kalıbı,
+devrik "sanıyor ki", sözde-terimler ("iki organı var ve birbirini istemiyor" → iki başı
+var — organ istemez), gereksiz üçlemeler (§15.4), iç tutarlılık.
+
+**KANON EDİTÖRÜ 6 KIRICI ÇELİŞKİ BULDU — dördü yeni yazılan metinden:**
+1. **KORKULUK kendi bölümünde çiğnenmiş.** 2. mühür "kutsama hattını kesiyor"du, ama
+   kutsama §1.4'e göre meşruiyetin üç somut nesnesinden biri — yani siyasi düğüm.
+   Düzeltme: mahzen çöker, ARŞİV ve ŞİFA hattı kapanır; kutsama KARARI siyasi kalır.
+2. **Aynı ihlal 6. mühürde.** "Karduvar kapısı kışın da açık kalır" — ama o kapı Kırca
+   Ana'nın tek isteği, Sarp'ın tek derdi, §14 finalinin parçası. Düzeltme: buz üstünden
+   yürünemez, kışlık rota tekneyle uzar; kapı siyasi kalır.
+3. **7. mühür finali baştan belirliyordu** ("gökte kalıcı ejderha" vs §14 "büyük kemer
+   yeniden mühürlenir"). Düzeltme: sayıma ANA KEMERİN İLK HALKASI girer; kemerin kaderi
+   sayımın dışında, oyuncunun fiiline bağlı.
+4. **Nazlı bir Yalınkılıç varisi çıkıyordu** — Rüstem'in "başka varis yok" sırrını ve
+   §7'nin tıkanmasını çökertiyordu. Düzeltme: Nazlı Şirin'in İLK kocasından; Yalınkılıç
+   olmadığı için fiyatı var (verilen şey mirasın parçası olmuyor, masa açılmıyor).
+5. **Senedin üç kalemi Gündoğdu'nun malı değildi** — sürgün, sahip olmadığı geliri
+   kiralamış görünüyordu. Düzeltme: senet VADELİ, kalemler "Hane tahtına oturduğu gün"
+   devrolur; bugün Ocaklar çadır sarayının kendi kervan bacını topluyor. Senedin dişi
+   böyle daha korkutucu: **fatura henüz kesilmedi.**
+6. **Altı Ad kilidi ile Şirin'in ertelemeleri birbirini yiyordu** (imkânsız bir töreni
+   üç kez ertelemek). Düzeltme: salon töreni iptal etmiyor, İLERİ TARİH koyuyor; Şirin'in
+   ertelediği şey tören değil, "bey yapamaz" cümlesinin kurulacağı gün.
+
+**Orta/küçük düzeltmeler:** 3 "dinleyici" kalıntısı temizlendi · fosil zaten açıktı
+(çürüme 1. olayı "dibindeki İKİNCİ kapak" oldu) · Sarkaç'ın çift anlamı (takvim + tepe
+rütbe) §2'de açıldı · §3'e "Gündoğdu sürgünü (21 yıl önce)" satırı (Ergün'ün doğumu ile
+sürgün aynı yıla düşüyordu — fazla temiz tesadüf) · Karaocak valisi **Sancar** oldu ve
+iki tek-kollu adam bilerek bağlandı (Rüstem'in kolunu Sancar kendi kesti; valinin
+sikkesini kimsenin sormamasını da bu açıklıyor) · "kırk" enflasyonu (6 kullanım) ikiye
+indirildi · §17'ye 4. açık soru: **hoca kim** (Senedi imzalatan, altıncı maddeyi yazan
+adsız adam).
+
+**§16 artık "KARDUVAR VERASET TAŞI"; açık sorular yeni §17'de, dört madde.**
+
+### Faz SUÇ-DEFTERİ — bölgesiz haritalarda suç Köy'e yazılıyordu (2026-07-31)
+Kararlar GDD §8.2'de. `MapDef.crimeRegion` eklendi; `region_of`'taki elle yazılmış
+`if (map_current() == MAP_DOGU) return 5;` istisnası kalktı.
+
+Gerçek hata: dört bölge (Ova/Orman/Bataklık/Geçit) dünyanın tamamını kaplıyor, yani
+"kırsal suç" boşluğu yok. Boşluk **bölgesi olmayan haritalarda**: zindan F1/F2, konak,
+mezarlık, **loca**. Locada Neriman'a vurunca bounty **Köy'ün** defterine yazılıyordu.
+
+Dört yeni bölge: `REGION_LOCA`, `REGION_KONAK`, `REGION_KANUNSUZ` (zindan), mezarlık
+köyün defterine bağlandı. Kanunsuz bölge **sahipsiz bir sicil** — bounty yazılır ama
+toplayacak muhafız yok; 7 bounty çağrı yerine "burada suç işlemez" dalı eklemek yerine
+bu seçildi (unutulacak kontrol kalmıyor). Bölge indekslerine ad verildi (`REGION_LOCA`
+vb.) — çıplak `5` yazmak bu hatayı doğuran şeyin kendisiydi.
+`MAX_REGIONS` 8→16; save.c bölge sayacını yazıp okuduğu için format bozulmadı (kontrol
+edildi). Muhafız sistemine DOKUNULMADI — `guard.h`'a gerekçeli not bırakıldı.
+
 ### Faz KİMLİK — İÇERİK TABLOLARINDA .id + DİYALOG TAVANI (2026-07-31)
 Kararlar GDD §8.1'de. Save DEĞİŞMEDİ. **Kanon yeniden adlandırmasının ÖN KOŞULU**
 — DEMİRBOYUN'a geçerken adlar değişince zincirlerin kopmaması için önce yapıldı.

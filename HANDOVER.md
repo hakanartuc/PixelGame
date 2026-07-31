@@ -164,6 +164,28 @@ Diyalog tavanı 220→512 / 80→128 + sesli & UTF-8 güvenli kesme (26 replik +
 sessizce kesiliyordu). Kararlar GDD §8.1'de.
 **KANON YENİDEN ADLANDIRMASI ARTIK GÜVENLİ** — adlar `.name`'de, kod `.id` kullanıyor.
 
+**FAZ KANON-KAPANIŞ TAMAM (2026-07-31)**: LORE §16'nın yedi açık sorusu kapandı.
+§16 artık "KARDUVAR VERASET TAŞI"; açık sorular yeni **§17**'de (dört madde, hepsi
+Kavurgan tarafı + "hoca kim"). Ayrıntı ve gerekçeler PROGRESS "Faz KANON-KAPANIŞ".
+**TERİM DEĞİŞİKLİĞİ — eski adları kullanma:** "Dinleyici" → **Bağlı** (Skyrim'in
+"the Listener"ı ile birebir çakışıyordu), "İşaret Okuyan" → **Yedinci Ağız** ("Okuyan"
+zaten Mühürcü rütbesi), taç töreninin adı **Altı Ad**. İngilizce karşılıklar da kararlı:
+the Bound / Seventh Mouth / the Six Names.
+**S4 KARARI HARİTA FAZI DOĞURDU:** yedi mühür KITAYA YAYILMIŞ seçildi → Yedisunak,
+Karaocak derinliği, Tuzkapı körfezi altı, volkan, Karduvar donmuş gölü, Kozmik Tapınak
+= **6 yeni harita + kar/volkan/sualtı tileset'leri.** Kendi yol haritası fazını hak ediyor.
+**BAĞLAYICI KORKULUK (LORE §9):** mühür çürümesi hiçbir siyasi zincir düğümünün
+önkoşulu OLAMAZ — yalnız fiyat/yol/tehdit değiştirir. Kanon editörü bu kuralın kendi
+bölümünde iki kez çiğnendiğini buldu (kutsama hattı, Karduvar kapısı); ikisi düzeltildi.
+Yeni zincir yazarken bu kural test edilebilir: "şu mühür çürüdüyse" koşulu koyan siyasi
+görev kuralı ihlal etmiş olur.
+
+**FAZ SUÇ-DEFTERİ TAMAM (2026-07-31, save FORMATI DEĞİŞMEDİ)**: `MapDef.crimeRegion`.
+Bölgesiz haritalarda (zindan/konak/mezarlık/**loca**) işlenen suç Köy'ün defterine
+yazılıyordu — locada Neriman'a vurunca köy muhtarı bounty istiyordu. Dört yeni bölge,
+`MAX_REGIONS` 8→16 (save.c sayacı yazdığı için toleranslı), bölge indeksleri adlandırıldı.
+Kararlar GDD §8.2. Muhafız sistemi ÇOĞULLANMADI — kanon kadrosunu bekliyor (guard.h notu).
+
 **SIRADA — İÇERİK ÜRETİMİ (kod değil, LORE v2 üstüne):**
 DEMİRBOYUN kanonu KİLİTLİ ama **hikaye/zincir/NPC kadrosu/diyalog HENÜZ YOK.**
 `docs/konsept/kanon-taslak/` (04-npc-kadrosu, 03-hikaye-isleyisi, 07-anlati-tasarimcisi,

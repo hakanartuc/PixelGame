@@ -24,12 +24,27 @@ typedef enum {
     MAP_COUNT,
 } MapId;
 
+// Suç defteri: bu haritada işlenen suç HANGİ bölgenin bounty/itibar siciline
+// yazılır. Üç durum var ve üçü de kurgusal:
+//   CRIME_BY_RECT (-1) → dünya haritası: konumdan region_at() ile bulunur
+//   CRIME_LAWLESS (-2) → kanunsuz yer: bounty İŞLEMEZ (zindan katları — kimsenin
+//                        kanunu geçmiyor, tanık olsa da mahkeme yok)
+//   >= 0               → sabit bölge indeksi (Taşdurak kendi sicilini tutar; loca
+//                        ve konak da öyle — gizli bir loca suçunun köye yazılması
+//                        saçmaydı ve tam olarak bu oluyordu)
+//
+// Bu alan gelmeden önce main.c'de `region_of` bölgesiz haritalarda 0 döndürüyordu,
+// yani REGIONS[0] = Köy. Locada Neriman'a vurunca köyün defteri kabarıyordu.
+#define CRIME_BY_RECT (-1)
+#define CRIME_LAWLESS (-2)
+
 typedef struct {
     const char *name;      // girişte splash
     const char *csvPath;
     MusicMood mood;        // sabit harita mood'u (dünyada bölge sistemi kazanır)
     float ambient;         // 0 = gametime'a bağlı (dünya); >0 = sabit karanlık çarpanı
     float sunriseOffset;   // gündoğumu kayması (saat): doğu haritaları NEGATİF
+    int crimeRegion;       // yukarıdaki üç durumdan biri
 } MapDef;
 
 // Geçit: E ile kullanılır. Tek yönlü — çift yön = iki satır.

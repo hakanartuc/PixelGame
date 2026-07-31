@@ -641,6 +641,28 @@ yalnız gösterimdir.
 - **[AÇIK]** item/mob/unvan/görev tablolarında henüz `.id` yok — bugün ada göre
   aranmıyorlar. Metin katmanı geldiğinde çeviri anahtarı olarak gerekecek.
 
+### 8.2 SUÇ DEFTERİ HARİTADAN GELİR [KODDA 2026-07-31]
+`MapDef.crimeRegion` üç durumdan biri: `CRIME_BY_RECT` (dünya — konumdan
+`region_at`), `CRIME_LAWLESS` (zindan katları), ya da sabit bölge indeksi.
+
+- **[ONAYLI] Kanunsuz bölge SAHİPSİZ BİR SİCİL, kapalı bir kapı değil.**
+  `REGION_KANUNSUZ` gerçek bir bölge girdisi; bounty oraya yazılır ama onu
+  toplayacak muhafız, ödenecek tahsildar, kırılacak itibar yok. Alternatif
+  (7 ayrı bounty çağrı yerine "burada suç işlemez" dalı eklemek) reddedildi:
+  unutulacak yedi kontrol yerine unutulacak hiçbir kontrol.
+- **[ONAYLI] Loca ve konak kendi sicilini tutar, mezarlık köyün.** Gerekçe
+  kurgusal: gizli bir locanın suçunun köy muhtarına yazılması saçmaydı ve tam
+  olarak bu oluyordu. Mezarlık köyün kenarında, sicili köy tutar.
+- **Bölge indeksleri ADLANDIRILDI** (`REGION_LOCA` vb.). Eskiden main.c'de
+  `return 5;  // REGIONS[5] = Taşdurak` yazıyordu; tabloya ortadan bir bölge
+  eklenirse o 5 sessizce başka şehri işaret ederdi.
+- `MAX_REGIONS` 8 → 16. **Save güvenli:** save.c bölge sayacını dosyaya yazıyor
+  ve okurken o sayı kadar okuyor — eski kayıtlar 8 çift okur, kalanı sıfır kalır.
+  DEMİRBOYUN altı şehir getiriyor, yer gerekiyordu.
+- **[AÇIK] Muhafız tek kişi.** Çoğullanacak ama yapıyı kanon kadrosu belirleyecek
+  (şehir başına kaç, kime bağlı, Ak Nöbet ayrı mı). Şimdi `guards[N]` yazmak
+  hiyerarşiyi tahminle kurmak olurdu. Not `guard.h`'ta.
+
 ---
 
 ## 9. YOL HARİTASI [TASLAK v2 — onaya]

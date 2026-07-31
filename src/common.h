@@ -11,7 +11,13 @@
 #define TILE_SIZE 64      // bir tile kaç piksel
 #define MAP_W_MAX 256     // harita tavanı (statik dizi boyutu; gerçek boyut CSV'den)
 #define MAP_H_MAX 256
-#define MAX_REGIONS 8     // bölge tavanı (bounty/itibar dizileri — REGIONS sayısı bunun altında)
+// Bölge tavanı (bounty/itibar dizileri — REGIONS sayısı bunun altında).
+// 8 → 16 (2026-07-31): loca/konak/kanunsuz kendi sicillerini kazandı ve tavan
+// tam doldu. DEMİRBOYUN kanonu altı şehir getiriyor, yani yer gerekiyor.
+// SAVE GÜVENLİ: save.c bölge sayacını dosyaya YAZIYOR ve okurken o sayı kadar
+// okuyor (nRegion <= MAX_REGIONS denetimiyle) — eski kayıtlar 8 çift okur,
+// kalan bölgeler sıfır kalır. Tavanı büyütmek formatı bozmuyor.
+#define MAX_REGIONS 16
 
 // --- Kamera: dünya uzayında bir görüş penceresi ---
 typedef struct {

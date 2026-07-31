@@ -25,6 +25,21 @@ typedef struct {
     int campCount;
 } Region;
 
+// REGIONS[] indeksleri. Adlandırılmış olmaları şart: main.c'de bir zamanlar
+// `return 5;  // REGIONS[5] = Taşdurak` yazıyordu ve tabloya ortadan bir bölge
+// eklenirse o 5 sessizce başka şehri işaret ederdi.
+// SIRA DEĞİŞTİRİLEMEZ — save'de bounty/itibar bu indekslerle tutuluyor;
+// ortadan ekleme kayıtlı oyunları bozar, SONA ekleme güvenli.
+#define REGION_KOY       0
+#define REGION_OVA       1
+#define REGION_ORMAN     2
+#define REGION_BATAKLIK  3
+#define REGION_GECIT     4
+#define REGION_TASDURAK  5
+#define REGION_LOCA      6
+#define REGION_KONAK     7
+#define REGION_KANUNSUZ  8
+
 extern const Region REGIONS[];
 extern const int REGION_COUNT;
 

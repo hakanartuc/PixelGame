@@ -53,9 +53,19 @@ const Region REGIONS[] = {
     { .name = "Karanlık Orman",  .rect = { T(100), T(0),  T(100), T(75) }, .mood = MOOD_DANGER, CAMPS(ORMAN_CAMPS) },
     { .name = "Bataklık",        .rect = { T(0),   T(75), T(100), T(75) }, .mood = MOOD_DANGER, CAMPS(BATAKLIK_CAMPS) },
     { .name = "Kayalık Geçit",   .rect = { T(100), T(75), T(100), T(75) }, .mood = MOOD_DANGER, CAMPS(GECIT_CAMPS) },
-    // Taşdurak (MAP_DOGU): rect dünya uzayında EŞLEŞMEZ (0 boyut) — bölge
-    // indeksi main'deki region_of harita kontrolüyle döner (bounty/itibar ayrı)
+    // Aşağıdakilerin rect'i dünya uzayında EŞLEŞMEZ (0 boyut): bunlar konumla
+    // değil HARİTAYLA seçilir — MapDef.crimeRegion alanı işaret eder. Ayrı
+    // sicil tutmalarının sebebi kurgusal: sınır kasabası köyün defterini
+    // bilmez, gizli bir loca hiç bilmez.
     { .name = "Taşdurak",        .rect = { 0, 0, 0, 0 }, .mood = MOOD_WILD },
+    { .name = "Sessiz El Locası", .rect = { 0, 0, 0, 0 }, .mood = MOOD_DUNGEON },
+    { .name = "Eşikçi Konağı",   .rect = { 0, 0, 0, 0 }, .mood = MOOD_NIGHT },
+    // KANUNSUZ: zindan katları. Kimsenin kanunu geçmiyor — bu sicile bounty
+    // yazılır ama onu toplayacak muhafız, ödenecek tahsildar, kırılacak itibar
+    // YOK. Bilinçli olarak var: sicili tamamen kapatmak yerine sahipsiz
+    // bırakmak, 7 ayrı bounty çağrı yerine "burada suç işlemez" dalı eklemekten
+    // güvenli — unutulacak bir kontrol kalmıyor.
+    { .name = "Kanunsuz",        .rect = { 0, 0, 0, 0 }, .mood = MOOD_DUNGEON },
 };
 const int REGION_COUNT = (int)(sizeof(REGIONS) / sizeof(REGIONS[0]));
 

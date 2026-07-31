@@ -14,36 +14,42 @@ const MapDef MAPS[MAP_COUNT] = {
         .csvPath = "assets/maps/world.csv",
         .mood = MOOD_WILD,      // kullanılmaz (bölge kazanır) — güvenli varsayılan
         .ambient = 0.0f,        // 0 = gün/gece döngüsüne bağlı
+        .crimeRegion = CRIME_BY_RECT,   // suç konumdan: region_at()
     },
     [MAP_DUNGEON_F1] = {
         .name = "Eski Gecit — Kat 1",
         .csvPath = "assets/maps/dungeon_f1.csv",
         .mood = MOOD_DUNGEON,
         .ambient = 0.35f,       // her saatte loş — meşaleler taşır
+        .crimeRegion = CRIME_LAWLESS,
     },
     [MAP_DUNGEON_F2] = {
         .name = "Eski Gecit — Derinlik",
         .csvPath = "assets/maps/dungeon_f2.csv",
         .mood = MOOD_DUNGEON,
         .ambient = 0.28f,       // daha karanlık (boss katı)
+        .crimeRegion = CRIME_LAWLESS,
     },
     [MAP_KONAK] = {
         .name = "Eşikçi Konağı",
         .csvPath = "assets/maps/konak.csv",
         .mood = MOOD_NIGHT,     // sakin-tekinsiz koyu pad (zindan droni DEĞİL)
         .ambient = 0.55f,       // loş ama okunur
+        .crimeRegion = REGION_KONAK,
     },
     [MAP_MEZARLIK] = {
         .name = "Lanetli Mezarlık",
         .csvPath = "assets/maps/mezarlik.csv",
         .mood = MOOD_DUNGEON,
         .ambient = 0.45f,       // kalıcı alacakaranlık (açık hava ama lanetli)
+        .crimeRegion = REGION_KOY,   // köyün kenarında: sicili köy tutar
     },
     [MAP_LOCA] = {
         .name = "Kuyunun Dibi",
         .csvPath = "assets/maps/loca.csv",
         .mood = MOOD_DUNGEON,
         .ambient = 0.30f,   // meşale loşluğu — ama zindan DEĞİL (dalga/mob yok)
+        .crimeRegion = REGION_LOCA,
     },
     [MAP_DOGU] = {
         .name = "Taşdurak — Sınır Kasabası",
@@ -51,6 +57,7 @@ const MapDef MAPS[MAP_COUNT] = {
         .sunriseOffset = -0.75f,   // doğu: güneş 45 dk erken doğar/batar
         .mood = MOOD_WILD,
         .ambient = 0.0f,   // açık hava — gün/gece döngüsü işler
+        .crimeRegion = REGION_TASDURAK,
     },
 };
 

@@ -63,11 +63,16 @@
 // Bölge indeksi (dünya konumundan); bölge dışı → 0 (Yeşil Ova varsayılan)
 static int region_of(float x, float y)
 {
-    // Harita-farkında: Taşdurak kendi bölge indeksini kullanır (bounty/itibar
-    // ayrı yaşar — sınır kasabası köyün sicilini bilmez)
-    if (map_current() == MAP_DOGU) return 5;   // REGIONS[5] = Taşdurak
-    int r = region_at(x, y);
-    return (r < 0 || r >= MAX_REGIONS) ? 0 : r;
+    // Suç defteri HARİTADAN gelir (MapDef.crimeRegion). Eskiden burada elle
+    // yazılmış `if (map_current() == MAP_DOGU) return 5;` vardı ve bölgesiz
+    // haritalarda 0 dönüyordu — yani zindanda, konakta, LOCADA işlenen suç
+    // Köy'ün defterine yazılıyordu. Locada suikastçi ustasına vurunca köy
+    // muhtarı bounty istiyordu.
+    int cr = MAPS[map_current()].crimeRegion;
+    if (cr == CRIME_LAWLESS) return REGION_KANUNSUZ;   // sahipsiz sicil
+    if (cr >= 0) return (cr < MAX_REGIONS) ? cr : REGION_KOY;
+    int r = region_at(x, y);   // CRIME_BY_RECT: dünya haritası, konumdan
+    return (r < 0 || r >= MAX_REGIONS) ? REGION_KOY : r;
 }
 
 // Diyalog koşul değerlendirmesi: sert kilitler (gold/rep/bounty) + speech zar yüzdesi.

@@ -27,6 +27,12 @@ GuardTick guard_update(float dt, float px, float py, int bounty, bool uiFrozen);
 
 void guard_set_hostile(bool hostile);   // karşı koyma / oyuncunun saldırısı
 bool guard_is_hostile(void);
+// TEK MUHAFIZ — bilinçli olarak öyle bırakıldı (2026-07-31).
+// DEMİRBOYUN kanonu altı şehir getiriyor ve bu sistem çoğullanacak, ama YAPIYI
+// kanon kadrosu belirleyecek: şehir başına kaç muhafız, kime bağlı (Ergün'e mi
+// valiye mi), Ak Nöbet ayrı bir örgüt mü. Şimdi guards[N] dizisine çevirmek
+// hiyerarşiyi TAHMİNLE kurmak olurdu ve kadro gelince yeniden yazılırdı.
+// Sıra: lore → GDD → yapı → hikaye → görev → kod. Bkz. GDD §8.1 komşusu.
 int  guard_index(void);                 // muhafızın NPC indeksi (-1 = yok)
 
 #endif

@@ -60,11 +60,18 @@ konuşamayan bir adamın ağzından konuşması. Tören sonuç; sandalye sahne.
 | **Demirboyun** | Krallığın adı; kuzey soğuk denizi ile güney çölü arasındaki dar boyun |
 | **Akkemer** | Krallıklardan önceki ölü imparatorluk; kemerleri, su yolları, dikilitaşları hâlâ ayakta |
 | **Mühür** | Akkemer'in bir ejderhayı taşa gömüp üstüne kemer örerek kapattığı yapı |
-| **Dinleyici** | Akkemer'in mührün altına bağladığı, kulağını taşa dayamış nöbetçi |
-| **Sarkaç** | Mühürlerin çürüme takvimi; Mühürcüler'in saydığı şey |
+| **Bağlı** | Akkemer'in mührün altına bağladığı, kulağını taşa dayamış nöbetçi. Aynı kelime Mühürcüler'in en alt rütbesi ve "bize bağlı çırak" demeye de gelir — kamuflaj kasıtlı |
+| **Sarkaç** | Mühürlerin çürüme takvimi; Mühürcüler'in saydığı salınım. Aynı kelime örgütün TEPE rütbesidir: sayımı tutan kişiye Sarkaç denir, çünkü rütbe bir makam değil bir iş adı — "takvim sende" demek. Yedisunak'ta iki adam "Sarkaç ne dedi?" diye sorar; biri takvimi sorar, biri adamı, ikisi de aynı ağızdan cevap alır. Kimse bu ikiliği açıklamıyor; Mühürcüler'in hoşuna gidiyor |
 | **Damar taşı** | Gömülü ejderhaların damarları boyunca büyümüş, içten ışıyan kristal |
 | **Berat** | Kule/kale tahsis belgesi; oyuncunun mülk merdiveninde üçüncü kademe |
 | **Kırca** | Karduvarlı; aksan ve hâl adı. "Kırca kız" gazilerin Gökçe'ye taktığı lakap |
+| **Bey** | Adamların verdiği unvan. Sadakat kurar, toprak iddiası kurmaz |
+| **Kral** | Şehirlerin vermek zorunda olduğu unvan. Toprak üstünde hüküm demektir |
+| **Altı Ad** | Taç töreninin adı: taç giyen altı şehrin adını tek tek, kendi sesiyle söyler |
+| **Yedinci Ağız** | Sarp'ı altı ağza sormadan okuyabilen kişi. Gizli sınıf; adı odanın aritmetiğinden |
+| **Ocak** | Kavurgan'ın tüccar hanesi. Doksan dokuz tane; daima sayıyla anılır ("Kırk İkinci Ocak") — Karaocak şehriyle karışmasın |
+| **Senet** | Kumkapı Senedi. Ergün'ün hocasının imzalattığı doksan dokuz yıllık kira |
+| **Sayım** | O yılın kirasını hangi Ocağın topladığı. Tahsildarın göğsüne işlenmiş numara |
 
 ---
 
@@ -72,7 +79,7 @@ konuşamayan bir adamın ağzından konuşması. Tören sonuç; sandalye sahne.
 
 **Akkemer çağı.** Ejderhalar egemendi. Akkemer onları öldüremedi — uyuttu, taşa gömdü, üstüne
 kemer örüp mühürledi ve mühürleri dinlemek için altına adam bağladı. Sonra Akkemer çöktü;
-mühürler kaldı, dinleyiciler kaldı.
+mühürler kaldı, bağlılar kaldı.
 
 **Şehir savaşları (kırk yıl).** Altı şehir birbirini yedi. Yollar kapandı, korsan azdı, kervan
 gitmedi. Bugün yaşlı tüccar bu dönemi hatırlıyor ve hatırladığı için hanedanı savunuyor.
@@ -84,6 +91,11 @@ altı şehri birleştirdi — ikisini kılıçla, üçünü kuşatmadan önce an
 **Reddedilen kutsama.** Tapınak şehri Sarp'ı kutsamayı reddetti: "fetih tamamlanmadan taç olmaz."
 Sarp "ben tacı beklemem" deyip yürüdü gitti. Bu karar o gün akıllıydı ve bugün de akıllı görünüyor
 — yirmi altı yıllık barış onun eseri. Fatura değil, açık kalmış bir dosya.
+
+**Gündoğdu sürgünü (21 yıl önce).** Birleşmenin beşinci yılında Sarp güneş sancaklı haneyi
+Kumkapı'dan çıkardı; öldürmedi, sürdü. Hane çölün ağzında çadır kurdu ve iki yıl sonra Ergün orada
+doğdu. Kumkapı Senedi sürgünün on sekizinci yılında, yani **üç yıl önce** imzalandı — Ergün
+on altısındaydı ve odada hocasıyla ikisi vardı.
 
 **Karduvar anlaşması (17 yıl önce).** Üç kuşatma soğuktan dağıldı, dördüncüsünde şehir aç
 kalacaktı. Kırca Ana anlaşmayı yaptı: iki rehin-konuk çocuk. Hanedandan **Gökçe** (9), ordudan
@@ -123,8 +135,10 @@ görünmeyi sanata çevirmiş; ambarları on bin kişiyi bir kış besler.
 
 ### KARAOCAK — döküm şehri
 Dağın böğründe; bacaları gündüz göğü kirletir, gece kırmızı boyar. Krallığın çeliği buradan çıkar,
-dolayısıyla şartı buradan konuşulur. Valisi Rüstem'in eski yoldaşı, fetihte bir kolunu bırakmış;
-artık **kendi sikkesini basıyor** ve kimse sormaya cesaret etmiyor. Galerileri goblin dolu, daha
+dolayısıyla şartı buradan konuşulur. Valisi **Sancar**, Rüstem'in eski yoldaşı. Kuşatmanın altıncı
+günü, duvarın dibinde, Rüstem'in kangren olmuş sol kolunu testereyle kendi kesti; adam bağırmadı,
+Sancar da elini titretmedi. O günden beri **kendi sikkesini basıyor** ve kimse sormuyor — soracak
+tek adam Rüstem, o da sormaz. Galerileri goblin dolu, daha
 aşağıda bir mühür var. **Oyuncuya:** en iyi craft istasyonları, maden, derinlik zindanları.
 
 ### KARDUVAR — hiç fethedilmemiş şehir
@@ -160,6 +174,75 @@ Sarp'ın devirdiği güneş sancaklı eski hane. Torun **Ergün Gündoğdu**, 19
 nazik ve gerçekten inanıyor ki geldiğinde şehirler rahat bırakılacak. Yanında Kavurgan'ın parası
 ve Kavurgan'ın faturası var. Oyunun **en sevimli tehlikesi**.
 
+### KAVURGAN — taraf değil, alacaklı
+
+Güneydeki imparatorluk toprak almıyor. Kavurgan iki yüz yıldır aynı şeyi yapıyor: su ve iskele
+kiralıyor. Ordusu bir şehrin kapısına dayanıp teslim istemez; bir masa kurar, kuyunun ve limanın
+gelirini doksan dokuz yıllığına ister, karşılığında o şehri kendi hanesinden sayar. Güneyin iki
+kıyısı bu şartı imzaladı ve o kıyılar zenginleşti — bugün oradaki yaşlı bir kese sahibine sorsan
+aynı kâğıdı yeniden imzalar, çünkü yollar yapıldı, kuyular derinleşti, korsan girmedi. Şart
+akıllıydı ve hâlâ akıllı görünüyor. Mesele şartın kötü olması değil; kimin hangi cümleyi okuduğu.
+
+Kavurgan'ın iki başı var ve ikisi birbirini istemiyor. Bir yanda imparator, öbür yanda doksan dokuz
+Ocak. Kiranın her yılı sırayla bir Ocağa ait — doksan dokuz sayısı takvimden çıkmadı, masadaki
+sandalye sayısından çıktı. İmparatorun bu sıradan payı yok; tek kuruş almıyor. Onun payı
+ganimettir, dolayısıyla imparator sefer istiyor. Ocaklar biliyor ki sefer çıkarsa senet hiç
+işlemez: fethedilen yerin geliri ganimettir, kira değil, ve ganimet imparatorun payıdır. Doksan
+dokuz yıl ancak Hane kendi ayağıyla o tahta oturursa başlar. Bu yüzden savaş çıkmasın diye Ergün'ü
+besliyorlar. Yani sürgün prensin dört kuyusunu kazan
+para, kendi imparatorunun seferini engellemek için harcanıyor. Ergün bunu bilmiyor; parayı
+kendisine inanıldığı için aldığını sanıyor.
+
+**Ekranda ne görünür.** Kumkapı duvarının ötesindeki çadır pazarında, her yılbaşı yeni bir tahsildar
+oturur: aynı sıra, aynı terazi, göğsüne işlenmiş farklı bir numara. Topladığı şey küçüktür — çadır
+sarayının kervan bacı ve kuyu parası. Terazi bir avuç bakır alıyor, yanındaki demir sandık bir
+şehrin gümrüğüne göre yapılmış. Oyuncu üç yıl oynadıysa üç ayrı adam görmüştür ve kimse ona bunun
+bir sıra olduğunu söylememiştir. İkinci işaret Tuzkapı'da: o yılın Ocağı liman zincirinin kulesinin
+üst iki katını Kırk Kese'den **kiralamış**, otuz iki adam tutuyor, kirasını gününde ödüyor.
+Sözleşme liman defterinde asılı, isteyen okur. Liman gardiyanı onlara "kiracı" diyor ve kâğıdı
+gösteriyor — atamıyor, çünkü atarsa Tuzkapı kendi kanununu bozar ve Tuzkapı'nın tek gururu o
+kanundur.
+
+### KUMKAPI SENEDİ
+
+*Doksan dokuz Ocağın mührüyle ve Gündoğdu Hanesi'nin eliyle, sürgünün on sekizinci yılında yazıldı.*
+
+> **Bir.** Kavurgan Ocakları, Gündoğdu Hanesi'nin kuyusunu, çadırını, atını ve adamını bugünden
+> itibaren kendi hanesinden sayar; Hanenin düşmanı Ocakların düşmanıdır, Hanenin susuzluğu
+> Ocakların borcudur.
+>
+> **İki.** Buna karşılık Hane, **tahtına oturduğu gün**, tuz gabelesini, Tuzkapı liman zincirinin
+> bacını ve Kumkapı gümrüğünü doksan dokuz yıl süreyle doksan dokuz Ocağa bırakır — her yıla bir
+> Ocak, sırayla; birinci yıl Hanenin oturduğu yıldır, birinci sandalyeden başlar. Devir için ayrı
+> imza aranmaz; senet o gün kendiliğinden açılır.
+>
+> **Üç.** Ocaklar bu üç kalemi kendi usulünce toplar. Hane karışmaz, Hane hesap da vermez.
+>
+> **Dört.** Yolu, kuyuyu ve iskeleyi Ocaklar onarır. Onarımın parası o yılın Ocağına kalır.
+>
+> **Beş.** Doksan dokuzuncu yılın sonunda üç kalem Haneye kendiliğinden döner; dönmesi için ne
+> izin, ne imza, ne haber gerekir.
+>
+> **Altı.** Hane bu kalemlerden birini üçüncü bir ele verirse sıra bozulmuş sayılır ve bozulan yıl
+> baştan sayılır.
+>
+> **Yedi.** Bu senet iki nüshadır; biri çadırda, biri masadadır. İkisi de asıldır.
+
+**Aynı kâğıt, iki okuma.** "Hane karışmaz, Hane hesap da vermez" — Ergün bu cümlede egemenlik
+görüyor: *kimse benim defterimi açamaz.* Ocaklar aynı cümlede serbest el görüyor: *kimse tahsilimize
+karışamaz.* İkisi de doğru okuyor. "Onarımın parası o yılın Ocağına kalır" — yol her yıl onarım
+ister, yani onarım hiç bitmez ve kira hiç kesilmez. Ve altıncı madde: bozulan yıl baştan sayılır.
+Madde hangi yılın baştan sayılacağını söylemiyor. Ergün bir yıl okuyor, masa doksan dokuzun
+tamamını okuyor. O maddeyi Ergün'ün hocası kendi eliyle yazdı ve ona "seni koruyan madde" diye
+gösterdi. Yalan söylemedi — madde gerçekten Haneyi koruyor. **Aynı cümle Ocakların elini de hiç
+bırakmıyor:** sayım her bozulmada başa döndüğü için doksan dokuz yıl hiç dolmayabilir.
+
+Senedin asıl dişi burada: **fatura henüz kesilmedi.** Bugün o üç kalemi Demirboyun topluyor, Ocaklar
+tek akçe görmüyor ve Ergün "ödemeyi sonra konuşuruz" sanıyor. Masa öyle okumuyor: ödeme imzalandı,
+sadece tarihi yok. Ergün tahta oturduğu sabah altı şehrin üç büyük gelirinden ikisi ve limanın
+zinciri masaya geçer; Ergün de o kâğıdı imzalamış kral olur. Kuyunun suyu gerçek, borç da gerçek,
+ikisi arasında sadece bir gün var.
+
 **Oyuncu taraf seçmezse:** hiçbir kapı kapanmaz. Yüz saat kazar, satar, avlanır, zindan gezer;
 tören sensiz yapılır ve kapanış metni bunu söyler.
 
@@ -175,7 +258,7 @@ sayılıyor. Karduvarlı gibi konuşuyor: "kardaş" der, "evet" demez "öyle" de
 nezaket, Yenitaç'ta seyis sorusu — bildiği hâlde bırakmıyor).
 
 **İyi yaptığı:** şart yazmak. Bir anlaşmanın nerede sızdığını dokunmadan görür. Bir de iskeleye
-tırmanır — kırk metrede, eldivensiz, kimseye haber vermeden. Şehir bunu görüyor, seviyor.
+tırmanır — yirmi beş metrede, eldivensiz, kimseye haber vermeden. Şehir bunu görüyor, seviyor.
 
 **Hiç yapamadığı:** babasının kılıcını taşımak. O iki elli bir sınır kılıcı; Gökçe Karduvar'da
 kısa balta ve bıçakla büyüdü, bileği başka türlü kapanıyor. Provada kılıcı kaldırıp indirdi ve
@@ -188,8 +271,11 @@ yorganının içinde dikili. Daha derinde: **gölün buzu kırıldığında Tuğ
 > *"Atın su içti mi kardaş? İçmediyse konuşmayalım, ben susuz adamla şart yazmam."*
 
 ### BOZ RÜSTEM — mareşal, tek kollu
-Sol kolu Karaocak kuşatmasında kaldı. Elli üçünde sol eliyle yazmayı öğrendi çünkü maaş defterini
-kendi imzalamak istiyor; harfleri çirkin, saklamıyor: "adam kendi çirkinliğini imzalar."
+Sol kolu Karaocak duvarının dibinde kaldı — ve solaktı. Kesen adam bugün o şehrin valisi; Rüstem
+onun sikkesini biliyor, gümüşünü biliyor, hiçbirini gündeme getirmiyor: *"Bir adam sana kolunu
+kestirirse ömrünün sonuna kadar haklıdır."* Elli üçünde sağ eliyle yazmayı yeniden öğrendi çünkü
+maaş defterini kendi imzalamak istiyor; harfleri çirkin, saklamıyor: "adam kendi çirkinliğini
+imzalar."
 
 **Sempatik detay:** haftada iki kez, kimseye haber vermeden, sırtında buz çuvalıyla kışlanın
 mahzenine iniyor. Oğlunun teknesindeki buz eriyor. Tek koluyla taşıyor, yardım ettirmiyor.
@@ -199,7 +285,8 @@ mahzenine iniyor. Oğlunun teknesindeki buz eriyor. Tek koluyla taşıyor, yard�
 Adamlar bunu adalet sanıyor, Gökçe her seferinde bir parça küçülüyor, Rüstem ikisini de biliyor.
 
 **Kimseye söylemediği:** Gökçe'nin taç giymesini **istiyor**. Onu sevmiyor, saymıyor, ama başka
-varis yok ve varis olmazsa ordu dağılır. Bütün hakaretler, Gökçe'yi sahaya çıkarmak için kurulmuş
+varis yok ve varis olmazsa ordu dağılır. Şirin'in kızı sayılmıyor; Rüstem bunu bir kere sordu,
+cevabı defterden aldı, bir daha sormadı. Bütün hakaretler, Gökçe'yi sahaya çıkarmak için kurulmuş
 bir kaldıraç.
 
 > *"Ben adamıma yalan söylemem, kızım — söylersem yarın on iki bin yalancı olur, sen de onları benden isteyemezsin."*
@@ -236,6 +323,47 @@ pazarlıkla düzeltebileceğine inanıyor. İnancı samimi, hesabı yanlış.
 
 > *"Efendim, siz beni sevmek zorunda değilsiniz — kuyuyu içmek zorundasınız, o kadarı yeter."*
 
+### ŞİRİN HATUN — ikinci eş, takvimin sahibi
+Sarp'ın ikinci karısı; saraya **dul geldi**. İlk kocası Yenitaç'ın tahıl terazisini tutan adamdı,
+sekiz yıl önce yıkılan bir iskelenin altında kaldı, hesabı da altında kaldı. Şirin o borcu sarayın
+kasasından kapattı ve Vedia bunu hâlâ hatırlıyor. Odadaki altı ağızdan biri; hiç "hayır" demeyen
+tek ağız. Şirin'in üç kez ertelediği şey tören
+değil — **törenin yapılamayacağının söyleneceği gündü.** Tarih yaklaştıkça odada biri o cümleyi
+kurmak zorunda kalır; Şirin her seferinde ondan önce meşru bir sebep koyuyor: bir nöbet, bir yas
+günü, bir kırk. Kâtip Sadık üçünü de defterine yazdı, çünkü sebepler meşruydu ve yazılınca
+kimsenin konuşması gerekmedi. Şirin törene karşı değil. **Kararın kapanmasına karşı.**
+
+**Sebebi on iki yaşında ve Yalınkılıç değil.** Nazlı ilk kocasından; Sadık'ın defterinde adının
+yanında hane yok, sarayda ona "hatunun kızı" derler ve kimse kötü niyetle demez. Tam bu yüzden bir
+fiyatı var: Yalınkılıç kızı verilemez, çünkü verilen şey mirasın parçası olur ve masa açılır.
+Hatunun kızı verilebilir — kimsenin hakkı eksilmez, defter kıpırdamaz. Karar kapandığı gün — kim
+taç giyerse giysin — Kavurgan'a bir dostluk nişanı, bir vali oğluna gelin ya da düpedüz bir keseye
+teminat olur.
+Dosyası açık duran sarayda çocuk kimsenin aklına gelmez; dosya kapandığı gün ilk kalem o olur.
+Şirin bunu kimseye söylemedi, çünkü söylediği an fiyat pazarlığını kendi eliyle başlatmış olacak.
+
+Odadaki tek dokunulmaz itiraz o. Diğer beş ağız "beyimiz şunu istiyor" diyor ve Sarp gözünü
+kapatınca yakalanıyorlar. Şirin öyle bir cümle kurmuyor: "Bugün olmaz" diyor. **Sarp'ın gözü onu
+yakalayamaz** — çünkü Şirin Sarp adına bir şey istemiyor, sadece takvimi kaydırıyor.
+
+**Ertelerken boşuna beklemiyor.** Yedisunak'ın mehir-veraset defterine Nazlı'nın adını yazdırmaya
+çalışıyor. O deftere geçen bir çocuk artık pazarlık kalemi değil, mirasın tarafı olur; kimse onu
+veremez. Kâğıt gelirse erteleme aynı gün biter ve **Şirin bir gecede Gökçe'nin en sağlam müttefiki
+olur** — çünkü kızı kurtulduğu an tören onun da işine gelir.
+
+**Oyuncu nasıl fark eder.** "Bey rahatsız, Altı Ad haftaya" haberi salonda okunduğu sabah oyuncu
+ahırdan geçerse, Yedisunak'a haber götürecek atı çoktan eyerlenmiş bulur: çulu üstünde, ağzı
+tokalı. Hastalık sabah çıkar; o at gece hazırlanmış. Üçüncü ertelemede seyis oyuncuya bakar,
+bakışını kaçırır ve bir daha sormaz. İkinci kanıt daha ağır — Nazlı'nın yatağı hâlâ Şirin'in
+odasında, on iki yaşındaki bir çocuk için tuhaf. Kavurgan'ın adamı saraya geldiği gün çocuk
+kaybolur.
+
+**Nazlı.** Sevimli değil. Huysuz, ağzı bozuk, hırsız. Oyunun ilk saatlerinde iskeleden çivi çalan
+çocuk odur; kimse oyuncuya söylemez. Annesinin planını en çok kendisi sabote ediyor: tapınak kâtibi
+çocuğu görmeden adını deftere yazmıyor, Nazlı üç randevunun üçüne de gelmedi. Kaçmak istiyor,
+planı kafes sanıyor, haklı da olabilir. Oyuncu isterse çocuğu yakalayıp defterin önüne sürükler,
+isterse kaçmasına yardım eder, isterse çiviyi geri isteyip yoluna gider.
+
 ---
 
 ## §7 SARP'IN ODASI — konuşamayan adam ve altı ağız
@@ -243,8 +371,37 @@ pazarlıkla düzeltebileceğine inanıyor. İnancı samimi, hesabı yanlış.
 Sağ tarafı gitti, dili gitti, **aklı yerinde**. Gözleri takip ediyor, sıkılıyor, alay ediyor.
 Sol eli var ama titrek; kalem tutamıyor.
 
+### İki unvan: bey ile kral arasındaki fark
+
+Sarp'a herkes bey der ve bu bir küçültme değil. Bey, adamların verdiği unvandır — adamı olan adama
+denir. Sadakat kurar, toprak iddiası kurmaz. Yirmi altı yıl boyunca kimse bundan fazlasını istemedi.
+
+Kral başka bir şey: onu şehirler verir ve vermek zorunda olan şehirlerdir. Tören de tam bunun
+üstüne kurulu. Taç giyen kişi, tacı takan eller başındayken altı şehrin adını tek tek, yüksek
+sesle, kendi ağzıyla saymak zorundadır. Törenin adı bu yüzden **Altı Ad**. Taç zaten başında olur, kutsayan el zaten omzunda; şart olan
+kısım o değil, altı isimdir. Başka şart aranmaz — ve aranmadığı için kaçış da yok.
+Şehirler kendi adlarının söylendiğini duyar; susarlarsa hüküm kurulmuş sayılır. Yenitaç'ta o altı
+ismin oyulacağı taş hazır duruyor, on bir yıldır boş; taş ustası parasını aldı ve hâlâ bekliyor.
+
+Sarp konuşamıyor. **Altı Ad'ı fiziksel olarak yapamaz.** Kimse onu azletmiyor, kimse ölmesini
+beklediğini söylemiyor, kimse Gökçe'nin yerine geçmesini de teklif edemiyor: Gökçe o isimleri
+sayacaksa babasının ölmüş ya da azledilmiş sayılması gerekir; o cümleyi odada kuracak adam yok.
+Rüstem kuramaz, Sadık defterine yazamaz, Vedia kasa diliyle söyleyemez. On bir yıllık iskele bu
+yüzden ayakta. Bitmemiş bir çatı değil, söylenemeyen bir cümle.
+
+Bu yüzden salon başka bir şey yapıyor: töreni yapılamaz ilan etmek yerine **ileri tarih koyuyor.**
+Sadık takvime bir gün yazar, davetler yazılır, taş ustasına haber gider, sonra o gün kayar. Kimse
+"bey Altı Ad'ı yapamaz" demiyor, çünkü o cümleyi kuran adam Sarp'ı azletmiş sayılır ve odadan
+azledecek adamla çıkar. Tarih konmaya devam ettiği sürece herkes hâlâ beyin adamı. On bir yıllık
+iskele budur: kimse töreni iptal etmedi, sadece hep haftaya kaldı.
+
+Yedisunak ise ona ne bey der ne kral. Tapınaktan gelen her mektup düz adıyla başlar: *"Sarp'a."*
+Kutsanmamış adama unvan verilmez — hakaret değil, rahiplerin usulü; tam bu yüzden daha çok batıyor.
+Kâtip Sadık bu mektupları deftere **"unvansız"** diye kaydeder, böylece arşivde unvansız hitap
+görünmez.
+
 **Oyuncu onunla nasıl konuşur.** Odada bir masa, masada boş bir tepsi var. Oyuncu **üç nesne**
-getirip tepsiye koyar; Sarp bir tanesini sol elinin kemiğiyle iter. Neyi sorabileceğini *ne
+getirip tepsiye koyar; Sarp bir tanesini sol elinin sırtıyla iter. Neyi sorabileceğini *ne
 getirdiğin* belirler — mühür parçası, Rüstem'in mührü, Karduvar tuzu, tapınak mumu, Tuğrul'un
 çizmesi, damar taşı. Yanlış nesnelerle cevap alamazsın; doğru üçlüyü bulmak bir bulmacadır ve
 kimse tarif etmez.
@@ -259,7 +416,7 @@ uyduramıyor.**
 |---|---|---|
 | **Boz Rüstem** | "Beyimiz sefer istiyor. Yirmi altı yıl yürüdü, sandalyede ölmeyi istemez." | Sarp'ın gençliğini alıntılar; hasta hâline hiç bakmaz, gözünün içine bakar |
 | **Kâtip Sadık** | "Beyimiz istemez, çünkü on bir yıl önce şöyle yazdırdı." | Sarp'ı arşive çevirmiş; yaşayan adamın yeni fikri olabileceğini kabul etmiyor |
-| **Şirin Hatun** (2. eş) | "Bey artık dinlenmek istiyor." | Samimi — ve Sarp'ın dinlenmesi onun da işine geliyor. İkisi birden doğru |
+| **Şirin Hatun** (2. eş) | "Bey artık dinlenmek istiyor. Bugün olmaz." | Hiçbir şeye hayır demiyor, sadece bugüne diyor. Kararın kapandığı gün on iki yaşındaki kızının fiyatı olur — bkz. §6 |
 | **Hekim Yusuf** | "Bey konuşamıyor, dolayısıyla istemiyor; hastanın iradesi hekimindir." | Sarp'ı en çok o gücendiriyor, en iyi o bakıyor |
 | **Sayman Vedia** | "Beyimizin istediği önemli değil, kasada üç ay var." | Odadaki tek gerçek konuşan; kimse onu sevmiyor |
 | **Deli Sabri** | "Bilmem. Bugün pencereye baktı, dün bakmadı." | Sarp'ı sırtında helâya götüren eski yoldaş, okuma yazma yok. **Gerçek işaretleri bilen tek kişi** ve kimse ona sormuyor |
@@ -308,7 +465,7 @@ tapınağa anlatıp koz yapmak.
 ### Mühür nedir
 Akkemer ejderhaları öldürmedi, öldüremedi. **Uyuttu, taşa gömdü, üstüne kemer örüp mühürledi ve
 mühürleri dinlemek için altına adam bağladı** — zincirler, kafesler, kulakları taşa dayalı
-dinleyiciler. Akkemer çöktü; mühürler kaldı.
+bağlılar. Akkemer çöktü; mühürler kaldı.
 
 ### Sarkaç
 Mühürler bir takvimle çürüyor. **Mühürcüler** buna Sarkaç der ve dokuz yüz yıllık salınımı
@@ -337,6 +494,79 @@ büyümüşü. Kimse onlara tapmıyor, kimse "geri getirmedi". Avlanabilirler, k
 Oyunun en tanınmış manzarası: patlamış bir mühür. Kaburgalarının arasından **bir merdiven aşağı
 iniyor.** Oyuncu on saat üstüne tırmanıp manzara sandığı şey bir zindan girişi çıkar.
 
+### Yedi mühür: haritaya yayılmış
+
+Tek kural, hepsi için: mühür, altındaki bağlı sustuğunda çürür.
+
+Akkemer aptallık etmedi. Bir taşın altına canlı adam bağlamak bize bugün delilik gibi görünüyor,
+ama o düzen dokuz yüz yıl çalıştı — bağlılar işini yaptı, nöbet devredildi, mühürler tuttu. Sarkaç
+bir kehanet değil, bir tükenme takvimi: nöbet tutacak adam bitiyor. Oyuncu aşağı iner, zinciri
+bulur ve kimse anlatmadan bakınca anlar: kulak taşa değiyor mu, zincir gergin mi, kâse boş mu.
+
+Dört fiil var: yerine yenisini bağlamak (Mühürcüler'in işi; gönüllü, mahkûm ya da oyuncunun
+kendisi), besleyip nöbeti uzatmak, zinciri kesmek (Kabukçular'ın işi) ve hiç inmemek.
+
+1. **Yenitaç çayırı** — dev fosil, patlamış mühür, kaburgaların arasından inen merdiven. Bağlı yok:
+   zincir halkaları dıştan kesilmiş. Biri onu kurtardı, mühür bu yüzden ilk gitti.
+2. **Yedisunak** — yedi sunağın altındaki kemer. Sunaklar mühür kapağıdır ve şehir bunu bilir.
+   Rahipler sırayla aşağıya bir gönüllü indirir; sıra çizelgesi mahzen duvarında asılı, son üç
+   hafta boş.
+3. **Karaocak derinleri** — maden galerisi, goblin işgali, en altta duvar. Madenciler duvarın
+   ardından nefes duyduklarını söylüyor; duyuyorlar, çünkü bağlı duvarın öbür yüzünde ve hâlâ sağ.
+4. **Tuzkapı körfezinin altı** — Akkemer'in sualtı başkentine açılan lağım. Su altında, tuzla
+   korunmuş; kaçakçılar tam onun üstünden mal geçiriyor.
+5. **Volkan** — gayzer çanağı, Kabukçular'ın karargâhı. Kabuk kırılmış, çanak yanmış. Kabukçular
+   boşluğa kendilerinden birini bağlamış ve o adam pişman.
+6. **Karduvar'ın donmuş gölü** — buzun altındaki kemer, Tuğrul'un öldüğü yer. Dokuz yıldır buzda
+   kımıldamadan duran biri var; Ak Nöbet ona yem atıyor ve bunu nöbet değil, hayvan besleme sayıyor.
+7. **Kozmik Tapınak** — ana kemer, Sarkaç'ın kaynağı. İçinde boş bir sandalye ve oyuncunun
+   ölçüsünde bir zincir var.
+
+**Çürüme sırası.** Ortak dil: her çürümede bir yol kapanır, bir yol açılır.
+
+Fosilin dibindeki ikinci kapak açılır — kaburgaların altındaki taş döşeme çöker ve merdiven
+bittiği yerden aşağı yeni bir hat iner; on saat gezdiğin zindanın altında ikinci bir zindan çıkar →
+Yedisunak'ın sunakları çatlar, mahzen çöker: arşiv ve şifa hattı kapanır, rahipler sunakları örter →
+Karaocak galerisi çöker, çelik fiyatı iki katına çıkar → liman zinciri paslanıp kopar, körfeze
+korsan girer → volkan ikinci ağzını açar, doğu yolu kül altında kalır → göl buzu kalıcı kırılır,
+buzun üzerinden yürünemez ve kışlık rota tekneyle uzar → **ana kemerin ilk halkası kopar.**
+
+Yedinci olay ana kemerin KADERİ değil, ilk çatlağı: halka kopar, geri takılamaz, gökyüzü değişir.
+Kemerin yeniden mühürlenip mühürlenmeyeceği Sarkaç'ın sayımının DIŞINDA — o oyuncunun fiiline
+bağlı (§14). Sarkaç takvimi tutar, finali yazmaz.
+
+**Neyin çürümediğine dikkat:** kutsama KARARI, Karduvar kapısının açık mı kapalı mı olduğu ve
+tacın kimin başına konacağı hiçbir mühre bağlı değil. Mühür bir hizmeti kapatır, bir yolu uzatır,
+bir fiyatı kaldırır — bir siyasi kararı vermez.
+
+**KORKULUK (bağlayıcı, test edilebilir):** Mühür çürümesi hiçbir siyasi zincir düğümünün önkoşulu
+olamaz. Yalnızca fiyat, yol ve tehdit koşullarını değiştirir. Bir siyasi görev önüne "şu mühür
+çürüdüyse" diye koşul koyuyorsa kural ihlal edilmiştir.
+
+**Silme testi:** Yedi mühür bu belgeden tamamen silinse Gökçe'nin sancak sayımı tek hane bile
+değişmez, tapınak kutsama şartını değiştirmez, Kırca Ana kapıyı yine kışın kapatır, Şirin bir gün
+bile fazla ertelemez, Senet'in altıncı maddesi aynı iki okumayı taşır. Sadece çelik ucuz kalır,
+liman zinciri sağlam durur, Yedisunak'ın arşivi açık kalır ve kışlık rota kısalır.
+
+### Kabukçular neden haklı
+
+Herkesin görebileceği gövde şu: geciktirmek çürümeyi durdurmuyor, patlamayı erteliyor. Doğal bir
+çatlaktan çıkan ejderha aç bir hayvandır — avlanır, göç eder, yumurtlar, uçar gider. Kırk yıl
+tamirle, sıvayla, yamayla tutulmuş bir mührün ağzından çıkan şey ise kör, şişmiş ve taşa yapışmış;
+gitmiyor da. Galeriyi tıkar, madenciyi yer, aynı yerde on yıl kalır. Aynı tür, iki ayrı ekran:
+kuzey yaylasındaki taze çatlağın hayvanı ile Karaocak'ın altındaki, üç kuşak boyunca yamanmış
+mührün içindeki şey. Oyuncu ikisini gördükten sonra Kabukçular'ın tek cümlesini kendisi kurar:
+*şimdi açalım, hâlâ hayvanken.*
+
+Asıl kısmı yalnız **Bağlı** sınıfını açan görür: bağlılar hâlâ diri. Zincirdeki iskelet nefes
+alıyor ve tek bir kelimeyi tekrarlıyor. Kabuğu kırmak o adamı öldürüyor — yani kurtarıyor. Oyuncu
+bir mühür odasında zincirli biriyle konuşur, sonra Mühürcü ekibi gelir, "yerine yenisini
+bağlayın" der, kapıyı sıvar ve bunu iyi niyetle yapar.
+
+Ama uzlaşma yok ve olmayacak. Kabukçular hepsini birden açmak istiyor; oysa o mühürlerin altısının
+üstünde köy, şehir, maden var. Teşhis doğru, reçete cinayet. Bir de şu: o zincirli adamı kurtarmak
+için açmıyorlar. Ağzından içmek için açıyorlar.
+
 ---
 
 ## §10 ALTI ÖRGÜT
@@ -345,7 +575,7 @@ iniyor.** Oyuncu on saat üstüne tırmanıp manzara sandığı şey bir zindan 
 |---|---|---|---|
 | **Kılıçartıkları** | Gaziler loncası: kontrat, haydut temizliği, muhafızlık, sonunda sefer | Yenitaç'ın bitmemiş kışlası | Yamak → Nöbetçi → Onbaşı → Bayraktar → **Söz Sahibi** |
 | **Kırk Kese** | Yatırım, kaçakçılık, rakip batırma, makam satın alma, mal aklama | Tuzkapı | Kefil → Yazman → Kese Sahibi → **Kırkbirinci Sandalye** |
-| **Mühürcüler** | Zindan kazısı, ölü çözümü, mühür tamiri, büyü okulları | Yedisunak yakınındaki Akkemer su tesisi | Dinleyici → Okuyan → Mühür Eli → Kemer Ustası → **Sarkaç** |
+| **Mühürcüler** | Zindan kazısı, ölü çözümü, mühür tamiri, büyü okulları | Yedisunak yakınındaki Akkemer su tesisi | Bağlı → Okuyan → Mühür Eli → Kemer Ustası → **Sarkaç** |
 | **Kısıklar** | Suikast; her taraftan kontrat alır, oyuncuyu menteşe yapar | Kumkapı lağımları | Fısıltı → Gölge → Kısık → Boğaz → **Sessiz Bey** |
 | **Ak Nöbet** | Geçit devriyesi, trol avı, küçük ejderha izi, yeminli tavır | Karduvar | Çırak → Kar Nöbeti → Gedik Beyi → **Ak Baş** |
 | **Kabukçular** | Kabuk kırmak: mühürler açılsın, ejderha uyansın, biz onun ağzından içelim | Volkanın gayzer çanağı | Kav → Çatlak → Kabuk Kıran → **Kanat Ağzı** |
@@ -354,8 +584,25 @@ Birbirlerine rakipler: Kılıçartıkları Kısıklar'ı asar, Kırk Kese Mühü
 edip damar taşını stoklar, Ak Nöbet Kabukçular'ı geçitten geçirmez, Kabukçular Mühürcüler'in tam
 tersini yapar.
 
-**22 hat + 2 gizli sınıf** bu altı örgütte yuva buluyor. Gizli sınıfların kapısı iki örgütün
-kesişiminde: Mühürcü rütbesi + Kabukçu eylemi, ya da Kısıklar rütbesi + Ak Nöbet yemini.
+**22 hat** bu altı örgütte yuva buluyor. **İki gizli sınıf** var; ikisinin de kapısı bir rütbe
+değil, bir **davranış**.
+
+**BAĞLI.** Mühür odasına inip taşı **kırmadan** kulak dayamak: üç ayrı mühürde, kazma vurmadan,
+çömelip sesi sonuna kadar dinlemek. Üstüne bir Kabukçu eylemi — bir kabuğu kırıp altındakini
+**duymak**. Kamuflaj kelimenin içinde: "Bağlı" aynı zamanda Mühürcüler'in en alt rütbesinin adıdır
+ve "bize bağlı çırak" demeye de gelir. Sorarsan "he, çırak demek" cevabını alırsın. Kimse yalan
+söylemiyor. Ama taşın altındaki iskeletin adı da Bağlı'dır, ve oyuncu bunu bir gün fark eder.
+
+**YEDİNCİ AĞIZ.** Sarp'ın tepsisini **altı ağzın hiçbirine sormadan** çözmek. Altı NPC'nin ipucu
+diyaloglarına girdiysen kapı kirlenir. Tanık Deli Sabri'dir; okuma yazması yok, bunun bir sınıf
+olduğunu kendi de bilmiyor, sadece *"sen de bakıyorsun"* der. Kazancı dövüş değil **siyaset**:
+yalan söyleyen ağzın gözü kapanır, Sarp adına konuşabilirsin, kurulda ikinci sesin olur. Adı
+odanın kendi aritmetiğinden geliyor — altı ağız onun adına konuşuyor, sen yedincisi oluyorsun ve
+yedincisi konuşmuyor, anlıyor.
+
+**Kaçırma kuralı: bu sınıflar kaçırılmaz, kirletilir.** Zaman penceresi yok, sayaç ömür boyu
+durur, yüzüncü saatte de açılır. Kaybetmenin tek yolu **yaptığın** bir şeydir: kazmayı seçtin,
+altı ağza sordun, sivili kestin. Kirlendiğinde oyun bunu söylemez.
 
 ---
 
@@ -384,7 +631,7 @@ bir **küçük ejderhayı bağlamak** — binek, yoldaş, ve gittiğin her şehi
 taşır — bu, 20 palet ortamını tek üretim kalıbına bağlar:
 
 1. **Dışta harabe-sunak** — rünik taşlar, dikilitaş, portal
-2. **Bekçi karakolu** — hücre, zincir, kafes, döner bıçak (dinleyicileri bağladıkları yer)
+2. **Bekçi karakolu** — hücre, zincir, kafes, döner bıçak (bağlıları zincirledikleri yer)
 3. **Su yolu ve lağım** — mutant sıçan, engerek; biri sonradan gizli laboratuvara çevrilmiş
 4. **Damar** — kristal, heykeller, goblin işgali, mimik
 5. **En dipte mühür** — dirilen boss, modüler dev
@@ -473,12 +720,45 @@ verdiğin sözler törende hatırlanır.
 
 ---
 
-## §16 AÇIK SORULAR
+## §16 KARDUVAR VERASET TAŞI
 
-1. Kralın (Sarp'ın) unvanı ne — "bey" mi kalıyor, taç giyilince ne oluyor?
-2. Kavurgan İmparatorluğu'nun iç yapısı ve doksan dokuz yıllık şartın tam metni.
-3. İki gizli sınıfın kesin kapısı (§10'da iki aday var, biri seçilecek).
-4. Yedi mührün haritadaki yerleri ve çürüme sırası.
-5. Şirin Hatun'un kendi planı — Gökçe'yi destekliyor mu, sabote mi ediyor?
-6. Karduvar veraset taşındaki kazınmış ikinci isim oyuncuya nasıl gösterilecek?
-7. Kabukçular'ın gerçekten haklı olduğu yer — henüz yazılmadı ve yazılmalı (§15.6).
+Taş, Karduvar meydan evinin **dış duvarında**. İsimler oyulmuş; ikinci isim taşla taşa vurulup
+silinmiş — çukurlar hâlâ var, gölgeye bakınca yok.
+
+İki fiil bir **zincir**; biri diğerinin yerine geçmez.
+
+**Kar sürmek keşfi verir.** Oyuklar sığ ama duruyor. Kar yağıp güneş vurunca düz yüzeydeki kar
+erir, oyuktaki kalır: isim birkaç dakika beyaz çıkar. Oyuncu bunu bekleyebilir ya da zorlayabilir —
+eline kar alıp duvara sürer. Karaocak'ta aynı işi kurum yapar. Fiil bir kez öğretilir: Ak Nöbet
+çırakları nöbet taşına böyle imza atar.
+
+**Kalıp almak taşımayı verir.** Deri ve kömürle kalıp alınır; envanterde *"Karduvar kalıbı — yarısı
+silik"* diye durur. Tek başına işe yaramaz. Kırca Ana'nın mektuplarıyla ya da tapınağın
+mehir-veraset defteriyle üst üste konduğunda eksik çizgiler tamamlanır ve isim çıkar. **Kanıt
+taşınabilir bir mal olur:** Rüstem'e verirsin, keseye satarsın, Gökçe'ye gösterip yakmasını
+izlersin. Asıl oyun okumak değil, kimin okuyacağına karar vermek.
+
+**Görgü kapı değil, ödül.** Kaba oyuncu da ismi kar sürerek bulur. Ama kalıbın tapınak defteriyle
+çakıştırılmış kopyasını yalnız Karduvar'ın güvendiği adam alır: atın suyunu sormuşsan, kimsenin
+unvanını sormamışsan, mektup taşımışsan bir kar nöbeti çocuğu kandili doğru açıdan tutar. Kabaysan
+taşın önüne kilim asılır ve kimse sebebini söylemez. **Kabalığın bedeli kanıtı bulamamak değil,
+kanıtı mahkemede kullanamamak.**
+
+---
+
+## §17 AÇIK SORULAR
+
+§16'nın eski yedi sorusu **2026-07-31'de kapandı**; kararlar yukarıdaki bölümlere işlendi
+(§2 sözlük, §5 Kavurgan + Senet, §6 Şirin, §7 Altı Ad, §9 yedi mühür + Kabukçular, §10 gizli
+sınıflar, §16 veraset taşı). Geriye Kavurgan tarafında üç şey kaldı:
+
+1. **İmparatorun adı ve hanesi.** Ocakların sırasına giremeyen, payı ganimet olan adam. [AÇIK]
+2. **Seferin hedefi.** Kumkapı mı, Tuzkapı limanı mı, yoksa Demirboyun hiç değil de güneybatıdaki
+   üçüncü bir kıyı mı — imparator kendi masasına karşı nereye yürüyor? [AÇIK]
+3. **Ordusu kendi mi, kiralık mı.** Kiralıksa parasını hangi Ocak veriyor ve o Ocak sırada kaçıncı
+   sandalye? [AÇIK]
+4. **Hoca kim.** Senedi Ergün'e imzalatan, altıncı maddeyi kendi eliyle yazan adam. Adı yok, hanesi
+   yok, kime çalıştığı yok. Üç ihtimal ve üçü ayrı oyun kurar: (a) Ocakların adamı — sıra
+   masasından maaşlı, (b) imparatorun adamı — sefer istiyor ve Ergün'ün eninde sonunda batmasını
+   planlıyor, (c) gerçekten Ergün'ün adamı ve altıncı maddeyi iyi niyetle yazdı, hesabı yanlış
+   çıktı. Oyuncunun onu tanıyabilmesi için bir yer, bir alışkanlık ve bir yazı eli gerekiyor. [AÇIK]
