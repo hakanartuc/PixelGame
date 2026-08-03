@@ -17,9 +17,25 @@
 # Hatun sadece "Bey" diyor. Bu bir karakter beati — Hatun onun ADINA bir şey istemiyor
 # (LORE §7, Şirin'in takvimi). Çeviride TEKLEŞTİRİLMEYECEK.
 #
-# NEDEN panel 4'te buz ilanı var: LORE §8'in birinci saat kancası. Oyuncu onu OKUYOR,
-# ALMIYOR — ve yarım saat sonra aynı kâğıdı panoda yeniden görecek (GDD §1.2c: pano
-# ilan değil DOĞRULAMA olur).
+# NEDEN panel 4'teki buz ilanı YARIM: kanon denetimi (Ö1) bunu kırıcı bulgu saydı.
+# Eski hâli "Mahzene buz taşı — 6 akçe. Kışla kâtibine sorulur." diyordu; son üç kelime
+# düpedüz bir görev yönlendirmesiydi ve GDD §1.2d'nin en yüksek öncelikli kararını tek
+# başına çürütüyordu — pano 19. dakikada değil BİRİNCİ dakikada iş vermiş oluyordu.
+# Şimdi kâğıt yarım: çivi var, altı akçe seçilebiliyor, gerisi yırtık. Oyuncu bir fiyat
+# görüyor, bir görev görmüyor. Tam metni 19. dakikada, işi ZATEN yaptıktan sonra okuyacak
+# (GDD §1.2c: pano ilan değil DOĞRULAMA olur).
+#
+# NEDEN panel 1'in üst kat sesi "işçi" değil: o ses GÖKÇE'nin (slot 10). İskelenin üst
+# katındaki tek kanonik kişi o — 08'de yirmi beş metrede duruyor. Varisin oyunda ilk
+# sözünün bir taşı kurtarma emri olması bedava karakterizasyon; oyuncu yüzünü 12-13.
+# dakikada görüyor ve o zamana kadar sesin kime ait olduğunu bilmiyor. "İpin yediği yer"
+# kalfanın (slot 9) imza deyimi ve kadın onu kullandığı için şantiye dilini bildiği
+# anlaşılıyor — çakışma değil, karakter bilgisi.
+#
+# NEDEN Hatun artık "Bey dinlenmek istiyor" DEMİYOR: kartı (slot 4) ve Sarp'ın kartı (slot 1)
+# bunu yasaklıyor — odadaki diğer beşi onun ADINA bir şey isterken o istemiyor, ve Sarp'ın
+# gözü tam bu yüzden onu yakalayamıyor. Eski replik o mekaniği kendi elleriyle bozuyordu.
+# Yeni replik isteği Sarp'a değil hekime bağlıyor; kural böylece ekranda görünür oluyor.
 #
 # GÖRSELLER: dördü de PROSEDÜREL üretildi — `python3 scripts/gen_intro_demirboyun.py`
 # (saf Python, dış bağımlılık yok; gen_intro.py'nin kardeşi). Kaynak: House_1
@@ -38,7 +54,7 @@ image: assets/scenes/intro_bitmemis.png
 # kıpırdamayan kocaman taş taht, açık gökten inen yağmur çizgileri, sağ duvarda
 # ALTI BOŞ ÇİVİ, iskele direğinde tebeşir yazısı.
 duck: 0.15
-text: İskelenin üst katından bir işçi aşağıya bağırıyor: "Örtüyü üstüne çekin! Taş su çekiyor, ipin yediği yerden akıyor!"
+text: İskelenin üst katından biri aşağıya bağırıyor: "Örtüyü üstüne çekin! Taş su çekiyor, ipin yediği yerden akıyor!"
 text: Kalfa ipe bakmıyor bile: "İndirme emri yok. On bir yıl havada durdu, bir kış daha durur."
 text: İskelenin aynı direğinde, eski bir yazının üstüne tebeşirle yazılmış: "Çatı — sancaklar asılınca. Asılı sancak: yok."
 opt: (Aşağı bak.) -> sandalye
@@ -50,8 +66,8 @@ image: assets/scenes/intro_sandalye.png
 # HİÇBİRİNİN YÜZÜ ONA DÖNÜK DEĞİL.
 duck: 0.1
 text: Mareşal elini kaldırıyor; tek kolu var: "Beyimiz sefer istiyor. Yirmi altı yıl yürüyen adam sandalyede ölmeyi istemez."
-text: Hekim mareşale dönüyor: "Beyimiz konuşamıyor, dolayısıyla istemiyor. Hastanın iradesi hekimindir."
-text: Hatun ayağa kalkıyor, kimseye bakmadan: "Bey dinlenmek istiyor. Bugün olmaz."
+text: Hekim mareşale dönüyor: "Beyimiz konuşamıyor. Konuşamayan adam istemez de. Hastanın iradesi hekimindir."
+text: Hatun ayağa kalkıyor, kimseye bakmadan: "Bugün olmaz. Hekim öyle söyledi."
 opt: (Kâtibe bak.) -> tarih
 
 [tarih]
@@ -72,6 +88,6 @@ image: assets/scenes/intro_disari.png
 # kameraya dönük değil.
 duck: 0.3
 text: Kuyruktaki bir gazi önündekine söylüyor: "Beşinci kez sayıyorum. Defter açılmadan sıra ilerlemiyor."
-text: Kışla panosunda, çiviyle çakılı bir kâğıt: "Mahzene buz taşı — *6 akçe*. Kışla kâtibine sorulur."
+text: Kışla panosunda, çiviyle çakılı yarım bir kâğıt: "…zene buz ta… — *6 akçe*." Gerisi yırtılmış.
 text: Arkadan bir ses, kime söylediği belirsiz: "Çekil! İp geliyor!"
 opt: (Kenara çekil.) -> end

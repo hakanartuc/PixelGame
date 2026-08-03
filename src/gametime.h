@@ -6,11 +6,28 @@
 // Fazlar karanlık overlay'ini, gece tehlikesini ve NPC rutinlerini sürer.
 // (adı time.h ile çakışmasın diye "gametime")
 
-// Bir tam gün = 20 gerçek dakika (gece ~7 dk). Eskiden 300s (5 dk) idi —
-// test için hızlıydı ama olayları takip etmek imkânsızdı: gece çöküyor,
-// ölüler kalkıyor ve oyuncu ne olduğunu göremeden sabah oluyordu.
-// Kıyas: Stardew ~14 dk, Skyrim ~48 dk.
-#define GAMETIME_DAY_SECONDS 1200.0f  // 20 dk = 24 saat
+// Bir tam gün = 60 gerçek dakika (gece ~20 dk). Tarih: 300s (5 dk) → 1200s
+// (20 dk) → 3600s. Kıyas: Stardew ~14 dk, Skyrim ~48 dk.
+//
+// NEDEN 3600 (Hakan kararı 2026-08-03, GDD §1.2d): 20 dakikalık günde OYUNCU
+// BİR RUTİN ÖĞRENEMİYOR. Kadro tasarımının tamamı bunun tersine dayanıyor —
+// 23 NPC'nin dört durağı, yedi AmbientHook penceresi ("kalfa 06-08 arası çivi
+// sayar", "aşçı 17'de kazan kurar") ve gece kandil hattı, oyuncunun BİR SAATİ
+// BİLİP ORAYA GİTMESİNİ istiyor. Günde 20 dakikada oyuncu bir saatte üç gün
+// görüyor; hiçbir pencere öğrenilebilir bir şey olmuyor, bilgi engele dönüyor.
+//
+// İkinci ve keskin sebep: GDD §1.2d'nin ilk yirmi dakika çizelgesi 1200s'de
+// motor saatinde İMKÂNSIZDI. Bir gerçek dakika = 1,2 oyun saati olduğu için
+// 9. dakikanın "ilk talep"i oyunda 18:48'e, mahzen sahnesi (15-18. dk) gece
+// 03:00'e, 19. dakikanın panosu 06:48'e düşüyordu — kâtip o saatte indoors.
+// 3600s'de çizelge 08:00-16:00'a oturuyor ve tek satır kaymıyor.
+//
+// Bu değişiklik güvenli: DAY_SECONDS'ı kullanan üç yer de oranı sabitten
+// türetiyor (gametime.c:30 ve weather.c:88 `24/DAY_SECONDS`, main.c'nin saat
+// atlama tuşu `DAY_SECONDS/24*2`), yani hepsi kendiliğinden ölçekleniyor.
+// Mevsimler GÜN sayısıyla çalışıyor (SEASON_DAYS), oran değişmiyor — yalnız
+// bir yılın gerçek süresi 13 saatten 40 saate çıkıyor. Save'e girmiyor.
+#define GAMETIME_DAY_SECONDS 3600.0f  // 60 dk = 24 saat
 #define GAMETIME_START_HOUR 8.0f      // oyun sabah 08:00'de başlar
 
 typedef enum {

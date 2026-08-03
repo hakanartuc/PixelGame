@@ -266,14 +266,20 @@ gaziler baktı. Bir de öfkelenemiyor: kızınca susuyor, uzun susuyor, karşıs
 
 **Kimseye söylemediği:** Kırca Ana'yla dokuz yıldır mektuplaşıyor; taç töreninin şartlarını üç yıl
 önce ikisi baş başa yazdılar — babasından, Rüstem'den, tapınaktan habersiz. Mektuplar kışlık
-yorganının içinde dikili. Daha derinde: **gölün buzu kırıldığında Tuğrul'un yakası elindeydi.**
+yorganının içinde dikili. Daha derinde, ve §8'in ayrıntısı: **buzun üstüne hiç çıkmadı. Kıyıda
+kaldı ve dokuz yıldır tersini anlatıyor** — her sorulduğunda birebir aynı kelimelerle, çünkü
+ezberlemek zorunda kaldı. Yakayı tuttuğunu on sekizinde Kırca Ana'ya kendisi anlattı; o gece
+anlatmak dünyanın en kolay şeyiydi ve dokuz yıllık yazışmanın tamamı o cümlenin üstünde duruyor.
+**Kırca Ana o sabahın raporunu okudu ve kızın adı orada yok.** Hiç sormadı — sormadığı için
+istediği her şeyi isteyebiliyor, ve mektupların dürüstlüğü tam bu yüzden acıtıyor.
 
 > *"Atın su içti mi kardaş? İçmediyse konuşmayalım, ben susuz adamla şart yazmam."*
 
 ### BOZ RÜSTEM — mareşal, tek kollu
 Sol kolu Karaocak duvarının dibinde kaldı — ve solaktı. Kesen adam bugün o şehrin valisi; Rüstem
 onun sikkesini biliyor, gümüşünü biliyor, hiçbirini gündeme getirmiyor: *"Bir adam sana kolunu
-kestirirse ömrünün sonuna kadar haklıdır."* Elli üçünde sağ eliyle yazmayı yeniden öğrendi çünkü
+kestirirse ömrünün sonuna kadar haklıdır."* **Bugün elli beşinde**; elli üçünde sağ eliyle yazmayı
+yeniden öğrendi — yani öğrendiği kış Sarp'ın felç kışıydı, ve tesadüf değil — çünkü
 maaş defterini kendi imzalamak istiyor; harfleri çirkin, saklamıyor: "adam kendi çirkinliğini
 imzalar."
 
@@ -440,8 +446,23 @@ sonunda, donmuş gölün buzunda öldü.
 
 **Nasıl.** Karduvar halkı geçidin buzunu her sabah sınar; o sabah buz sağlamdı. Ama balıkçılar
 gece delik açar, delikleri kar örter. Tuğrul **kendisinin rehin olmadığını göstermek için** karşı
-kıyıya yürüdü, Gökçe arkasından koştu, buz gitti. Gökçe elini uzattı, yakasını tuttu, buz altında
-akıntı vardı.
+kıyıya yürüdü, Gökçe arkasından koştu, buz gitti.
+
+**Ve buradan sonrası ANLATILANDIR, olan değil** *(karar: Hakan, 2026-08-03)*. Krallıkta bilinen
+hâli şu: *"Gökçe elini uzattı, yakasını tuttu, buz altında akıntı vardı."* Bu cümlenin **tek
+tanığı Gökçe'dir** ve doğru değil — buzun üstüne hiç çıkmadı, kıyıda kaldı. Hikâyeyi on
+sekizinde Kırca Ana'ya kendisi anlattı; kadın dişini çekmiş, ilk kanını görmüş, yanında
+oturmuştu, ve ona anlatmak o gece dünyanın en kolay şeyiydi. Sonra dokuz yıl mektuplaştılar ve
+o mektupların hepsi bu cümlenin üstünde duruyor. Geri alacak yeri yok: geri aldığı gün dokuz
+yıllık yazışma, taç töreninin şartları ve Karduvar'ın ona güvenmesi aynı sabah çöker.
+
+**Kanıt var ve Yenitaç'ta değil.** Karduvar'da geçidin başında bir nöbet taşı duruyor; buza inen
+her adın karı o sabah taşa sürülür, kış boyunca oyukta kalır, ilkbaharda gider. O sabahın adları
+Ak Nöbet defterine geçmiş: Tuğrul var, buzu sınayan adam var, iki balıkçı var. **Gökçe yok.**
+Yenitaç'ta duyulabilecek tek iz, kadının hikâyeyi her sorulduğunda **birebir aynı kelimelerle**
+anlatması — ezberlemek zorunda kalmış. Rüstem oğlunun son anını bir kez, tek bir kez sordu;
+Gökçe anlattı, adam inandı, ve kadının bugün onun her hakaretine sessiz kalmasının sebebi
+terbiye değil, o gece.
 
 **Oyunun ilk saatinde.** Gazi loncası panosundaki en ucuz kontrat: *"Mahzene buz taşı — 6 akçe."*
 İnersin. Taş bir tekne, tuz ve buz, bir çocuk cesedi, duvarda bir çift çizme. **Rüstem oğlunu
@@ -593,9 +614,37 @@ değil, bir **davranış**.
 ve "bize bağlı çırak" demeye de gelir. Sorarsan "he, çırak demek" cevabını alırsın. Kimse yalan
 söylemiyor. Ama taşın altındaki iskeletin adı da Bağlı'dır, ve oyuncu bunu bir gün fark eder.
 
-**YEDİNCİ AĞIZ.** Sarp'ın tepsisini **altı ağzın hiçbirine sormadan** çözmek. Altı NPC'nin ipucu
-diyaloglarına girdiysen kapı kirlenir. Tanık Deli Sabri'dir; okuma yazması yok, bunun bir sınıf
-olduğunu kendi de bilmiyor, sadece *"sen de bakıyorsun"* der. Kazancı dövüş değil **siyaset**:
+**YEDİNCİ AĞIZ.** Sarp'ın tepsisini **beş ağzın hiçbirine sormadan** çözmek. **Sayaç BEŞ, altı
+değil** *(düzeltme 2026-08-03)*: Sabri de altı ağızdan biri, ve ona sormak kapıyı hem açıp hem
+kapatıyordu. Kirleten şey soru değil, **başkasının okuması** — Sabri yorum yapmıyor, gördüğünü
+söylüyor, o yüzden sayılmaz. Beş NPC'nin (mareşal, kâtip, hatun, hekim, sayman) ipucu
+diyaloglarına girdiysen kapı kirlenir.
+
+**Kapı nasıl açılır — kutsama değil, DEVRALMA** *(karar: Hakan, 2026-08-03)*. Eski hâli
+"Sabri sana *sen de bakıyorsun* der"di ve bu, iş önlüğü giymiş bir seçilmişlikti: okuma yazması
+olmayan bilge adam kahramanı tanıyor. Yeni hâli tersi. **Sabri iki yıldır bir işareti yanlış
+okuyor:** Sarp'ın sağ tarafı ölü, gövdesi gün boyu sağa kayıyor, ve Sabri o kaymayı — biri
+konuşurken geldiğinde — *"başını çevirdi, hayır dedi"* diye okuyor. Gerçek "hayır" taklit
+edilemez olandır: gözün kapanması. Kimse fark etmedi çünkü kimse ona sormuyor, ve Sarp bunu
+düzeltemiyor. Adam kendini yorum yapmayan adam sanıyor; asıl acı bu, çünkü **"hayır" bir
+yorumdu.**
+
+Bedeli tek yerde ve en pahalı yerde: ilk kış avluda, kolçaksız sandalyede, kuzey köşesinde gövde
+daha çok kaydı. Sabri "orayı istemiyor" diye okudu ve sandalyeyi gölgeye çevirdi. O günden beri
+beyi kuzey köşesine hiç çıkarmadı — yani **Sarp'ın tek arzusunu, onu taşıyan tek adam
+kapatıyor.** Bey her gün ayağıyla itiyor, Sabri buna huysuzluk diyor.
+
+Oyuncu bunu **üç izlenebilir şeyle** fark eder, hiçbiri metin değil: kayma her zaman sağa gider,
+hiç sola gitmez (hayır diyen adam iki yana dönerdi) · kimse konuşmuyorken de gelir, ve Sabri o an
+düğüm atmaz · saate bağlıdır, söze değil — doğrulttuktan bir çeyrek sonra yine gelir. Düzeltince
+Sabri savunmaya geçmez, seni sınamaz: *"He. Öyle mi."* → *"Sağı ölü. Doğru."* → *"İki kış avluya
+çıkarmadım."* Ertesi gün sandalye kuzeydedir ve sana bir cümle söyler — ödül değil, nöbet devri:
+*"Bey gözünü kapatırsa bana söyle. Ben on beşte aşağıdayım."* **Kimse seni seçmedi; sen iki
+oturum izledin.**
+
+Kirlenmiş oyuncu için kapı kapanmaz, **saptırılır:** seçenek yine çıkar, Sabri yine dinler, ama
+ertesi gün sandalye yine gölgeye çevrilmiş olur — senin gördüğünü Yusuf'a anlatmıştır, hekim
+"kas kasılması" demiştir, konu kapanmıştır. Kazancı dövüş değil **siyaset**:
 yalan söyleyen ağzın gözü kapanır, Sarp adına konuşabilirsin, kurulda ikinci sesin olur. Adı
 odanın kendi aritmetiğinden geliyor — altı ağız onun adına konuşuyor, sen yedincisi oluyorsun ve
 yedincisi konuşmuyor, anlıyor.

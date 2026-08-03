@@ -4,6 +4,82 @@ Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
+### Faz KADRO — Yenitaç NPC kadrosu, 23 slot (2026-08-03)
+İçerik fazı. Kod yazılmadı; **8 doküman** yazıldı, 4 ajan turu + 3 denetçi çalıştı.
+Tıkaç buydu: üç hikaye kartı seti, altı karşılaşma ve Bağlı hattının kurmacası
+kadroya bağlıydı.
+
+**Kapsam kararı:** altı şehrin tamamı DEĞİL, yalnız **Yenitaç** (başlangıç bölgesi).
+Gerekçe: haritalar yok, ERW paketi gelmedi, ve ilk yirmi dakikanın tamamı Yenitaç'ta
+geçiyor. Diğer beş şehir haritası çizilince kadro alır; şimdilik LORE §6'nın isimli
+figürleri çapa olarak duruyor.
+
+**Dosyalar:** `kadro-yenitac-slotlar.md` (23 slot + 18 NPC'nin göç haritası + dakika
+dakika ilk 20 dk + para merdiveni) · `kadro-isim-havuzu.md` (katman/şehir/lakap
+havuzları + çakışma sicili + yerelleştirme sözleşmesi) · `kadro-kartlari-salon.md`
+(slot 1-8, 21-22) · `kadro-kartlari-sehir.md` (slot 9-11, 13-19) ·
+`kadro-kartlari-yeni.md` (slot 12, 20, 23) · `kadro-kanon-raporu.md` ·
+`kadro-klise-raporu.md` · `kadro-dil-raporu.md`.
+
+**HAKAN'IN ÜÇ KARARI:**
+1. **Yenitaç'ta büyü hocası YOK.** Çayır kenarında sahipsiz bir Akkemer sunağı
+   (`STATION_ENCHANT` kodda zaten sahipsiz). Kadroya "büyücü hocası" eklemek "sen
+   büyücüsün" demenin kibar hâli olurdu.
+2. **Deli Sabri yanılıyor.** Yedinci Ağız'ın kapısı artık **oyuncunun onu
+   düzeltmesiyle** açılıyor — kutsama değil devralma. Eski hâli ("Sabri sana *sen de
+   bakıyorsun* der") iş önlüğü giymiş bir seçilmişlikti. Yanlış okunan işaret: beyin
+   sağ tarafı ölü, gövdesi sağa kayıyor, Sabri onu "hayır dedi" diye okuyor. Bedeli
+   en pahalı yerde — o yüzden beyi iki kıştır kuzey köşesine çıkarmıyor, yani
+   **Sarp'ın tek arzusunu onu seven tek adam kapatıyor.** Sayaç altı değil **BEŞ**
+   ağız (Sabri sayılmaz: yorum yapmıyor, gördüğünü söylüyor).
+3. **Gökçe'nin buz hikâyesi bir YALAN.** Buzun üstüne hiç çıkmadı, kıyıda kaldı.
+   LORE §8'in "elini uzattı, yakasını tuttu" cümlesi artık OLAN değil **ANLATILAN**;
+   tek tanık kendisi. Kanıt Karduvar'daki nöbet taşı ve Ak Nöbet defteri — o sabahın
+   adları yazılı, Gökçe yok. Kadroya çürütülebilir ilk yalanı kazandırdı.
+4. **Para merdiveni:** `akçe` gündelik · `kese` = 1.000 akçe · `sikke` = 100 kese
+   (devlet). Oyuncunun kesesinde **ikinci para birimi olmayacak** — `player.gold`
+   tek alan. Bedava karakterizasyon: sayman kese konuşuyor, kesedar akçe.
+
+**ÜÇ DENETÇİ NE BULDU (hepsi rapor dosyalarında, damgalı):**
+- **Kanon editörü 8 kırıcı bulgu.** En ağırı benim kararımı çürüttü: "salon ayrı
+  harita olmayacak" kararı bir **kod faturasından** türetilmişti (`NpcDef.map` tek
+  int, rutin harita sınırını geçemiyor) — bu projede kod faturası kanon gerekçesi
+  olamaz. Karar tersine çevrildi: **salon AYRI HARİTA**, çatısı yok ama duvarı ve
+  kapısı var. Diğerleri: erteleme sayacı dört kaynakta dört farklı gerçek ·
+  "kasada üç ay var" ile kesedarın verdikleri çelişiyor · Rüstem'in gizli buzu
+  defterde kayıtlı bir lojistik operasyonu olmuş · Şirin'in borcunu LORE'da Şirin
+  kapatıyor, kartlarda Vedia · **Kıraç ≈ Kırca** (ikisi de Karduvarlı, aynı beş
+  sesbirim — havuz "Karca"yı bu gerekçeyle elemişti) · iskele parasız değil
+  **emirsiz** duruyor · vinyet panosu 1. dakikada görev veriyor.
+- **Klişe avcısı sayısal teşhis:** 20 kişiden 13'ü sayı sayıyor, 11'inin ad yarası
+  var, 20'sinin sırrı var, **sıfırı memnun, sıfırı beceriksiz, sıfırı inançlı,
+  sıfırı yalancı.** "Saklamak" tek karakter kurma fiili olmuş. Üç yeni slot bu
+  yüzden eklendi (12 makaracı / 20 bac tahsildarı / 23 gassal) ve iki karakter
+  "yerine biri konabilir" yapıldı.
+- **Dil denetçisi:** 14 kart bir imza kelime ilan edip hiçbir replikte kullanmamış
+  ("Rüstem *Kaç?* der" ama sormuyor); 12 karakter aynı sözdizimsel kalıbı
+  kullanıyor; salon kadrosunun 8'de 8'i cümle ortasında kendini düzeltiyor. Hepsi
+  düzeltildi ve kartlara **denetlenebilir üç kural** yazıldı (imza kuralı, aforizma
+  tavanı, sayı ağzı dörtle sınırlı).
+
+**Ajanlar üç önerimi reddetti ve üçünde de haklıydılar:** gazi için "Bürküt" (havuz
+§7 onu ana hat dışında tutuyor → **Toygar**) · `main.c` çağrı sayımım (ne benim
+"14"üm ne kanon editörünün "8"i; gerçek **10**) · gassal için "uğursuzluk sayan biri"
+(uğur register'ı KORKULUK'a kayıyor → eksik imza).
+
+**Kanona giren adlar:** Perçin · Ayaz · Toygar · Ragıp · Uçkun · Bekmez · Hafize ·
+Sekiz · Rasih · Uz · Nafi · Sabit · Kert · Tav (Mahir'in ocak adı) · Cevriye ·
+Kurak/Sulak/Dirlik/Kaymak/Petek/Ömür/Kumral (çayır köyü, gerçek tarihî adların
+yerine). Lakaplar: Yaya · Sağır · Geçmedi · Kırk Adım.
+
+**GDD/LORE/vinyet aynı turda güncellendi** (kanon kuralı: kanon değişirse ona
+dayanan dosyalar aynı commit'te ya güncellenir ya damgalanır):
+GDD §1.2d ([AÇIK]→[ONAYLI], salon ayrı harita + iptal gerekçesi) · **GDD §1.2f
+yeni** (para ölçeği) · GDD §8.2 (muhafız hiyerarşisi [AÇIK] sorusu kapandı: sicil
+sahibi haritadan değil KURUMDAN gelir) · LORE §6 (Rüstem bugün 55; öğrendiği kış
+Sarp'ın felç kışı) · LORE §8 (Gökçe'nin anlattığı + nöbet taşı kanıtı) · LORE §10
+(beş ağız + kapının yeni açılışı) · `intro_demirboyun.txt` dört replik.
+
 ### Faz PANO — kontratta kabul adımı kaldırıldı (2026-07-31)
 GDD §1.2c kural 3'ün ilk uygulaması. Save formatı DEĞİŞMEDİ (durum enum'u aynı).
 

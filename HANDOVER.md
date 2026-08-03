@@ -1,6 +1,6 @@
 # HANDOVER — Pixe Game
 
-Güncelleme: 2026-07-31 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
+Güncelleme: 2026-08-03 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
 
 ## Çalışma kuralları
 - **KOD EN SON GELİR (2026-07-28 Hakan direktifi)**: kod faturası tasarım
@@ -100,6 +100,37 @@ AÇILIŞ AKIŞI (Faz B1): başlık ekranı → ana menü (Yeni Oyun/Yükle/Çık
 vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü).
 
 ## Kritik bilinenler
+
+### KADRO FAZI (2026-08-03) — bilinmesi gerekenler
+- **Yenitaç kadrosu 23 slot, 8 doküman** (`docs/konsept/kadro-*.md`). Kod YAZILMADI;
+  tek kod değişikliği gün uzunluğu. Diyalog dosyaları ve `NPCS[]` göçü **sırada**.
+- **`GAMETIME_DAY_SECONDS` 1200 → 3600** (Hakan kararı, GDD §1.2g). Sebep çizelge
+  değil **okunabilirlik**: 20 dakikalık günde oyuncu bir rutin öğrenemiyor ve
+  kadronun tamamı rutinlerin öğrenilebilir olmasına dayanıyor. Yeni rutin/AmbientHook
+  penceresi yazan bu ölçeği varsayacak.
+- **`dunya_*` öneki ölüyor.** 12 id `yenitac_*` ve `cayir_*` olacak; etkilenen çağrı
+  yeri **10** (main.c'de 8, craft.c'de 2). Save'e girmiyor, tek commit. Sayım üç kez
+  yanlış yapıldı (14 → 8 → gerçek 10); yeniden sayan grep'lesin.
+- **Salon ve mahzen AYRI HARİTA** (`MAP_SALON`, `MAP_MAHZEN`, enum SONUNA — `save.c`
+  harita indeksini `MAP_COUNT`'a karşı sınırlıyor, sona ekleme format-güvenli).
+  **Bu kararın bir öncesi İPTAL edildi** ve iptal gerekçesi kalıcı bir ders: o karar
+  `NpcDef.map`'in tek int olmasından, yani bir **kod faturasından** türetilmişti.
+- **[YENİ ALAN GEREKİYOR] `NpcStop.map`** (varsayılan 0, geriye uyumlu) + `npc.c`'de
+  beş noktanın ona bağlanması (`NPC_ON_MAP` makrosu 278'de, kullanım 305/416/497/520,
+  artı 350'deki elle yazılmış `map == 0`). Durak haritası değişince NPC **yürümez,
+  ışınlanır**. **Altı slot buna bağlı** ve tek alan altısını birden açıyor.
+- **AmbientHook en yüksek öncelikli eksik.** Yedi slot buna dayanıyor; o olmadan pano
+  yeniden görev kaynağına döner ve 3. dakikanın "sana değil dünyaya söylenen ilk
+  cümle" vuruşu boşa çıkar.
+- **KANON DENETİMİ İKİ TUR ÇALIŞTI** ve ikinci tur revizyonun KENDİ ürettiği beş yeni
+  çelişki buldu. Kalan borç `docs/konsept/kadro-kanon-raporu-2.md`'nin sonundaki
+  **GDD/LORE BORCU** listesinde (15 madde) — kapatılmadan diyalog yazılmamalı.
+  Kapanmayanların en önemlileri: KR3 (Şirin'in dördüncü ertelemesi kimin), KR5 (slot
+  21 hâlâ heceliyor, kart okuma bilmiyor), KR6 (mareşalin defterini Ragıp ezberlemiş),
+  KR7 (altı ismin taşı meydanda mı salonda mı), KR9 (sikke hem 100 kese hem madeni
+  para), Ö-A (Sabri'nin dört durağının hiçbiri `indoors` değil), Ö-B (Sarp yürüyor).
+- **Ajanlar üç önerimi reddetti ve üçünde de haklıydılar.** Bu bir desen: ajan
+  gerekçeli reddederse gerekçeyi oku, dayatma.
 - **YERLEŞİM TUZAĞI (2026-07-31)**: bir konum formülü çizim VE tıklama testini besliyorsa
   TEK yerde durmak zorunda. Hotbar'da üç (`slot_rect` + kaldırma hedefi + main.c ✕),
   envanterde beş kopya vardı; panelleri veriden taşınabilir yapmak onları sessiz sapma

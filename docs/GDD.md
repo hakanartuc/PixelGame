@@ -204,11 +204,85 @@ kararını alacak, sevmezse oyunu bırakıp iade edebilir."*
   oyuncunun SEÇTİĞİ rolün araçları; ilk çeyrek saatte açılırsa oyun bir menü oyunu
   gibi başlar ve "kimlik davranıştan doğar" sütunu ilk yirmi dakikada yalanlanır.
   **Oyuncu kim olacağına karar vermeden ona alet kutusu göstermiyoruz.**
-- **[AÇIK]** Açılış vinyeti (`assets/scenes/intro_demirboyun.txt`) yazıldı ve
-  kodda, ama **dört paneli de görselsiz** (PNG'ler üretilecek). Karar: taht salonu
-  dünyada İNŞA EDİLECEK ve vinyet PNG panelleri yerine cine moduyla **canlı
-  mekânda** geçecek. Salon zaten zorunlu — §1.4 "salona her girişte kaç sancak
-  asılı olduğunu sayarsın" diyor, yani dekor değil ilerleme göstergesi.
+- **[ONAYLI 2026-08-03] TAHT SALONU AYRI HARİTA — çatısı yok ama duvarı ve kapısı
+  var.** Vinyet PNG panelleri yerine cine moduyla **canlı mekânda** geçecek; salon
+  zaten zorunlu, §1.4 "salona her girişte kaç sancak asılı olduğunu sayarsın" diyor.
+  **Bir önceki karar (salonu dünya haritasında yarım avlu yapmak) İPTAL** ve iptal
+  gerekçesi bu projede kalıcı bir ders: o karar `NpcDef.map`'in tek int olmasından,
+  yani bir **kod faturasından** türetilmişti. Kod faturası kanon gerekçesi olamaz
+  (§10 doküman akışı: kod en son gelir). Üstelik kendi belgesiyle çelişiyordu —
+  Sarp'ın yazılı tek arzusu "öğlen avluya çıkarılmak"; salon zaten avluysa o istek
+  buhar oluyor, onunla birlikte onu taşıyan adamın bütün işi. Ve LORE §7'nin fiziği
+  **kapalı bir odaya** dayanıyor: kırk adım ötede ip çeken işçinin duyabildiği yerde
+  "söylenemeyen cümle" diye bir şey olamaz. Salon iki alan: kapalı taht bölümü +
+  duvarlı **avlu** (öğlen oradan kuzey yolu görünüyor), aralarında bir kapı — ve
+  kapının hangi tarafında durduğun kimin ne duyduğunu belirliyor. `MAP_MAHZEN` de
+  ayrı; ikisi de enum'un SONUNA eklenir (`save.c` harita indeksini `MAP_COUNT`'a
+  karşı sınırlıyor, sona ekleme format-güvenli).
+  **Mekanik borç (fatura, karar değil):** `NpcStop`'a bir `map` alanı + `npc.c`'de
+  beş noktanın ona bağlanması. Durak haritası değişince NPC yürümez, **ışınlanır** —
+  kapıdan geçişini kimse izlemiyor. Bu tek alan dört slotu birden açıyor (mareşalin
+  salon→kışla, hekimin salon→revir, varisin iskele→salon, bakıcının salon→mahzen
+  hattı) ve "ikiz NPC kaydı" yamasını gereksiz kılıyor.
+
+### 1.2g OYUN SAATİ — gün 60 dakika [ONAYLI — Hakan 2026-08-03]
+Kanon denetiminin ikinci turu, kadro yazıldıktan sonra, çizelgenin **motor saatinde
+imkânsız** olduğunu buldu. `GAMETIME_DAY_SECONDS 1200` (20 dk/gün) ile bir gerçek
+dakika = 1,2 oyun saati; yani "ilk yirmi dakika" tam bir oyun günüydü ve
+9. dakikanın ilk talebi **18:48**'e, mahzen sahnesi (15-18. dk) gece **03:00**'e,
+19. dakikanın panosu **06:48**'e düşüyordu — kâtip o saatte `indoors`.
+
+- **[ONAYLI] `GAMETIME_DAY_SECONDS` 1200 → 3600 (60 dakika/gün).** Çizelge
+  **08:36-15:36** arasına oturuyor; dokuz vuruşun dokuzu gündüz, hepsi rutinlerle
+  örtüşüyor. Değişiklik güvenli: sabiti kullanan üç yer de oranı ondan türetiyor
+  (`gametime.c:30`, `weather.c:88` → `24/DAY_SECONDS`; `main.c`'nin saat atlama
+  tuşu → `DAY_SECONDS/24*2`). Mevsimler GÜN sayısıyla çalışıyor (`SEASON_DAYS 10`),
+  oran değişmiyor — yalnız bir yılın gerçek süresi 13 saatten 40 saate çıkıyor.
+  Save'e girmiyor.
+- **ASIL GEREKÇE ÇİZELGE DEĞİL, OKUNABİLİRLİK.** Yirmi dakikalık günde **oyuncu bir
+  rutin öğrenemiyor**: bir saatte üç gün görüyor. Kadro tasarımının tamamı bunun
+  tersine dayanıyor — 23 NPC'nin dört durağı, yedi AmbientHook penceresi (*"kalfa
+  06-08 arası çivi sayar"*, *"aşçı 17'de kazan kurar"*, *"kesedar 15'te iskele
+  dibinde direk sayar"*) ve gece kandil hattı, oyuncunun **bir saati bilip oraya
+  gitmesini** istiyor. Öğrenilemeyen pencere bilgi değil engeldir.
+- **[BAĞLAYICI] Yeni rutin veya AmbientHook penceresi yazan, saatin bu ölçekte
+  olduğunu varsayacak.** Gün uzunluğu bir daha değişirse §1.2d'nin dakika
+  çizelgesi ve 23 slotun durak saatleri **aynı commit'te** yeniden hesaplanır.
+
+### 1.2f PARA ÖLÇEĞİ — üç birim, tek keseli oyuncu [ONAYLI — Hakan 2026-08-03]
+Kanon denetimi ölçeğin tanımsız olduğunu buldu: aynı dünyada bir kase çorba **2**,
+bir tefecinin BÜTÜN defteri **900**, ama mareşal **12.000** adamı kendi payından
+besliyor. Rakamlar birbirini yalanlıyordu ve kadronun beş ağzı sayıyla konuşuyor.
+
+- **`akçe` — gündelik ölçek.** Elle tutulan para. Kase çorba 2 · meşale 5 · bir ot 6 ·
+  işçi yevmiyesi 6-8 · mahzene buz taşımak 6 (yani tam bir günlük yevmiye — ilanın
+  altı akçesi bu yüzden hem az hem çok). **Oyuncunun kesesindeki her şey akçe:**
+  kodda tek para alanı var (`player.gold`) ve **ikinci para birimi EKLENMEYECEK.**
+  Kese ile sikke envanterde görünmez; onlar **konuşma** ölçeğidir.
+- **`kese` — bin akçe.** Tuzkapı'nın kesecileri adını buradan alıyor; "Kırk Kese" bir
+  meclisin adı olmadan önce bir hacimdi. Şehir bütçesi, iskele kalemi, saray kasası
+  kese ile konuşulur.
+- **`sikke` — devlet ölçeği, yüz kese.** Elde taşınmaz, masada durur; gümrük, bac,
+  kira ve ganimet sikke ile yazılır. Bedava yan etki: Karaocak'ın **kendi sikkesini
+  basması** (LORE §4) küçük para basmak değil, **devlet ölçeğinin kendisini** basmak
+  demek. Mareşalin sormaması bu yüzden bu kadar ağır. Aynı şekilde kesedarın
+  terazisindeki **güney sikkesi**: bir tefecinin masasında devlet ölçeğinde para
+  durması, orada olmaması gereken bir şeyi kimse açıklamadan söylüyor.
+- **BEDAVA KARAKTERİZASYON — aynı odada iki kadın, iki birim.** Sayman devlet rakamını
+  asla akçeye bölmez (*"Kırk gün, kırk kese."*); kesedar aynı rakamı *"kırk bin akçe"*
+  der ve kese'ye yuvarlamayı reddeder, çünkü onun defterinde yuvarlanan her akçe
+  birinin bir günü. İkisi aynı sayıyı iki dille söylüyor ve oyuncu hangisinin nereden
+  geldiğini kimse anlatmadan duyuyor. Ve bir tavan: masaya **kese diliyle** konuşmayan
+  yazmanı Kese Sahibi yapmıyorlar — kadının kariyerini tıkayan şey bir hata değil, bir
+  birim tercihi, ve tercihinden vazgeçmiyor.
+- **LORE'un "kırk gümüş"ü bir birim değil, bir usul.** Karduvar diyet kalemini kırk
+  parça gümüş olarak gönderir; sayılır, tartılmaz. Bir çocuğun bedeli akçeye
+  çevrilmiyor ve çevrilmediği için acıtıyor.
+- **Rebalance gerekmiyor** (denetlendi): `item.c` fiyatlarıyla demir kılıç 320 akçe =
+  kırk günlük yevmiye, ortaçağ için doğru oran. Tek göze batan `goblin_derdi`'nin 100
+  akçesi — bir işçinin on altı günü — ve **bilerek böyle kalıyor.** Maceracının
+  kazandığı para şehri kızdıracak kadar çok olmalı; kadronun yarısının oyuncuya
+  bakışının sebebi bu, sistemin çelişkisi değil.
 
 ### 1.2e KARŞILAŞMA SİSTEMİ [ONAYLI — Hakan 2026-07-31]
 Hakan'ın isteği: *"Görevler sadece NPC'ye giderek veya pano aracılığı ile değil, bir
@@ -845,6 +919,15 @@ yalnız gösterimdir.
   toplayacak muhafız, ödenecek tahsildar, kırılacak itibar yok. Alternatif
   (7 ayrı bounty çağrı yerine "burada suç işlemez" dalı eklemek) reddedildi:
   unutulacak yedi kontrol yerine unutulacak hiçbir kontrol.
+- **[ONAYLI 2026-08-03] MUHAFIZ ÇOĞULLANIR, HİYERARŞİ KADRODAN GELİR.** Bugün tek
+  `static int gIdx` var. Üç ayrı sahip tanınacak: Yenitaç'ın kapı nöbetçileri
+  **kışlaya** bağlı (Kılıçartıkları, mareşalin defteri) · çayır köyünün devriyesi
+  **bölgeye** bağlı (yerel, maaşını Yenitaç'tan alır ve gecikir) · Karduvar'ınki
+  Ak Nöbet'e bağlı olacak ve krallık defterine **hiç yazmaz**. Yani `guards[N]` bir
+  `owner` alanı istiyor; bounty kimin defterine yazılacağı o alandan okunur. Bu,
+  §8.2'nin geri kalanının mantığının aynısı: sicil sahibi haritadan değil KURUMDAN
+  geliyor, ve bir gizli locanın suçunun köy muhtarına yazılmaması gibi, Karduvar'ın
+  suçunun da krallığa yazılmaması gerekiyor.
 - **[ONAYLI] Loca ve konak kendi sicilini tutar, mezarlık köyün.** Gerekçe
   kurgusal: gizli bir locanın suçunun köy muhtarına yazılması saçmaydı ve tam
   olarak bu oluyordu. Mezarlık köyün kenarında, sicili köy tutar.
