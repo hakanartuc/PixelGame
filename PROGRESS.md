@@ -4,6 +4,45 @@ Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
+### Faz SHADER — MSL'den HLSL'e, Windows yolu açıldı (2026-08-03)
+VFX fazının **sıfırıncı adımı**. Görsel değişiklik SIFIR ve tek kural buydu;
+Hakan gözle doğruladı ("her şey aynı görünüyor" = geçme notu).
+
+**Sorun neydi:** shader kaynağı `r2d.c`'de gömülü bir MSL string'iydi, format
+sabit yazılmıştı. `SDL_GPU` API'si çok platformlu ama shader **bytecode**'unu
+taşımıyor — her arka uç kendi formatını istiyor. Yani oyun Windows'ta
+`SDL_CreateGPUShader`'da düşüyordu: "VFX çalışmaz" değil, **"oyun çalışmaz"**.
+Steam kitlesinin büyük kısmı Windows olduğu için bu bir sevkiyat tıkacıydı.
+
+**Çözüm:** HLSL kaynak dil, **derleme zamanında** üç formata çevrim, çalışma
+anında `SDL_GetGPUShaderFormats()` ile seçim. Çalışma zamanı bağımlılığı
+artmadı — blob'lar repoda, yalnız build makinesi derleyici istiyor. (Hakan'ın
+açık isteği: *"kendi sistemimizi geliştirip dışa bağımlılığımızı yok edebiliriz."*)
+
+**`select()` tuzağı — sessiz hata olurdu.** HLSL 2021'in `select(cond,a,b)`
+imzası MSL'in `select(a,b,cond)` sırasının **tersi**, ve biz onu tam olarak
+sRGB↔lineer dönüşümünde kullanıyorduk. Derleme hatası vermez, **sessizce yanlış
+ışık rengi** verir. HLSL'de hiç kullanılmadı; açık `?:` yazıldı ve niye
+kullanılmadığı yoruma yazıldı.
+
+**Doğrulama:** eski elle yazılmış MSL ile üretilen MSL **gerçek GPU'da** çizilip
+byte byte karşılaştırıldı — **801 vaka, 46.137.600 piksel, 0 farklı piksel.**
+Üstüne MoltenVK kurulup SPIR-V yolu **fiilen koşturuldu**: Metal/MSL ile
+Vulkan/SPIR-V 81 vakada birebir aynı, yani descriptor set eşlemesi doğru.
+
+**Windows durumu:** DXIL üretilemedi, Microsoft DXC'nin macOS build'i yok. Kod
+diski ölçtüğü için DXIL bayrağı verilmiyor ve Windows bugün **Vulkan/SPIR-V**
+ile çizer. Bir Windows makinesinde DXIL eklendiğinde D3D12 kendiliğinden tercih
+edilir, **kod değişmez**. Uyarı: DXC kullanılırken `dxil.dll` `dxc.exe`'nin
+yanında olmalı, yoksa imzasız DXIL çıkar ve müşteride "Shader is corrupt".
+
+**`docs/konsept/vfx-teknik-brief.md`** (1775 satır) de bu turda yazıldı: shader
+trickleri, "su olmadan su" ve "alevin üstünde duman" vakaları adım adım, kanona
+bağlı öneri listesi. **İki kırılganlık buldu, henüz düzeltilmedi:**
+`decal_render`/`shadow.c` blend modu ayarlamıyor (ateş eklemek yanık lekesini
+sessizce bozar) ve parçacıkların hepsi alpha çiziliyor (**alev bloom eşiğini
+geçemiyor, o yüzden sıcak hissetmiyor**).
+
 ### Faz KADRO — Yenitaç NPC kadrosu, 23 slot (2026-08-03)
 İçerik fazı. Kod yazılmadı; **8 doküman** yazıldı, 4 ajan turu + 3 denetçi çalıştı.
 Tıkaç buydu: üç hikaye kartı seti, altı karşılaşma ve Bağlı hattının kurmacası

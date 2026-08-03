@@ -1,6 +1,6 @@
 # HANDOVER — Pixe Game
 
-Güncelleme: 2026-08-03 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
+Güncelleme: 2026-08-03 (2. tur) · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
 
 ## Çalışma kuralları
 - **KOD EN SON GELİR (2026-07-28 Hakan direktifi)**: kod faturası tasarım
@@ -100,6 +100,31 @@ AÇILIŞ AKIŞI (Faz B1): başlık ekranı → ana menü (Yeni Oyun/Yükle/Çık
 vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü).
 
 ## Kritik bilinenler
+
+### RENDER / VFX (2026-08-03) — bilinmesi gerekenler
+- **Shader kaynak dili HLSL** (`shaders/*.hlsl`), çıktılar `assets/shaders/{spirv,msl}/`
+  içinde ve **repoda**. `shaders/compile.sh` offline derliyor (glslangValidator +
+  spirv-cross). Yeni shader yazan **MSL yazmayacak.**
+- **`select()` KULLANMA.** HLSL 2021'in argüman sırası MSL'in tersi ve derleme hatası
+  vermiyor — sessizce yanlış sonuç veriyor. Açık `?:` yaz. `light.frag.hlsl`'de gerekçe
+  yorumu duruyor.
+- **Windows bugün Vulkan/SPIR-V ile çiziyor.** DXIL yok çünkü DXC'nin macOS build'i yok;
+  bir Windows makinesinde üretilip `assets/shaders/dxil/` altına konunca D3D12
+  kendiliğinden tercih edilir, **kod değişmez**. DXC kullanılırken `dxil.dll`
+  `dxc.exe`'nin YANINDA olmalı — yoksa "Shader is corrupt".
+- **`src/r2d_test.c` doğrulama harness'ı** ve dört pipeline'ı da sürüyor. Windows'ta ilk
+  koşacak şey bu.
+- **İKİ KIRILGANLIK, HENÜZ DÜZELTİLMEDİ** (VFX'e engel): `decal_render` ve `shadow.c`
+  hiç `r2d_set_blend` çağırmıyor, o anki modu miras alıyor — **ateş efekti eklemek yanık
+  lekesini sessizce additive yapar.** Ve `fx_render` her parçacığı ALPHA çiziyor, yani
+  kıvılcım/alev **bloom eşiğini geçemiyor**; additive olmadan alev sıcak hissetmez.
+- **ASSET YOLU HARFİ:** git dizini `assets/Tiles` diye **büyük T** ile saklıyor. macOS ve
+  Windows harf duyarsız, **Linux/Steam Deck duyarlı.** Yeni yol yazarken `git ls-files`
+  ile teyit et; yanlış harf burada sessizce çalışır, orada patlar. (Bu tuzağa bu turda
+  bir kez düşüldü ve düzeltildi.)
+- **`docs/konsept/vfx-teknik-brief.md`** VFX'in tasarım kaynağı: teknikler, iki örnek
+  vaka, kanona bağlı efekt listesi, uygulama sırası (0 taşınabilirlik → 1 shader'sız
+  kalemler → 2 altyapı → 3 eşikli alev).
 
 ### KADRO FAZI (2026-08-03) — bilinmesi gerekenler
 - **Yenitaç kadrosu 23 slot, 8 doküman** (`docs/konsept/kadro-*.md`). Kod YAZILMADI;
