@@ -7,28 +7,28 @@
 
 // --- Tile tablosu: gerçek tanım burada ---
 const TileType TILE_TYPES[] = {
-    [0] = { .solid = false, .r = 50,  .g = 200, .b = 50,  .texturePath = "assets/tiles/Grass/Grass_1_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f, .conceals = true }, // çimen — eğilince içine girilir
-    [1] = { .solid = false, .r = 150, .g = 100, .b = 50,  .texturePath = "assets/tiles/Grass/Path_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // yol
-    [2] = { .solid = true,  .r = 50,  .g = 50,  .b = 200, .texturePath = "assets/tiles/Water/Water_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // su
-    [3] = { .solid = true,  .r = 110, .g = 110, .b = 120, .texturePath = "assets/tiles/terrain/stone.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // taş
-    [4] = { .solid = false, .r = 90, .g = 110, .b = 70, .texturePath = "assets/tiles/terrain/swamp.png", .speedMultiplier = 0.4f, .damage = 0.0f },  // bataklık: yavaşlatır
-    [5] = { .solid = false, .r = 200, .g = 60, .b = 40, .texturePath = "assets/tiles/terrain/thorns.png", .speedMultiplier = 1.0f, .damage = 20.0f },  // diken: saniyede 20 hasar
+    [0] = { .solid = false, .r = 50,  .g = 200, .b = 50,  .texturePath = "assets/Tiles/Grass/Grass_1_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f, .conceals = true }, // çimen — eğilince içine girilir
+    [1] = { .solid = false, .r = 150, .g = 100, .b = 50,  .texturePath = "assets/Tiles/Grass/Path_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // yol
+    [2] = { .solid = true,  .r = 50,  .g = 50,  .b = 200, .texturePath = "assets/Tiles/Water/Water_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // su
+    [3] = { .solid = true,  .r = 110, .g = 110, .b = 120, .texturePath = "assets/Tiles/terrain/stone.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // taş
+    [4] = { .solid = false, .r = 90, .g = 110, .b = 70, .texturePath = "assets/Tiles/terrain/swamp.png", .speedMultiplier = 0.4f, .damage = 0.0f },  // bataklık: yavaşlatır
+    [5] = { .solid = false, .r = 200, .g = 60, .b = 40, .texturePath = "assets/Tiles/terrain/thorns.png", .speedMultiplier = 1.0f, .damage = 20.0f },  // diken: saniyede 20 hasar
 
     // --- Zindan tile'lari (Cute_Fantasy Dungeons, 16px kirpimlar) ---
-    [6] = { .solid = false, .r = 60,  .g = 62,  .b = 88,  .texturePath = "assets/tiles/dungeon/d1_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // K1 doseme
-    [7] = { .solid = true,  .r = 95,  .g = 100, .b = 130, .texturePath = "assets/tiles/dungeon/d1_wall.png",  .speedMultiplier = 1.0f, .damage = 0.0f }, // K1 duvar
-    [8] = { .solid = false, .r = 70,  .g = 72,  .b = 100, .texturePath = "assets/tiles/dungeon/d2_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // K2 doseme
-    [9] = { .solid = true,  .r = 105, .g = 110, .b = 140, .texturePath = "assets/tiles/dungeon/d2_wall.png",  .speedMultiplier = 1.0f, .damage = 0.0f }, // K2 duvar
+    [6] = { .solid = false, .r = 60,  .g = 62,  .b = 88,  .texturePath = "assets/Tiles/dungeon/d1_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // K1 doseme
+    [7] = { .solid = true,  .r = 95,  .g = 100, .b = 130, .texturePath = "assets/Tiles/dungeon/d1_wall.png",  .speedMultiplier = 1.0f, .damage = 0.0f }, // K1 duvar
+    [8] = { .solid = false, .r = 70,  .g = 72,  .b = 100, .texturePath = "assets/Tiles/dungeon/d2_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // K2 doseme
+    [9] = { .solid = true,  .r = 105, .g = 110, .b = 140, .texturePath = "assets/Tiles/dungeon/d2_wall.png",  .speedMultiplier = 1.0f, .damage = 0.0f }, // K2 duvar
     [10] = { .solid = true, .r = 7,   .g = 7,   .b = 13,  .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // void: oda disi karanlik (duz renk)
 
     // --- Lanetli Mezarlık (Faz HG-B — undead paleti, açık hava zindanı) ---
-    [12] = { .solid = false, .r = 111, .g = 115, .b = 106, .texturePath = "assets/tiles/undead/mz_ground.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü toprak
+    [12] = { .solid = false, .r = 111, .g = 115, .b = 106, .texturePath = "assets/Tiles/undead/mz_ground.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü toprak
     [13] = { .solid = true,  .r = 57,  .g = 31,  .b = 33,  .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // mezarlık kayası (üstü koyu — doku dual-grid'den)
-    [14] = { .solid = true,  .r = 26,  .g = 32,  .b = 46,  .texturePath = "assets/tiles/undead/mz_water.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü su
+    [14] = { .solid = true,  .r = 26,  .g = 32,  .b = 46,  .texturePath = "assets/Tiles/undead/mz_water.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü su
     // Doğu çölü (Taşdurak — Faz DOGU)
-    [15] = { .solid = false, .r = 222, .g = 180, .b = 120, .texturePath = "assets/tiles/desert/sand.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // kum
-    [16] = { .solid = true,  .r = 160, .g = 110, .b = 70,  .texturePath = "assets/tiles/desert/rock.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // çöl kayası
-    [17] = { .solid = true,  .r = 70,  .g = 190, .b = 200, .texturePath = "assets/tiles/desert/water.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // vaha suyu
+    [15] = { .solid = false, .r = 222, .g = 180, .b = 120, .texturePath = "assets/Tiles/desert/sand.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // kum
+    [16] = { .solid = true,  .r = 160, .g = 110, .b = 70,  .texturePath = "assets/Tiles/desert/rock.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // çöl kayası
+    [17] = { .solid = true,  .r = 70,  .g = 190, .b = 200, .texturePath = "assets/Tiles/desert/water.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // vaha suyu
 
     // Mağara (Loca v2 — Faz MAPGEN-2): düz renk tabanlar, doku dual-grid
     // ring/yüz parçalarından gelir (Cave_Walls atlası)
@@ -240,24 +240,50 @@ static R2DTexture *dsrCliffTex = NULL;  // çöl kaya atlası (dual-grid 16 par�
 static R2DTexture *caveWallTex = NULL;  // mağara duvar atlası (Loca — dual-grid)
 static R2DTexture *wldWaterTex = NULL;  // dünya suyu kıyı atlası (dual-grid)
 
+// SU AKIŞI. Kıyı atlası animasyonlu sürümde 8 kare taşıyor; kare seçimi DUVAR
+// SAATİNDEN geliyor, oyun saatinden değil — su geceleyin yavaşlamaz, mevsim onu
+// dondurmaz. (Buz tutması ayrı bir iş: o gün gelirse kare yerine ATLAS değişir.)
+// 8 kare / 1.1 sn: asset'in kendi ritmi; daha hızlısı pixel-art'ta titriyor,
+// daha yavaşı su durgun görünüyor.
+#define WLD_WATER_FRAMES 8
+#define WLD_WATER_FPS    7.3f
+static int wldWaterFrames = 1;   // yükleme başarısına göre 1 ya da 8
+
+static int wld_water_frame(void)
+{
+    if (wldWaterFrames <= 1) return 0;
+    float t = (float)SDL_GetTicks() / 1000.0f;
+    int f = (int)(t * WLD_WATER_FPS) % wldWaterFrames;
+    return f < 0 ? 0 : f;
+}
+
 void tilemap_load_details(R2D *renderer)
 {
     extern R2DTexture *load_texture(R2D *r, const char *path);   // main yardımcısı
-    grassVar[0] = load_texture(renderer, "assets/tiles/Grass/Grass_1_Middle.png");
-    grassVar[1] = load_texture(renderer, "assets/tiles/Grass/Grass_2_Middle.png");
-    grassVar[2] = load_texture(renderer, "assets/tiles/Grass/Grass_3_Middle.png");
-    grassVar[3] = load_texture(renderer, "assets/tiles/Grass/Grass_4_Middle.png");
-    edgeTex = load_texture(renderer, "assets/tiles/Grass/grass_edges.png");
+    grassVar[0] = load_texture(renderer, "assets/Tiles/Grass/Grass_1_Middle.png");
+    grassVar[1] = load_texture(renderer, "assets/Tiles/Grass/Grass_2_Middle.png");
+    grassVar[2] = load_texture(renderer, "assets/Tiles/Grass/Grass_3_Middle.png");
+    grassVar[3] = load_texture(renderer, "assets/Tiles/Grass/Grass_4_Middle.png");
+    edgeTex = load_texture(renderer, "assets/Tiles/Grass/grass_edges.png");
     flowerTex = load_texture(renderer, "assets/decor/flowers.png");
-    pathDecTex = load_texture(renderer, "assets/tiles/Grass/Path_Decoration.png");
-    waterDecTex = load_texture(renderer, "assets/tiles/Water/Water_Decoration.png");
-    mzGround2 = load_texture(renderer, "assets/tiles/undead/mz_ground2.png");
-    dsrWaterTex = load_texture(renderer, "assets/tiles/desert/water_atlas.png");
-    dsrCliffTex = load_texture(renderer, "assets/tiles/desert/cliff_atlas.png");
+    pathDecTex = load_texture(renderer, "assets/Tiles/Grass/Path_Decoration.png");
+    waterDecTex = load_texture(renderer, "assets/Tiles/Water/Water_Decoration.png");
+    mzGround2 = load_texture(renderer, "assets/Tiles/undead/mz_ground2.png");
+    dsrWaterTex = load_texture(renderer, "assets/Tiles/desert/water_atlas.png");
+    dsrCliffTex = load_texture(renderer, "assets/Tiles/desert/cliff_atlas.png");
     // Keyed varyant: koyu blokların düz arka planı şeffaf (bake_cave_ring.py) —
     // ışık bloklar dokunulmamış; loca + mezarlık AYNI atlası kullanır
     caveWallTex = load_texture(renderer, "assets/Tiles/Cave/Cave_Walls_Keyed.png");
-    wldWaterTex = load_texture(renderer, "assets/Tiles/Water/Water_Tile_1.png");
+    // SU ANİMASYONU: atlasın animasyonlu sürümü aynı 3x5 düzeni 8 KARE yan yana
+    // taşıyor (384x80 = 24x5 hücre). Yani LUT değişmiyor; kıyı hücresinin cx'ine
+    // "kare * 3" ekleyince su akmaya başlıyor. Statik sürüm yedek olarak duruyor —
+    // animasyonlu dosya bulunamazsa akış durur, kıyı yine çizilir.
+    wldWaterTex = load_texture(renderer, "assets/Tiles/Water/Water_Tile_1_Anim.png");
+    if (wldWaterTex != NULL) wldWaterFrames = WLD_WATER_FRAMES;
+    else {
+        wldWaterTex = load_texture(renderer, "assets/Tiles/Water/Water_Tile_1.png");
+        wldWaterFrames = 1;
+    }
 }
 
 void tilemap_free_details(void)
@@ -464,6 +490,9 @@ static void wld_water_pass(R2D *renderer, const Camera *camera,
                            int colL, int rowT, int colR, int rowB)
 {
     float zoom = camera->zoom;
+    // Kare bir kez hesaplanır: aynı karede bütün kıyı hücreleri AYNI kareyi
+    // kullanmalı, yoksa su hücre hücre farklı fazda akar ve ızgara görünür.
+    const float frameOffX = (float)wld_water_frame() * 3.0f * 16.0f;
     for (int row = rowT - 1; row < rowB; row++) {
         for (int col = colL - 1; col < colR; col++) {
             int m = 0;
@@ -478,7 +507,7 @@ static void wld_water_pass(R2D *renderer, const Camera *camera,
                     else if (t != 0) shoreGrass = false;
                 }
             if (m == 0 || !shoreGrass || WLD_WATER_LUT[m].cx == 255) continue;
-            SDL_FRect src = { WLD_WATER_LUT[m].cx * 16.0f,
+            SDL_FRect src = { WLD_WATER_LUT[m].cx * 16.0f + frameOffX,
                               WLD_WATER_LUT[m].cy * 16.0f, 16, 16 };
             SDL_FRect dst = {
                 ((col + 0.5f) * TILE_SIZE - camera->x) * zoom,
