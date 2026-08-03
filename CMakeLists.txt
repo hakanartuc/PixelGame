@@ -97,6 +97,45 @@ if(ASAN)
     target_link_options(game PRIVATE -fsanitize=address)
 endif()
 
+# ---------------------------------------------------------------------------
+# SHADER DERLEME (offline) — HLSL kaynak → SPIR-V + MSL (+ DXIL varsa)
+#
+# Üretilen dosyalar assets/shaders/ altında REPODA duruyor, yani shader araç
+# zinciri kurulu olmayan bir makinede de oyun derlenip çalışır. Araçlar varsa
+# .hlsl dosyaları değiştiğinde çıktı otomatik yenilenir.
+#
+# Build makinesi gereksinimi (yalnız shader'a dokunulduğunda):
+#   macOS/Linux : brew|apt install glslang spirv-cross      → SPIR-V + MSL
+#   Windows     : + DXC (dxc.exe YANINDA dxil.dll şart)     → ayrıca DXIL
+# Ayrıntı ve gerekçe: shaders/compile.sh başlığı.
+# ---------------------------------------------------------------------------
+find_program(GLSLANG_EXE glslangValidator)
+find_program(SPIRV_CROSS_EXE spirv-cross)
+
+file(GLOB SHADER_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.hlsl)
+
+if(GLSLANG_EXE AND SPIRV_CROSS_EXE)
+    # sprite.vert.spv'yi damga dosyası olarak kullan: script hepsini birlikte üretir
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/spirv/sprite.vert.spv
+        COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/shaders/compile.sh
+        DEPENDS ${SHADER_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/shaders/compile.sh
+        COMMENT "shader: HLSL -> SPIR-V + MSL (+DXIL)"
+        VERBATIM)
+    add_custom_target(shaders DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/spirv/sprite.vert.spv)
+    add_dependencies(game shaders)
+else()
+    # Araç yok: repodaki hazır çıktılarla devam. Elle yenilemek için:
+    #   sh shaders/compile.sh
+    add_custom_target(shaders
+        COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/shaders/compile.sh
+        COMMENT "shader: HLSL -> SPIR-V + MSL (+DXIL)"
+        VERBATIM)
+    message(STATUS "shader araclari yok (glslangValidator/spirv-cross) — "
+                   "assets/shaders/ altindaki hazir ciktilar kullanilacak")
+endif()
+
 # r2d duman testi — SDL_GPU yolunu oyundan bagimsiz dogrular (GPU gecisi araci)
 add_executable(r2d_test src/r2d_test.c src/r2d.c)
 target_link_libraries(r2d_test PRIVATE SDL3::SDL3)

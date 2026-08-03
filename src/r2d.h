@@ -13,8 +13,9 @@
 // API bir R2D* bağlamı taşır (SDL_Renderer geçişini mekanik kılar; bugün tek
 // global bağlam var, param ileride çoklu pencere/thread kapısı).
 //
-// Shader: MSL kaynak (macOS/Metal — SDL derleyiciyi içinde taşır).
-// Vulkan/D3D için SPIR-V/DXIL ekleme noktası load_shader() içinde.
+// Shader: kaynak dil HLSL (shaders/*.hlsl). shaders/compile.sh derleme zamanında
+// üç formata çevirir (SPIR-V/MSL/DXIL → assets/shaders/); çalışma anında cihazın
+// tükettiği format seçilip dosyadan yüklenir (r2d.c load_shader).
 
 typedef struct R2D R2D;                 // opak bağlam
 typedef struct R2DTexture R2DTexture;   // opak — GPU texture + boyut + mod
@@ -28,8 +29,8 @@ typedef enum {
 // --- Işık pass'i (gece aydınlatması) ---
 // Sahnenin üstüne multiply blend'li tam-ekran quad: shader piksel başına
 // ambient + Σ ışık katkısı hesaplar, sahne rengiyle çarpılır (gerçek renk karışımı).
-#define R2D_MAX_LIGHTS 32   // MSL'deki dizi boyutuyla AYNI kalmalı (r2d.c)
-#define R2D_MAX_OCCLUDERS 16  // ışığı kesen dikdörtgen sayısı (MSL ile AYNI)
+#define R2D_MAX_LIGHTS 32   // shaders/light.frag.hlsl dizi boyutuyla AYNI kalmalı
+#define R2D_MAX_OCCLUDERS 16  // ışığı kesen dikdörtgen sayısı (light.frag.hlsl ile AYNI)
 
 typedef struct {
     float x, y;        // ekran px (dünya→ekran dönüşümü çağıranda)

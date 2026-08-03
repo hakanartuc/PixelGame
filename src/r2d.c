@@ -39,298 +39,32 @@ struct R2D { int unused; };
 static struct R2D CTX;
 
 // ---------------------------------------------------------------------------
-// MSL shader — SDL_GPU Metal bağlama düzeni:
-//   vertex uniforms → [[buffer(0)]], vertex girdisi → [[stage_in]]
-//   fragment texture → [[texture(0)]], sampler → [[sampler(0)]]
+// SHADER'LAR ARTIK BURADA DEĞİL — kaynak dil HLSL, yükleme dosyadan.
+//
+// Eskiden bu noktada `static const char *MSL_SOURCE` adlı 288 satırlık gömülü
+// bir Metal Shading Language string'i vardı (dört giriş noktası: vs_main,
+// fs_main, fs_light, fs_postfx). O string KALDIRILDI — silinmedi, TAŞINDI:
+//
+//   shaders/sprite.vert.hlsl   ← vs_main
+//   shaders/sprite.frag.hlsl   ← fs_main
+//   shaders/light.frag.hlsl    ← fs_light
+//   shaders/postfx.frag.hlsl   ← fs_postfx
+//
+// Yorumlar, matematik ve tüm modlar birebir taşındı; MSL sürümünün son hâli
+// git geçmişinde e563b23:src/r2d.c içinde duruyor (karşılaştırma gerekirse).
+//
+// NEDEN KALDIRILDI: gömülü MSL, oyunun sağlayabildiği tek shader formatının MSL
+// olması demekti — yani Windows'ta ne D3D12 ne Vulkan bu shader'ı tüketebiliyordu
+// ve oyun HİÇ çizmiyordu. Tek kaynak dilden üç formata (DXIL/SPIR-V/MSL) çıkmanın
+// yolu HLSL; SDL_GPU'nun bağlama sözleşmesi de HLSL için dokümante edilmiş
+// (vendor/SDL/include/SDL3/SDL_gpu.h, SDL_CreateGPUShader doküman bloğu).
+//
+// MSL artık ELLE YAZILAN değil ÜRETİLEN bir çıktı: shaders/compile.sh HLSL'i
+// SPIR-V'ye (glslang) ve oradan MSL'e (spirv-cross) çeviriyor, sonuç
+// assets/shaders/{spirv,msl,dxil}/ altında repoda duruyor ve oyunla paketleniyor.
+// Derleme OFFLINE — çalışma anında hiçbir shader derleyicisine bağımlılık yok.
+// Shader'a dokunulduğunda shaders/compile.sh yeniden çalıştırılmalı (hot-reload yok).
 // ---------------------------------------------------------------------------
-static const char *MSL_SOURCE =
-    "#include <metal_stdlib>\n"
-    "using namespace metal;\n"
-    "struct VSIn {\n"
-    "    float2 pos [[attribute(0)]];\n"
-    "    float2 uv  [[attribute(1)]];\n"
-    "    float4 col [[attribute(2)]];\n"
-    "};\n"
-    "struct VSOut {\n"
-    "    float4 pos [[position]];\n"
-    "    float2 uv;\n"
-    "    float4 col;\n"
-    "};\n"
-    "struct Uniforms { float2 viewport; };\n"
-    "vertex VSOut vs_main(VSIn in [[stage_in]],\n"
-    "                     constant Uniforms &u [[buffer(0)]]) {\n"
-    "    VSOut out;\n"
-    "    float2 ndc = float2(in.pos.x / u.viewport.x * 2.0 - 1.0,\n"
-    "                        1.0 - in.pos.y / u.viewport.y * 2.0);\n"
-    "    out.pos = float4(ndc, 0.0, 1.0);\n"
-    "    out.uv = in.uv;\n"
-    "    out.col = in.col;\n"
-    "    return out;\n"
-    "}\n"
-    "fragment float4 fs_main(VSOut in [[stage_in]],\n"
-    "                        texture2d<float> tex [[texture(0)]],\n"
-    "                        sampler smp [[sampler(0)]]) {\n"
-    "    return tex.sample(smp, in.uv) * in.col;\n"
-    "}\n"
-    // Işık pass'i: piksel başına ambient + Σ ışık katkısı; multiply blend ile
-    // sahne rengiyle çarpılır. Dizi boyutu R2D_MAX_LIGHTS (r2d.h) ile AYNI.
-    "struct LightU {\n"
-    "    float4 ambient;\n"          // rgb = ortam çarpanı, w = kamera ofset X
-    "    float4 count;\n"            // x=ışık sayısı y=kuantize z=ızgara w=kamera ofset Y
-    "    float4 mode;\n"             // x=gamma y=düşüş z=dither w=düşüş parametresi
-    "    float4 mode2;\n"            // x=A/B bölme y=anizotropi z=dikey ofset w=tıkama
-    "    float4 pos[32];\n"          // xy = ekran px, z = yarıçap px
-    "    float4 col[32];\n"          // rgb = renk, w = yoğunluk
-    "    float4 shape[32];\n"        // x = siluet genliği, yz = dönen faz vektörü
-    "    float4 occ[16];\n"          // ışığı kesen dikdörtgenler: xy=köşe, zw=boyut
-    "};\n"
-    // Segment (pa→pb) bir AABB'yi kesiyor mu — slab testi, dallanmasız.
-    // Işık tıkama için: pikselden ışığa giden doğru bir gövdeden geçiyorsa
-    // o piksel gölgede. Ray-box ucuz (birkaç karşılaştırma), doku okuması yok.
-    "static bool seg_hits_box(float2 pa, float2 pb, float4 b) {\n"
-    "    float2 d = pb - pa;\n"
-    "    float2 ad = abs(d);\n"
-    "    if (ad.x < 1e-4) d.x = (d.x < 0.0 ? -1e-4 : 1e-4);\n"
-    "    if (ad.y < 1e-4) d.y = (d.y < 0.0 ? -1e-4 : 1e-4);\n"
-    "    float2 t0 = (b.xy - pa) / d;\n"
-    "    float2 t1 = (b.xy + b.zw - pa) / d;\n"
-    "    float2 tmin = min(t0, t1), tmax = max(t0, t1);\n"
-    "    float tn = max(tmin.x, tmin.y);\n"
-    "    float tf = min(tmax.x, tmax.y);\n"
-    "    return (tf >= tn) && (tn < 1.0) && (tf > 0.0);\n"
-    "}\n"
-    // sRGB ⇄ lineer (IEC 61966-2-1). Işık katkıları FİZİKSEL olarak lineer
-    // uzayda toplanır; sRGB kodunda toplamak merkezi +0.22 fazla parlatıp
-    // kırpıyor (düz beyaz plato) ve dış halkayı 0.03 karartıyor. Yani ışık
-    // "kubbe" değil "kenarı sıkıştırılmış patlamış disk" gibi okunuyordu.
-    // Not: çarpma gama ile komütatiftir, o yüzden multiply kompozisyonu doğru;
-    // hata YALNIZCA toplama satırındaydı.
-    "static float3 s2l(float3 c) {\n"
-    "    return select(pow((c + 0.055) / 1.055, float3(2.4)), c / 12.92,\n"
-    "                  c <= 0.04045);\n"
-    "}\n"
-    "static float3 l2s(float3 c) {\n"
-    "    return select(1.055 * pow(c, float3(1.0 / 2.4)) - 0.055, 12.92 * c,\n"
-    "                  c <= 0.0031308);\n"
-    "}\n"
-    "fragment float4 fs_light(VSOut in [[stage_in]],\n"
-    "                         constant LightU &lu [[buffer(0)]]) {\n"
-    "    int   n      = int(lu.count.x);\n"
-    "    float qsteps = lu.count.y;\n"
-    "    float grid   = lu.count.z;\n"
-    "    int   gmode  = int(lu.mode.x);\n"   // 0=sRGB toplama 1=lineer 2=lineer+ACES
-    "    int   fmode  = int(lu.mode.y);\n"   // 0=plato+ss 1=Karis 2=URP pow 3=knee
-    "    int   dmode  = int(lu.mode.z);\n"   // 0=IGN 1=Bayer 2=dünya-IGN 3=yok
-    "    float fparam = lu.mode.w;\n"
-    // A/B KARŞILAŞTIRMA: bölme çizgisinin SOLU daima orijinal ayarlar, sağı
-    // seçili modlar. Tek ekranda yan yana fark görülür — varyantların çoğu
-    // tek başına bakıldığında ayırt edilemiyor.
-    "    float splitX = lu.mode2.x;\n"
-    "    bool  isLeft = (splitX > 0.5 && in.pos.x < splitX);\n"
-    "    if (isLeft) { gmode = 0; fmode = 0; dmode = 0; fparam = 0.0; }\n"
-    "    bool  lin    = (gmode > 0);\n"
-    "    float3 c = lin ? s2l(lu.ambient.rgb) : lu.ambient.rgb;\n"
-    // Kuantize modda ışığı SANAT pikselinin merkezinden örnekle
-    "    float2 sp = in.pos.xy;\n"
-    "    if (grid > 0.5) sp = floor(sp / grid) * grid + grid * 0.5;\n"
-    "    for (int i = 0; i < n; i++) {\n"
-    // EĞİK PERSPEKTİF DÜZELTMESİ. Kamera tam kuş bakışı DEĞİL (evler yandan
-    // görünüyor, çatıları var) — zemin dikey olarak kısaltılmış çiziliyor.
-    // Yani zeminde dairesel olan aydınlık alan ekranda YATAY ELİPS olmalı.
-    // aniso < 1 → dikey yönde ışık daha çabuk biter (basık elips)
-    // aniso > 1 → dikey uzar (alevin yukarı yayılması)
-    // yOff  < 0 → ışık merkezi yukarı kayar (kaynak zeminde değil, hazne/alev
-    //             yüksekliğinde) — 3/4 perspektifte yükseklik ekranda yukarıdır
-    "        float2 v = sp - lu.pos[i].xy;\n"
-    // Şekil ışık BAŞINA (pos.w = dikey ofset, shape.w = anizotropi);
-    // mode2.y/z global çarpan-ekleyen (dev tuşu ile test için).
-    "        v.y -= lu.pos[i].w + lu.mode2.z;\n"
-    "        float aniso = max(lu.shape[i].w * lu.mode2.y, 0.05);\n"
-    "        v.y /= aniso;\n"
-    "        float d = length(v);\n"
-    "        float r = lu.pos[i].z;\n"
-    "        float amp = lu.shape[i].x;\n"
-    "        if (d >= r * (1.0 + amp)) continue;\n"
-    // SİLUET: halkanın kenarı kusursuz daire olmasın. Açıya bağlı loblar,
-    // ama atan2 YOK — çift/üçlü açı özdeşlikleriyle (nx²−ny² = cos2a vb.).
-    // Faz vektörü CPU'dan gelir, yani per-pixel transcendental hiç yok.
-    "        if (amp > 0.0) {\n"
-    "            float2 nv = v / max(d, 0.001);\n"
-    "            float c2 = nv.x * nv.x - nv.y * nv.y;\n"
-    "            float s2 = 2.0 * nv.x * nv.y;\n"
-    "            float c3 = nv.x * (2.0 * c2 - 1.0);\n"
-    "            float s3 = nv.y * (2.0 * c2 + 1.0);\n"
-    "            float cp = lu.shape[i].y, sp2 = lu.shape[i].z;\n"
-    "            float wob = (c2 * cp + s2 * sp2) * 0.6\n"
-    "                      + (c3 * cp - s3 * sp2) * 0.4;\n"
-    "            r *= 1.0 + amp * wob;\n"
-    "        }\n"
-    "        if (d >= r) continue;\n"
-    "        float att;\n"
-    "        if (fmode == 1) {\n"
-    // KARIS pencereli ters-kare (UE4 SIGGRAPH 2013, dnk.9; Frostbite dnk.26).
-    // Referans uzunluk şart: piksel biriminde +1 hiç iş görmez.
-    "            float u = d / fparam;\n"
-    "            float w = saturate(1.0 - pow(d / r, 4.0));\n"
-    "            att = (w * w) / (u * u + 1.0);\n"
-    "        } else if (fmode == 2) {\n"
-    // URP 2D Light2D ailesi: att = (1-t)^k, k=1 tam lineer
-    "            att = pow(1.0 - d / r, fparam);\n"
-    "        } else if (fmode == 3) {\n"
-    // KENAR DİZİ: iç bölge smoothstep, dış %25'te ani çöküş → sınır okunur
-    "            float b = 1.0 - d / r;\n"
-    "            float a = b * b * (3.0 - 2.0 * b);\n"
-    "            float w = saturate(b / 0.25);\n"
-    "            att = a * w * w;\n"
-    "        } else {\n"
-    // MEVCUT: iç %35 plato → smoothstep
-    "            float t = min((1.0 - d / r) / 0.65, 1.0);\n"
-    "            att = t * t * (3.0 - 2.0 * t);\n"
-    "        }\n"
-    // KESİN KENAR — HER MODA. light.h light_atten() ile aynı eşik (0.06).
-    // Yalnız mod 0'da olması bastırma yarıçapını moda göre kaydırıyordu.
-    "        if (att < 0.06) continue;\n"
-    // ── IŞIK TIKAMA ── pikselden ışığa giden doğru bir gövdeden geçiyorsa
-    // bu piksel gölgede. Bu olmadan ışık duvarların içinden geçiyordu ve her
-    // halka kusursuz bir oval oluyordu. Tam karanlık değil: gölgeye ışık sızar
-    // (yansıma yaklaşımı), yoksa siyah kamalar oyuncuyu kör eder.
-    "        float occN = lu.mode2.w;\n"
-    "        if (occN > 0.5 && !isLeft) {\n"
-    "            int on = int(occN);\n"
-    "            for (int k = 0; k < on; k++) {\n"
-    "                if (seg_hits_box(in.pos.xy, lu.pos[i].xy, lu.occ[k])) {\n"
-    "                    att *= 0.22;\n"
-    "                    break;\n"
-    "                }\n"
-    "            }\n"
-    "        }\n"
-    "        float3 lc = lin ? s2l(lu.col[i].rgb) : lu.col[i].rgb;\n"
-    "        c += lc * (att * lu.col[i].w);\n"
-    "    }\n"
-    // ACES filmic (Narkowicz 2016). DİKKAT: çıktı clamp'li ve blend çarpımsal
-    // olduğu için bu mod 1.0 tavanını AÇMIYOR — ACES(1.0)=0.804, ACES(2.0)=0.915,
-    // yani tepeyi ~%20 karartıp yumuşak bir omuz veriyor. Gerçek overbright için
-    // RGBA16F hedef gerekir (ayrı iş). Lineer girdi ister.
-    "    if (gmode == 2)\n"
-    "        c = clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14),\n"
-    "                  0.0, 1.0);\n"
-    "    if (lin) c = l2s(c);\n"
-    // KUANTİZE — l2s SONRASINDA olmak zorunda. sRGB kodlaması kendisi kabaca
-    // algısal olarak düzgün olduğu için eşit aralıklı kuantizasyon burada
-    // algısal olarak da doğru; lineer uzayda kuantalarsak bantlar tepe ışıkta
-    // yığılır, gölgede 1-2 kademeye düşer.
-    "    if (qsteps > 0.5) {\n"
-    "        c = floor(c * qsteps + 0.5) / qsteps;\n"
-    "        return float4(clamp(c, float3(0.0), float3(1.0)), 1.0);\n"
-    "    }\n"
-    // DITHER — 8-bit hedefte banding kırar
-    "    if (dmode != 3) {\n"
-    "        float dn;\n"
-    "        if (dmode == 1) {\n"
-    // Bayer 4×4 ordered: 8/16-bit döneminin görsel dili, kasıtlı desen
-    "            float B[16] = {  0.0,  8.0,  2.0, 10.0, 12.0,  4.0, 14.0,  6.0,\n"
-    "                             3.0, 11.0,  1.0,  9.0, 15.0,  7.0, 13.0,  5.0 };\n"
-    "            int2 bi = int2(in.pos.xy) & 3;\n"
-    "            dn = B[bi.y * 4 + bi.x] / 16.0;\n"
-    "        } else {\n"
-    // IGN (Jimenez, CoD:AW 2014). dmode==2: indeks DÜNYA koordinatından —
-    // ekran uzayı deseni kamera hareketinde "crawl" ediyor ("kirli cam").
-    "            float2 q = in.pos.xy;\n"
-    "            if (dmode == 2) q = floor((q + float2(lu.ambient.w,\n"
-    "                                                 lu.count.w)) / 8.0);\n"
-    "            dn = fract(52.9829189 * fract(dot(q, float2(0.06711056,\n"
-    "                                                        0.00583715))));\n"
-    "        }\n"
-    "        c += (dn - 0.5) * (2.0 / 255.0);\n"
-    "    }\n"
-    "    if (splitX > 0.5 && abs(in.pos.x - splitX) < 1.5)\n"
-    "        c = float3(1.0, 0.85, 0.2);\n"        // bölme çizgisi
-    "    return float4(clamp(c, float3(0.0), float3(1.0)), 1.0);\n"
-    "}\n"
-    // Post-fx "grade": sahne target'ını tam ekran örnekleyip doygunluk +
-    // sıcaklık + kontrast/parlaklık + retro modlar + vinyet uygular.
-    // Düzen R2DPostFXU ile aynı.
-    "struct PostU {\n"
-    "    float4 a;\n"   // x=doygunluk y=sıcaklık z=kontrast w=parlaklık
-    "    float4 b;\n"   // x=vinyet gücü y=vinyet yarıçapı z=scanline w=gameboy
-    "    float4 c;\n"   // x=posterize y=kromatik sapma z=gren w=zaman (kare sayacı)
-    "    float4 d;\n"   // x=bloom gücü y=bloom eşiği z=bloom yarıçapı w=ısı genliği
-    "    float4 e;\n"   // x=ısı hızı y,z,w=(boş)
-    "};\n"
-    "fragment float4 fs_postfx(VSOut in [[stage_in]],\n"
-    "                          constant PostU &u [[buffer(0)]],\n"
-    "                          texture2d<float> tex [[texture(0)]],\n"
-    "                          sampler smp [[sampler(0)]]) {\n"
-    // ISI BÜKÜLMESİ: uv'yi kaydır. Aşağı doğru güçlenir (sıcak hava yerden kalkar).
-    // İki frekans üst üste — tek sinüs akordeon gibi duruyor.
-    "    float2 uv = in.uv;\n"
-    "    if (u.d.w > 0.0) {\n"
-    "        float tt = u.c.w * u.e.x * 0.06;\n"
-    "        float depth = uv.y;\n"                 // 0 üst, 1 alt
-    "        float w1 = sin(uv.y * 38.0 + tt * 3.1) * 0.6;\n"
-    "        float w2 = sin(uv.y * 91.0 - tt * 5.7) * 0.4;\n"
-    "        uv.x += (w1 + w2) * u.d.w * depth;\n"
-    "        uv.y += sin(uv.x * 55.0 + tt * 2.3) * u.d.w * 0.35 * depth;\n"
-    "    }\n"
-    // Kromatik sapma: R sola, B sağa kaymış örneklenir (VHS/retro kenar taşması)
-    "    float3 c;\n"
-    "    if (u.c.y > 0.0) {\n"
-    "        c.r = tex.sample(smp, uv - float2(u.c.y, 0.0)).r;\n"
-    "        c.g = tex.sample(smp, uv).g;\n"
-    "        c.b = tex.sample(smp, uv + float2(u.c.y, 0.0)).b;\n"
-    "    } else {\n"
-    "        c = tex.sample(smp, uv).rgb;\n"
-    "    }\n"
-    // BLOOM: iki halka × 6 tap = 12 örnek. Eşiğin üstündeki fazla toplanıp eklenir.
-    // Halkalar farklı yarıçapta (r ve 2r) — tek halka yıldız deseni yapıyor.
-    "    if (u.d.x > 0.0) {\n"
-    "        float3 bl = float3(0.0);\n"
-    "        const float2 dirs[6] = { float2(1.0, 0.0), float2(0.5, 0.866),\n"
-    "                                 float2(-0.5, 0.866), float2(-1.0, 0.0),\n"
-    "                                 float2(-0.5, -0.866), float2(0.5, -0.866) };\n"
-    "        for (int i = 0; i < 6; i++) {\n"
-    "            float2 o = dirs[i] * u.d.z;\n"
-    "            float3 s1 = tex.sample(smp, uv + o).rgb;\n"
-    "            float3 s2 = tex.sample(smp, uv + o * 2.0).rgb;\n"
-    "            float l1 = dot(s1, float3(0.299, 0.587, 0.114));\n"
-    "            float l2 = dot(s2, float3(0.299, 0.587, 0.114));\n"
-    // Parlak-geçiş: eşiğin altındaki hiç katkı vermez (max ile kesiliyor).
-    // Renk korunur: fazlayı luma oranıyla ölçekliyoruz, böylece kırmızı alev
-    // kırmızı taşıyor — beyaza doymuyor.
-    "            bl += s1 * max(l1 - u.d.y, 0.0);\n"
-    "            bl += s2 * max(l2 - u.d.y, 0.0) * 0.5;\n"   // dış halka yarım ağırlık
-    "        }\n"
-    "        c += bl * (u.d.x / 9.0);\n"   // 6*(1.0+0.5) = 9 normalizasyon
-    "    }\n"
-    "    float luma = dot(c, float3(0.299, 0.587, 0.114));\n"
-    "    c = mix(float3(luma), c, u.a.x);\n"
-    "    c += float3(u.a.y, 0.0, -u.a.y);\n"
-    "    c = (c - 0.5) * u.a.z + 0.5 + u.a.w;\n"
-    // Posterize: kanal başına N kademe (8-bit görünüm)
-    "    if (u.c.x > 1.5) {\n"
-    "        float n = u.c.x - 1.0;\n"
-    "        c = round(clamp(c, 0.0, 1.0) * n) / n;\n"
-    "    }\n"
-    // GameBoy modu: parlaklığı 4 kademeye kuantala, DMG yeşil paletine bas
-    "    if (u.b.w > 0.5) {\n"
-    "        float3 pal[4] = { float3(0.06, 0.22, 0.06), float3(0.19, 0.38, 0.19),\n"
-    "                          float3(0.55, 0.67, 0.06), float3(0.61, 0.74, 0.06) };\n"
-    "        float l = dot(clamp(c, 0.0, 1.0), float3(0.299, 0.587, 0.114));\n"
-    "        c = pal[clamp(int(l * 4.0), 0, 3)];\n"
-    "    }\n"
-    // CRT tarama çizgisi: her 3 piksel satırının biri koyulaşır
-    "    if (u.b.z > 0.0 && fract(in.pos.y / 3.0) < 0.334) c *= 1.0 - u.b.z;\n"
-    // Film greni: kare sayacıyla kayan hash gürültüsü (animasyonlu kumlanma)
-    "    if (u.c.z > 0.0) {\n"
-    "        float gn = fract(sin(dot(in.pos.xy + u.c.w,\n"
-    "                                 float2(12.9898, 78.233))) * 43758.5453);\n"
-    "        c += (gn - 0.5) * u.c.z;\n"
-    "    }\n"
-    // Vinyet: uv merkez uzaklığı 0 (orta) → 1 (köşe); radius'tan köşeye yumuşak iner
-    "    float d = length(in.uv - 0.5) * 1.41421356;\n"
-    "    c *= 1.0 - u.b.x * smoothstep(u.b.y, 1.0, d);\n"
-    "    return float4(clamp(c, float3(0.0), float3(1.0)), 1.0);\n"
-    "}\n";
 
 // ---------------------------------------------------------------------------
 // Durum
@@ -347,7 +81,7 @@ static SDL_GPUGraphicsPipeline *postfxPipeline = NULL;
 static SDL_GPUBuffer *fsQuadBuf = NULL;      // statik tam-ekran quad (pos 0..1)
 static R2DTexture *sceneTex = NULL;          // pencere boyutunda; resize'da yeniden kurulur
 static bool postfxOn = false;
-typedef struct { float a[4]; float b[4]; float c[4]; float d[4]; float e[4]; } R2DPostFXU;   // MSL PostU ile birebir
+typedef struct { float a[4]; float b[4]; float c[4]; float d[4]; float e[4]; } R2DPostFXU;   // shaders/postfx.frag.hlsl PostU ile birebir
 static R2DPostFXU postfxU;
 // Sahne-only ayrımı bu karede yapıldı mı? Yapıldıysa end_frame kalan çizimleri
 // (HUD) doğrudan swapchain'e, TEMİZLEMEDEN basar — postfx_pass her pikseli
@@ -360,12 +94,13 @@ static bool postfxSplit = false;
 static int postfxSplitVert = 0;
 static Uint32 frameNo = 0;   // gren animasyonu için kare sayacı (postfx zamanı)
 
-// Işık uniform'ları — MSL'deki LightU ile birebir aynı düzen (float4 hizalı).
+// Işık uniform'ları — shaders/light.frag.hlsl LightU ile birebir aynı düzen
+// (hepsi float4, 16 bayt stride; üretilen SPIR-V üye ofsetleriyle doğrulandı).
 // Tek statik kopya: kare başına bir ışık pass'i (r2d_light_pass yorumu).
 typedef struct {
     float ambient[4];
     float count[4];
-    float mode[4];      // MSL LightU.mode ile AYNI SIRADA olmak zorunda
+    float mode[4];      // light.frag.hlsl LightU.mode ile AYNI SIRADA olmak zorunda
     float mode2[4];     // x = A/B bölme çizgisi (ekran px), 0 = kapalı
     float pos[R2D_MAX_LIGHTS][4];
     float col[R2D_MAX_LIGHTS][4];
@@ -410,19 +145,85 @@ static int deadCount = 0;
 // ---------------------------------------------------------------------------
 // Kurulum
 // ---------------------------------------------------------------------------
-static SDL_GPUShader *load_shader(SDL_GPUShaderStage stage, const char *entry,
+// Shader formatı ARTIK SABİT DEĞİL. Üç format da derleme zamanında üretilip
+// assets/shaders/ altında paketleniyor; hangisinin yükleneceğine cihaz karar
+// veriyor (SDL_GetGPUShaderFormats).
+//
+// Dosya adı kalıbı: assets/shaders/<dizin>/<ad>.<uzantı>   (ad örn. "light.frag")
+// Giriş noktası formata göre DEĞİŞİR: SPIR-V ve DXIL'de "main", MSL'de "main0"
+// — Metal `main` adına izin vermiyor, spirv-cross onu main0'a çeviriyor.
+static const char *shaderDir   = NULL;
+static const char *shaderExt   = NULL;
+static const char *shaderEntry = NULL;
+static SDL_GPUShaderFormat shaderFmt = 0;
+
+// Repoda hangi format setleri GERÇEKTEN var? Cihaza yalnız sağlayabildiğimiz
+// formatları bildirmek şart: SDL'in arka uç deneme sırası Metal → D3D12 → Vulkan
+// ve ilk hazırlanabilen kazanıyor. DXIL bayrağını verip DXIL dosyası koymazsak
+// Windows'ta D3D12 seçilir ve shader yüklenemez; bayrağı vermezsek SDL D3D12'yi
+// hiç denemez ve Vulkan/SPIR-V ile çizer. Yani bu ölçüm, DXIL üretilmemiş bir
+// dağıtımda Windows'un yine de çizmesini sağlıyor.
+static SDL_GPUShaderFormat shader_formats_available(void)
+{
+    static const struct { SDL_GPUShaderFormat fmt; const char *probe; } SETS[] = {
+        { SDL_GPU_SHADERFORMAT_SPIRV, "assets/shaders/spirv/sprite.vert.spv"  },
+        { SDL_GPU_SHADERFORMAT_MSL,   "assets/shaders/msl/sprite.vert.msl"    },
+        { SDL_GPU_SHADERFORMAT_DXIL,  "assets/shaders/dxil/sprite.vert.dxil"  },
+    };
+    SDL_GPUShaderFormat mask = 0;
+    for (int i = 0; i < (int)SDL_arraysize(SETS); i++) {
+        SDL_PathInfo info;
+        if (SDL_GetPathInfo(SETS[i].probe, &info) && info.type == SDL_PATHTYPE_FILE)
+            mask |= SETS[i].fmt;
+    }
+    return mask;
+}
+
+// Cihazın tüketebildiği formatlarla bizim paketlediklerimizin kesişiminden birini seç
+static bool shader_format_pick(void)
+{
+    SDL_GPUShaderFormat have = SDL_GetGPUShaderFormats(gpu) & shader_formats_available();
+    if (have & SDL_GPU_SHADERFORMAT_SPIRV) {
+        shaderDir = "spirv"; shaderExt = "spv";  shaderEntry = "main";
+        shaderFmt = SDL_GPU_SHADERFORMAT_SPIRV;
+    } else if (have & SDL_GPU_SHADERFORMAT_MSL) {
+        shaderDir = "msl";   shaderExt = "msl";  shaderEntry = "main0";
+        shaderFmt = SDL_GPU_SHADERFORMAT_MSL;
+    } else if (have & SDL_GPU_SHADERFORMAT_DXIL) {
+        shaderDir = "dxil";  shaderExt = "dxil"; shaderEntry = "main";
+        shaderFmt = SDL_GPU_SHADERFORMAT_DXIL;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+// name örn. "light.frag" — uzantısız, formattan bağımsız ad
+static SDL_GPUShader *load_shader(SDL_GPUShaderStage stage, const char *name,
                                   int numUniformBufs, int numSamplers)
 {
+    char path[256];
+    SDL_snprintf(path, sizeof(path), "assets/shaders/%s/%s.%s",
+                 shaderDir, name, shaderExt);
+    size_t size = 0;
+    void *code = SDL_LoadFile(path, &size);
+    if (code == NULL) {
+        SDL_Log("r2d: shader okunamadi (%s): %s", path, SDL_GetError());
+        return NULL;
+    }
     SDL_GPUShaderCreateInfo ci = {
-        .code = (const Uint8 *)MSL_SOURCE,
-        .code_size = strlen(MSL_SOURCE),
-        .entrypoint = entry,
-        .format = SDL_GPU_SHADERFORMAT_MSL,
+        .code = (const Uint8 *)code,
+        .code_size = size,
+        .entrypoint = shaderEntry,
+        .format = shaderFmt,
         .stage = stage,
         .num_uniform_buffers = (Uint32)numUniformBufs,
         .num_samplers = (Uint32)numSamplers,
     };
-    return SDL_CreateGPUShader(gpu, &ci);
+    SDL_GPUShader *sh = SDL_CreateGPUShader(gpu, &ci);
+    if (sh == NULL) SDL_Log("r2d: shader kurulamadi (%s): %s", path, SDL_GetError());
+    SDL_free(code);
+    return sh;
 }
 
 // blend == R2D_BLEND_COUNT dahili anlam taşır: MULTIPLY (ışık pass'i,
@@ -483,9 +284,23 @@ R2D *r2d_init(SDL_Window *window)
 {
     win = window;
 
-    gpu = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_MSL, false, NULL);
+    // Sağlayabildiğimiz TÜM formatları bildir, arka ucu SDL seçsin (Metal →
+    // D3D12 → Vulkan sırasıyla dener). Hangi formatların paketlendiği diske
+    // bakılarak ölçülüyor — bkz. shader_formats_available().
+    SDL_GPUShaderFormat fmts = shader_formats_available();
+    if (fmts == 0) {
+        SDL_Log("r2d: derlenmis shader bulunamadi — 'sh shaders/compile.sh' "
+                "calistirin ve oyunu proje kokunden baslatin");
+        return NULL;
+    }
+    gpu = SDL_CreateGPUDevice(fmts, false, NULL);
     if (gpu == NULL) {
         SDL_Log("r2d: GPU cihazi acilamadi: %s", SDL_GetError());
+        return NULL;
+    }
+    if (!shader_format_pick()) {
+        SDL_Log("r2d: cihazin (%s) tuketebildigi bir shader formati paketlenmemis",
+                SDL_GetGPUDeviceDriver(gpu));
         return NULL;
     }
     if (!SDL_ClaimWindowForGPUDevice(gpu, win)) {
@@ -495,8 +310,8 @@ R2D *r2d_init(SDL_Window *window)
     SDL_SetGPUSwapchainParameters(gpu, win, SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
                                   SDL_GPU_PRESENTMODE_VSYNC);
 
-    SDL_GPUShader *vs = load_shader(SDL_GPU_SHADERSTAGE_VERTEX, "vs_main", 1, 0);
-    SDL_GPUShader *fs = load_shader(SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_main", 0, 1);
+    SDL_GPUShader *vs = load_shader(SDL_GPU_SHADERSTAGE_VERTEX, "sprite.vert", 1, 0);
+    SDL_GPUShader *fs = load_shader(SDL_GPU_SHADERSTAGE_FRAGMENT, "sprite.frag", 0, 1);
     if (vs == NULL || fs == NULL) {
         SDL_Log("r2d: shader derlenemedi: %s", SDL_GetError());
         return NULL;
@@ -512,7 +327,7 @@ R2D *r2d_init(SDL_Window *window)
         }
     }
     // Işık pass'i: kendi fragment shader'ı (1 uniform buffer, texture yok)
-    SDL_GPUShader *fsLight = load_shader(SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_light", 1, 0);
+    SDL_GPUShader *fsLight = load_shader(SDL_GPU_SHADERSTAGE_FRAGMENT, "light.frag", 1, 0);
     if (fsLight == NULL) {
         SDL_Log("r2d: isik shader'i derlenemedi: %s", SDL_GetError());
         return NULL;
@@ -527,7 +342,7 @@ R2D *r2d_init(SDL_Window *window)
     SDL_ReleaseGPUShader(gpu, fsLight);
 
     // Post-fx: kendi fragment shader'ı (1 uniform buffer + sahne texture'ı)
-    SDL_GPUShader *fsPost = load_shader(SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_postfx", 1, 1);
+    SDL_GPUShader *fsPost = load_shader(SDL_GPU_SHADERSTAGE_FRAGMENT, "postfx.frag", 1, 1);
     if (fsPost == NULL) {
         SDL_Log("r2d: postfx shader'i derlenemedi: %s", SDL_GetError());
         return NULL;
@@ -603,7 +418,10 @@ R2D *r2d_init(SDL_Window *window)
     whiteTex = r2d_texture_from_pixels(&CTX, &white, 1, 1);
     if (whiteTex == NULL) return NULL;
 
-    SDL_Log("r2d: hazir (surucu: %s)", SDL_GetGPUDeviceDriver(gpu));
+    // Sürücü + shader formatı BİRLİKTE loglanıyor: taşımadan sonra bu satır
+    // ilk teşhis aracı ("metal/MSL" mi "direct3d12/DXIL" mi "vulkan/SPIR-V" mi).
+    SDL_Log("r2d: hazir (surucu: %s, shader: %s)",
+            SDL_GetGPUDeviceDriver(gpu), shaderDir);
     return &CTX;
 }
 
@@ -1145,7 +963,10 @@ static void flush_to(SDL_GPUCommandBuffer *cb, SDL_GPUTexture *dst,
     };
     SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cb, &target, 1, NULL);
 
-    float viewport[2] = { outW, outH };
+    // float4 — sprite.vert.hlsl'deki cbuffer ile birebir. zw kullanılmıyor,
+    // dolgu: 8 baytlık bir uniform buffer Vulkan'da bağlama aralığını blok
+    // boyutunun altına düşürebiliyor (bkz. shaders/sprite.vert.hlsl yorumu).
+    float viewport[4] = { outW, outH, 0.0f, 0.0f };
     SDL_PushGPUVertexUniformData(cb, 0, viewport, sizeof(viewport));
 
     SDL_GPUBufferBinding vb = { .buffer = vertexBuf, .offset = 0 };
@@ -1228,7 +1049,7 @@ static void postfx_pass(void)
     };
     SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmdBuf, &target, 1, NULL);
     SDL_BindGPUGraphicsPipeline(pass, postfxPipeline);
-    float viewport[2] = { 1.0f, 1.0f };   // quad pos 0..1 — NDC dönüşümü birebir
+    float viewport[4] = { 1.0f, 1.0f, 0.0f, 0.0f };   // quad pos 0..1 — NDC dönüşümü birebir
     SDL_PushGPUVertexUniformData(cmdBuf, 0, viewport, sizeof(viewport));
     frameNo = (frameNo + 1) & 1023;   // float hassasiyeti için sarmalı sayaç
     postfxU.c[3] = (float)frameNo;

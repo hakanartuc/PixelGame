@@ -1,0 +1,158 @@
+#pragma clang diagnostic ignored "-Wmissing-prototypes"
+#pragma clang diagnostic ignored "-Wmissing-braces"
+
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+template<typename T, size_t Num>
+struct spvUnsafeArray
+{
+    T elements[Num ? Num : 1];
+    
+    thread T& operator [] (size_t pos) thread
+    {
+        return elements[pos];
+    }
+    constexpr const thread T& operator [] (size_t pos) const thread
+    {
+        return elements[pos];
+    }
+    
+    device T& operator [] (size_t pos) device
+    {
+        return elements[pos];
+    }
+    constexpr const device T& operator [] (size_t pos) const device
+    {
+        return elements[pos];
+    }
+    
+    constexpr const constant T& operator [] (size_t pos) const constant
+    {
+        return elements[pos];
+    }
+    
+    threadgroup T& operator [] (size_t pos) threadgroup
+    {
+        return elements[pos];
+    }
+    constexpr const threadgroup T& operator [] (size_t pos) const threadgroup
+    {
+        return elements[pos];
+    }
+};
+
+struct PostU
+{
+    float4 a;
+    float4 b;
+    float4 c;
+    float4 d;
+    float4 e;
+};
+
+struct PostUB
+{
+    PostU u;
+};
+
+constant spvUnsafeArray<float2, 6> _193 = spvUnsafeArray<float2, 6>({ float2(1.0, 0.0), float2(0.5, 0.865999996662139892578125), float2(-0.5, 0.865999996662139892578125), float2(-1.0, 0.0), float2(-0.5, -0.865999996662139892578125), float2(0.5, -0.865999996662139892578125) });
+constant spvUnsafeArray<float3, 4> _332 = spvUnsafeArray<float3, 4>({ float3(0.0599999986588954925537109375, 0.2199999988079071044921875, 0.0599999986588954925537109375), float3(0.189999997615814208984375, 0.37999999523162841796875, 0.189999997615814208984375), float3(0.550000011920928955078125, 0.670000016689300537109375, 0.0599999986588954925537109375), float3(0.61000001430511474609375, 0.7400000095367431640625, 0.0599999986588954925537109375) });
+
+struct main0_out
+{
+    float4 _entryPointOutput [[color(0)]];
+};
+
+struct main0_in
+{
+    float2 i_uv [[user(locn0)]];
+};
+
+fragment main0_out main0(main0_in in [[stage_in]], constant PostUB& _24 [[buffer(0)]], texture2d<float> Tex [[texture(0)]], sampler Smp [[sampler(0)]], float4 gl_FragCoord [[position]])
+{
+    main0_out out = {};
+    float2 _783;
+    if (_24.u.d.w > 0.0)
+    {
+        float _465 = _24.u.c.w * _24.u.e.x;
+        float _495 = in.i_uv.x + ((((sin((in.i_uv.y * 38.0) + (_465 * 0.18599998950958251953125)) * 0.60000002384185791015625) + (sin((in.i_uv.y * 91.0) - (_465 * 0.3419999778270721435546875)) * 0.4000000059604644775390625)) * _24.u.d.w) * in.i_uv.y);
+        _783 = float2(_495, in.i_uv.y + (((sin((_495 * 55.0) + (_465 * 0.13799999654293060302734375)) * _24.u.d.w) * 0.3499999940395355224609375) * in.i_uv.y));
+    }
+    else
+    {
+        _783 = in.i_uv;
+    }
+    float3 _787;
+    if (_24.u.c.y > 0.0)
+    {
+        _787 = float3(Tex.sample(Smp, (_783 - float2(_24.u.c.y, 0.0))).x, Tex.sample(Smp, _783).y, Tex.sample(Smp, (_783 + float2(_24.u.c.y, 0.0))).z);
+    }
+    else
+    {
+        _787 = Tex.sample(Smp, _783).xyz;
+    }
+    float3 _788;
+    if (_24.u.d.x > 0.0)
+    {
+        float3 _785;
+        _785 = float3(0.0);
+        for (int _784 = 0; _784 < 6; )
+        {
+            float2 _570 = _193[_784] * _24.u.d.z;
+            float3 _578 = Tex.sample(Smp, (_783 + _570)).xyz;
+            float3 _587 = Tex.sample(Smp, (_783 + (_570 * 2.0))).xyz;
+            _785 = (_785 + (_578 * fast::max(dot(_578, float3(0.2989999949932098388671875, 0.58700001239776611328125, 0.114000000059604644775390625)) - _24.u.d.y, 0.0))) + ((_587 * fast::max(dot(_587, float3(0.2989999949932098388671875, 0.58700001239776611328125, 0.114000000059604644775390625)) - _24.u.d.y, 0.0)) * 0.5);
+            _784++;
+            continue;
+        }
+        _788 = _787 + (_785 * (_24.u.d.x * 0.111111111938953399658203125));
+    }
+    else
+    {
+        _788 = _787;
+    }
+    float3 _651 = ((((mix(float3(dot(_788, float3(0.2989999949932098388671875, 0.58700001239776611328125, 0.114000000059604644775390625))), _788, float3(_24.u.a.x)) + float3(_24.u.a.y, 0.0, -_24.u.a.y)) - float3(0.5)) * _24.u.a.z) + float3(0.5)) + float3(_24.u.a.w);
+    float3 _789;
+    if (_24.u.c.x > 1.5)
+    {
+        float _658 = _24.u.c.x - 1.0;
+        _789 = rint(fast::clamp(_651, float3(0.0), float3(1.0)) * _658) / float3(_658);
+    }
+    else
+    {
+        _789 = _651;
+    }
+    float3 _790;
+    if (_24.u.b.w > 0.5)
+    {
+        _790 = _332[clamp(int(dot(fast::clamp(_789, float3(0.0), float3(1.0)), float3(0.2989999949932098388671875, 0.58700001239776611328125, 0.114000000059604644775390625)) * 4.0), 0, 3)];
+    }
+    else
+    {
+        _790 = _789;
+    }
+    float3 _791;
+    if ((_24.u.b.z > 0.0) && (fract(gl_FragCoord.y * 0.3333333432674407958984375) < 0.33399999141693115234375))
+    {
+        _791 = _790 * (1.0 - _24.u.b.z);
+    }
+    else
+    {
+        _791 = _790;
+    }
+    float3 _792;
+    if (_24.u.c.z > 0.0)
+    {
+        _792 = _791 + float3((fract(sin(dot(gl_FragCoord.xy + float2(_24.u.c.w), float2(12.98980045318603515625, 78.233001708984375))) * 43758.546875) - 0.5) * _24.u.c.z);
+    }
+    else
+    {
+        _792 = _791;
+    }
+    out._entryPointOutput = float4(fast::clamp(_792 * (1.0 - (_24.u.b.x * smoothstep(_24.u.b.y, 1.0, length(in.i_uv - float2(0.5)) * 1.41421353816986083984375))), float3(0.0), float3(1.0)), 1.0);
+    return out;
+}
+

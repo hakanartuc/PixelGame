@@ -1,0 +1,33 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct VertexUB
+{
+    float4 viewport;
+};
+
+struct main0_out
+{
+    float2 _entryPointOutput_uv [[user(locn0)]];
+    float4 _entryPointOutput_col [[user(locn1)]];
+    float4 gl_Position [[position]];
+};
+
+struct main0_in
+{
+    float2 v_pos [[attribute(0)]];
+    float2 v_uv [[attribute(1)]];
+    float4 v_col [[attribute(2)]];
+};
+
+vertex main0_out main0(main0_in in [[stage_in]], constant VertexUB& _27 [[buffer(0)]])
+{
+    main0_out out = {};
+    out.gl_Position = float4(((in.v_pos.x / _27.viewport.x) * 2.0) - 1.0, 1.0 - ((in.v_pos.y / _27.viewport.y) * 2.0), 0.0, 1.0);
+    out._entryPointOutput_uv = in.v_uv;
+    out._entryPointOutput_col = in.v_col;
+    return out;
+}
+
