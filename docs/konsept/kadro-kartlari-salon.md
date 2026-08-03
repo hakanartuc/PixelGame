@@ -12,7 +12,7 @@
 
 ## 1 · `yenitac_salon_bey` — SARP YALINKILIÇ
 
-*RUTİN (dört durak, Sabri'nin rutinine oturtuldu): 07 tahtın arkasındaki sandalye · 12 avlu · 15 tahtın arkası · 20 `indoors`. Hiç yürümez; durakları Sabri'nin taşıdığı yerlerdir, o yüzden iki rutin aynı saatlerde kesişir.*
+*RUTİN (dört durak, Sabri'nin rutinine oturtuldu): 07 tahtın arkasındaki sandalye · 12 avlu · 15 tahtın arkası · 20 `indoors`. Durakları Sabri'nin taşıdığı yerlerdir, o yüzden iki rutin aynı saatlerde kesişir. **Hiç yürümez** — ve bu artık kartın iddiası değil, bir alan: **[YENİ ALAN: `NpcDef.carried`, bir bool.]** İşaretli NPC durak saati gelince hedefe yürümez, konumuna geçer. `NpcStop.map` bu adamı kurtarmıyor, çünkü avlu ile taht bölümü aynı haritada (GDD §1.2d) ve felçli bir adamın kendi ayağıyla avluya çıktığını oyuncu her öğlen izler. Taşınmayı oyuncu görmüyor ve bu bir eksik değil: sedyeyi kimse seyretmiyor, sandalye bir yerdeydi, sonra başka yerdedir.*
 
 **1. KİMLİK.** Görünen ad: **Bey**. Odada kimse başka bir şey demez, kâğıtta "Sarp Yalınkılıç" yazar, Yedisunak'tan gelen mektuplar düpedüz *"Sarp'a"* diye başlar. 62. Hiçbir şehirli değil — altı şehrin arasındaki sınır otlağında doğdu, bir kasabası yok, bir aksanı yok. Altı şehrin ona bugün hâlâ "misafir" muamelesi yapabilmesinin sebebi bu ve kimse yüksek sesle söylemiyor.
 
@@ -61,7 +61,7 @@ Beşinci bir hareket var ve o bir işaret değil, bir arıza: sağ tarafı ölü
 
 Gökçe'nin taç giymesini **istiyor** ve onu gerçekten aşağılık buluyor. Bu ikisi birbirinin kılıfı değil; adam kızı sahada gördü ve gördüğü şey konusunda **haklı**. Provada kılıcı kaldırıp indirdiğinde gaziler baktı, mareşal de baktı. Avluda, geçerken, kimseye söylemeden söylediği cümle bu: *"Kılıcı kaldırdın, indirdin. Kaç kere daha, kızım?"* Saklamadığı şey hakaret; sakladığı şey **hesap.** On iki bin adamın dört aylık parası ancak kendisine minnettar bir taçtan çıkar. Tapınağın taktığı taç tapınağa öder, şehirlerin taktığı taç şehirlere öder, sahada ordunun kalkanları üstünde giyilen taç orduya öder. Bunu ölene kadar söylemez, çünkü söylediği gün bir alacaklı olur ve alacaklının sadakati tartışılır.
 
-İkinci şey daha kolay bulunur ve daha zor taşınır. Mahzendeki teknenin buzu için resmî tahsis **iki çuvala düştü, üç gerekiyor.** Farkı kendi kesesinden alıyor, haftada iki kez tek koluyla kendi sırtında indiriyor ve **defterde bu kalem yok** — defteri de kendisi tutuyor, yazmıyor. Oyuncu bunu ancak sayarak bulur: kapağın ağzına iki çuval iniyor, aşağıda üç çuval boşalıyor. Vedia'ya sorarsa defterdeki rakamı alır, kadın da merak etmez. Mareşalin tek kolunun dirseğe kadar ıslak olduğunu o akşam salonda görür ve huzuru öyle kabul eder.
+İkinci şey daha kolay bulunur ve daha zor taşınır. Mahzendeki teknenin buzu için resmî tahsis **gün aşırı iki çuval; eskiden üçtü.** Kızak haftada üç kez geliyor, yani kapağın ağzına altı çuval bırakıyor, aşağıda sekiz çuval boşalıyor. Farkı kendi kesesinden alıyor: haftada iki kez, birer çuval, tek koluyla kendi sırtında. **Defterde bu kalem yok** ve olmayacak — satırı Ragıp yazar, imzayı o atar, ve bu satırı hiç yazdırmadı. Oyuncu bunu ancak sayarak bulur ve sayım bir haftada tutuyor: kapıda altı, teknede sekiz. Vedia'ya sorarsa defterdeki rakamı alır, kadın da merak etmez. Mareşalin tek kolunun dirseğe kadar ıslak olduğunu o akşam salonda görür ve huzuru öyle kabul eder.
 
 **5. SES / AĞIZ.** Kısa. Her cümlesinde bir sayı var ve sayılar doğru. Tek soru tipi sorar: **"Kaç?"** — başka soru sormaz, çünkü başka soru sormak bilgiyi karşıdakinden almak demek ve o bilgiyi zaten defterinden alıyor. **Emir vermez, tespit eder.** Cümlesi tek parça; duraklamaz, kendini düzeltmez, hava durumu söyler gibi söyler. "Belki" demez. "Umarım", "inşallah", "bakarız" demez. Kadınlara "kızım" der, adamlarına "evlat" der; ne şefkat ne küçümseme, rütbesi olmayan herkese bir akrabalık kelimesi takıyor.
 
@@ -70,20 +70,20 @@ Gökçe'nin taç giymesini **istiyor** ve onu gerçekten aşağılık buluyor. B
 
 **7. ÜÇ BARK.**
 - Salonda, her gün, aynı saatte, elini kaldırarak: *"Beyimiz sefer istiyor. Yirmi altı yıl yürüyen adam sandalyede ölmeyi istemez."*
-- Kışla avlusunda, kuyruğa: *"Defter açık. Otuz iki isim var, otuz iki. Bağıran arkaya geçer, evlat."*
+- Kışla avlusunda, kuyruğa: *"Defter açık. Kırk iki isim yazılı, bugün otuz ikisi geldi, kuyrukta on üç duruyor. Bağıran arkaya geçer, evlat."*
 - Sadık'ın masasının yanından geçerken, durmadan: *"Kâtip, bu tarih de kayarsa beşinciyi ben yazdırırım. Sen de altını çizersin, alıştın."*
 
 **8. DEĞİŞİM (§1.2c).**
 - **Önce:** seni bir sayıya çevirir ve kapıyı gösterir.
 - **Mahzene buz taşıdıysan (19. dk):** teşekkür etmez. Hayatında ikinci kez "Kaç?" dışında bir soru sorar: *"Aşağısı soğuk muydu?"* Ve **cevabı bekler.** Ne dersen de tek kelimeyle kapatır: *"İyi."*
-- **Üçüncü çuvalı sorduysan:** rakamı doğrular, sebebini vermez. *"İki iniyor. Üç eriyor. Fark bende."* O günden sonra defterini senin önünde kapatmaz.
+- **Eksik çuvalları sorduysan:** rakamı doğrular, sebebini vermez. *"Altı iniyor. Sekiz eriyor. Fark bende."* O günden sonra defterini senin önünde kapatmaz.
 - **"Gömdür şu çocuğu" dediysen:** kızmaz, kovmaz. *"Kutsanmış toprak. Başka toprağa koymam. Bu konu kapandı."* Ve o günden sonra **sana sayı vermeyi bırakır.** Rakamsız konuşmak onun yakınlık biçimi; oyuncu bunu ancak eksildiğinde fark eder.
 
-**9. İLİŞKİ AĞI.** Sabri'ye borçlu ve borcun adını koymuyor — Karaocak'ta testere işlerken omuzlarını tutan ve baştan sona bir türkü söyleyen adam oydu; niye söylediğini Sabri'nin kendi de bilmiyor. Rüstem o günden beri ona "Deli" demedi; şehirde ona sadece "Sabri" diyen tek kişi. Vedia'ya katlanamıyor ve tam da kendi kuralı yüzünden ona bir şey diyemiyor: kadın yalan söylemiyor. Yusuf'a bir gün vuracak ve ikisi de bunu biliyor.
+**9. İLİŞKİ AĞI.** Sabri'ye borçlu ve borcun adını koymuyor — Karaocak'ta testere işlerken omuzlarını tutan ve baştan sona bir türkü söyleyen adam oydu; niye söylediğini Sabri'nin kendi de bilmiyor. Rüstem o günden beri ona "Deli" demedi; şehirde ona sadece "Sabri" diyen tek kişi. Vedia'ya katlanamıyor ve tam da kendi kuralı yüzünden ona bir şey diyemiyor: kadın yalan söylemiyor. Yusuf'a bir gün vuracak ve ikisi de bunu biliyor. Gökçe'ye ettiği bütün hakaretler bir kaldıraç, ama dokuz yıl önce bir kere kaldıraç olmayan bir şey oldu: oğlunun son anını sordu. Bir kez, tek bir kez, ve cevabı defterden almadı — kızın ağzından aldı ve inandı. **Aldığı cevabı bir daha sınamadı.** Hayatında sınamadığı tek rakam bu; sınamamak onun tek zaafı ve kendisi bunu tedbir sayıyor. O geceyi bugün hâlâ kelimesi kelimesine tekrar edebiliyor, ve kadının da kelimesi kelimesine tekrar ettiğini fark etmemesinin sebebi bu: aynı cümleyi o da ezberledi.
 
 **10. NE YAPMAZ / NE DEMEZ.** Oyuncuya iş vermez — kendisi gelinen adamdır, kimsenin yoluna çıkmaz. Sancar'ın sikkesini gündeme getirmez ("bir adam sana kolunu kestirirse ömrünün sonuna kadar haklıdır") ve oyuncu açarsa konuyu kapatır. Ve **hiçbir şeyi iki kere istemez:** aynı talebi her ay aynı kelimelerle tekrarlar, üstüne baskı, hatırlatma, sitem eklemez. Reddedilmek onun için bir cevap, bir hakaret değil.
 
-**KAYBOLURSA.** Maaş defteri kendi el yazısıyla tutuluyor ve el yazısı çirkin — bunu saklamıyor, "adam kendi çirkinliğini imzalar" diyor. Ölürse **o defteri kimse okuyamaz.** On iki bin adamın ne alacağı bilinmez hâle gelir ve bilinmeyen alacak bir mevsimde yol kesmeye dönüşür. Adamları onu sevdiği için değil, defteri okunmadığı için dağılırlar.
+**KAYBOLURSA.** Defteri Ragıp yazar, o imzalar. İmza çirkin ve bunu saklamıyor: "adam kendi çirkinliğini imzalar." Ölürse defter okunur — kâtip zaten tamamını ezberledi, kırk iki adı, kalemini, hangi ay hangi gün geldiğini. Giden şey **imza.** İmzasız defterde "hazine" yazan kalemlerin bir kısmının hazineden gelmediğini kimse gizleyemez, ve on iki bin adam kendi maaşının nereden çıktığını okuduğu gün asker olmaktan çıkıp sadaka alan adam olur. Alacak bilinmez hâle gelmiyor; ilk kez doğru biliniyor, ve doğru bilinen alacak bir mevsim sonra yol kesmeye dönüşüyor. Adamları onu sevdiği için değil, altında bir imza olduğu için duruyorlar.
 
 ---
 
@@ -95,7 +95,7 @@ Gökçe'nin taç giymesini **istiyor** ve onu gerçekten aşağılık buluyor. B
 
 **3. NE İSTİYOR, KİMDEN.** Herkesten **usul**: mareşal koridorda dikte etmesin, masaya gelsin; sayman rakamı sözle söylemesin, kâğıdıyla gelsin; hatun sebebini bir gün önceden bildirsin. Oyuncudan: iki kefil, doğru gün, ve unvan tescili için sebebin yazılabilir hâlde olması. Odanın gücünü değil, odanın **prosedürünü** istiyor ve buna gerçekten inanıyor.
 
-**4. NE VERMİYOR.** Üç ertelemenin sebeplerini **o kurdu.** Şirin'e "bu sebep yazılır, şunu söyle" dedi; nöbet, yas, kırk. Kadın ertesi gün o sebebi söyledi, kâtip yazdı, kimsenin konuşması gerekmedi. Dördüncüsünü kurmadı — "beyimizin sağlığı" bu sabah yazıldı ve arkasında gerçekten hekimin raporu var; gerçek bir sebep bir kere kullanılır, o yüzden dördüncüsü onu asıl korkutan. Bu adamın *"sebep meşruysa yazarım, kimin işine yaradığı beni ilgilendirmez"* cümlesi bir ahlak değil, iki yıldır kendine kurduğu bir **savunma.**
+**4. NE VERMİYOR.** Üç ertelemenin sebeplerini **o kurdu.** Şirin'e "bu sebep yazılır, şunu söyle" dedi; nöbet, yas, kırk. Kadın ertesi gün o sebebi söyledi, kâtip yazdı, kimsenin konuşması gerekmedi. Dördüncüsü de kadının, ama bu kez sebebi kâtip kurmadı: "beyimizin sağlığı" bu sabah, arkasında hekimin raporuyla yazıldı, ve raporu Şirin doğrudan Yusuf'tan aldı. Bedavaya aldı — o adamın bütün doktrini *"hastanın iradesi hekimindir"* ve rapor o iradenin yazılı hâli, yani kimse kimseye bir şey ödemedi, kimse yalan söylemedi. Sadık'ı korkutan şey rapor değil, **atlanmış olması:** iki yıl usul ikisinin arasından geçti, bu sabah usulün dışından geçti. Bir de kendine söylediği şu var: gerçek bir sebep bir kere kullanılır. Bu adamın *"sebep meşruysa yazarım, kimin işine yaradığı beni ilgilendirmez"* cümlesi bir ahlak değil, iki yıldır kendine kurduğu bir **savunma** — ve savunma dışarıdan değil, korumaya çalıştığı kadının elinden delindi.
 
 Kanıt kâğıtta ve yakılmamış. Müsvedde tutar, müsveddelerin arkasını yeniden kullanır; arşiv nişindeki demette, üstü yarı yanmış bir yaprakta, **bir sebep ait olduğu olaydan üç gün önce yazılmış** duruyor. Bir sebep olayından önce müsveddeye geçmez. Oyuncu 11.00'de nişe girip demeti karıştırırsa bulur.
 
@@ -157,7 +157,7 @@ Oyuncunun eline üç fiziksel iz düşer: erteleme haberi sabah okunduğu gün a
 - **Sediri sorduysan:** ilk kez unvan kullanmaz. *"O sedir iki yıllık. Otur, ölçüsü iyi."* Ve konuyu kapatmaz, sadece başka bir şey söylemez.
 - **Ad deftere geçtiği gün:** kadın topyekûn döner. "Bugün" kelimesi ağzından düşer, yerine **"yarın"** gelir. O sabahtan itibaren salonda Gökçe'nin en sağlam müttefiki odur ve kimse sebebini anlamaz. Bekleyen adama hayırı yüksek sesle söylemek zorunda kalır; onu erteleyemez.
 
-**9. İLİŞKİ AĞI.** Vedia'ya borçlu değil, Vedia'yı **borca soktu**: sarayda ilk yazdırdığı kalem ölü kocasının açığıydı, kadın da o kalemi imzalamak zorunda kaldı. Şirin her sabah selamı **ilk o verir**, her sabah, istisnasız; Vedia bundan nefret ediyor. Sadık'a asla yalan söylemiyor — sebeplerini gerçekten meşru kılmak için uğraşıyor, çünkü kâtibi kaybederse takvim elinden gider. Seyisin sessizliğine borçlu ve ödeyemiyor: üçüncü ertelemede adam ona bakıp bakışını kaçırdı.
+**9. İLİŞKİ AĞI.** Vedia'ya borçlu değil, Vedia'yı **borca soktu**: sarayda ilk yazdırdığı kalem ölü kocasının açığıydı, kadın da o kalemi imzalamak zorunda kaldı. Şirin her sabah selamı **ilk o verir**, her sabah, istisnasız; Vedia bundan nefret ediyor. Sadık'a asla yalan söylemiyor — sebeplerini gerçekten meşru kılmak için uğraşıyor, çünkü kâtibi kaybederse takvim elinden gider. Bu sabah yine de ona uğramadı: dördüncü sebebin raporunu Yusuf'tan kendi aldı, hekim karşılığında hiçbir şey istemedi, aklına gelmedi bile. Kadın kâtibe uğramadan sebep yazdırmanın yolunu buldu ve bulduğu gün kâtibi kaybetmeye başladı; ikisi de bunu daha konuşmadı, ve konuşmayacaklar. Seyisin sessizliğine borçlu ve ödeyemiyor: üçüncü ertelemede adam ona bakıp bakışını kaçırdı.
 
 **10. NE YAPMAZ / NE DEMEZ.** Kimseyi suçlamaz — Rüstem'e, tapınağa, kasaya tek laf etmez; suçlama bir taraf tutmaktır ve taraf tutan kadının kızı pazarlığa girer. Kızını başkasının yanında **azarlamaz**, hiç. Ve odada asla "beyimiz şunu istiyor" demez; o cümleyi kurmadığı için Sarp'ın gözü onu yakalayamıyor.
 
@@ -205,7 +205,7 @@ Oyuncunun oyunun konusunu duyduğu an bu. Kimse ondan bir şey beklemiyor. Kart�
 
 ## 6 · `yenitac_salon_bakici` — DELİ SABRİ
 
-*RUTİN (dört durak): 06 sandalyenin yanı · 12 avlu · 15 mahzen · 19 sandalyenin yanı. 15.00'te beyi salona bırakıp aynı hareketle aşağı iner; 19.00'da yanına döner ve 20.00'de birlikte içeri girerler. Slot belgesi bölüm A'daki NPC harita geçişi mekaniği bunu taşıyor; ikiz kayıt yamasına gerek yok.*
+*RUTİN (dört durak, dördüncüsü `indoors`): 06 sandalyenin yanı · 12 avlu · 15 mahzen (`MAP_MAHZEN`) · 20 sandalyenin yanı, `indoors = true`. 15.00'te beyi salona bırakıp aynı hareketle aşağı iner ve kandili akşama kadar aşağıda tutar; 20.00'de yukarı çıkar, beyin dördüncü durağıyla aynı saat, aynı yer, aynı bayrak — ikisi birlikte içeri girer. Aradaki beş saati bey tek başına geçiriyor ve odada kimse bunu dert etmiyor. `NpcStop.map` (GDD §1.2d) bu rutin için açıldı; ikiz kayıt yamasına gerek yok.*
 
 **1. KİMLİK.** **Deli Sabri**. 60. Yenitaç'ın altındaki yanık kasabadan — yani buranın gerçekten yerlisi olan tek adam, ve yerlisi olduğu yer artık yok. Otuz küsur yıl önce, kırk yıllık şehir savaşlarının bir kışında kasaba yandı; kim yaktı, kimse bilmiyor ve kimse aramıyor. O çıktı, Sarp'ın bölüğüne yazıldı, bir daha ayrılmadı. Okuma yazması yok. Mahzene indiğinde kendi çocukluğunun altında yürüyor ve bunu kimseye söylemedi, çünkü kimse sormadı.
 
@@ -236,7 +236,7 @@ Bedeli tek yerde ve kartın en somut yerinde: ilk kış avluda, kolçaksız sand
 **8. DEĞİŞİM (§1.2c) — kapı burada ve kutsamayla değil, işle açılıyor.**
 - **Önce:** ne gördüyse onu söyler, sana bir şey sormaz.
 - **İki salon oturumunu sonuna kadar, onun durduğu yerden izlediysen ve öğlen avluda sandalye çevrilirken orada olduysan:** diyalogda yeni bir seçenek açılır ve o seçenek onun kelimeleriyle yazılmıştır, senin kelimelerinle değil: *"Sabaha karşı da sağa gitti. O zaman kimse konuşmuyordu."* Sabri kızmaz, savunmaya geçmez, seni sınamaz. *"He. Öyle mi."* der. Bir süre susar. Sonra: *"Sağı ölü. Doğru."* Sonra teşekkür etmez, bir tespit yapar: *"İki kış avluya çıkarmadım."*
-- **Ertesi gün:** sandalye avlunun kuzey köşesinde ve gölge geldiğinde çevrilmiyor. Sicimde bir daha "hayır" düğümü yok. Ve sana bir cümle söyler; bu bir ödül değil, bir nöbet devri: *"Bey gözünü kapatırsa bana söyle. Ben on beşte aşağıdayım."* Yedinci Ağız'ın kapısı bu — kimse seni seçmedi, sen iki oturum izledin.
+- **Ertesi gün:** sandalye avlunun kuzey köşesinde ve gölge geldiğinde çevrilmiyor. Sicim aynı kalır; bir düğüm eksilir — sabaha karşı attığı. Ve sana bir cümle söyler; bu bir ödül değil, bir nöbet devri: *"Bey gözünü kapatırsa bana söyle. Ben on beşte aşağıdayım."* Yedinci Ağız'ın kapısı bu — kimse seni seçmedi, sen iki oturum izledin.
 - **Beş ağızdan birine beyi sorduysan:** kapı zaten kirlendi ve oyun bunu söylemez. Seçenek yine çıkar, Sabri yine dinler, ama ertesi gün sandalye yine gölgeye çevrilmiş olur: senin gördüğünü Yusuf'a anlatmıştır, hekim "kas kasılması" demiştir, konu kapanmıştır. Kirleten şey soru değil, **başkasının okuması.**
 
 **9. İLİŞKİ AĞI.** Rüstem'e Karaocak'tan bir alacağı var ve alacak saymıyor: testere işlerken omuzları o tuttu ve baştan sona bir türkü söyledi; niye söylediğini kendi de bilmiyor. Lakabı o gün kondu. Şehirde ona "Deli" demeyen tek kişi Rüstem. Yusuf'un her emrini yerine getiriyor ve gördüklerini ona hiç anlatmıyor — hekim sormuyor çünkü. Seyisle iki kıştır buz taşıyorlar ve bugüne kadar hiç konuşmadılar; bu ikisi için sorun değil.
@@ -287,9 +287,9 @@ Bedeli tek yerde ve kartın en somut yerinde: ilk kış avluda, kolçaksız sand
 
 **2. TEK CÜMLE.** Beş kez saydığı bir kuyrukta açılmayan bir defteri bekleyen ve çölden gelen adama hâlâ hayır demiş olan adam.
 
-**3. NE İSTİYOR, KİMDEN.** Kışla kâtibinden defterin açılmasını. Parayı bile değil — **sayıyı.** "Kaç ay borçlusunuz, onu söyleyin, ödemeyin." Bunu üç aydır aynı kelimelerle söylüyor ve söylediğinde gerçekten öfkeli değil, meraklı görünüyor; kuyruktaki asıl huzursuzluğu yaratan da bu.
+**3. NE İSTİYOR, KİMDEN.** Kışla kâtibinden defterin açılmasını. Parayı bile değil — **sayıyı.** "Kaç ay borçlusunuz, onu söyleyin, ödemeyin." Bunu dört aydır aynı kelimelerle söylüyor ve söylediğinde gerçekten öfkeli değil, meraklı görünüyor; kuyruktaki asıl huzursuzluğu yaratan da bu.
 
-**4. NE VERMİYOR.** Gündoğdu'nun adamının teklifini saklamıyor, anlatıyor, çünkü utanacak bir şey görmüyor. Sakladığı başka: **on bir ay değil, dört ay alacaklı.** Herkes kadar. On bir, en son birinin ona ihtiyaç duymasının üstünden geçen ay sayısı ve o rakamı bir yerden diğerine taşıdı. Kuyruğu beş kez saymasının sebebi de bu: defter açılırsa parasını alır ve gidecek yeri kalmaz. Oyuncu kışla kâtibinin defterine bakarsa görür, ya da adamla iki kez konuşursa kendisi söyler — ikincisi çok daha ağır.
+**4. NE VERMİYOR.** Gündoğdu'nun adamının teklifini saklamıyor, anlatıyor, çünkü utanacak bir şey görmüyor. Sakladığı başka: **on üç ay değil, dört ay alacaklı.** Herkes kadar. On üç, en son birinin ona ihtiyaç duymasının üstünden geçen ay sayısı ve o rakamı bir yerden diğerine taşıdı; kimse ona niye on üç dediğini sormadı, sorsa da başka bir sayı söylerdi. Kuyruğu beş kez saymasının sebebi de bu: defter açılırsa parasını alır ve gidecek yeri kalmaz. Oyuncu kışla kâtibinin defterine bakarsa görür, ya da adamla iki kez konuşursa kendisi söyler — ikincisi çok daha ağır.
 
 Bildiği ikinci şeyi hiç söylemiyor: kuyruktaki yeri dördüncü, ve yarın olmasa sıra bir gün içinde kapanır. Yerine biri konabilir ve bunu o da biliyor.
 

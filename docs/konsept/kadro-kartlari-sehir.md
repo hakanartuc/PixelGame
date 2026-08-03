@@ -217,7 +217,7 @@ Bir şey daha var ve onu istemiyor, sadece biliyor: **yerine kim durursa kapı a
 
 **TEK CÜMLE.** Her sabah o mahzene inen adam, ve indiği için değil, indiğinin defterde yazmadığı için susuyor.
 
-**NE İSTİYOR, KİMDEN.** İkinci bir adam. Ragıp'ın defterinde dört aydır **"buz taşımaya ikinci adam"** diye yazılı ve yazılışı yanlış — Ayaz'ın istediği buz için değil, tuz için. Buzun bir kalemi var, haftada iki çuval, panoda fiyatı yazıyor. Tuzun kalemi yok. Tuz her gün gerekiyor ve her gün onun sırtında iniyor. Yazılamayan bir işi istemenin yolu olmadığı için yazılabilen işi istedi. İkincisi daha küçük: kayışın değişmesi. Onu da söyledi.
+**NE İSTİYOR, KİMDEN.** İkinci bir adam. Ragıp'ın defterinde dört aydır **"buz taşımaya ikinci adam"** diye yazılı ve yazılışı yanlış — Ayaz'ın istediği buz için değil, tuz için. Buzun bir kalemi var, gün aşırı iki çuval, panoda fiyatı yazıyor. Tuzun kalemi yok. Tuz her gün gerekiyor ve her gün onun sırtında iniyor. Yazılamayan bir işi istemenin yolu olmadığı için yazılabilen işi istedi. İkincisi daha küçük: kayışın değişmesi. Onu da söyledi.
 
 **NE VERMİYOR.** Dokuz yıl önce donmuş gölden bir çocuğun cesedini Yenitaç'a getiren kızak onun kızağıydı ve hâlâ onu kullanıyor. Sorulursa cevabı tektir: *"Kızak iyi kızaktır."* Konu kapanır.
 
@@ -232,7 +232,7 @@ Karduvarlı olduğu ağzından belli, ve kışlada Tuğrul'un hesabını Karduva
 
 **ÜÇ BARK**
 - *"Doru terlemiş. Gece gitmiş, sabah gelmiş."*
-- *"Buz iki çuval. Dün üçtü. Tuz her gün."*
+- *"Buz iki çuval. Geçen kış üçtü. Tuz her gün."*
 - *"Bacaklı üç gün binmemiş. Ben yürüttüm."*
 
 **DEĞİŞİM.**
@@ -374,7 +374,7 @@ Kuralının tek istisnası var ve o da kepçeyle söyleniyor: çivi söken çocu
 
 **TEK CÜMLE.** Yenitaç'ta Taş tarafının tek yüzü, ve bu şehirdeki en son gerçek parayı o verdi.
 
-**NE İSTİYOR, KİMDEN.** İskelenin borcunu. Saymandan satın almak istiyor, açıkça, pazarlığı ortada. Bir sandalyeyi de istiyor: Kese Sahibi olmak için masaya kimsenin getiremediği bir kalem götürmesi lazım ve o kalem iskele. Otuz yıldır Yazman kalmasının sebebi kıdem değil.
+**NE İSTİYOR, KİMDEN.** İskelenin borcunu — ve satın alacak akçesi yok. Kendi defteri altı bin iki yüz: altı kese, iki yüz akçe. Şehrin kırk günlük gideri kırk kese, on bir yıllık bir şantiyenin borcu yüzlerce kese, ve o kadarı Yenitaç'ta kimsenin sandığında durmuyor. O kalemi Yedinci Kese kapatır, Tuzkapı'dan, tek mühürle; Yedinci Kese'nin akçesini çekebilen adam ise **Kese Sahibi** olmak zorundadır. Kadın Yazman. Zincir böyle kapanıyor: sandalyeyi almak için masaya kimsenin getiremediği bir kalem götürmesi lazım, kalem iskele, iskeleyi kapatmak için sandalye lazım. Bu yüzden saymanla açıkça, ortada yürüttüğü pazarlık bir alım değil: iskelenin hangi kaleminin kime, hangi vadeyle borçlu olduğunu Vedia'dan başka kimse bilmiyor, ve kadın götürecek **rakamı** arıyor. Otuz yıldır Yazman kalmasının sebebi kıdem değil.
 
 **Ve haklı.** Kasada üç ay var, o kadar, ve o üç ay kurumun kalemlerine gidiyor. Kurumun kalemi olmayan şeyler kesedardan çıktı: Mahir'in körüğü, Bekmez'in kazanı, Perçin'in yıllardır kapattığı eksikler. Faiz alıyor, saklamıyor, ve şehir bunu bildiği hâlde ona tefeci diyemiyor — deyip sonra kapısını çalmak zorunda kalıyor. O üç dükkân o kalemler olmasa kapanmıştı ve bunu üçü de biliyor.
 
@@ -384,7 +384,7 @@ Birincisi: **hemen hiçbir borcu yazmıyor.** Senetleri saklıyor çünkü Kırk
 
 İkincisi ve daha ağırı: **bir kez yanıldı.** On yıl önce, Tuzkapı'da, bir gemi kaleminde bir haftayı yanlış hatırladı. Gemi gitti, mal kaldı, iki kese battı ve batan keselerden biri kendisinin değildi — kefil olduğu adamın. Şehir hâlâ konuşuyor, kadın hiç savunma yapmadı, ve o günden beri masaya götürecek kalemi olmadı. İskele borcunu bu yüzden bu kadar istiyor. Kariyer değil: temizlenme. Sorulursa inkâr etmez, tek cümleyle geçer ve konuyu değiştirmez, kapatır.
 
-Üçüncüsü terazinin yanında: ara sıra bir güney sikkesi görünüyor. Nereden geldiğini bilmiyor, kimin getirdiğini biliyor. *"Güneyden bir yazman geliyor, sikkesi ağır, adını vermiyor. Ben ağırlığa bakarım."* Daha fazlası yok ve daha fazlasını merak da etmiyor — merak etmemek onun mesleğinin bir parçası.
+Üçüncüsü terazinin yanında: ara sıra **güney damgalı bir gümüş külçe** görünüyor, avuç içi kadar, ağırlığı bir kese eder. Nereden geldiğini bilmiyor, kimin getirdiğini biliyor. *"Güneyden bir yazman geliyor, külçesi damgalı, adını vermiyor. Ben ağırlığa bakarım."* Daha fazlası yok ve daha fazlasını merak da etmiyor — merak etmemek onun mesleğinin bir parçası.
 
 Sandık böylece bir hırsız için bulunmaz bir ödül: içinde bir Karaocaklının annesinin adıyla imzaladığı senet var, bir demircinin körük senedi var, bir kazanın senedi var, ve tarihli tek bir yaprak.
 
@@ -418,7 +418,7 @@ Sandık böylece bir hırsız için bulunmaz bir ödül: içinde bir Karaocaklı
 
 **AmbientHook zorunlu dört ağız:** 9, 12, 17, 18. Dördü de sayı taşıyor ve sayıları dünya durumuyla ilerliyor — kalfanın çivisi, kâtibin kalemi, aşçının kasesi, kesedarın vadesi. Bu dördü aynı gün dinlenirse oyuncu Yenitaç'ın ekonomisini kimse anlatmadan okur.
 
-**Sayı ağzı bu dördüyle sınırlı ve bu bir kural.** *"[Rakam]. [Dün rakamı]. [Kısa kapanış.]"* kalıbını yalnız bu dört karakter kurar. Seyis bir istisna taşıyor (*"Buz iki çuval. Dün üçtü."*) çünkü o satır mareşalin gizli çuvalının tek görünür sebebi; onun dışında seyis insanları atlarıyla anıyor, demirci alet ve malzemeyle konuşuyor, tüccar fiyatla, çocuk küfürle. Yeni replik yazan kişi bu dağılımı bozmayacak.
+**Sayı ağzı bu dördüyle sınırlı ve bu bir kural.** *"[Rakam]. [Dün rakamı]. [Kısa kapanış.]"* kalıbını yalnız bu dört karakter kurar. Seyis bir istisna taşıyor (*"Buz iki çuval. Geçen kış üçtü."*) çünkü o satır mareşalin gizli çuvalının tek görünür sebebi; onun dışında seyis insanları atlarıyla anıyor, demirci alet ve malzemeyle konuşuyor, tüccar fiyatla, çocuk küfürle. Yeni replik yazan kişi bu dağılımı bozmayacak.
 
 **Aforizma tavanı:** karakter başına üç barktan **en fazla biri** şekilli olabilir, diğer ikisi saf işlev. Model bu dosyada seyisin barklarıdır. Bir barkı kırk kez duyacak oyuncu için kusursuz bir vecize fal kurabiyesine döner.
 

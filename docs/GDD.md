@@ -245,6 +245,14 @@ dakika = 1,2 oyun saati; yani "ilk yirmi dakika" tam bir oyun günüydü ve
   06-08 arası çivi sayar"*, *"aşçı 17'de kazan kurar"*, *"kesedar 15'te iskele
   dibinde direk sayar"*) ve gece kandil hattı, oyuncunun **bir saati bilip oraya
   gitmesini** istiyor. Öğrenilemeyen pencere bilgi değil engeldir.
+- **[ONAYLI 2026-08-03] `NpcDef.carried` — bir bool.** İşaretli NPC durak saati gelince
+  hedefe **yürümez, konumuna geçer.** Sarp için zorunlu: `npc_update` durak değişince NPC'yi
+  yürütüyor ve avlu ile taht bölümü **aynı haritada**, yani `NpcStop.map` onu kurtarmıyor —
+  felçli bir adamın kendi ayağıyla avluya çıktığını oyuncu her öğlen izlerdi. Taşınmayı oyuncu
+  görmüyor ve bu bir eksik değil: sedyeyi kimse seyretmiyor, sandalye bir yerdeydi, sonra
+  başka yerdedir. Alternatifi (Sarp'a tek durak + avluyu sahneye almak) reddedildi: öğlen
+  avlusu kartta yazılı **tek arzusu**, bakıcının en pahalı sırrının bedeli, ve Yedinci Ağız'ın
+  kapısı oyuncunun o sahneyi **her gün tekrar tekrar** izleyebilmesini istiyor.
 - **[BAĞLAYICI] Yeni rutin veya AmbientHook penceresi yazan, saatin bu ölçekte
   olduğunu varsayacak.** Gün uzunluğu bir daha değişirse §1.2d'nin dakika
   çizelgesi ve 23 slotun durak saatleri **aynı commit'te** yeniden hesaplanır.
@@ -266,7 +274,10 @@ besliyor. Rakamlar birbirini yalanlıyordu ve kadronun beş ağzı sayıyla konu
   kira ve ganimet sikke ile yazılır. Bedava yan etki: Karaocak'ın **kendi sikkesini
   basması** (LORE §4) küçük para basmak değil, **devlet ölçeğinin kendisini** basmak
   demek. Mareşalin sormaması bu yüzden bu kadar ağır. Aynı şekilde kesedarın
-  terazisindeki **güney sikkesi**: bir tefecinin masasında devlet ölçeğinde para
+  terazisindeki şey ise bu yüzden sikke DEĞİL, **güney damgalı bir gümüş külçe** (avuç içi
+  kadar, ağırlığı bir kese eder). Bu madde ilk yazıldığında örnek olarak "güney sikkesi"
+  demişti ve kendi tanımıyla çelişiyordu: yüz kese eden bir madeni para bir tefecinin
+  terazisinde tartılmaz, şehrin iki buçuk yılı eder. Külçe aynı işi yapıyor — bir tefecinin masasında devlet ölçeğinde para
   durması, orada olmaması gereken bir şeyi kimse açıklamadan söylüyor.
 - **BEDAVA KARAKTERİZASYON — aynı odada iki kadın, iki birim.** Sayman devlet rakamını
   asla akçeye bölmez (*"Kırk gün, kırk kese."*); kesedar aynı rakamı *"kırk bin akçe"*

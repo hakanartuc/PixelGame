@@ -289,7 +289,9 @@ onun sikkesini biliyor, gümüşünü biliyor, hiçbirini gündeme getirmiyor: *
 kestirirse ömrünün sonuna kadar haklıdır."* **Bugün elli beşinde**; elli üçünde sağ eliyle yazmayı
 yeniden öğrendi — yani öğrendiği kış Sarp'ın felç kışıydı, ve tesadüf değil — çünkü
 maaş defterini kendi imzalamak istiyor; harfleri çirkin, saklamıyor: "adam kendi çirkinliğini
-imzalar."
+imzalar." **Defteri kışla kâtibi yazar, o imzalar** — ve kâtip defterin tamamını ezberlemiş
+durumda, yani adam ölürse defter okunur; giden şey imzadır. İmzasız defterde "hazine" yazan
+kalemlerin bir kısmının hazineden değil mareşalin kendi payından geldiğini kimse gizleyemez.
 
 **Sempatik detay:** haftada iki kez, kimseye haber vermeden, sırtında buz çuvalıyla kışlanın
 mahzenine iniyor. Oğlunun teknesindeki buz eriyor. Tek koluyla taşıyor, yardım ettirmiyor.
