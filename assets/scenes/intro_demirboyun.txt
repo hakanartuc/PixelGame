@@ -54,7 +54,7 @@ image: assets/scenes/intro_bitmemis.png
 # kıpırdamayan kocaman taş taht, açık gökten inen yağmur çizgileri, sağ duvarda
 # ALTI BOŞ ÇİVİ, iskele direğinde tebeşir yazısı.
 duck: 0.15
-text: İskelenin üst katından biri aşağıya bağırıyor: "Örtüyü üstüne çekin! Taş su çekiyor, ipin yediği yerden akıyor!"
+text: İskelenin üst katından biri aşağıya bağırıyor: "Örtüyü üstüne çekin! Taş su çekiyor, ipin yediği yerden akıyor, he!"
 text: Kalfa ipe bakmıyor bile: "İndirme emri yok. On bir yıl havada durdu, bir kış daha durur."
 text: İskelenin aynı direğinde, eski bir yazının üstüne tebeşirle yazılmış: "Çatı — sancaklar asılınca. Asılı sancak: yok."
 opt: (Aşağı bak.) -> sandalye
@@ -73,12 +73,16 @@ opt: (Kâtibe bak.) -> tarih
 [tarih]
 image: assets/scenes/intro_tarih.png
 # GEREKLİ GÖRSEL: yakın plan — kâtibin defterinde üstü çizilmiş ÜÇ tarih ve
-# mürekkebi ıslak dördüncüsü; kenarda kurumuş keskisiyle taş ustası ve hiç
-# oyulmamış boş taş.
+# mürekkebi ıslak dördüncüsü; arkada kasa odasının kapalı kapısı.
+#
+# KR7: taş ustası ve boş taş bu panelden ÇIKARILDI. Altı ismin taşı MEYDANDA
+# (slot 22) — kavgası, gassalın 12.00 ziyareti ve tellalın sırtını dönmesi ona
+# bağlı ve bedava. Eski hâl kâtibin masasını (MAP_SALON) taş + tellal ile aynı
+# kareye koyuyordu, oysa tellalın rutininde salon avlusu hiç yok. Ustanın repliği
+# panel 4'e taşındı; vinyet böylece gerçekten iki haritada geçiyor.
 duck: 0.1
 text: Kâtip yazarken kendi kendine dikte ediyor: "Üstü çizildi. Sebep: beyimizin sağlığı. Yeni gün: kırk gün sonra."
 text: Avluda tellal, elindeki kâğıttan okuyor: "*Altı Ad*, beyimiz şifa bulunca söylenecektir! Davetler geçerlidir, kimse yolunu değiştirmesin!"
-text: Taş ustası boş taşın yanında, başını kaldırmadan: "Parayı on bir yıl önce aldım."
 opt: (Dışarı çık.) -> disari
 
 [disari]
@@ -89,5 +93,6 @@ image: assets/scenes/intro_disari.png
 duck: 0.3
 text: Kuyruktaki bir gazi önündekine söylüyor: "Beşinci kez sayıyorum. Defter açılmadan sıra ilerlemiyor."
 text: Kışla panosunda, çiviyle çakılı yarım bir kâğıt: "…zene buz ta… — *6 akçe*." Gerisi yırtılmış.
+text: Meydan kıyısında, boş taşın yanında, başını kaldırmadan bir usta: "Parayı on bir yıl önce aldım."
 text: Arkadan bir ses, kime söylediği belirsiz: "Çekil! İp geliyor!"
 opt: (Kenara çekil.) -> end

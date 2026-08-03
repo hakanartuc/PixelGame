@@ -928,7 +928,12 @@ yalnız gösterimdir.
   §8.2'nin geri kalanının mantığının aynısı: sicil sahibi haritadan değil KURUMDAN
   geliyor, ve bir gizli locanın suçunun köy muhtarına yazılmaması gibi, Karduvar'ın
   suçunun da krallığa yazılmaması gerekiyor.
-- **[ONAYLI] Loca ve konak kendi sicilini tutar, mezarlık köyün.** Gerekçe
+- **[ONAYLI 2026-08-03] YENİTAÇ'IN MEZARLIĞI YENİTAÇ'IN SİCİLİNDE.** Kadro fazı
+  Yenitaç'a kendi mezarlığını verdi (`yenitac_mezarlik_gassal`, ölü yıkayıcı) ve o
+  mezarlığın zemini kanondan geliyor: **Sabri'nin yanmış kasabası Yenitaç'ın altında.**
+  Köyün mezarlığı ayrı kalıyor ve sicili köyün. İki mezarlık, iki sicil — ve önek kuralı
+  (§8.1: önek kanon yeridir) böylece doğrulanıyor.
+- **[ONAYLI] Loca ve konak kendi sicilini tutar, köy mezarlığı köyün.** Gerekçe
   kurgusal: gizli bir locanın suçunun köy muhtarına yazılması saçmaydı ve tam
   olarak bu oluyordu. Mezarlık köyün kenarında, sicili köy tutar.
 - **Bölge indeksleri ADLANDIRILDI** (`REGION_LOCA` vb.). Eskiden main.c'de

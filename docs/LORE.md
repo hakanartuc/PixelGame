@@ -89,6 +89,12 @@ altı şehri birleştirdi — ikisini kılıçla, üçünü kuşatmadan önce an
 (Karduvar). Krallığa Demirboyun dedi.
 
 **Reddedilen kutsama.** Tapınak şehri Sarp'ı kutsamayı reddetti: "fetih tamamlanmadan taç olmaz."
+Ve aynı şart **toprağa** da işliyor, kimse bunu yüksek sesle bağlamıyor: Yedisunak Yenitaç'ın
+toprağını da kutsamıyor, çünkü **kutsanmamış bir kralın şehrinin toprağına imza atmak o krala
+imza atmaktır.** Tapınağın tek şartı fetih tamamlanmadan hiçbir şeye imza atmamak. Bunun üç
+sonucu var ve üçü aynı gerekçeden çıkıyor: Rüstem oğlunu gömemiyor ("kutsanmış toprağa gömerim"),
+Yenitaç'ın kırk üç mezarı defterde eksik duruyor, ve oyuncunun tapınağa gitme ihtimali gerçek bir
+**siyasi hamle** oluyor — çünkü orada istenen şey bir dua değil, bir imza.
 Sarp "ben tacı beklemem" deyip yürüdü gitti. Bu karar o gün akıllıydı ve bugün de akıllı görünüyor
 — yirmi altı yıllık barış onun eseri. Fatura değil, açık kalmış bir dosya.
 
@@ -137,7 +143,9 @@ görünmeyi sanata çevirmiş; ambarları on bin kişiyi bir kış besler.
 Dağın böğründe; bacaları gündüz göğü kirletir, gece kırmızı boyar. Krallığın çeliği buradan çıkar,
 dolayısıyla şartı buradan konuşulur. Valisi **Sancar**, Rüstem'in eski yoldaşı. Kuşatmanın altıncı
 günü, duvarın dibinde, Rüstem'in kangren olmuş sol kolunu testereyle kendi kesti; adam bağırmadı,
-Sancar da elini titretmedi. O günden beri **kendi sikkesini basıyor** ve kimse sormuyor — soracak
+Sancar da elini titretmedi. O günden beri **kendi ağırlığını, kendi damgasını basıyor ve hesabını
+sikke ile tutuyor** — yani küçük para değil, **devlet ölçeğinin kendisini** basıyor (§2: sikke yüz
+kese eder, elde taşınmaz, masada durur). Bir şehrin devlet gibi hesap tutması bu. Kimse sormuyor — soracak
 tek adam Rüstem, o da sormaz. Galerileri goblin dolu, daha
 aşağıda bir mühür var. **Oyuncuya:** en iyi craft istasyonları, maden, derinlik zindanları.
 
@@ -425,7 +433,7 @@ uyduramıyor.**
 | **Şirin Hatun** (2. eş) | "Bey artık dinlenmek istiyor. Bugün olmaz." | Hiçbir şeye hayır demiyor, sadece bugüne diyor. Kararın kapandığı gün on iki yaşındaki kızının fiyatı olur — bkz. §6 |
 | **Hekim Yusuf** | "Bey konuşamıyor, dolayısıyla istemiyor; hastanın iradesi hekimindir." | Sarp'ı en çok o gücendiriyor, en iyi o bakıyor |
 | **Sayman Vedia** | "Beyimizin istediği önemli değil, kasada üç ay var." | Odadaki tek gerçek konuşan; kimse onu sevmiyor |
-| **Deli Sabri** | "Bilmem. Bugün pencereye baktı, dün bakmadı." | Sarp'ı sırtında helâya götüren eski yoldaş, okuma yazma yok. **Gerçek işaretleri bilen tek kişi** ve kimse ona sormuyor |
+| **Deli Sabri** | "Bilmem. Bugün pencereye baktı, dün bakmadı." | Sarp'ı sırtında helâya götüren eski yoldaş, okuma yazma yok. **Gerçek işaretleri bilen tek kişi — ve bir tanesini iki yıldır yanlış biliyor** (§10). Kimse ona sormuyor |
 
 **Oyuncunun asıl anahtarı Sabri'dir.**
 
