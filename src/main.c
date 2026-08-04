@@ -1502,6 +1502,24 @@ int main(int argc, char *argv[])
     bool  lightSplit = false;  // F12: A/B karşılaştırma (sol orijinal, sağ seçili)
     int   lightShape = 0;      // Ctrl+L: 0 tipin kendi şekli · 1 basık · 2 dikey · 3 daire
     float lightOccl = 1.0f;    // O tuşu: ışık tıkama aç/kapa (0 = kapalı)
+    // DEV: SU KATMAN ANAHTARI (Ctrl+B). 0 = hepsi açık, 1..8 = o katman YALNIZ
+    // BAŞINA açık (izole mod). Katmanlar üst üste bindiği için biri bozuk olsa
+    // hangisi olduğu görünmüyordu; izole bakış onu tek soruya indiriyor.
+    // F1–F12 dolu olduğu için Ctrl+<harf> desenine uyuldu (Ctrl+L/O/V gibi).
+    int   waterLayer = 0;
+    static const struct { int bit; const char *name; } WATER_LAYERS[R2D_WATER_L_COUNT] = {
+        { R2D_WATER_L_REFRACT, "SU: yalniz KIRILMA (sualti bukulmesi)" },
+        { R2D_WATER_L_DEPTH,   "SU: yalniz DERINLIK ortmesi (su rengi)" },
+        { R2D_WATER_L_CAUSTIC, "SU: yalniz KOSTIK (isik agi)" },
+        { R2D_WATER_L_GLINT,   "SU: yalniz PARLAMA (gunes acisi)" },
+        { R2D_WATER_L_FOAM,    "SU: yalniz KOPUK (kiyiya vuran dalga)" },
+        { R2D_WATER_L_WET,     "SU: yalniz ISLAK BANT (kiyinin KARA tarafi)" },
+        { R2D_WATER_L_DARK,    "SU: yalniz KOYU HAT (suyun silueti)" },
+        { R2D_WATER_L_MENI,    "SU: yalniz MENISKUS (parlak kiyi cizgisi)" },
+        { R2D_WATER_L_BANK,    "SU: yalniz KIYI GOLGESI (kuzey kiyinin cukuru)" },
+        { R2D_WATER_L_DASH,    "SU: yalniz ISILTI CIZGILERI (ayrik ogeler)" },
+        { R2D_WATER_L_ARC,     "SU: yalniz ARK SIRALARI (kiyiya paralel yanki)" },
+    };
     bool craftOpen = false;
     int craftStation = -1;    // panelin bağlı olduğu istasyon
     int craftRecipe = -1;     // süreçteki tarif (RECIPES indeksi)
@@ -3862,6 +3880,20 @@ int main(int argc, char *argv[])
                                                    : "SEKIL: DAIREye yaklastir";
                     splashTimer = 2.6f;
                 }
+                else if (event.key.key == SDLK_V &&
+                         (event.key.mod & SDL_KMOD_CTRL) &&
+                         gameState == GAME_PLAYING)
+                {
+                    // DEV: SU VFX ANAHTARI (Ctrl+V) — dört durum döngüsü.
+                    // Soru: kıyıda gördüğüm hareket ASSET animasyonundan mı
+                    // geliyor, bizim kodumuzdan mı? İki kaynak bağımsız kısılıyor:
+                    //   1) asset akışı (Water_Tile_1_Anim, 8 kare)
+                    //   2) şerit kaydırma demosu (köy güneyi taş havuz — su
+                    //      asset'i HİÇ kullanmıyor, yani hareketi kesin bizim)
+                    tilemap_vfx_cycle();
+                    splashText = tilemap_vfx_label();
+                    splashTimer = 2.8f;
+                }
                 else if (event.key.key == SDLK_O &&
                          (event.key.mod & SDL_KMOD_CTRL) &&
                          gameState == GAME_PLAYING)
@@ -3872,6 +3904,20 @@ int main(int argc, char *argv[])
                     splashText = (lightOccl > 0.01f) ? "TIKAMA: ACIK (isik govdelerden gecmez)"
                                                      : "TIKAMA: KAPALI";
                     splashTimer = 2.4f;
+                }
+                else if (event.key.key == SDLK_B &&
+                         (event.key.mod & SDL_KMOD_CTRL) &&
+                         gameState == GAME_PLAYING)
+                {
+                    // DEV: SU KATMANI İZOLE (Ctrl+B / Ctrl+Shift+B geri).
+                    // Sekiz katman + "hepsi açık" = 9 durum. İzole modda YALNIZ
+                    // seçili katmanın biti sürülüyor, gerisi shader'da kapanıyor.
+                    int dir = (event.key.mod & SDL_KMOD_SHIFT)
+                              ? R2D_WATER_L_COUNT : 1;
+                    waterLayer = (waterLayer + dir) % (R2D_WATER_L_COUNT + 1);
+                    splashText = (waterLayer == 0) ? "SU: hepsi acik"
+                                                   : WATER_LAYERS[waterLayer - 1].name;
+                    splashTimer = 2.6f;
                 }
                 else if (event.key.key == SDLK_F12 && gameState == GAME_PLAYING)
                 {
@@ -10599,6 +10645,8 @@ int main(int argc, char *argv[])
         if (!r2d_begin_frame(renderer, 155, 155, 155))
             continue;
         tilemap_render(renderer, tile_textures, &camera);     // haritayı çiz
+        if (map_current() == MAP_WORLD)
+            tilemap_vfxdemo_render(renderer, tile_textures, &camera);  // "su olmadan su" testi
         if (map_current() == MAP_WORLD || map_current() == MAP_DOGU)
             tilemap_render_scatter(renderer, &camera);         // süs serpiştirmesi
         // GÜNEŞ GÖLGELERİ: zeminin üstüne, dekorun ALTINA. Tek blok halinde
@@ -10646,6 +10694,95 @@ int main(int argc, char *argv[])
         if (map_is_dungeon(map_current()))
             trap_render(renderer, map_current(), &camera);   // dikenler/plaka/arbalet (zemin)
         map_portals_render(renderer, &camera, gameFont, nearPortal);  // geçit kapı/merdivenleri
+
+        // SU HACMİ (Faz SU). Buraya kadar çizilen HER ŞEY zemin sayılır (karo,
+        // gölge, yer izi, dekor, geçit) ve suyun ALTINA girer: batık taş, urgan,
+        // çakıl hepsi bükülür. Varlıklar bundan SONRA çizildiği için oyuncu
+        // suyun üstünde kalır (sığlıkta yürüyor, suyun altında değil).
+        {
+            static R2DTexture *wmTex = NULL;
+            static int wmMap = -1, wmW = 0, wmH = 0;
+            if (wmMap != (int)map_current()) {   // harita değişti → maske yenilenir
+                wmMap = (int)map_current();
+                if (wmTex) { r2d_texture_destroy(renderer, wmTex); wmTex = NULL; }
+                const Uint8 *pix = NULL;
+                if (wld_water_mask_fill(&wmW, &wmH, &pix)) {
+                    wmTex = r2d_texture_from_pixels(renderer, pix, wmW, wmH);
+                    // LINEAR ŞART: derinlik rampası ve köşesiz kıyı silueti
+                    // örnekleyiciden geliyor. NEAREST olursa kıyı yine basamaklanır.
+                    if (wmTex) r2d_texture_set_linear(wmTex, true);
+                }
+            }
+            if (wmTex != NULL) {
+                // Güneş azimutu: 6'da doğudan, 12'de tepede, 18'de batıdan.
+                // Sabah ile akşam AYNI GÖRÜNMÜYOR — parlama yön değiştiriyor.
+                float hrs = gametime_hours();
+                float ang = (hrs - 6.0f) / 12.0f * 3.14159265f;
+                float high = SDL_sinf(ang); if (high < 0.0f) high = 0.0f;
+                float sx = SDL_cosf(ang), sy = -0.5f;
+                float sl = SDL_sqrtf(sx * sx + sy * sy);
+                float sunI = 1.0f - gametime_darkness01();
+                R2DWater w = {
+                    .mask = wmTex, .maskW = (float)wmW, .maskH = (float)wmH,
+                    .tilePx = (float)TILE_SIZE,
+                    .camX = camera.x, .camY = camera.y, .zoom = camera.zoom,
+                    // DUVAR saati: su geceleyin yavaşlamaz, mevsim onu dondurmaz
+                    .time = (float)SDL_GetTicks() / 1000.0f,
+                    .sunX = sx / sl, .sunY = sy / sl, .sunI = sunI,
+                    // Renk: tepede beyaza yakın, ufka inince ısınıyor
+                    .sunR = 1.0f,
+                    .sunG = 0.74f + 0.24f * high,
+                    .sunB = 0.48f + 0.44f * high,
+                    // Bir sanat pikselinin ekran pikseli — kırılma ofsetinin
+                    // yuvarlandığı birim. Kesirli ofset = titreme.
+                    .artPx = camera.zoom * ((float)TILE_SIZE / 16.0f),
+                    .shallowR = 0.34f, .shallowG = 0.52f, .shallowB = 0.58f,
+                    .shallowCover = 0.20f,     // sığda taban NET okunur
+                    // Koyu uç MORA/MAVİYE kaydırıldı (0.07,0.21,0.34 → düz
+                    // koyulaştırmaydı): pixel-art hue-shift kuralı — ALttP
+                    // ölçümü de aynı şeyi söylüyor (gölge tonu morlaşıyor).
+                    // Referans: göletin ortası OPAK KOYU LACİVERT (gri değil).
+                    .deepR = 0.17f, .deepG = 0.27f, .deepB = 0.48f,
+                    .deepCover = 0.80f,        // derin ama ışık geçiren (Hakan: açık+şeffaf)
+                    .waveHeight = 0.10f,       // sırt sığ, çukur derin görünür
+                    .refract = 14.0f,          // EKRAN px tepe ofseti; snap sonrası 2-3 sanat px
+                    //   (7'de gölette 2.4 px kalıp sanat ızgarasında sıfıra yuvarlanıyordu)
+                    .caustic = 0.14f,     // eklemeli: taşarsa su beyaza doyuyor
+                    // KAPALI (Hakan: 'köşelerdeki beyaz hareketler') — kıyı
+                    // atlası zaten çizili köpük taşıyor; bizim salınan beyaz
+                    // bant onun üstüne binip kıyıyı kalabalıklaştırıyordu.
+                    // Kod duruyor: fırtına/rüzgâr efekti gerekirse geri açılır.
+                    .foam = 0.0f,
+                    .glint = 0.16f,       // eklemeli: kostikle toplamı 1'i geçmemeli
+                    .quant = 0.0f,             // renk kademesi kapalı
+                    .foamSpeed = 0.9f,         // kıyıya vurup çekilme
+                    .foamAmp = 0.16f,
+                    // SU ÇİZGİSİ. Islak bant ve koyu hat ÇARPIMSAL (bütçe dışı),
+                    // menisküs EKLEMELİ: 0.14 kostik + 0.16 parlama + 0.13 =
+                    // 0.43 ≤ 0.45 tavanı. Tavan R8G8B8A8_UNORM yüzünden.
+                    .darkLine = 1.0f,          // suyun silueti — tam güçte istiyoruz
+                    .meniscus = 0.13f,
+                    // KIYI GÖLGESİ — kamera 3/4 eğik, gölet bir çukur: kuzey
+                    // kıyının iç duvarı suya gölge düşürür (maske A kanalı).
+                    // ÇARPIMSAL, bütçe dışı. Gölgede kostik+parlama da söner.
+                    .bankShadow = 0.68f,
+                    // Işıltı çizgicikleri: pixel-su imzası, ayrık öğe. EKLEMELİ
+                    // bütçede: 0.12 + kostik 0.14 + parlama 0.16 = 0.42 ≤ 0.45.
+                    .dashes = 0.12f,
+                    // Ark sıraları: kıyıya paralel koyu yankı çizgileri (ALttP).
+                    .arcs = 1.0f,
+                    .wallFace = 0.0f,          // duvar prototipi RAFTA (bkz. shader)
+                    // Islak bant 0.85 → 0.55: tam güçte göletin çevresine koyu
+                    // bir çerçeve çekiyor ve "kakma pano" hissini büyütüyordu
+                    // (ıslak toprak: koyulaşır + doygunlaşır).
+                    .wetBand = 0.55f,
+                    .layers = (waterLayer == 0)
+                              ? (float)R2D_WATER_L_ALL
+                              : (float)WATER_LAYERS[waterLayer - 1].bit,
+                };
+                r2d_water_flush(renderer, &w);
+            }
+        }
 
         // SESSİZ EL kontrat tahtası [E] ipucu (locada, sınıf açık) — MAP_WORLD
         // bloğunun DIŞINDA (içindeyken locada hiç çizilmiyordu, Hakan raporu)

@@ -225,6 +225,43 @@ kararını alacak, sevmezse oyunu bırakıp iade edebilir."*
   salon→kışla, hekimin salon→revir, varisin iskele→salon, bakıcının salon→mahzen
   hattı) ve "ikiz NPC kaydı" yamasını gereksiz kılıyor.
 
+### 1.2h SU HACMİ ve KIŞYOLU [ONAYLI — Hakan 2026-08-03]
+
+Motorda su artık bir doku değil bir **hacim**: zemin katmanı ayrı bir target'a
+alınıyor, su shader'ı onu kendi dalga normaline göre kaydırarak örnekliyor
+(`shaders/water.frag.hlsl`, `r2d_water_flush`). Tek geçişte kırılma, derinlik
+gradyanı, güneş açısına göre parlama, kostik ve kıyıya vurup çekilen köpük.
+
+**Gerekçe (kaydı önemli):** shader'sız katman yığmak denendi ve cevabı verdi —
+suyun altındaki şeyi ÖRTEBİLİYORSUN ama BÜKEMİYORSUN. Sualtı hissi tanıdık bir
+nesnenin büküldüğünü görmekten doğar; örten katman sualtı değil mavi levhadır.
+Bu yüzden sığda örtme oranı düşük tutuluyor: kayayı göremezsen büküldüğünü de
+göremezsin.
+
+- **Kalıcı yeri KIŞYOLU** — Karduvar'ın donmuş gölü. Orada su manzara değil,
+  üstünde yürüdüğün zemin; Karduvar halkı buzu her sabah zaten sınıyor.
+  Tuzkapı limanı yüzey vitrini olarak kalır (VFX brief C.1) — dibi gösterme
+  yeteneği Kışyolu'nda kanon taşır. Adı Karduvarlı vermedi: o "göl" der.
+- **[ONAYLI] Suya GİRİLMEZ, üstünden bakılır.** Tuğrul'un ölümü serbestçe
+  girilebilen bir gölde ağırlığını kaybeder; "delilin üstünde yürümek" sahnesi
+  ancak girilmezse çalışır; tepeden bakan kamerada mercek YÜZEYDİR, içine
+  girildiğinde mercek gider. Suya girme kanonda Tuzkapı körfezi/lağımına ait.
+- **[ONAYLI] Buzun okunabilirliği bir OYUN KURALI:** duru buz = sağlam + dip
+  görünür · ak/köpüklü buz = çürük + dip görünmez. Tutorial metni YOK, kural
+  yürüyerek öğrenilir. Görsel sistem kuralı kendiliğinden anlatıyor.
+- Sığlıkta batık dizi: ağırlık taşları + urgan + üç ayrı yıl damgalı kurşun
+  mühürler. İçindeki tuz çözüldü — **ganimet yok.** Bağlantı LORE §8: Gedik
+  Beyi'nin sessizliği bir cinayeti değil bir FİYATI koruyor (göl dört ay
+  Karduvar'ın kısa yolu; yol kapanırsa kışlık tuz pahalanır).
+- Derin uçta LORE §9 mühür 6 görünür olur (kemer + kımıldamayan şey + Ak
+  Nöbet'in yem deliği). Kanonda zaten vardı; su hacmi onu görülebilir kılıyor.
+- **[AÇIK]** Kımıldamayan şeyin dokuz yılı ile Tuğrul'un dokuz yılı arasında
+  nedensel bağ var mı — kurulmadı, kanon bağlamıyor.
+- **Bilinen gerilim (mekanik, kanonik değil):** §9'un altıncı çürüme olayı buzu
+  kalıcı kırıyor, yani "buzun üstünde yürüyerek dibe bakmak" içeriğinin son
+  tarihi var. Kanona dokunmadan çözülür: aynı yer, kırılmadan sonra açık su
+  olarak ikinci hayatını yaşar (kanıtlar tekneden alınır — §9 korkuluğu).
+
 ### 1.2g OYUN SAATİ — gün 60 dakika [ONAYLI — Hakan 2026-08-03]
 Kanon denetiminin ikinci turu, kadro yazıldıktan sonra, çizelgenin **motor saatinde
 imkânsız** olduğunu buldu. `GAMETIME_DAY_SECONDS 1200` (20 dk/gün) ile bir gerçek

@@ -34,6 +34,13 @@ const TileType TILE_TYPES[] = {
     // ring/yüz parçalarından gelir (Cave_Walls atlası)
     [18] = { .solid = false, .r = 138, .g = 72,  .b = 54,  .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // mağara zemini
     [19] = { .solid = true,  .r = 225, .g = 163, .b = 122, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // mağara duvarı (üstü ten)
+
+    // SUALTI TABAN (Faz SU): suyun ALTINDA kalan yürünebilir kaya. Dokusu taş —
+    // yani bu karo su asseti KULLANMIYOR. Sualtı görünümünün tamamı su hacmi
+    // geçişinden geliyor (shaders/water.frag.hlsl): kaya bükülüyor, derinlik
+    // gradyanı üstüne biniyor, kostik ağı üstünde geziyor. Katı DEĞİL: sığlık,
+    // içine girilir ama su ayağı ağırlaştırır.
+    [20] = { .solid = false, .r = 96,  .g = 104, .b = 112, .texturePath = "assets/Tiles/terrain/stone.png", .speedMultiplier = 0.72f, .damage = 0.0f },  // sualtı taban (sığlık)
 };
 const int TILE_TYPE_COUNT = (int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0]));
 
@@ -234,6 +241,7 @@ static R2DTexture *edgeTex = NULL;
 static R2DTexture *flowerTex = NULL;    // flowers.png (160×160 — 10×10 hücre 16px)
 static R2DTexture *pathDecTex = NULL;   // Path_Decoration.png (3 hücre 16px)
 static R2DTexture *waterDecTex = NULL;  // Water_Decoration.png (3 hücre 16px)
+static R2DTexture *uwBushTex[2] = { NULL, NULL };  // bush_1/2 — sualtı bitkisi+taşı (renk moduyla)
 static R2DTexture *mzGround2 = NULL;    // mezarlık zemin 2. varyantı
 static R2DTexture *dsrWaterTex = NULL;  // çöl vaha atlası (dual-grid 16 parça)
 static R2DTexture *dsrCliffTex = NULL;  // çöl kaya atlası (dual-grid 16 parça)
@@ -249,9 +257,303 @@ static R2DTexture *wldWaterTex = NULL;  // dünya suyu kıyı atlası (dual-grid
 #define WLD_WATER_FPS    7.3f
 static int wldWaterFrames = 1;   // yükleme başarısına göre 1 ya da 8
 
+// --- VFX MOD ANAHTARI (dev tuşu Ctrl+V) — ÜÇ DURUMLU KARŞILAŞTIRMA ---
+// Sorulan soru şuydu: kıyıda görülen hareket ASSET'in animasyon karelerinden mi
+// geliyor, bizim kodumuzdan mı? İki kaynağı BAĞIMSIZ kısabilen tek bir anahtar
+// cevabı kesinleştiriyor:
+//   0 = ikisi de açık · 1 = yalnız ŞERİT hilesi (asset akışı dondu)
+//   2 = yalnız ASSET akışı (şerit demosu kapalı) · 3 = ikisi de kapalı
+static int vfxMode = 0;
+static inline bool vfx_asset_flow(void) { return vfxMode == 0 || vfxMode == 2; }
+static inline bool vfx_strip_demo(void) { return vfxMode == 0 || vfxMode == 1; }
+
+void tilemap_vfx_cycle(void) { vfxMode = (vfxMode + 1) % 4; }
+
+const char *tilemap_vfx_label(void)
+{
+    switch (vfxMode) {
+        case 1:  return "VFX: yalniz SERIT hilesi (asset akisi DONDU)";
+        case 2:  return "VFX: yalniz ASSET akisi (serit demosu KAPALI)";
+        case 3:  return "VFX: IKISI DE KAPALI";
+        default: return "VFX: hepsi acik (asset akisi + serit hilesi)";
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SU DERİNLİK MASKESİ (Faz SU). Karo başına WMASK_SUB×WMASK_SUB teksel; R kanalı
+// derinlik (0 = kara, 255 = en derin). Shader bunu LINEAR örnekler — kıyının
+// köşesiz silueti ve derinlik gradyanı bu iki karardan doğuyor, shader'da ayrıca
+// yumuşatma yok.
+//
+// ÇÖZÜNÜRLÜK NEDEN 2 TEKSEL/KARO: karo başına tek teksel, 8 karoluk bir gölette
+// yalnız 8 örnek demek — LINEAR arada düz bir rampa çizse de kademe kaba kalıyor
+// ve en önemlisi KIYI RAMPASI yarım karo (8 sanat px) genişliyordu, yani su
+// tinti çimenin 8 pikselini maviye boyuyordu. 2 teksel/karo ile kıyı rampası
+// 4 sanat px'e iniyor ve su çizgisi TAM karo sınırına oturuyor (aşağıda türetme).
+//
+// Derinlik = karo türünün TABAN ağırlığı × karadan uzaklık rampası.
+//
+// HATA GEÇMİŞİ — RAMPA HİÇ ÇALIŞMIYORDU: uzaklık sabit 5 karoya bölünüyordu
+// (WMASK_FALLOFF+1). 8×6 karoluk gölette merkez ancak d=3 alıyor, yani derinlik
+// base*3/5 = menzilin %60'ı, sonra base 0.30 ile çarpılınca 0.18 — tüm gölet
+// 0.06..0.18 arasında, gözle DÜZ. Çözüm: uzaklık alanını GÖVDE BAŞINA normalize
+// etmek. Her bağlı su gövdesi kendi en büyük uzaklığına bölünüyor, böylece
+// küçük bir gölet de merkezinde tam derinliğe erişiyor.
+//
+// Gövde başına normalizasyona bir TAVAN kondu (WMASK_RAMP_MAX): saf gövde
+// normalizasyonu koca bir denizde rampayı 100 karoya yayardı ve kıyıdaki sığ
+// raf kaybolurdu. Küçük gövde kendi merkezine kadar rampalanır, büyük gövde
+// eski davranışta olduğu gibi 5 karoda doyar.
+//
+// ÖLÇÜM (world.csv, 200×150, dört su gövdesi bulundu):
+//   gövde 1 nehir/kenar suyu 5536 teksel, dmax= 2 → norm  2 (kendi merkezine)
+//   gövde 2 KÖY GÖLETİ         128 teksel, dmax= 4 → norm  4 (kendi merkezine)
+//   gövde 3 göl               1148 teksel, dmax=12 → norm 10 (tavan)
+//   gövde 4 göl                644 teksel, dmax=10 → norm 10 (tavan)
+// YAN ETKİ, sahibinin bilmesi gereken: iki karo genişliğindeki NEHİRLER de artık
+// merkezlerinde tam derinliğe (id 2 base = 1.00 → örtme 0.93) erişiyor; eskiden
+// 0.53'te kalıyorlardı. id 2 "su" katı/geçilmez ve taban ağırlığı 1.00 seçilmiş,
+// yani tür kendini "en derin" ilan ediyor — davranış tutarlı ama nehirler
+// eskisinden belirgin koyu. Fazla geldiyse çare bu dosyada: id 2'nin tabanını
+// düşürmek (rampayı değil).
+#define WMASK_SUB       2        // karo başına teksel (her eksende)
+#define WMASK_RAMP_MAX 10        // rampanın en çok kaç YARIM karoda doyduğu (=5 karo)
+#define WMASK_SHORE_HT  6        // G kanalının doyduğu yarım karo sayısı (=3 karo)
+#define WMASK_BANK_REACH 3       // kıyı gölgesinin eriştiği yarım karo (=24 sanat px)
+#define WMASK_BODY_MAX 255       // ayrı su gövdesi tavanı (0 = "kara" etiketi)
+
+// Taban ağırlığı: sıvının ne kadar KAPATTIĞI. Shader'da
+// cover = lerp(shallowCover, deepCover, R) — yani bu sayı gövdenin MERKEZİNDEKİ
+// örtmeyi seçiyor, her yerdeki örtmeyi değil.
+//
+// id 20 NEDEN 0.30 → 0.62: 0.30 gövde normalizasyonundan ÖNCE yazılmıştı ve o
+// zaman zaten hiçbir yerde ulaşılmıyordu (en fazla 0.18). Artık gerçekten
+// merkezde ulaşılıyor, dolayısıyla "merkez" değeri olarak seçilmeli. 0.62 →
+// merkezde cover ≈ 0.26+0.67*0.62 = 0.67 (taban %33 okunur: koyu bir kütle
+// olarak görünen ama kaybolmayan dip), kıyı çizgisinde R ≈ 0.62/12 = 0.05 →
+// cover ≈ 0.29, yani kenar neredeyse berrak. Gölet ortasının koyu, kenarının
+// berrak olması "bir göleti gölet yapan" şey; tek sayı ikisini birden veremezdi,
+// menzil şart.
+static float wmask_base(int id)
+{
+    switch (id) {
+        case 2:  return 1.00f;   // su
+        case 17: return 0.55f;   // vaha suyu — kanon "dingin ve sığ" istiyor
+        case 20: return 0.92f;   // gölet ortası OPAK lacivert (referans: taban
+                                  // yalnız kıyı RAFINDA okunur, ortada değil.
+                                  // 0.62'de orta band SINIRINA oturuyordu ve
+                                  // dither koca bir dama dikdörtgeni çiziyordu)
+        default: return 0.0f;    // kara
+    }
+}
+
+// ÇIRPINTI: 0 = ayna gibi durgun · 255 = açık su. Köpük, dalga boyu ve dalga
+// hızı buna bağlı; kostik ise TERS yönde (durgun suda ışık dibe iner).
+static Uint8 wmask_agitation(int id)
+{
+    switch (id) {
+        case 2:  return 255;   // göl/nehir/deniz — açık su
+        case 17: return 30;    // vaha suyu: kanon "dingin" istiyor
+        case 20: return 26;    // gölet/sığlık: deniz değil, kıpırtı kadar
+        default: return 0;
+    }
+}
+
+#define WMASK_W_MAX (MAP_W_MAX * WMASK_SUB)
+#define WMASK_H_MAX (MAP_H_MAX * WMASK_SUB)
+
+// Statik tampon bütçesi (toplam ≈ 2.75 MB, harita başına bir kez doldurulur):
+//   wmaskPix  512*512*4 = 1024 KB   maske dokusu
+//   wmaskDist 512*512*2 =  512 KB   kıyı uzaklığı (YARIM KARO cinsinden; 256
+//                                   karoluk haritada 256'yı geçebilir → Uint16)
+//   wmaskComp 512*512   =  256 KB   bağlı su gövdesi etiketi (0 = kara)
+//   wmaskQ    512*512*4 = 1024 KB   BFS/taşma-dolgu kuyruğu (iki geçiş paylaşır)
+static Uint8  wmaskPix[WMASK_W_MAX * WMASK_H_MAX * 4];
+static Uint16 wmaskDist[WMASK_H_MAX][WMASK_W_MAX];
+static Uint8  wmaskComp[WMASK_H_MAX][WMASK_W_MAX];
+static Uint32 wmaskQ[WMASK_W_MAX * WMASK_H_MAX];
+static Uint16 wmaskBodyMax[WMASK_BODY_MAX + 1];
+
+// 8-KOMŞULUK. 4-komşuluk yetmiyor: yalnız KÖŞESİYLE karaya değen bir su tekseli
+// 4-komşulukta uzaklık 2 alıyor (karaya ancak bir su tekselinden dolanarak
+// ulaşıyor) ve kıyı köşelerinde derinlik bir kademe fazla çıkıyor — çapraz
+// kıyılarda kıyı çizgisi içeri kaçıyordu.
+static const int WMASK_NX[8] = { -1,  0,  1, -1,  1, -1,  0,  1 };
+static const int WMASK_NY[8] = { -1, -1, -1,  0,  0,  1,  1,  1 };
+
+static bool wmask_wet(int tx, int ty)
+{
+    return wmask_base(tilemap[ty][tx]) > 0.0f;
+}
+
+bool wld_water_mask_fill(int *outW, int *outH, const Uint8 **outPix)
+{
+    const int W = mapW * WMASK_SUB, H = mapH * WMASK_SUB;
+
+    for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++) {
+            wmaskDist[y][x] = 0;
+            wmaskComp[y][x] = 0;
+        }
+
+    // 1) BAĞLI SU GÖVDELERİNİ ETİKETLE (8-komşuluk taşma dolgusu). Gövde
+    //    kimliği gerekiyor çünkü rampa gövde BAŞINA normalize edilecek: köyün
+    //    göleti ile kuzeydeki deniz aynı ölçekle rampalanamaz.
+    bool any = false;
+    int bodies = 0;
+    bool capped = false;
+    for (int sy = 0; sy < H; sy++)
+        for (int sx = 0; sx < W; sx++) {
+            if (wmaskComp[sy][sx] != 0) continue;
+            if (!wmask_wet(sx / WMASK_SUB, sy / WMASK_SUB)) continue;
+            any = true;
+            int id;
+            if (bodies < WMASK_BODY_MAX) {
+                id = ++bodies;
+            } else {
+                // Tavan aşıldı: yeni gövdeyi SON gövdeye kat. Görsel sonuç
+                // "rampa ölçeği yanlış gövdeden geldi" — kabul edilebilir,
+                // maskenin tamamen boş çıkmasından iyi.
+                id = bodies;
+                if (!capped) {
+                    capped = true;
+                    SDL_Log("wmask: su govdesi tavani (%d) asildi — fazlasi son govdeye katildi",
+                            WMASK_BODY_MAX);
+                }
+            }
+            int head = 0, tail = 0;
+            wmaskComp[sy][sx] = (Uint8)id;
+            wmaskQ[tail++] = (Uint32)(sy * W + sx);
+            while (head < tail) {
+                Uint32 c = wmaskQ[head++];
+                int cx = (int)(c % (Uint32)W), cy = (int)(c / (Uint32)W);
+                for (int k = 0; k < 8; k++) {
+                    int nx = cx + WMASK_NX[k], ny = cy + WMASK_NY[k];
+                    if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+                    if (wmaskComp[ny][nx] != 0) continue;
+                    if (!wmask_wet(nx / WMASK_SUB, ny / WMASK_SUB)) continue;
+                    wmaskComp[ny][nx] = (Uint8)id;
+                    wmaskQ[tail++] = (Uint32)(ny * W + nx);
+                }
+            }
+        }
+    if (!any) return false;
+
+    // 2) KIYI UZAKLIĞI: karadan çok-kaynaklı BFS (8-komşuluk). Karaya değen su
+    //    tekseli d=1, ondan sonra dalga dalga içeri. Eskiden dört genişleme
+    //    adımıyla kesiliyordu; gövde maksimumunu bilmek için TAM alan gerekli.
+    //    Harita DIŞI kara sayılıyor: bu dünya sınırlı, kenarda sonsuz deniz yok
+    //    (eski kod kenar suyunu "çok uzak" sayıp en derin yapıyordu).
+    {
+        int head = 0, tail = 0;
+        for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++) {
+                if (wmaskComp[y][x] == 0) continue;
+                bool atShore = false;
+                for (int k = 0; k < 8 && !atShore; k++) {
+                    int nx = x + WMASK_NX[k], ny = y + WMASK_NY[k];
+                    if (nx < 0 || ny < 0 || nx >= W || ny >= H) atShore = true;
+                    else if (wmaskComp[ny][nx] == 0) atShore = true;
+                }
+                if (atShore) {
+                    wmaskDist[y][x] = 1;
+                    wmaskQ[tail++] = (Uint32)(y * W + x);
+                }
+            }
+        while (head < tail) {
+            Uint32 c = wmaskQ[head++];
+            int cx = (int)(c % (Uint32)W), cy = (int)(c / (Uint32)W);
+            Uint16 nd = (Uint16)(wmaskDist[cy][cx] + 1);
+            for (int k = 0; k < 8; k++) {
+                int nx = cx + WMASK_NX[k], ny = cy + WMASK_NY[k];
+                if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+                if (wmaskComp[ny][nx] == 0 || wmaskDist[ny][nx] != 0) continue;
+                wmaskDist[ny][nx] = nd;
+                wmaskQ[tail++] = (Uint32)(ny * W + nx);
+            }
+        }
+    }
+
+    // 3) Gövde başına en büyük uzaklık — rampanın böleni
+    for (int i = 0; i <= WMASK_BODY_MAX; i++) wmaskBodyMax[i] = 0;
+    for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++) {
+            Uint8 c = wmaskComp[y][x];
+            if (c != 0 && wmaskDist[y][x] > wmaskBodyMax[c])
+                wmaskBodyMax[c] = wmaskDist[y][x];
+        }
+
+    // 4) Teksel yazımı
+    for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++) {
+            int id = tilemap[y / WMASK_SUB][x / WMASK_SUB];
+            float base = wmask_base(id);
+            Uint8 *p = &wmaskPix[(y * W + x) * 4];
+            if (base <= 0.0f) {   // kara: DÖRT kanal da sıfır. A=0 şart: A artık
+                                  // kıyı gölgesi taşıyor ve karada 255 kalsaydı
+                                  // LINEAR örnekleme her kıyıya (güneye de!)
+                                  // yarım teksel sahte gölge sızdırırdı.
+                p[0] = 0; p[1] = 0; p[2] = 0; p[3] = 0;
+                continue;
+            }
+            float norm = (float)wmaskBodyMax[wmaskComp[y][x]];
+            if (norm > (float)WMASK_RAMP_MAX) norm = (float)WMASK_RAMP_MAX;
+            if (norm < 1.0f) norm = 1.0f;
+            float f = (float)wmaskDist[y][x] / norm;
+            if (f > 1.0f) f = 1.0f;
+            int v = (int)(base * f * 255.0f + 0.5f);
+            p[0] = (Uint8)(v < 0 ? 0 : v > 255 ? 255 : v);
+            // G = KIYI UZAKLIĞI, R'den AYRI. Köpük derinliğe değil kıyıya ait:
+            // R'ye bağlandığında sığ bir havuzun TAMAMI köpük sayılıyordu (en
+            // derin yeri 0.18, köpük eşiği 0.22 — hepsi eşiğin altında kaldı).
+            // Bu kanal "kıyıdan kaç YARIM KARO içerdeyim" diyor, su ne kadar
+            // derin olursa olsun; gövdeden BAĞIMSIZ, yani shader'daki su çizgisi
+            // sabitleri her gövdede aynı anlama geliyor. 0 = kara, 1 = üç karo.
+            float sf = (float)wmaskDist[y][x] / (float)WMASK_SHORE_HT;
+            if (sf > 1.0f) sf = 1.0f;
+            int sv = (int)(sf * 255.0f + 0.5f);
+            p[1] = (Uint8)(sv < 0 ? 0 : sv > 255 ? 255 : sv);
+            // B = ÇIRPINTI: bu su gövdesinin mizacı. Gölet ile deniz aynı
+            // davranamaz — gölette köpük yoktur, dalga küçüktür, yüzey durgun
+            // olduğu için ışık dibe iner (kostik güçlenir). Karo türünden
+            // geliyor, yani her gövde mizacını kendi taşıyor; shader'a tek tek
+            // ayar geçirmeye gerek kalmıyor.
+            p[2] = wmask_agitation(id);
+            // A = KUZEY KIYI YAKINLIĞI (kıyı gölgesi için). Kamera 3/4 eğik
+            // (r2d.h ışık bölümü: ışık lekeleri bu yüzden basık elips) — eğik
+            // bakışta gölet zemine açılmış bir ÇUKURDUR: kuzey kıyısının iç
+            // duvarı görünür ve suya gölge düşürür. Bu kanal "hemen kuzeyimde
+            // kara var mı, kaç teksel ötede" diyor; shader bunu yönlü gölgeye
+            // çeviriyor. Çaprazlar yarım ağırlıkta: köşeler de payını alsın
+            // ("köşelerin açıya göre gölgesi"), yoksa gölge dik kenarda bıçakla
+            // kesilmiş gibi bitiyor.
+            {
+                float bank = 0.0f;
+                for (int dy = 1; dy <= WMASK_BANK_REACH; dy++) {
+                    int ny = y - dy;
+                    float wgt = (float)(WMASK_BANK_REACH + 1 - dy)
+                              / (float)WMASK_BANK_REACH;
+                    bool landUp = (ny < 0) || (wmaskComp[ny][x] == 0);
+                    bool landUL = (ny < 0) || (x - dy < 0)  || (wmaskComp[ny][x - dy] == 0);
+                    bool landUR = (ny < 0) || (x + dy >= W) || (wmaskComp[ny][x + dy] == 0);
+                    if (landUp && wgt > bank)          bank = wgt;
+                    if (landUL && wgt * 0.6f > bank)   bank = wgt * 0.6f;
+                    if (landUR && wgt * 0.6f > bank)   bank = wgt * 0.6f;
+                    if (bank >= 1.0f) break;
+                }
+                p[3] = (Uint8)(bank * 255.0f + 0.5f);
+            }
+        }
+    *outW = W;
+    *outH = H;
+    *outPix = wmaskPix;
+    return true;
+}
+
 static int wld_water_frame(void)
 {
-    if (wldWaterFrames <= 1) return 0;
+    // Anahtar 1/3'te kare 0'a çivilenir: asset animasyonu DONAR, kıyı yine çizilir
+    if (wldWaterFrames <= 1 || !vfx_asset_flow()) return 0;
     float t = (float)SDL_GetTicks() / 1000.0f;
     int f = (int)(t * WLD_WATER_FPS) % wldWaterFrames;
     return f < 0 ? 0 : f;
@@ -268,6 +570,8 @@ void tilemap_load_details(R2D *renderer)
     flowerTex = load_texture(renderer, "assets/decor/flowers.png");
     pathDecTex = load_texture(renderer, "assets/Tiles/Grass/Path_Decoration.png");
     waterDecTex = load_texture(renderer, "assets/Tiles/Water/Water_Decoration.png");
+    uwBushTex[0] = load_texture(renderer, "assets/decor/bush_1.png");
+    uwBushTex[1] = load_texture(renderer, "assets/decor/bush_2.png");
     mzGround2 = load_texture(renderer, "assets/Tiles/undead/mz_ground2.png");
     dsrWaterTex = load_texture(renderer, "assets/Tiles/desert/water_atlas.png");
     dsrCliffTex = load_texture(renderer, "assets/Tiles/desert/cliff_atlas.png");
@@ -294,6 +598,8 @@ void tilemap_free_details(void)
     if (flowerTex) { r2d_texture_destroy(NULL, flowerTex); flowerTex = NULL; }
     if (pathDecTex) { r2d_texture_destroy(NULL, pathDecTex); pathDecTex = NULL; }
     if (waterDecTex) { r2d_texture_destroy(NULL, waterDecTex); waterDecTex = NULL; }
+    for (int i = 0; i < 2; i++)
+        if (uwBushTex[i]) { r2d_texture_destroy(NULL, uwBushTex[i]); uwBushTex[i] = NULL; }
     if (mzGround2) { r2d_texture_destroy(NULL, mzGround2); mzGround2 = NULL; }
     if (dsrWaterTex) { r2d_texture_destroy(NULL, dsrWaterTex); dsrWaterTex = NULL; }
     if (dsrCliffTex) { r2d_texture_destroy(NULL, dsrCliffTex); dsrCliffTex = NULL; }
@@ -503,6 +809,10 @@ static void wld_water_pass(R2D *renderer, const Camera *camera,
                     if (cc < 0) cc = 0; if (cc >= mapW) cc = mapW - 1;
                     if (rr < 0) rr = 0; if (rr >= mapH) rr = mapH - 1;
                     int t = tilemap[rr][cc];
+                    // YALNIZ id 2: kıyı atlası DENENDİ ve gölete parlak mavi
+                    // köpük halkası getirdi ('köşelerdeki köpükleri
+                    // kaldıracaktık' — Hakan). Atlas köpüklü/dalgalı kıyı
+                    // sanatı; deniz/göl kenarında doğru, durgun gölette yanlış.
                     if (t == 2) m |= 1 << (dy * 2 + dx);
                     else if (t != 0) shoreGrass = false;
                 }
@@ -516,6 +826,204 @@ static void wld_water_pass(R2D *renderer, const Camera *camera,
             r2d_draw_texture(renderer, wldWaterTex, &src, &dst);
         }
     }
+}
+
+// ===================================================================
+//  "SU OLMADAN SU" — ŞERİT KAYDIRMA DEMOSU (brief C.1 Katman 2 / B.1)
+// ===================================================================
+// NİYE VAR: kıyıda görülen hareketin kaynağı belirsizdi (asset animasyonu mu,
+// bizim kodumuz mu). Bu alan ASSET'İ DENKLEMDEN ÇIKARIYOR — çizilen tek doku
+// TAŞ (id 3), assets/Tiles/Water/* hiç kullanılmıyor. Yani burada görülen her
+// hareket kesinlikle bu fonksiyondan geliyor.
+//
+// TEKNİK: 8/16-bit donanımının satır kaydırma (line scroll / HDMA) hilesi.
+// Karo tek quad olarak değil YATAY ŞERİTLER halinde çizilir; her şeridin
+// yatay konumu, şeridin DÜNYA y'sine ve zamana bağlı iki sinüsün toplamıyla
+// kaydırılır. Altındaki taş "suyun altında bükülüyor" gibi okunur.
+//
+// NEDEN hedef (dst) x kaydırılıyor da kaynak (src) x DEĞİL: sampler'ımızın iki
+// modu da CLAMP_TO_EDGE (r2d.c) ve karo dokusu 16 px. src'yi karo içinde
+// kaydırmak kenar sütunlarını kırpar → her karo kendi kenarını uzatır ve
+// IZGARA GÖRÜNÜR. Satırın tamamını kaydırıp havuz kenarında kırpmak donanım
+// hilesinin birebir kendisi ve bu kusuru taşımıyor. Taban pass'i (tilemap_render)
+// kaydırılmamış taşı zaten çizdiği için kenardaki boşluk yine taş gösterir.
+// RAFA KALDIRILDI (Faz SU) — silinmedi. Bu şerit-kaydırma demosu "su asseti
+// olmadan su" sorusunu cevaplamak için yazıldı ve cevabı verdi: shader'sız
+// katmanlarla suyun ALTINI bükemiyorsun, yalnız örtebiliyorsun. Yerine gerçek
+// su hacmi geçişi geldi (shaders/water.frag.hlsl + r2d_water_flush).
+// Kod çalışmıyor çünkü VFXD_TILE hâlâ taş (3), havuz ise artık sualtı taban
+// (20). Kasıtlı: teknik hâlâ geçerli ve gerekirse geri döner — ısı bükülmesi
+// (demircinin ocağı) tam olarak bu şerit hilesinin dikey ve maskeli hâli.
+#define VFXD_COL0 3     // havuzun karo kutusu (dünya haritası, köy güneyi)
+#define VFXD_COL1 10
+#define VFXD_ROW0 19
+#define VFXD_ROW1 24
+#define VFXD_TILE 3     // TAŞ. Su asset'i yok — demonun bütün anlamı bu.
+
+// Karo başına şerit sayısı. 8 → şerit 16×2 doku pikseli, 8 dünya px yüksek.
+// Artırmak (16) dalgayı yumuşatır ama maliyeti iki katına çıkarır; azaltmak (4)
+// dalgayı basamaklandırır ve su yerine "kayan bloklar" görünür.
+#define VFXD_STRIPS 8
+// Bir sanat pikseli kaç dünya pikseli: 16 px karo sanatı TILE_SIZE 64'e basılıyor.
+#define VFXD_ART    ((float)TILE_SIZE / 16.0f)
+// Tepe kayma, SANAT PİKSELİ cinsinden. 2 → ±8 dünya px (karonun 1/8'i).
+// Artırınca taş "kopuk" görünür ve kenardaki kırpma boşluğu büyür; 1'e indirince
+// snap yüzünden ofset yalnız -1/0/1 değerini alır ve hareket neredeyse kaybolur.
+#define VFXD_AMP_ART 2.0f
+// İki dalga sayısı (dünya px başına radyan) → dalga boyu 2pi/k.
+// K1 ≈ 90 px (1.4 karo), K2 ≈ 39 px (0.6 karo). İKİ FREKANS ŞART: tek frekans
+// "akordeon" gibi durur (brief B.1). Oran 2.33 harmonik değil — desen gözle
+// tekrar etmiyor. Büyütmek dalgayı sıkıştırır (titrek), küçültmek düzleştirir.
+#define VFXD_K1 0.070f
+#define VFXD_K2 0.163f
+// Dalga hızları (rad/sn), İKİNCİSİ TERS YÖNDE: karşı karşıya iki dalga durgun
+// suyun girişim desenini verir (tek yön akıntı gibi görünür — göl için yanlış).
+// Artırınca su "kaynıyor", azaltınca donuk kalır.
+#define VFXD_S1 2.1f
+#define VFXD_S2 3.7f
+// Ağırlıklar toplamı 1.0 → genlik tavanı tam olarak VFXD_AMP_ART kalır.
+#define VFXD_W1 0.62f
+#define VFXD_W2 0.38f
+// DERİNLİK KATMANI: yarı saydam mavi-camgöbeği tül. Alpha'yı artırınca taş
+// dokusu kaybolur (kırılma da görünmez olur — demo anlamını yitirir), azaltınca
+// alan "ıslak taş" gibi durur, "su" gibi durmaz.
+#define VFXD_TINT_R 34
+#define VFXD_TINT_G 92
+#define VFXD_TINT_B 120
+#define VFXD_TINT_A 108
+// YÜZEY YANSIMASI: gezen parlaklık bandı (ADD). İnce (1 sanat px), yavaş, alpha
+// düşük. İki bant: tek bant havuzu geçtikten sonra uzun bir "ölü" süre bırakıyor.
+// Alpha'yı artırınca bant floresan bir çizgiye döner; hız artınca "tarama
+// çizgisi" gibi okunur (su değil, CRT).
+#define VFXD_SHEEN_BANDS 2
+#define VFXD_SHEEN_SPD   26.0f   // dünya px/sn — havuzu ~15 sn'de geçer
+#define VFXD_SHEEN_A     34
+#define VFXD_SHEEN_WOB   1.0f    // bandın dikey kırılması, sanat px (0 = cetvel gibi düz)
+#define VFXD_SHEEN_K     0.100f  // kırılmanın dalga sayısı (dünya px başına radyan)
+#define VFXD_SHEEN_S     0.9f    // kırılmanın hızı (rad/sn)
+
+// Havuz hücresi mi? Kutunun İÇİ **ve** karo gerçekten taş olmalı — böylece
+// sabitler CSV'den kayarsa efekt sessizce hiçbir şey yapmaz, çimenin üstüne
+// su boyamaz.
+static inline bool vfxd_pool(int col, int row)
+{
+    if (col < VFXD_COL0 || col > VFXD_COL1) return false;
+    if (row < VFXD_ROW0 || row > VFXD_ROW1) return false;
+    if (col < 0 || col >= mapW || row < 0 || row >= mapH) return false;
+    return tilemap[row][col] == VFXD_TILE;
+}
+
+void tilemap_vfxdemo_render(R2D *renderer, R2DTexture **tileTextures,
+                            const Camera *camera)
+{
+    if (!vfx_strip_demo()) return;
+    R2DTexture *stone = (tileTextures != NULL) ? tileTextures[VFXD_TILE] : NULL;
+    if (stone == NULL) return;   // doku yoksa demo yok (taban pass'i düz renk basar)
+
+    const float zoom = camera->zoom;
+    int outW = 0, outH = 0;
+    r2d_output_size(renderer, &outW, &outH);
+
+    // KABA GÖRÜNÜRLÜK: havuz 8×6 karo. Karo karo culling'e gerek yok (hepsi bir
+    // ekrana sığıyor) ama ekranda hiç yoksa tek çizim bile yapmamak gerek.
+    const float poolL = VFXD_COL0 * (float)TILE_SIZE;
+    const float poolT = VFXD_ROW0 * (float)TILE_SIZE;
+    const float poolR = (VFXD_COL1 + 1) * (float)TILE_SIZE;
+    const float poolB = (VFXD_ROW1 + 1) * (float)TILE_SIZE;
+    if (poolR < camera->x || poolL > camera->x + outW / zoom ||
+        poolB < camera->y || poolT > camera->y + outH / zoom)
+        return;
+
+    // DUVAR SAATİ — wld_water_frame ile aynı gerekçe: su geceleyin yavaşlamaz,
+    // hit-stop onu durdurmaz, mevsim dondurmaz.
+    const float t  = (float)SDL_GetTicks() / 1000.0f;
+    const float sh = (float)TILE_SIZE / (float)VFXD_STRIPS;   // şerit yüksekliği (dünya px)
+    const float srcSh = 16.0f / (float)VFXD_STRIPS;           // ... doku px karşılığı
+
+    r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+
+    // === KATMAN 1: KIRILMA — kaydırılmış taş şeritleri ===
+    for (int row = VFXD_ROW0; row <= VFXD_ROW1; row++) {
+        // Satırın havuz koşusu: kaydırma bu aralığın DIŞINA taşmayacak
+        int c0 = -1, c1 = -1;
+        for (int c = VFXD_COL0; c <= VFXD_COL1; c++)
+            if (vfxd_pool(c, row)) { if (c0 < 0) c0 = c; c1 = c; }
+        if (c0 < 0) continue;
+        const float runL = c0 * (float)TILE_SIZE;
+        const float runR = (c1 + 1) * (float)TILE_SIZE;
+
+        for (int s = 0; s < VFXD_STRIPS; s++) {
+            const float wy = row * (float)TILE_SIZE + (s + 0.5f) * sh;   // şeridin dünya y'si
+            const float d  = SDL_sinf(wy * VFXD_K1 + t * VFXD_S1) * VFXD_W1
+                           + SDL_sinf(wy * VFXD_K2 - t * VFXD_S2) * VFXD_W2;
+            // SNAP — pixel-art'ın şartı (brief B.1/B.10). Ofset TAM sanat
+            // pikseline yuvarlanıyor; kesirli ofset NEAREST örneklemede 1→2→2
+            // diye ZIPLAR (su dalgalanmıyor, TİTRİYOR görünür). Ölçek DÜNYA
+            // biriminde: zoom sonra çarpılıyor, yani yakınlaşınca ofset sanat
+            // ızgarasında kalır, ekran ızgarasına kaymaz.
+            const float offW = SDL_roundf(d * VFXD_AMP_ART) * VFXD_ART;
+
+            for (int c = c0; c <= c1; c++) {
+                if (!vfxd_pool(c, row)) continue;
+                float dx = c * (float)TILE_SIZE + offW, dw = (float)TILE_SIZE;
+                float sx = 0.0f, sw = 16.0f;
+                // Havuz kenarına kırp; src DÜNYA→DOKU oranıyla (VFXD_ART) birlikte
+                // daralır — ofset tam sanat pikseli olduğu için bu kırpma da tam.
+                if (dx < runL)       { float k = runL - dx;      dx += k; dw -= k; sx += k / VFXD_ART; sw -= k / VFXD_ART; }
+                if (dx + dw > runR)  { float k = dx + dw - runR;          dw -= k;                     sw -= k / VFXD_ART; }
+                if (dw <= 0.5f) continue;
+
+                SDL_FRect src = { sx, s * srcSh, sw, srcSh };
+                SDL_FRect dst = { (dx - camera->x) * zoom,
+                                  (row * (float)TILE_SIZE + s * sh - camera->y) * zoom,
+                                  dw * zoom, sh * zoom };
+                r2d_draw_texture(renderer, stone, &src, &dst);
+            }
+        }
+    }
+
+    // === KATMAN 2: DERİNLİK — karo başına tek mavi tül ===
+    // Karo başına (şerit başına değil): tül suyun GÖVDESİ, dalga onun ALTINDA
+    // yaşıyor. Şerit başına çizmek quad sayısını 8 katına çıkarır ve tülün
+    // kendisi dalgayla birlikte kayar — bu istenmiyor: kayması gereken şey
+    // suyun altındaki taş, suyun rengi değil.
+    r2d_set_color(renderer, VFXD_TINT_R, VFXD_TINT_G, VFXD_TINT_B, VFXD_TINT_A);
+    for (int row = VFXD_ROW0; row <= VFXD_ROW1; row++)
+        for (int col = VFXD_COL0; col <= VFXD_COL1; col++) {
+            if (!vfxd_pool(col, row)) continue;
+            SDL_FRect dst = { (col * (float)TILE_SIZE - camera->x) * zoom,
+                              (row * (float)TILE_SIZE - camera->y) * zoom,
+                              TILE_SIZE * zoom, TILE_SIZE * zoom };
+            r2d_fill_rect(renderer, &dst);
+        }
+
+    // === KATMAN 3: YÜZEY YANSIMASI — gezen parlaklık bandı ===
+    // Bandı dalga ofseti BÜKMÜYOR, bu bilinçli: yansıma yüzeyde olur, kırılma
+    // suyun altında. Bandın kendi kırılması sütun başına ayrı (yoksa cetvelle
+    // çizilmiş bir çizgi gibi durur).
+    r2d_set_blend(renderer, R2D_BLEND_ADD);
+    r2d_set_color(renderer, 210, 240, 255, VFXD_SHEEN_A);
+    const float span = poolB - poolT;
+    for (int b = 0; b < VFXD_SHEEN_BANDS; b++) {
+        const float by = poolT + SDL_fmodf(t * VFXD_SHEEN_SPD
+                                           + b * span / (float)VFXD_SHEEN_BANDS, span);
+        for (int col = VFXD_COL0; col <= VFXD_COL1; col++) {
+            const float cx  = (col + 0.5f) * (float)TILE_SIZE;
+            const float wob = SDL_roundf(SDL_sinf(cx * VFXD_SHEEN_K + t * VFXD_SHEEN_S)
+                                         * VFXD_SHEEN_WOB) * VFXD_ART;
+            // Sanat ızgarasına çivile (aynı snap kuralı)
+            const float y   = SDL_floorf((by + wob) / VFXD_ART) * VFXD_ART;
+            if (!vfxd_pool(col, (int)(y / (float)TILE_SIZE))) continue;
+            SDL_FRect dst = { (col * (float)TILE_SIZE - camera->x) * zoom,
+                              (y - camera->y) * zoom,
+                              TILE_SIZE * zoom, VFXD_ART * zoom };
+            r2d_fill_rect(renderer, &dst);
+        }
+    }
+
+    // Durumu varsayılana geri bırak — sonraki çizimler bu ayarları miras alıyor
+    r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+    r2d_set_color(renderer, 255, 255, 255, 255);
 }
 
 void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *camera)
@@ -684,14 +1192,41 @@ void tilemap_render_scatter(R2D *renderer, const Camera *camera)
                     r2d_draw_texture(renderer, flowerTex, &src, &dst);
                 }
             }
-            else if (id == 2 && waterDecTex != NULL) {   // su: kıyıda %8 saz
-                bool nearLand = (col > 0 && tilemap[row][col-1] != 2) ||
-                                (col < mapW-1 && tilemap[row][col+1] != 2) ||
-                                (row > 0 && tilemap[row-1][col] != 2) ||
-                                (row < mapH-1 && tilemap[row+1][col] != 2);
-                if (nearLand && (h % 100) < 8) {
+            // SUALTI TABANI (Faz SU): şeffaflık hissi altta TANINACAK bir şey
+            // ister — çıplak taş tabanda su ne kadar berrak olsa da "altı
+            // görünüyor" okuması çıkmaz (Hakan'ın "içine bitki yerleştir"
+            // önerisi). Serpiştirme su geçişinden ÖNCE çizildiği için kırılma
+            // ve derinlik bantları üstlerine kendiliğinden biner: yosun suyla
+            // bükülür, derindeki taş kararır — şeffaflığı KANITLAYAN nesneler.
+            // Kıyıya yakın yoğun, ortada seyrek: gerçek gölette bitki sığlıkta.
+            else if ((id == 20 || id == 2)
+                     && uwBushTex[0] != NULL && uwBushTex[1] != NULL) {
+                bool nearLand = (col > 0 && tilemap[row][col-1] != id) ||
+                                (col < mapW-1 && tilemap[row][col+1] != id) ||
+                                (row > 0 && tilemap[row-1][col] != id) ||
+                                (row < mapH-1 && tilemap[row+1][col] != id);
+                // Göl/deniz sazı korunur: raftaki taş/bitkiden ÖNCE zar atar
+                if (id == 2 && waterDecTex != NULL && nearLand && (h % 100) >= 90) {
                     SDL_FRect src = { (float)((h >> 6) % 3) * 16.0f, 0, 16, 16 };
                     r2d_draw_texture(renderer, waterDecTex, &src, &dst);
+                }
+                else {
+                // Batık taş rafı + bitkiler. Gölet ortası da payını alıyor
+                // ('içine de taş ve bitkiler ekleyip doğallaştıralım' —
+                // Hakan): örtme 0.80'e indiği için orta artık siluet gösterir.
+                R2DTexture *bt = uwBushTex[(h >> 5) & 1];
+                unsigned roll = h % 100;
+                unsigned pPlant = nearLand ? 14 : (id == 20 ? 12 : 3);
+                unsigned pStone = nearLand ? 42 : (id == 20 ?  9 : 3);
+                if (roll < pStone) {
+                    r2d_texture_set_color_mod(bt, 104, 110, 126);
+                    r2d_draw_texture(renderer, bt, NULL, &dst);
+                    r2d_texture_set_color_mod(bt, 255, 255, 255);
+                } else if (roll < pStone + pPlant) {
+                    r2d_texture_set_color_mod(bt, 96, 148, 132);
+                    r2d_draw_texture(renderer, bt, NULL, &dst);
+                    r2d_texture_set_color_mod(bt, 255, 255, 255);
+                }
                 }
             }
             // ÇÖL BENEKLERİ (paket örneklerindeki organik zemin yamaları):

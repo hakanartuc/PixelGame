@@ -1,6 +1,6 @@
 # HANDOVER — Pixe Game
 
-Güncelleme: 2026-08-03 (2. tur) · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
+Güncelleme: 2026-08-04 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
 
 ## Çalışma kuralları
 - **KOD EN SON GELİR (2026-07-28 Hakan direktifi)**: kod faturası tasarım
@@ -93,6 +93,8 @@ silaha uymayan beceri SOLUK çizilir (kullanım engeli hotbarPressed akışında
 G ızgara 8/16/32, Alt yapıştırmayı kapat; Tab sonraki, A çapa, **E en uygun çapa**, H hiza;
 Ctrl+oklar & köşe tutamağı boyut; **P ön izleme** — seçili panel kapalı olsa bile gerçek
 içeriğiyle çizilir; Ctrl+S kaydet, R diskten geri, Esc kapat. Açıkken oyuncu girdisi DURUR)
+· **Ctrl+B su katmanı izolasyonu** (12 durum: hepsi + 11 katman tek tek; Ctrl+Shift+B geri)
+· Ctrl+V su asset akışı/şerit demosu döngüsü (4 durum — demo rafta, tuş duruyor)
 · **F7 post-fx filtre döngüsü** (20 tarz + kapalı: SICAK/DARK FANTASY/CRT/VHS/NOIR/GAMEBOY... splash'ta ad; SICAK açılışta aktif — kalıcı tarz seçilmedi) · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 AKTİF slota kaydet/yükle (slot yoksa — otomatik kayıttan yüklendiyse — F5 kayıt ekranını açar, seçilen slot aktif olur) · ESC katmanlı kapatma/menü
 (K = skill listesi + ağaç paneli; ok mühimmatı sağ tıkla seçilir)
 (F efekt önizleme KALDIRILDI 2026-07-10 — rünün instance efektini eziyordu)
@@ -216,6 +218,21 @@ vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü
   `fx: kaba += 1` biçimiyle işler, req ile okunur).
 
 ## Sıradaki iş
+**FAZ SU TAMAM (2026-08-04, save DEĞİŞMEDİ)**: tek geçişli shader su sistemi
+(`shaders/water.frag.hlsl` + `r2d_water_flush`). 11 katman, maske RGBA
+(derinlik/kıyı/çırpıntı/kuzey — karo başına 2×2 teksel), mizaç kanalıyla
+gölet↔deniz tek shader'dan. Köy güneyine gölet (karo [20] sualtı taban).
+Ctrl+B katman izolasyonu (12 durum). Kararlar GDD §1.2h; ayrıntı PROGRESS
+"Faz SU". **Beş kritik ders koda yorum olarak gömülü:** load_shader sırası
+(uniform,sampler) · CSV GID=id+1 · frac(sin()) üç arka uçta farklı → tamsayı
+hash · Bayer düz platoda her yerde dama üretir → yapısal geçişler sürekli
+değerden · her katman kendi sihirli sayısını kurarsa biri sessizce ölür
+(SLOPE_NORM tek kaynak). **Rafta:** duvar prototipi (u.l.w), şerit demosu,
+shader köpüğü (foam=0). **SU 2. tur adayları:** sprite yansımaları · balık
+gölgesi + halka dalgacık · nilüfer · kıyı karo sanatı · gece lamba yansıması.
+**VFX altyapı borcu duruyor:** decal/shadow blend set etmiyor + parçacıklar
+ADD kullanamıyor (alev bloom eşiğini geçemez) — ateş efektlerinin ön şartı.
+
 **FAZ UI-LAYOUT TAMAM (2026-07-31, save DEĞİŞMEDİ)**: HUD konumları koddan veriye
 (`assets/ui/layout.json`, 23 öğe) + oyun içi düzenleyici (Ctrl+U). Kararlar GDD §7.1'de.
 Yeni modüller: jsonx (cJSON + JSONC + satır/kolon hatası), uilayout (çapa/hiza/dikey/boyut),

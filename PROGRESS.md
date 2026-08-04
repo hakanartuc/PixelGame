@@ -4,6 +4,39 @@ Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
+### Faz SU — su hacmi: tek geçişli shader su sistemi (2026-08-04)
+Motorun ilk gerçek shader efekti. Su artık doku değil HACİM: zemin katmanı
+ayrı target'a alınır, `shaders/water.frag.hlsl` onu dalga normaline göre
+kaydırarak örnekler (kırılma), üstüne katmanlar biner. GDD §1.2h.
+
+- **11 katman:** kırılma · derinlik (süzgeç/örtü çift modeli) · kostik ·
+  parlama · köpük (varsayılan KAPALI) · ıslak bant · koyu bant · menisküs ·
+  kuzey kıyı gölgesi · köpük benekleri + yosun tutamları · ark sıraları.
+  `Ctrl+B` her katmanı tek başına izole eder (12 durum).
+- **Maske:** karo başına 2×2 teksel RGBA — R derinlik (gövde başına
+  normalize), G kıyı uzaklığı, B çırpıntı (gövde mizacı), A kuzey kıyı.
+  `wld_water_mask_fill` (tilemap.c), LINEAR örneklenir.
+- **Mizaç tek kanaldan:** gölet (26) durgun/şeffaf/köpüksüz — deniz (255)
+  dalgalı/örtülü/köpük atlaslı. Aynı shader, iki karakter.
+- **Sualtı serpiştirme:** taş rafı + bitkiler (bush_1/2 renk moduyla), su
+  geçişinden ÖNCE çizilir → bedava bükülür ve süzülür. id 2 ve 20.
+- **Yeni karo [20] sualtı taban** (stone.png, katı değil, 0.72×) + köy
+  güneyinde gölet (world.csv). Kıyı atlası gölette DENENDİ ve GERİ ALINDI
+  (köpük halkası getirdi — koddaki nota bak).
+- **Pixel-art disiplini:** her alan sanat ızgarasına çivili (`snap_art`),
+  tamsayı hash (`frac(sin())` üç arka uçta farklı!), sert bant sınırları.
+  Bayer dither derinlik bantlarında DENENDİ, İKİ KEZ dama artefaktı verdi,
+  çıkarıldı (düz platoda dither sınırda değil her yerde dama üretir).
+- **İki araştırma ajanı:** katman yığını reçetesi + ALttP/Stardew haritalarının
+  piksel piksel ölçümü (Lake Hylia kıyı profili). Kritik bulgular: çukuru
+  gölge değil ÇİZİLİ DUVAR taşır (karo sanatı borcu), parlak su çizgisi
+  karaya yapışıktır, koyu bant ondan sonra ve geniştir.
+- **Rafta:** kuzey duvar shader prototipi (`u.l.w`), şerit-kaydırma demosu
+  (tilemap.c), shader köpüğü (`foam` parametresi). Üçü de gerekçeli yorumla.
+- Kalan (SU 2. tur adayları): sprite yansımaları · balık gölgesi + halka
+  dalgacık · nilüfer (su üstü öğe) · kıyı karo sanatı (Yol A) · gece lamba
+  yansıması. KIŞYOLU (Karduvar buz gölü) harita fazında bu sistemi kullanır.
+
 ### Faz SHADER — MSL'den HLSL'e, Windows yolu açıldı (2026-08-03)
 VFX fazının **sıfırıncı adımı**. Görsel değişiklik SIFIR ve tek kural buydu;
 Hakan gözle doğruladı ("her şey aynı görünüyor" = geçme notu).

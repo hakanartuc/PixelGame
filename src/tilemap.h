@@ -24,6 +24,14 @@ typedef struct
 extern const TileType TILE_TYPES[];
 extern const int TILE_TYPE_COUNT;
 
+// SU DERİNLİK MASKESİ (Faz SU) — karo başına 2×2 RGBA teksel, R = derinlik
+// (0 kara → 255 en derin). outW/outH TEKSEL cinsindendir (karo değil):
+// mapW*2 × mapH*2. Su hacmi geçişine verilir (r2d.h R2DWater.mask) ve shader'da
+// LINEAR örneklenir; kıyının köşesiz silueti ile derinlik gradyanı oradan gelir.
+// false = bu haritada hiç sıvı yok (su geçişi hiç çalışmaz).
+// Dönen tampon statiktir; çağıran sahiplenmez, harita değişince yeniden sorar.
+bool wld_water_mask_fill(int *outW, int *outH, const Uint8 **outPix);
+
 // --- Genel arayüz (başka modüller bunları kullanır) ---
 void generate_map(void);
 
@@ -50,6 +58,19 @@ void tilemap_free_details(void);
 // deterministik hash (save'e girmez), çarpışmasız, YALNIZ dünya haritasında
 // (main harita kontrolüyle çağırır — tilemap_render'dan hemen sonra)
 void tilemap_render_scatter(R2D *renderer, const Camera *camera);
+
+// --- "SU OLMADAN SU" ŞERİT KAYDIRMA DEMOSU (VFX testi) ---
+// Köy güneyindeki taş döşeli oval çukur (karo 3..10 × 19..24) su asset'i
+// KULLANILMADAN "altında su varmış gibi" çizilir: taş karo yatay şeritlere
+// bölünüp her şerit sinüsle kaydırılır (line scroll hilesi) + mavi tül +
+// gezen parlaklık bandı. YALNIZ dünya haritasında çağrılır.
+void tilemap_vfxdemo_render(R2D *renderer, R2DTexture **tileTextures,
+                            const Camera *camera);
+
+// Dev anahtarı (Ctrl+V) — dört durum: asset akışı ve şerit hilesi bağımsız
+// kısılır. "Gördüğüm hareket asset'ten mi bizden mi" sorusunun cevabı bu.
+void tilemap_vfx_cycle(void);
+const char *tilemap_vfx_label(void);
 
 int  tile_at_point(float worldX, float worldY);
 bool box_hits_solid(SDL_FRect box);

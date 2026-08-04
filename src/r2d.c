@@ -94,6 +94,20 @@ static bool postfxSplit = false;
 static int postfxSplitVert = 0;
 static Uint32 frameNo = 0;   // gren animasyonu için kare sayacı (postfx zamanı)
 
+// Su hacmi: zemin katmanı floorTex'e alınır, fs_water onu okuyup waterTex'e
+// yazar, sonuç batch'in başına tek quad olarak döner. İki target şart —
+// aynı dokudan okuyup ona yazmak tanımsız davranış.
+static SDL_GPUGraphicsPipeline *waterPipeline = NULL;
+static R2DTexture *floorTex = NULL;   // zemin katmanı (okunan)
+static R2DTexture *waterTex = NULL;   // bileşik sonuç (yazılan)
+static bool waterDone = false;        // kare başına en fazla bir su geçişi
+typedef struct {                      // shaders/water.frag.hlsl WaterU ile BİREBİR
+    float a[4]; float b[4]; float c[4]; float d[4];
+    float e[4]; float f[4]; float g[4]; float h[4];
+    float k[4];                       // shader'da da 'k': i/j bilinçli atlandı
+    float l[4];                       // x=kıyı gölgesi gücü, gerisi boş
+} R2DWaterU;
+
 // Işık uniform'ları — shaders/light.frag.hlsl LightU ile birebir aynı düzen
 // (hepsi float4, 16 bayt stride; üretilen SPIR-V üye ofsetleriyle doğrulandı).
 // Tek statik kopya: kare başına bir ışık pass'i (r2d_light_pass yorumu).
@@ -354,6 +368,24 @@ R2D *r2d_init(SDL_Window *window)
     }
     SDL_ReleaseGPUShader(gpu, fsPost);
 
+    // Su hacmi: İKİ doku (zemin + derinlik maskesi) + 1 uniform buffer.
+    // Hedef formatı RGBA8 — su ekrana değil waterTex'e yazıyor.
+    // DİKKAT sıra: (uniform tampon, sampler). İlk yazımda (2,1) yazıldı, yani
+    // "2 uniform tampon + 1 sampler" — maske dokusu HİÇ BİLDİRİLMEDİ, sample
+    // sessizce 0 döndü ve su hiç görünmedi. Derleyici de sürücü de uyarmıyor.
+    SDL_GPUShader *fsWater = load_shader(SDL_GPU_SHADERSTAGE_FRAGMENT, "water.frag", 1, 2);
+    if (fsWater == NULL) {
+        SDL_Log("r2d: su shader'i derlenemedi: %s", SDL_GetError());
+        return NULL;
+    }
+    waterPipeline = make_pipeline(vs, fsWater, R2D_BLEND_ALPHA,
+                                  SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM);
+    if (waterPipeline == NULL) {
+        SDL_Log("r2d: su pipeline kurulamadi: %s", SDL_GetError());
+        return NULL;
+    }
+    SDL_ReleaseGPUShader(gpu, fsWater);
+
     SDL_ReleaseGPUShader(gpu, vs);   // pipeline'lara bağlandı — referansımız gereksiz
     SDL_ReleaseGPUShader(gpu, fs);
 
@@ -432,6 +464,8 @@ void r2d_quit(R2D *ctx)
     SDL_WaitForGPUIdle(gpu);
     if (whiteTex) { SDL_ReleaseGPUTexture(gpu, whiteTex->tex); SDL_free(whiteTex); }
     if (sceneTex) { SDL_ReleaseGPUTexture(gpu, sceneTex->tex); SDL_free(sceneTex); }
+    if (floorTex) { SDL_ReleaseGPUTexture(gpu, floorTex->tex); SDL_free(floorTex); }
+    if (waterTex) { SDL_ReleaseGPUTexture(gpu, waterTex->tex); SDL_free(waterTex); }
     if (fsQuadBuf) SDL_ReleaseGPUBuffer(gpu, fsQuadBuf);
     if (transferBuf) SDL_ReleaseGPUTransferBuffer(gpu, transferBuf);
     if (vertexBuf) SDL_ReleaseGPUBuffer(gpu, vertexBuf);
@@ -444,6 +478,7 @@ void r2d_quit(R2D *ctx)
     if (lightPipeline) SDL_ReleaseGPUGraphicsPipeline(gpu, lightPipeline);
     if (lightPipelineTarget) SDL_ReleaseGPUGraphicsPipeline(gpu, lightPipelineTarget);
     if (postfxPipeline) SDL_ReleaseGPUGraphicsPipeline(gpu, postfxPipeline);
+    if (waterPipeline) SDL_ReleaseGPUGraphicsPipeline(gpu, waterPipeline);
     SDL_ReleaseWindowFromGPUDevice(gpu, win);
     SDL_DestroyGPUDevice(gpu);
     gpu = NULL;
@@ -1012,6 +1047,7 @@ bool r2d_begin_frame(R2D *ctx, Uint8 clearR, Uint8 clearG, Uint8 clearB)
     vertCount = 0;
     drawCount = 0;
     curBlend = R2D_BLEND_ALPHA;
+    waterDone = false;
 
     cmdBuf = SDL_AcquireGPUCommandBuffer(gpu);
     if (cmdBuf == NULL) {
@@ -1076,6 +1112,90 @@ void r2d_postfx_flush(R2D *ctx)
     postfx_pass();
     postfxSplit = true;        // bundan sonrası doğrudan ekrana, filtresiz
     postfxSplitVert = vertCount;   // HUD bu noktadan sonra başlar
+}
+
+// ---------------------------------------------------------------------------
+// Su hacmi
+// ---------------------------------------------------------------------------
+static void water_targets_ensure(void)
+{
+    if (floorTex == NULL ||
+        (Uint32)floorTex->w != swapW || (Uint32)floorTex->h != swapH) {
+        if (floorTex) r2d_texture_destroy(NULL, floorTex);   // ertelenir
+        if (waterTex) r2d_texture_destroy(NULL, waterTex);
+        floorTex = texture_create((int)swapW, (int)swapH, true);
+        waterTex = texture_create((int)swapW, (int)swapH, true);
+    }
+}
+
+// fs_water geçişi: floorTex + maske → waterTex, tam ekran quad
+static void water_pass(const R2DWaterU *wu, R2DTexture *mask)
+{
+    SDL_GPUColorTargetInfo target = {
+        .texture = waterTex->tex,
+        .load_op = SDL_GPU_LOADOP_DONT_CARE,   // quad her pikseli yazar
+        .store_op = SDL_GPU_STOREOP_STORE,
+    };
+    SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmdBuf, &target, 1, NULL);
+    SDL_BindGPUGraphicsPipeline(pass, waterPipeline);
+    float viewport[4] = { 1.0f, 1.0f, 0.0f, 0.0f };   // quad pos 0..1 — NDC birebir
+    SDL_PushGPUVertexUniformData(cmdBuf, 0, viewport, sizeof(viewport));
+    SDL_PushGPUFragmentUniformData(cmdBuf, 0, wu, sizeof(*wu));
+    SDL_GPUBufferBinding vb = { .buffer = fsQuadBuf, .offset = 0 };
+    SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
+    // Zemin NEAREST (pixel-art keskinliği), maske LINEAR (yumuşak derinlik
+    // rampası ve köşesiz kıyı silueti TAM OLARAK buradan geliyor).
+    SDL_GPUTextureSamplerBinding tsb[2] = {
+        { .texture = floorTex->tex, .sampler = sampler },
+        { .texture = mask->tex,     .sampler = samplerLinear },
+    };
+    SDL_BindGPUFragmentSamplers(pass, 0, tsb, 2);
+    SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
+    SDL_EndGPURenderPass(pass);
+}
+
+void r2d_water_flush(R2D *ctx, const R2DWater *w)
+{
+    // Kare başına EN FAZLA BİR kez: ikinci çağrı o arada çizilen NPC/oyuncuyu
+    // da zemin sanıp suyun altına alırdı.
+    if (cmdBuf == NULL || waterDone || postfxSplit || curTarget != NULL) return;
+    if (w == NULL || w->mask == NULL || w->maskW <= 0.0f || w->maskH <= 0.0f) return;
+    water_targets_ensure();
+    if (floorTex == NULL || waterTex == NULL) return;
+
+    R2DWaterU wu;
+    wu.a[0] = w->time;   wu.a[1] = w->zoom;  wu.a[2] = (float)swapW; wu.a[3] = (float)swapH;
+    wu.b[0] = w->camX;   wu.b[1] = w->camY;  wu.b[2] = w->maskW;     wu.b[3] = w->maskH;
+    wu.c[0] = w->sunX;   wu.c[1] = w->sunY;  wu.c[2] = w->sunI;      wu.c[3] = w->artPx;
+    wu.d[0] = w->shallowR; wu.d[1] = w->shallowG; wu.d[2] = w->shallowB; wu.d[3] = w->shallowCover;
+    wu.e[0] = w->deepR;    wu.e[1] = w->deepG;    wu.e[2] = w->deepB;    wu.e[3] = w->deepCover;
+    wu.f[0] = w->waveHeight; wu.f[1] = w->refract; wu.f[2] = w->caustic; wu.f[3] = w->foam;
+    wu.g[0] = w->glint;  wu.g[1] = w->quant; wu.g[2] = w->foamSpeed; wu.g[3] = w->foamAmp;
+    wu.h[0] = w->sunR;   wu.h[1] = w->sunG;  wu.h[2] = w->sunB;      wu.h[3] = w->tilePx;
+    // layers = 0 → HEPSİ AÇIK. Designated-initializer ile çağıran alanı hiç
+    // yazmazsa 0 gelir; "0 = hepsi kapalı" olsaydı su sessizce kaybolurdu.
+    float lay = (w->layers > 0.5f) ? w->layers : (float)R2D_WATER_L_ALL;
+    wu.k[0] = w->wetBand; wu.k[1] = w->darkLine; wu.k[2] = w->meniscus; wu.k[3] = lay;
+    wu.l[0] = w->bankShadow; wu.l[1] = w->dashes; wu.l[2] = w->arcs; wu.l[3] = w->wallFace;
+
+    // 1) O ana kadar çizilmiş zemin katmanı floorTex'e (temizleyerek)
+    flush_to(cmdBuf, floorTex->tex, (float)swapW, (float)swapH, true,
+             clearColor, targetPipeline, 0);
+    // 2) Su geçişi
+    water_pass(&wu, w->mask);
+    // 3) Batch'i SIFIRLA ve bileşik sonucu tek quad olarak geri koy. Her
+    //    flush_to kendi vertex aralığını ayrıca yüklüyor (bkz. flush_to), yani
+    //    kare ortasında sıfırlamak güvenli — sonrası için kare sanki tek büyük
+    //    arka plan sprite'ıyla başlamış gibi görünüyor ve ışık/sprite/post-fx/
+    //    HUD yolları hiç değişmeden çalışıyor.
+    vertCount = 0;
+    drawCount = 0;
+    R2DBlend savedBlend = curBlend;
+    curBlend = R2D_BLEND_ALPHA;
+    SDL_FRect full = { 0.0f, 0.0f, (float)swapW, (float)swapH };
+    r2d_draw_texture(ctx, waterTex, NULL, &full);
+    curBlend = savedBlend;
+    waterDone = true;
 }
 
 void r2d_end_frame(R2D *ctx)

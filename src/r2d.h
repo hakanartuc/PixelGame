@@ -189,6 +189,74 @@ void r2d_postfx_set(R2D *ctx, const R2DPostFX *fx);
 // Filtre kapalıysa hiçbir şey yapmaz (güvenli çağrı). Kare başına bir kez.
 void r2d_postfx_flush(R2D *ctx);
 
+// --- SU HACMİ (shaders/water.frag.hlsl) ------------------------------------
+// KARE ORTASINDA çağrılır: o ana kadar çizilmiş olan ZEMİN katmanı ayrı bir
+// target'a alınır, su shader'ı onu KENDİ DALGA NORMALİNE GÖRE KAYDIRARAK
+// örnekler, bileşik sonuç batch'in başına tek tam-ekran quad olarak geri
+// konur. Sonrasında normal çizime devam edilir; çağıranın başka bir şey
+// bilmesi gerekmez (ışık, sprite, post-fx, HUD ayrımı hepsi değişmeden çalışır).
+//
+// NEDEN BÖYLE: su altındaki şeyi ÖRTMEK sualtı hissi vermiyor — sualtı,
+// tanıdık bir nesnenin BÜKÜLDÜĞÜNÜ görmektir. Bükmek için altındaki görüntüyü
+// örneklemek gerekir, örneklemek için de o görüntünün bir doku olması gerekir.
+//
+// mask: derinlik maskesi — KARO BAŞINA 2×2 TEKSEL, R kanalı 0 (kara) → 1 (en
+// derin). LINEAR örneklenir; teksel merkezleri arası yumuşak rampa oradan gelir,
+// yani kıyının köşeli basamak silueti bu yüzden yok.
+//
+// KATMAN BİT MASKESİ (layers): her katman kendi bitiyle kapanabilir. DEV
+// anahtarı (main.c Ctrl+B) tek bir biti bırakıp gerisini söndürerek katmanı
+// İZOLE gösteriyor. Bu sayılar shaders/water.frag.hlsl LB_* sabitleriyle BİREBİR
+// olmak zorunda — biri kayarsa yanlış katman kapanır ve sessiz hata olur.
+#define R2D_WATER_L_REFRACT  1    // kırılma (sualtı bükülmesi)
+#define R2D_WATER_L_DEPTH    2    // derinlik örtmesi / su rengi
+#define R2D_WATER_L_CAUSTIC  4    // kostik ışık ağı
+#define R2D_WATER_L_GLINT    8    // güneş parlaması
+#define R2D_WATER_L_FOAM     16   // kıyı köpüğü
+#define R2D_WATER_L_WET      32   // ıslak bant (kıyının kara tarafı)
+#define R2D_WATER_L_DARK     64   // koyu hat (suyun silueti)
+#define R2D_WATER_L_MENI     128  // menisküs (parlak kıyı çizgisi)
+#define R2D_WATER_L_BANK     256  // kıyı gölgesi (kuzey kıyının çukura düşen gölgesi)
+#define R2D_WATER_L_DASH     512  // ışıltı çizgicikleri (seyrek, ayrık, sürüklenen)
+#define R2D_WATER_L_ARC      1024 // dalga-yankı arkları (kıyıya paralel koyu sıralar)
+#define R2D_WATER_L_ALL      2047
+#define R2D_WATER_L_COUNT    11   // izole modda dolaşılacak katman sayısı
+
+typedef struct {
+    R2DTexture *mask;
+    float maskW, maskH;          // maske boyutu, TEKSEL cinsinden (karo değil)
+    float tilePx;                // bir karonun dünya pikseli
+    float camX, camY, zoom;
+    float time;                  // saniye — DUVAR saati (su geceleyin yavaşlamaz)
+    float sunX, sunY;            // güneş yönü, birim vektör
+    float sunI;                  // güneş şiddeti: 0 gece, 1 tepe
+    float sunR, sunG, sunB;      // güneş rengi, 0..1
+    float artPx;                 // bir sanat pikselinin EKRAN pikseli (snap için)
+    float shallowR, shallowG, shallowB, shallowCover;   // sığ su rengi + örtme
+    float deepR, deepG, deepB, deepCover;               // derin su rengi + örtme
+    float waveHeight;            // dalganın derinliğe etkisi (sırt sığ, çukur derin)
+    float refract;               // kırılma gücü, dünya px
+    float caustic;               // kostik ışık ağı gücü
+    float foam;                  // kıyı köpüğü gücü
+    float glint;                 // güneş parlaması gücü
+    float quant;                 // renk kademesi (0 = kapalı, örn. 24 = paletli)
+    float foamSpeed;             // köpüğün kıyıya vurup çekilme hızı (rad/sn)
+    float foamAmp;               // köpüğün ne kadar içeri girdiği (derinlik biriminde)
+    // SU ÇİZGİSİ — üç bant. Sahibinin "gölge/derinlik yok" dediği şeyin karşılığı.
+    float wetBand;               // ıslak bant gücü (kıyının KARA tarafı)
+    float darkLine;              // koyu hat gücü (suyun kendi silueti, çarpımsal)
+    float meniscus;              // menisküs gücü (EKLEMELİ — bütçeye dahil, ≤0.13)
+    // KIYI GÖLGESİ — kamera 3/4 eğik olduğu için gölet bir ÇUKUR: kuzey kıyının
+    // iç duvarı suya gölge düşürür (maskenin A kanalı taşır). Gölgede kostik ve
+    // parlama da söner — güneş yoksa ışık oyunu da yok.
+    float bankShadow;            // kıyı gölgesi gücü (0 = kapalı, ~0.55 tipik)
+    float dashes;                // ışıltı çizgicikleri gücü (EKLEMELİ, ~0.12)
+    float arcs;                  // dalga-yankı arkları gücü (ÇARPIMSAL, 0..1)
+    float wallFace;              // kuzey duvar prototipi (0 = RAFTA; karo sanatı gelince kıyas için 1)
+    float layers;                // katman bit maskesi; 0 = hepsi açık (bkz. R2D_WATER_L_*)
+} R2DWater;
+void r2d_water_flush(R2D *ctx, const R2DWater *w);
+
 // --- Sprite ---
 void r2d_draw_texture(R2D *ctx, R2DTexture *tex,
                       const SDL_FRect *src, const SDL_FRect *dst);
