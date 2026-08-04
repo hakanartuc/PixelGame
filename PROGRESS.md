@@ -4,6 +4,51 @@ Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
+### Faz SU-4 — kıyı: kesit, kumsal, deniz sırtları, iki karakterli ses (2026-08-04)
+Su fazının kıyı turu. Görsel test on tur sürdü; bulunan hataların çoğu ayar
+değil YAPISAL hataydı ve hepsi koda gerekçesiyle yazıldı.
+
+- **Kıyı kesiti** (`shore_bake_atlas`/`shore_cut_pass`): ALttP'den ölçülen
+  anatomi çalışma zamanında boyanıp çift-ızgara ile kıyıya basılıyor —
+  fistolu yamaç + dip konturu (kuzey), siluet dudağı + çim saçağı (güney),
+  köşede kesintisiz dönen kontur. Yön "en yakın kara" yerine ıslaklık
+  alanının GRADYANINDAN (kopuk tarak dişleri düzeldi).
+  Kapalı olduğu yerler: vaha (kendi atlası var), harita kenarı dolgu suyu,
+  ve KUMSAL (kesit yükseltilmiş kıyı grameri; düz sahilde koyu şerit olur).
+- **Güney kumsalı**: haritanın alt kenarı gerçek deniz + 4 karo saf kum
+  bandı, su çizgisi her sütunda satır 141 (düm düz). Doğu kenar dolgu suyu
+  kaldırıldı (çöl geçidinin yanında yapay sahil çiziyordu).
+- **Kumsal dalga vuruşu** (`tilemap_render_beach_swash`, KARA üstü geçiş):
+  üç evreli döngü 6.5 sn (deniz ritminden AYRI), evreler ease-in-out;
+  aktif swash BULANIK kumlu su (berrak değil — dalga kumu askıda taşır),
+  çekilmiş bölge koyu ıslak kum + sütun başına kuruma HAFIZASI, köpük
+  öbekleri kesik kesik. Köpük parlaklığı dalga ENERJİSİNDEN (kıyı
+  çizgisinde 0) — sabit alfa "bir anda belirip kayboluyor" görünüyordu.
+- **Deniz sırtları shader'a TAŞINDI** (LB_ARC yerine ilerleyen swell):
+  CPU'da yedi tur denendi, hep "suyun üstüne yapıştırılmış çubuk" gibi
+  durdu — sebep mimari: CPU geçişi su geçişinden SONRA çiziyor, sırtlar
+  suyun renk hattından/geometrisinden geçmiyor. Shader'da sırt konumu kıyı
+  uzaklığı alanından türüyor → kıyıya kendiliğinden paralel. Eski CPU kodu
+  `#if 0` içinde gerekçesiyle duruyor.
+- **Maske kıyı menzili 3 → 12 karo** (`WMASK_SHORE_HT` 6→24): alan 3 karoda
+  DOYUYORDU, sırtlar orada donup kıyıya yakın şeride hapsoluyordu.
+  Shader'daki SHORE_PX/SHORE_LINE formülünden yeniden ölçeklendi (su
+  çizgisi aynı fiziksel yerde kaldı).
+- **Derinlik bant kenarları organik**: kuantalamadan önce yumuşak mekânsal
+  sapma — düz kıyıda bantlar ekranı kesen yatay teraslara dönüşüyordu.
+- **Su sesi iki karakterli**: `amb_water.wav` (deniz: lap kabarmalı,
+  0.33 Hz) + `amb_water_calm.wav` (gölet: 3 boğuk lap, 0.18 Hz, kısık),
+  `ambience_set_water(gain, agit)` çapraz geçişli. Mizaç kaynağı VFX ile
+  ORTAK: `tilemap_water_agitation()`.
+- **Çırpıntı sözleşmesi**: agit < 0.05 ⇒ "bu gövdenin KENDİ kıyı sanatı var,
+  shader kıyı bantları çizmez" (vaha). Yapay lacivert şeritler bundan.
+- **Öğrenilen dört kural (koda yazılı):** (1) aynı sinüste t ile x birlikte
+  görünürse desen yana yürür · (2) düzensizlik hash ile verilirse komşular
+  kopar, düzgün mekânsal fonksiyon gerekir · (3) kıvrımın yatay türevi
+  dikey türevi aşarsa eş-yükselti çizgisi dikleşir ve kıyıya dik artefakt
+  çıkar (|dbend/dx| ≤ 0.35 × dph/dy) · (4) su efekti su geçişinden SONRA
+  çizilirse suyun parçası olamaz.
+
 ### Faz SU-3 — su kapanışı: oyuncu yansıması + gece + yağmur (2026-08-04)
 Su fazının kapanış turu (Hakan: "suyu son haline getirelim").
 

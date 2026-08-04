@@ -218,6 +218,19 @@ vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü
   `fx: kaba += 1` biçimiyle işler, req ile okunur).
 
 ## Sıradaki iş
+**FAZ SU-4 TAMAM (2026-08-04)**: kıyı kesiti (baked atlas + çift-ızgara;
+vaha/kenar/kumsal hariç) · güney kumsalı (düz su çizgisi satır 141 + 4 karo kum)
+· kumsal dalga vuruşu (kara üstü geçiş, 6.5 sn, ease-in-out, bulanık kumlu su +
+kuruma hafızası + enerjiyle sönen köpük) · deniz sırtları SHADER'A taşındı
+(CPU'da 7 tur denendi, mimari sebep koda yazılı) · maske kıyı menzili 3→12 karo
+(WMASK_SHORE_HT 6→24; SHORE_PX/SHORE_LINE onunla birlikte ölçeklenir!) ·
+derinlik bant kenarları organik · su sesi iki karakterli (deniz/gölet çapraz
+geçiş, mizaç kaynağı VFX ile ortak) · çırpıntı<0.05 = "kendi kıyı sanatı var".
+DÖRT KURAL koda gömülü: t·x aynı sinüste = yana yürüme · hash düzensizlik =
+kopuk komşu · |dbend/dx| ≤ 0.35×dph/dy · su efekti su pass'inden SONRA çizilemez.
+SIRADAKİ: deniz katmanları için CANLI AYAR TUŞU (10 tur tahminle geçti, ölçme
+yükü Hakan'da kaldı) → NPC yansıması → ateş paketi.
+
 **FAZ SU-3 TAMAM (2026-08-04, su fazı KAPANDI)**: oyuncu yansıması (anlık
 kare + ekipman; oversize bayrağı ÖZELLİKTİR durum değil — dersi player.c'de),
 gövde başına garantili balık, su kenarı fenerleri (light.c + decor.c aynı

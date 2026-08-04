@@ -24,6 +24,13 @@ void ambience_set_volume(float v01);   // kullanıcı müzik seviyesiyle ölçek
 // Yağmur katmanı: day/night'ın ÜSTÜNE biner (crossfade havuzundan bağımsız).
 // g01 = hedef şiddet (weather_intensity) — geçişi ambience_update yumuşatır.
 void ambience_set_rain(float g01);
+
+// Su katmanı: kıyı çırpıntısı — rain ile aynı desen, İKİ bağımsız stream
+// (deniz/göl + gölet). g01 = hedef kazanç (main en yakın ıslak karo
+// mesafesinden hesaplar); agit01 = suyun çırpıntı karakteri (tilemap
+// wmask_agitation, 0..1): 1 = tam deniz sesi, 0 = tam gölet sesi —
+// iki stream'in kazancı çapraz geçişli (g*agit / g*(1-agit)).
+void ambience_set_water(float g01, float agit01);
 void ambience_update(float dt);
 void ambience_quit(void);
 

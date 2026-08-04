@@ -35,6 +35,15 @@ bool wld_water_mask_fill(int *outW, int *outH, const Uint8 **outPix);
 // Bu karo sıvı mı? (yansıma/nilüfer kırpması — wmask_base > 0 olan türler)
 bool tilemap_is_water(int col, int row);
 
+// Bu karonun çırpıntı karakteri 0..1 (wmask_agitation ölçekli):
+// 1 = açık su (deniz/göl), ~0.1 = gölet/vaha, 0 = kara.
+// Kıyı ambiyansı hangi su sesinin çalacağını buradan seçer.
+float tilemap_water_agitation(int col, int row);
+
+// Kumsal dalga vuruşu (swash): dalga kuma tırmanıp geri çekilir.
+// KARA üstü geçiş — su geçişinden SONRA, yalnız kum (id 15) kıyısında.
+void tilemap_render_beach_swash(R2D *renderer, const Camera *camera);
+
 // Su ÜSTÜ örtüsü (nilüfer) — r2d_water_flush'tan SONRA çağrılır
 void tilemap_render_water_overlay(R2D *renderer, const Camera *camera);
 

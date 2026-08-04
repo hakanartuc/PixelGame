@@ -113,8 +113,10 @@ struct PSIn {
 // çizgisinde G gerçekte 1/3 çıkıyordu ve "1/6'nın üstünde açılır" diye konan
 // eşikler (kostik 0.10..0.20) aslında SUYUN DIŞINDA, çimenin üstünde kalıyordu.
 // 2 teksel/karo + aşağıdaki muv düzeltmesi ikisini birlikte kapatıyor.
-static const float SHORE_PX   = 1.0 / 48.0;   // 1 sanat pikseli, G birimi
-static const float SHORE_LINE = 4.0 / 48.0;   // görsel su çizgisi (= 1/12)
+// WMASK_SHORE_HT = 24 (tilemap.c) → 1 sanat px = 1/(8*24) = 1/192,
+// su çizgisi = 1/(2*24) = 1/48 = 4 sanat px. HT değişirse İKİSİ de değişir.
+static const float SHORE_PX   = 1.0 / 192.0;  // 1 sanat pikseli, G birimi
+static const float SHORE_LINE = 4.0 / 192.0;  // görsel su çizgisi (= 1/48)
 
 // Bant konumları — sanat pikseli cinsinden, su çizgisinden İÇERİ (su tarafı).
 // SIRA ALttP'DEN ÖLÇÜLDÜ ve İLK KURGUMUZUN TERSİ: parlak menisküs KARAYA
@@ -210,6 +212,11 @@ float4 main(PSIn i) : SV_Target0
     float depth  = msk.r;   // derinlik: rengi ve örtmeyi belirler
     float shore  = msk.g;   // KIYI uzaklığı: su çizgisini belirler (derinlikten AYRI)
     float agit   = msk.b;   // ÇIRPINTI: gövdenin mizacı
+    // SÖZLEŞME (tilemap.c wmask_agitation ile ortak): çırpıntı < 0.05 →
+    // gövdenin KENDİ kıyı sanatı var (vaha atlası gibi), shader kıyı
+    // bantlarını çizmez. Yoksa iki kıyı işlemi üst üste biniyor ve yapay
+    // lacivert şeritler çıkıyor.
+    bool ownShoreArt = agit < 0.05;
     float bank   = msk.a;   // KUZEY KIYI YAKINLIĞI: çukurun kıyı gölgesi
 
     uint L = (uint)(u.k.w + 0.5);
@@ -245,7 +252,7 @@ float4 main(PSIn i) : SV_Target0
     // "gölge yok" dediği şey aslında bu bandın hiç olmamasıydı.
     // ---------------------------------------------------------------------
     if (shore < SHORE_LINE) {
-        if (layer_on(L, LB_WET) && u.k.x > 0.0) {
+        if (layer_on(L, LB_WET) && u.k.x > 0.0 && !ownShoreArt) {
             // Gelgit yalnız İÇERİ çekebilir (min(edge,0)): bandın dış kenarı
             // 4 sanat px'te maskenin kara rampası bittiği için dışarı taşamaz.
             float span = SHORE_LINE + min(edge, 0.0);
@@ -340,7 +347,7 @@ float4 main(PSIn i) : SV_Target0
     // olmaktan çıkarıp "üstüme kıyı düşüyor" yapan şeyin ta kendisi.
     // 3 kademe: pixel-art gölgesi airbrush değil, kademeli boyanır.
     float bshad = 0.0;
-    if (u.l.x > 0.0 && layer_on(L, LB_BANK)) {
+    if (u.l.x > 0.0 && layer_on(L, LB_BANK) && !ownShoreArt) {
         bshad = bq3 * u.l.x;   // kademe yukarıda (duvarla paylaşılıyor)
     }
 
@@ -411,7 +418,22 @@ float4 main(PSIn i) : SV_Target0
         // bandın ORTASINA denk geldiği için bütün orta koca bir dama
         // dikdörtgeni oluyordu. Sert bant sınırı pixel-art için zaten doğru;
         // sınır dalga kıpırtısıyla organik kırılıyor.
-        float dwq = floor(dw * 4.0 + 0.5) / 4.0;
+        // BANT SAYISI MİZAÇLA: durgun/küçük gövdede 4 kademe HALKA gibi
+        // diziliyor ve yapay duruyor (Hakan, vaha) — küçük gövde tek yumuşak
+        // geçiş ister. Deniz 4 bant (teras okuması iyi), gölet/vaha 2.
+        float bands = lerp(2.0, 4.0, agit);
+        // BANT KENARLARI ORGANİK. Mesafe alanının eş-yükselti çizgileri düz
+        // kıyıda DÜZ olduğu için bantlar ekranı boydan boya kesen yatay
+        // TERASLARA dönüşüyordu (Hakan: "denizin ortasında beliren yatay
+        // genişlikler"). Kuantalamadan ÖNCE derinliğe yumuşak mekânsal
+        // sapma ekliyoruz: bant sınırı deniz tabanı konturu gibi kıvrılıyor.
+        // Eğim sınırı ark katmanındakiyle aynı mantık — dalga boyları uzun
+        // ve genlik küçük, yoksa sınır dikleşip dikey şerit yapar.
+        float dpert = 0.055 * sin(dot(wq, float2(0.0074, 0.0031)))
+                    + 0.032 * sin(dot(wq, float2(0.0043, -0.0096)) + 2.2)
+                    + 0.018 * sin(dot(wq, float2(0.0151, 0.0067)) + 4.1);
+        float dwq = floor((dw + dpert) * bands + 0.5) / bands;
+        dwq = saturate(dwq);
         // Üst iki bant BİRLEŞİK (×1.34 tavanlı): en derin bant ayrı renk
         // alınca göletin ortasında keskin kenarlı koyu bir DİKDÖRTGEN
         // beliriyordu (BFS mesafe alanı köşeli teras çiziyor). Derin bölge
@@ -463,19 +485,69 @@ float4 main(PSIn i) : SV_Target0
     // çizgisinin suya yankısı. G kanalı kıyı uzaklığını taşıdığı için kontur
     // takibi bedava. Fisto: ±1 px'lik TAM piksel oynama — cetvel olmasın.
     // Dışa akış 2 px/sn, 8 fps adımlı (tq): dalga kıyıdan uzaklaşıyor hissi.
+    // ── İLERLEYEN KABARMALAR (swell) — DENİZ SIRTLARI. Bu iş CPU'da
+    // denendi ve YEDİ TUR sürdü; her turda "suyun üstüne yapıştırılmış
+    // beyaz çubuk" gibi durdu. Sebep mimariydi: CPU geçişi su geçişinden
+    // SONRA çiziyor, yani sırtlar suyun renk hattından, derinlik
+    // bantlarından ve kıyı geometrisinden hiç geçmiyor. Burada, shader'ın
+    // içinde, sırtlar suyun KENDİ alanından türüyor:
+    //   · konum KIYI UZAKLIĞI alanından (shore) → kıyıya kendiliğinden
+    //     paralel, koyu ve girintiyi kendiliğinden izler (CPU'da bunu elle
+    //     kurmak imkânsızdı: orada yalnız sütun başına tek y vardı)
+    //   · renk çarpımsal + hafif eklemeli → suyun tonunun İÇİNDE kalır
+    //   · derinlik/gölge/çırpıntı hepsi zaten burada
     if (u.l.z > 0.0 && layer_on(L, LB_ARC)) {
-        float sAP  = floor((shore - SHORE_LINE - wallOfs) / SHORE_PX);
-        float wob  = floor(sin(wq.x * 0.10 + wq.y * 0.07) + 0.5);
-        float ph8  = frac((sAP + wob - floor(tq * 2.0)) / 8.0);
-        float arc  = (ph8 < 0.125 && sAP > 5.0 && sAP < 24.0) ? 1.0 : 0.0;
-        // Çırpıntıda yarıya iner: dalgalı su net yankı bırakmaz. Navy'ye
-        // kayan çarpımsal koyulaştırma (koyu hatla aynı palet disiplini).
-        // Durgun suda ark OLMAZ (Hakan: "köşelerinde dalgaya gerek var mı?")
-        // — ark, dalganın kıyı yankısıdır; dalga yoksa yankısı da yok.
-        // smoothstep 0.20-0.45: gölet (0.10) tamamen kapalı, deniz tam açık.
-        float astr = arc * u.l.z * (1.0 - 0.5 * agit) * (1.0 - bshad)
-                   * smoothstep(0.20, 0.45, agit);
-        col *= lerp(float3(1.0, 1.0, 1.0), float3(0.72, 0.76, 0.92), astr);
+        float sAP = (shore - SHORE_LINE - wallOfs) / SHORE_PX;
+
+        // HIZ: 1.8 sanat px/sn, dalga boyu 34 px → sırt aralığı ~19 sn.
+        // HATA GEÇMİŞİ: 3.4 px/sn + geniş yumuşak gövde bandı kullanılmıştı;
+        // sonuç "hızlıca gidip gelen doğal olmayan gölge" (Hakan). Pixel-art'ta
+        // dalga GENİŞ TON SÜPÜRMESİ olarak okunmaz — KESKİN İNCE KÖPÜK HATTI
+        // + hemen arkasında ince koyu çukur olarak okunur. Geniş gövde
+        // parlatması tamamen kaldırıldı.
+        // KIVRIM — sırt düz olmasın. Düz kumsalda kıyı uzaklığı alanının
+        // eş-yükselti çizgileri ZORUNLU olarak yataydır; dalga hissi için
+        // fazı x boyunca kaydırmak gerekiyor. DALGA BOYU KISA olmalı: uzun
+        // olursa ekranda tek yönlü RAMPA gibi görünür (ilk turun hatası —
+        // 766 px yarı periyot ekrandan geniş olduğu için eğim sanılıyordu).
+        // Üç oktav, en uzunu ~570 px: ekranda birkaç kıvrım görünür.
+        // Zaman bu fonksiyonlara GİRMEZ (girerse desen yana yürür).
+        // KIVRIM EĞİMİ SINIRI (bu hesap ihlal edilirse artefakt kesin):
+        // Sırt çizgisi ph'nin eş-yükselti çizgisidir. Dikey türev
+        //   dph/dy = 1/(34 sanat px * 4 dünya px) = 0.00735 /dünya px.
+        // Yatay türev |dbend/dx| bunu AŞARSA çizgi 45°'den dikleşir ve
+        // KIYIYA DİK tuhaf şeritler çıkar (yaşandı: türev 0.0106 idi).
+        // Kural: |dbend/dx| ≤ ~0.35 × dph/dy  →  ≤ 0.0026.
+        // Aşağıdaki toplam: 0.10*0.0105 + 0.05*0.0210 = 0.0021 ✓
+        float bend = 0.10 * sin(wq.x * 0.0105)
+                   + 0.05 * sin(wq.x * 0.0210 + 1.7);
+        float ph = frac((sAP + tq * 1.8) / 34.0 + bend);
+
+        // Kıyı boyunca yumuşak zarf (zaman GİRMEZ — girerse desen yana yürür)
+        float sw1 = sin(dot(wq, float2(0.0062, 0.0021)));
+        float sw2 = sin(dot(wq, float2(0.0141, -0.0037)) + 2.3);
+        float env = saturate(0.20 + 0.80 * (0.55 * sw1 + 0.45 * sw2 + 0.5));
+
+        // Sığda kabarma güçlenir (dalga kırılır)
+        float shallow = saturate(1.0 - sAP / 34.0);
+        float gate = u.l.z * (1.0 - bshad) * smoothstep(0.20, 0.45, agit) * env;
+
+        // KÖPÜK HATTI — SERT eşik, 1-2 sanat px genişlik. Sığda kalınlaşır.
+        // Sert eşik şart: smoothstep rampası bulanık gölge bandı yapıyor.
+        // Kalınlık da kıvrımla birlikte oynuyor: sırt yer yer kabarık
+        float lipW = (0.026 + 0.020 * shallow)
+                   * (0.75 + 0.55 * (0.5 + 0.5 * sin(wq.x * 0.0163 + 2.9)));
+        if (ph < lipW) {
+            float fa = (0.34 + 0.66 * shallow) * gate;
+            col += float3(0.84, 0.90, 0.95) * min(fa * 0.34, 0.20);
+        }
+        // ÇUKUR — köpüğün hemen ARKASINDA ince koyu hat (sırtın gölgesi),
+        // çarpımsal ve navy'ye kayan (palet disiplini). Genişliği köpüğün
+        // yarısı kadar: kalın olursa yine "gölge bandı" olur.
+        else if (ph < lipW + 0.026) {
+            col *= lerp(float3(1.0, 1.0, 1.0), float3(0.80, 0.84, 0.94),
+                        (0.45 + 0.55 * shallow) * gate);
+        }
     }
 
     // Kıyı gölgesi RENGE burada biner: derinlik örtmesinden sonra (gölge suyun
@@ -591,7 +663,7 @@ float4 main(PSIn i) : SV_Target0
     // fonksiyonu olmalı. Sabit koyu renk lerp'lenirse hat her yerde aynı çıkar
     // ve suyun üstüne çizilmiş bir cetvel gibi durur.
     // ---------------------------------------------------------------------
-    if (u.k.y > 0.0 && layer_on(L, LB_DARK)) {
+    if (u.k.y > 0.0 && layer_on(L, LB_DARK) && !ownShoreArt) {
         float dpos = SHORE_LINE + wallOfs + (DARK_C + edgeAP) * SHORE_PX;
         float dband = abs(shore - dpos) < (DARK_H * SHORE_PX) ? 1.0 : 0.0;
         // Durgun suda hat TAM güçte ve kesintisiz; çırpıntılı suda 0.55× ve
@@ -634,7 +706,7 @@ float4 main(PSIn i) : SV_Target0
     // EKLEMELİ BÜTÇE: kostik 0.14 + parlama 0.16 + menisküs 0.13 = 0.43 ≤ 0.45.
     // Tavan R8G8B8A8_UNORM yüzünden: aşınca su beyaza doyuyor (iki kez yaşandı).
     // ---------------------------------------------------------------------
-    if (u.k.z > 0.0 && layer_on(L, LB_MENI)) {
+    if (u.k.z > 0.0 && layer_on(L, LB_MENI) && !ownShoreArt) {
         float mpos = SHORE_LINE + wallOfs + (MENI_C + edgeAP) * SHORE_PX;
         float mband = abs(shore - mpos) < (MENI_H * SHORE_PX) ? 1.0 : 0.0;
         // (1-bshad*0.7): menisküs göğü yansıtır; gölgedeki kıyıda gök yok,

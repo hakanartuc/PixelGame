@@ -8787,6 +8787,44 @@ int main(int argc, char *argv[])
                 bool raining = (wnow == WEATHER_RAIN || wnow == WEATHER_STORM);
                 ambience_set_rain((openSky && raining) ? weather_intensity() : 0.0f);
 
+                // SU KIYISI SESİ: en yakın ıslak karoya yaklaştıkça çırpıntı.
+                // Tarama ucuz ama her kare gereksiz — ~0.25 sn'de bir yeter
+                // (geçişi zaten ambience_update yumuşatıyor).
+                {
+                    static float waterScanT = 0.0f;
+                    waterScanT -= dt;
+                    if (waterScanT <= 0.0f)
+                    {
+                        waterScanT = 0.25f;
+                        float wg = 0.0f, agit = 0.0f;
+                        if (openSky)   // zindanda/iç mekânda kıyı yok
+                        {
+                            int pc = (int)((player.rect.x + player.rect.w / 2.0f) / TILE_SIZE);
+                            int pr = (int)((player.rect.y + player.rect.h) / TILE_SIZE);
+                            float best = 7.0f;   // 6 karodan uzak = duyulmaz
+                            for (int rr = pr - 6; rr <= pr + 6; rr++)
+                                for (int cc = pc - 6; cc <= pc + 6; cc++)
+                                {
+                                    if (!tilemap_is_water(cc, rr)) continue;
+                                    float dc = (float)(cc - pc), dr = (float)(rr - pr);
+                                    float d = SDL_sqrtf(dc * dc + dr * dr);
+                                    if (d < best)
+                                    {
+                                        best = d;
+                                        // en yakın suyun karakteri seçer:
+                                        // deniz/göl dalgalı, gölet durgun
+                                        agit = tilemap_water_agitation(cc, rr);
+                                    }
+                                }
+                            wg = 1.0f - best / 6.0f;
+                            if (wg < 0.0f) wg = 0.0f;
+                            // Yağmur şiddetliyken kıs: iki ıslak ses üst üste çamur
+                            if (raining) wg *= 1.0f - weather_intensity() * 0.5f;
+                        }
+                        ambience_set_water(wg * 0.7f, agit);
+                    }
+                }
+
                 // Köylüler yağmur/fırtınada evlerine çekilir (kervancı gölgelikte)
                 npc_set_shelter(raining && weather_intensity() > 0.4f, kervanIdx);
 
@@ -10841,6 +10879,8 @@ int main(int argc, char *argv[])
         // SU ÜSTÜ ÖRTÜSÜ: nilüferler — sudan SONRA (yüzeyin üstünde dururlar,
         // kırılma onları bükmez; bükülselerdi batık okunurlardı)
         tilemap_render_water_overlay(renderer, &camera);
+        // Kumsal dalga vuruşu: kumun üstüne biner (kara efekti)
+        tilemap_render_beach_swash(renderer, &camera);
 
         // SESSİZ EL kontrat tahtası [E] ipucu (locada, sınıf açık) — MAP_WORLD
         // bloğunun DIŞINDA (içindeyken locada hiç çizilmiyordu, Hakan raporu)

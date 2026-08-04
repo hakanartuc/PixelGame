@@ -318,7 +318,14 @@ const char *tilemap_vfx_label(void)
 // düşürmek (rampayı değil).
 #define WMASK_SUB       2        // karo başına teksel (her eksende)
 #define WMASK_RAMP_MAX 10        // rampanın en çok kaç YARIM karoda doyduğu (=5 karo)
-#define WMASK_SHORE_HT  6        // G kanalının doyduğu yarım karo sayısı (=3 karo)
+// G kanalının doyduğu yarım karo sayısı. 6 (=3 karo) iken deniz sırtları
+// 3 karodan uzakta DONUYORDU: sırt konumu bu alandan türüyor, alan doyunca
+// desen sabitleniyor ve dalgalar kıyıya yakın bir şeritte hapsoluyordu
+// (Hakan: "denizin görünen ucundan gelmeleri gerekiyordu"). 24 = 12 karo,
+// yani görünen denizin tamamı. Shader'daki SHORE_PX/SHORE_LINE bu sayıdan
+// TÜRETİLİYOR (1 sanat px = 1/(8*HT), su çizgisi = 1/(2*HT)) — ikisi
+// birlikte değişmek zorunda, yoksa bütün kıyı bantları kayar.
+#define WMASK_SHORE_HT 24        // =12 karo
 #define WMASK_BANK_REACH 3       // kıyı gölgesinin eriştiği yarım karo (=24 sanat px)
 #define WMASK_BODY_MAX 255       // ayrı su gövdesi tavanı (0 = "kara" etiketi)
 
@@ -353,7 +360,12 @@ static Uint8 wmask_agitation(int id)
 {
     switch (id) {
         case 2:  return 255;   // göl/nehir/deniz — açık su
-        case 17: return 30;    // vaha suyu: kanon "dingin" istiyor
+        // ÇOK DÜŞÜK ÇIRPINTI (<0.05 → ham 12) SÖZLEŞME: "bu gövdenin KENDİ
+        // kıyı sanatı var, shader kıyı bantları çizmesin". Vaha kendi
+        // sanatçı atlasını (dsrWaterTex) taşıyor; shader'ın koyu bandı +
+        // menisküsü + kıyı gölgesi onun üstüne binince yapay lacivert
+        // şeritler çıkıyordu (Hakan). Kıyı KESİTİ de aynı sebeple kapalı.
+        case 17: return 12;    // vaha: dingin + kendi kıyı sanatı
         case 20: return 26;    // gölet/sığlık: deniz değil, kıpırtı kadar
         default: return 0;
     }
@@ -372,6 +384,12 @@ bool tilemap_is_water(int col, int row)
 {
     if (col < 0 || col >= mapW || row < 0 || row >= mapH) return false;
     return wmask_base(tilemap[row][col]) > 0.0f;
+}
+
+float tilemap_water_agitation(int col, int row)
+{
+    if (col < 0 || col >= mapW || row < 0 || row >= mapH) return 0.0f;
+    return wmask_agitation(tilemap[row][col]) / 255.0f;
 }
 
 static Uint8  wmaskPix[WMASK_W_MAX * WMASK_H_MAX * 4];
@@ -588,6 +606,295 @@ bool wld_water_mask_fill(int *outW, int *outH, const Uint8 **outPix)
     return true;
 }
 
+// KUMSAL DALGA VURUŞU (swash) — gerçek deniz/okyanus kıyısının imzası:
+// dalga kuma TIRMANIYOR, ıslak bir dil bırakıyor, sonra geri çekiliyor.
+// NEDEN SHADER'DA DEĞİL: ıslanan yer KUM, yani KARA. Su shader'ı yalnız
+// ıslak karoları boyuyor ve maskenin kara tarafındaki rampası ancak 4 sanat
+// px sürüyor — dalganın 1 karo içeri girmesi oradan çıkmaz. Burası kara
+// üstü ayrı geçiş: sudan SONRA çizilir, kumun üstüne biner.
+//
+// HAREKET KIYIYA DİK: reach (tırmanma mesafesi) zamanla salınıyor, yani su
+// yukarı-aşağı gidip geliyor. Kıyı boyunca faz kayması var (dünya x'ine
+// bağlı) — yoksa bütün sahil aynı anda ıslanır ve cetvel gibi durur.
+// Salınım asimetrik (ikinci harmonik): hızlı vuruş, yavaş çekilme.
+#define SWASH_REACH_MIN  10.0f   // dünya px — en az bu kadar ıslak dil kalır
+#define SWASH_REACH_AMP  46.0f   // tırmanma genliği (≈0.7 karo)
+#define SWASH_STEP        4.0f   // 1 sanat px = 4 dünya px (kuantalama)
+#define SWASH_COLW       12.0f   // sütun şeridi genişliği (3 sanat px)
+#define SWASH_MEM       256      // sütun hafızası (2'nin kuvveti — maskeleme)
+#define SWASH_DRY       26.0f    // kumun kuruma hızı (dünya px/sn)
+// DALGA ZAMANLAMASI. HATA GEÇMİŞİ: setler döngünün yalnız kendi diliminde
+// çiziliyordu (sp < 0.34 kapısı), yani ekranda HER AN TEK dalga vardı —
+// "ard arda gelmiyorlar" (Hakan). Doğrusu: her set TÜM yolu kendi
+// zamanında kat eder, setler birbirinden ARRIVE kadar gecikmeli başlar;
+// böylece N sırt aynı anda, farklı uzaklıkta görünür.
+#define SWASH_TRAVEL    19.0f    // bir sırtın açıktan kıyıya yolculuğu (sn)
+#define SWASH_SETS         6     // aynı anda yolda olan sırt sayısı
+#define SWASH_ARRIVE   (SWASH_TRAVEL / (float)SWASH_SETS)   // varış aralığı
+// KUMSAL DÖNGÜSÜ deniz yolculuğundan AYRI: 6.5 sn. Eskiden ARRIVE'a
+// (3.2 sn) bağlıydı ve hızlı geliyordu; ayırınca kumsalı deniz sırtlarının
+// hızını bozmadan yavaşlatabiliyoruz.
+#define SWASH_PULSE      6.5f
+#define SWASH_SEG_W    560.0f    // bir dalga YAYININ genişliği (≈8.7 karo)
+#define SWASH_APPROACH  760.0f   // sırtın denizde katettiği yol (px) —
+                                 // 150 kıyıya çok yakındı, dalga birden
+                                 // beliriyordu; artık görünen denizin ucundan gelir
+static float swashMem[SWASH_MEM];   // sütun başına en yüksek su izi
+
+void tilemap_render_beach_swash(R2D *renderer, const Camera *camera)
+{
+    float zoom = camera->zoom;
+    int outW = 0, outH = 0;
+    r2d_output_size(renderer, &outW, &outH);
+    float wx0 = camera->x, wx1 = camera->x + outW / zoom;
+    float wy0 = camera->y, wy1 = camera->y + outH / zoom;
+
+    Uint64 nowMs = SDL_GetTicks();
+    float t = SDL_floorf((float)nowMs / 125.0f) / 8.0f;   // 8 fps kuantalı
+    static Uint64 prevMs = 0;
+    float dt = (prevMs == 0) ? 0.0f : (float)(nowMs - prevMs) / 1000.0f;
+    if (dt > 0.1f) dt = 0.1f;
+    prevMs = nowMs;
+
+    for (float sx = SDL_floorf(wx0 / SWASH_COLW) * SWASH_COLW; sx < wx1; sx += SWASH_COLW) {
+        int col = (int)(sx / TILE_SIZE);
+        if (col < 0 || col >= mapW) continue;
+        int r0 = (int)(wy0 / TILE_SIZE) - 1, r1 = (int)(wy1 / TILE_SIZE) + 1;
+        if (r0 < 0) r0 = 0;
+        if (r1 >= mapH) r1 = mapH - 1;
+        int wet = -1;
+        for (int r = r0; r <= r1; r++)
+            if (tilemap_is_water(col, r)) { wet = r; break; }
+        if (wet <= r0) continue;
+        if (tilemap_is_water(col, wet - 1)) continue;
+        if (tilemap[wet - 1][col] != 15) continue;   // yalnız KUM kıyısı
+        float shoreY = wet * (float)TILE_SIZE;
+
+        // ── ÜÇ EVRELİ DÖNGÜ: dalga DENİZDEN gelir, kuma tırmanır, çekilir.
+        // Faz kayması x'e göre SİNÜZOİDAL (monoton DEĞİL): kıyı boyunca
+        // varyasyon olur ama net yana yürüme olmaz. HATA GEÇMİŞİ: faz
+        // x ile doğrusal artınca dalga sahil boyunca yürüyor gibi görünüyor.
+        // İki ayrı saat: (a) KUM tarafı varış darbesi — her SWASH_ARRIVE
+        // saniyede bir sırt kıyıya varır ve swash bir kez vurur;
+        // (b) DENİZ tarafı yolculuk — her sırt SWASH_TRAVEL saniyede yol alır.
+        // xw: kum tarafı varış darbesine küçük mekânsal kayma (kıyı boyunca
+        // aynı anda vurmasın). pt'ye UYGULANMIYOR — HATA GEÇMİŞİ: uygulanınca
+        // 0.05'lik kayma 760 px'lik yolculuk mesafesiyle çarpılıp sırtı sütun
+        // boyunca 40-70 px kaydırıyordu, yani her yay EĞİK bir rampa oluyordu
+        // ("yaylar doğal durmuyor"). Sırt mesafesi yay içinde SABİT olmalı.
+        float xw = 0.05f * SDL_sinf(sx * 0.0041f);
+        float pa = t / SWASH_PULSE + xw;
+        float cp = pa - SDL_floorf(pa);                    // 0..1 varış döngüsü
+        // (pt = yolculuk saati; deniz sırtları shader'a taşındı, burada kullanılmıyor)
+        float env = 0.70f + 0.30f * SDL_sinf(sx * 0.0093f + 1.3f);
+        float reachMax = SWASH_REACH_AMP * env;
+
+        float reach = 0.0f;    // >0 ise: KUMDA, kıyıdan bu kadar içeride
+        // EVRELER YUMUŞAK EĞRİLİ (smoothstep): her evrenin girişi ve çıkışı
+        // yavaş, ortası hızlı — ama evre SINIRLARINDA köşe yok. Eskiden
+        // tırmanma DOĞRUSALDI ve %21'lik dar bir dilime sıkışmıştı: ortada
+        // ani bir hızlanma oluyordu (Hakan). Tırmanma dilimi genişletildi.
+        if (cp < 0.30f) {                       // 1) YAKLAŞMA (yavaş kabarma)
+            float k = cp / 0.30f;
+            reach = SWASH_REACH_MIN * (k * k * (3.0f - 2.0f * k));
+        } else if (cp < 0.64f) {                // 2) TIRMANMA (geniş dilim)
+            float k = (cp - 0.30f) / 0.34f;
+            k = k * k * (3.0f - 2.0f * k);      // ease-in-out
+            reach = SWASH_REACH_MIN + (reachMax - SWASH_REACH_MIN) * k;
+        } else {                                // 3) ÇEKİLME (en yavaş)
+            float k = (cp - 0.64f) / 0.36f;
+            k = k * k * (3.0f - 2.0f * k);
+            reach = reachMax * (1.0f - k);
+        }
+        reach = SDL_roundf(reach / SWASH_STEP) * SWASH_STEP;
+        // SWASH ENERJİSİ: köpük ve bulanık su kendi ışığını dalganın
+        // KONUMUNDAN alır. HATA GEÇMİŞİ: sabit alfa kullanılıyordu, köpük
+        // su çizgisinde tam parlaklıkla BİRDEN beliriyordu (Hakan: "bir anda
+        // kaybolup varoluyorlar"). Şimdi kıyı çizgisinde 0, tırmanma
+        // tepesinde 1 — dalgayla birlikte doğup sönüyor, süreksizlik yok.
+        float swashE = SDL_sinf(1.5708f * SDL_min(1.0f, reach / SDL_max(reachMax, 1.0f)));
+
+        // ── DENİZ TARAFI DALGA SIRTLARI: BU GEÇİŞTEN KALDIRILDI (kod
+        // silinmedi, aşağıda #if 0 içinde duruyor — yedi turun ayarları
+        // orada). SEBEP MİMARİ: sırtlar su geçişinden SONRA, CPU'da
+        // çiziliyordu; yani suyun renk hattından, derinlik bantlarından,
+        // kıyı geometrisinden ve kırılmasından HİÇ geçmiyorlardı. Sonuç
+        // "suyun üstüne yapıştırılmış opak beyaz çubuk" — ne kadar ayar
+        // yapılsa da denizin parçası gibi durmuyor (Hakan). Doğru yer
+        // shader'ın ARK katmanı (LB_ARC): o kıyı uzaklığı alanını izliyor,
+        // dolayısıyla kıyıya kendiliğinden paralel ve suyun renk hattının
+        // İÇİNDE. İlerleyen kabarma oraya taşınacak.
+#if 0
+        // (eski CPU sırt kodu — arşiv) Tek kabarma "cetvel çizgisi"
+        // gibi duruyordu (Hakan); gerçek denizde birbirini kovalayan birkaç
+        // sıra vardır. Her sıra döngünün 1/SWASH_SETS kadar GERİSİNDE, yani
+        // en öndeki kıyıya varırken arkadaki henüz yolun ortasında.
+        // En öndeki en parlak ve en kalın (kırılmaya en yakın).
+        for (int sIdx = 0; sIdx < SWASH_SETS; sIdx++) {
+            // ── SIRT BİÇİMİ — dört denemenin dersi (hepsi görsel testte düştü):
+            //   1) şerit şerit bağımsız hash titremesi → sırt AYRI KARELERE dağıldı
+            //   2) kaba hücre hash'i → basamaklar kopuk ve birbiriyle alakasız
+            //   3) düzgün mekânsal fonksiyon → kesintisiz AMA çok uzun tek çizgi
+            //   4) yay bölümlemesi + sabit mesafe → DOĞRU (bu)
+            // Kıyı ≈560 px'lik YAYLARA bölünür; her yay kendi zamanında gelir,
+            // kendi gücünde ve yüksekliğindedir. Yay İÇİNDE sırt mesafesi SABİT
+            // (yoksa rampa olur), biçimi kıyıya PARALEL hafif kemer, uçları
+            // zarfla incelerek söner. Zaman hiçbir mekânsal fonksiyona girmez
+            // (girerse dalga sahil boyunca yana yürür).
+            int segI = (int)SDL_floorf(sx / SWASH_SEG_W);
+            unsigned sh2 = (unsigned)(segI + 4096) * 0x9E3779B9u
+                         ^ (unsigned)(sIdx * 0x85EBCA6Bu + 0x2545F491u);
+            sh2 ^= sh2 >> 15; sh2 *= 0x2545F491u; sh2 ^= sh2 >> 13;
+            if ((sh2 & 7u) == 0u) continue;                 // ~%12 yay hiç gelmez
+            float segPh = (((float)((sh2 >> 3) & 31u) / 31.0f) - 0.5f) * 0.30f;
+            float segY  = (float)((int)((sh2 >> 9) & 3u) - 1) * SWASH_STEP;
+            float segAmp = 0.62f + 0.38f * (float)((sh2 >> 13) & 7u) / 7.0f;
+
+            // Yay içi konum 0..1 — uçlarda yumuşak sönüm (yay ortada güçlü,
+            // kenarlarda incelir): kesik kesik değil, YAY gibi biter.
+            float lx = (sx - (float)segI * SWASH_SEG_W) / SWASH_SEG_W;
+            float taper = SDL_sinf(lx * 3.14159265f);       // 0 → 1 → 0
+            if (taper < 0.10f) continue;
+
+            // YAY BİÇİMİ. HATA (Hakan haklı): yay içindeki dalgalanma
+            // sinüsün YARIM PERİYODU kadardı, yani yay boyunca tek yönde
+            // inen/çıkan bir RAMPA çıkıyordu — eğik merdiven gibi, sırt gibi
+            // değil. Gerçek dalga sırtı KIYIYA PARALEL ve hafif KAVİSLİ:
+            // ortası kıyıya en yakın (önce kırılır), uçları geride kalır.
+            // Kavis taper'dan türüyor (0→1→0), yani biçim yayın kendisiyle
+            // tutarlı. Üstüne çok küçük genlikli yüksek frekanslı kırışma
+            // biniyor — pürüz için, eğim için değil.
+            float bow = -taper * 6.0f;                    // ortası öne (kıyıya) çıkar
+            float ripple = SDL_sinf(sx * 0.052f + (float)sIdx * 2.1f) * 1.6f;
+            float undul = bow + ripple;                   // dünya px
+
+            float sp = pt - (float)sIdx * (1.0f / (float)SWASH_SETS) + segPh;
+            sp -= SDL_floorf(sp);
+            float crest = SWASH_APPROACH * (1.0f - sp);
+            if (crest < 2.0f) continue;
+            float near01 = 1.0f - crest / SWASH_APPROACH;
+            float depthFade = 1.0f - 0.24f * (float)sIdx;
+
+            // Sırtın y'si: yolculuk + yumuşak dalgalanma (±2 sanat px)
+            float cy = shoreY + segY
+                     + SDL_roundf((crest + undul) / SWASH_STEP) * SWASH_STEP;
+
+            // VARLIK: sırt yer yer soluyor ama KOPMUYOR — kesik kesik yerine
+            // incelen/kalınlaşan bir hat. presence 0'a inince o bölge görünmez
+            // olur, ama geçiş yumuşak olduğu için kenarları tırtıklı değil.
+            // KÖPÜK DOKUSU: yay boyunca parlaklık/kalınlık yumuşakça
+            // dalgalanır — sırt tek parça düz beyaz bant gibi durmasın.
+            // YALNIZ presence'a giriyor, KONUMA girmiyor: konuma girse
+            // eğim riski geri gelirdi (dört turun dersi).
+            float froth = 0.62f + 0.38f * SDL_sinf(sx * 0.0185f + (float)sIdx * 3.1f)
+                                * SDL_sinf(sx * 0.0071f + (float)sIdx * 1.3f);
+            float presence = taper * segAmp * froth;
+            if (presence > 1.0f) presence = 1.0f;
+
+            // Kalınlık 1-3 sanat px, boyunca yumuşak değişiyor (kabarma)
+            float thick = 1.0f + SDL_floorf(presence * 1.9f);
+            if (near01 > 0.78f) thick += 1.0f;              // kıyıda kırılıyor
+            float chh = thick * SWASH_STEP;
+
+            SDL_FRect cr = { (sx - camera->x) * zoom, (cy - camera->y) * zoom,
+                             SWASH_COLW * zoom, chh * zoom };
+            // Uzaktaki sırtlar daha sönük: 118 (eskiden 138) + taban düştü
+            float alpha = (18.0f + 118.0f * near01) * depthFade * presence;
+            r2d_set_color(renderer, 226, 236, 242, (Uint8)alpha);
+            r2d_fill_rect(renderer, &cr);
+
+            // Çukur: yalnız kıyıya yakın sırtlarda, soluk, sırtla aynı hat
+            if (near01 > 0.55f) {
+                SDL_FRect tr = { (sx - camera->x) * zoom,
+                                 (cy + chh - camera->y) * zoom,
+                                 SWASH_COLW * zoom, SWASH_STEP * zoom };
+                r2d_set_color(renderer, 24, 52, 92,
+                              (Uint8)(46.0f * near01 * depthFade * presence));
+                r2d_fill_rect(renderer, &tr);
+            }
+        }
+
+#endif
+
+        // ── KUMUN HAFIZASI: ıslak iz vuruşta anında yükselir, sonra kurur
+        int ci = col & (SWASH_MEM - 1);
+        float mem = swashMem[ci];
+        if (reach > mem) mem = reach; else mem -= SWASH_DRY * dt;
+        if (mem < 0.0f) mem = 0.0f;
+        swashMem[ci] = mem;
+        float memQ = SDL_roundf(mem / SWASH_STEP) * SWASH_STEP;
+
+        // (a) ÇEKİLMİŞ ISLAK KUM — su gitti, ıslaklık kaldı (kurudan koyu)
+        if (memQ > reach) {
+            SDL_FRect w = { (sx - camera->x) * zoom,
+                            (shoreY - memQ - camera->y) * zoom,
+                            SWASH_COLW * zoom, (memQ - reach) * zoom };
+            r2d_set_color(renderer, 96, 78, 52, 84);
+            r2d_fill_rect(renderer, &w);
+        }
+
+        // (b) AKTİF SWASH — BULANIK kumlu su (berrak değil: dalga kumu askıda
+        //     taşır). Üç kademe: kıyıya yakın mavi-gri çalkantı → sütlü askı
+        //     kumu → uçta köpüğe geçiş.
+        if (reach > 0.5f) {
+            float seg = reach / 3.0f;
+            static const Uint8 TURB[3][4] = {
+                { 138, 150, 152, 128 }, { 186, 176, 156, 140 }, { 214, 210, 198, 150 },
+            };
+            for (int k = 0; k < 3; k++) {
+                SDL_FRect b = { (sx - camera->x) * zoom,
+                                (shoreY - seg * (float)(k + 1) - camera->y) * zoom,
+                                SWASH_COLW * zoom, seg * zoom };
+                r2d_set_color(renderer, TURB[k][0], TURB[k][1], TURB[k][2],
+                              (Uint8)((float)TURB[k][3] * (0.35f + 0.65f * swashE)));
+                r2d_fill_rect(renderer, &b);
+            }
+        }
+
+        // (c) KÖPÜK DUDAĞI — suyun o anki ucunda, tırmanışta en parlak
+        if (reach > 0.5f) {
+            // Dudak da tırtıklı: sütun başına ±1 sanat px + kalınlık oynaması
+            unsigned lh = (unsigned)((int)(sx / SWASH_COLW) + 8192) * 0x85EBCA6Bu;
+            lh ^= lh >> 15; lh *= 0x2545F491u; lh ^= lh >> 13;
+            float ljY = (float)((int)(lh & 3u) - 1) * SWASH_STEP;
+            float lhH = 4.0f + 4.0f * (float)((lh >> 5) & 1u);
+            SDL_FRect lip = { (sx - camera->x) * zoom,
+                              (shoreY - reach + ljY - camera->y) * zoom,
+                              SWASH_COLW * zoom, lhH * zoom };
+            // Enerjiyle doğup sönen köpük: çizgide 0, tepede en parlak
+            r2d_set_color(renderer, 236, 244, 248, (Uint8)(30.0f + 195.0f * swashE));
+            r2d_fill_rect(renderer, &lip);
+        }
+
+        // (d) KUMDAKİ KÖPÜK ÖBEKLERİ — düz çizgi değil KÜME: sütun başına
+        //     üç aday, her biri kendi yüksekliğinde/genişliğinde ve suyun
+        //     terk ettiği andan bu yana geçen süreye göre soluyor. Kümeler
+        //     ıslak kumun içinde dağınık duruyor, kurudukça kayboluyor.
+        if (memQ > reach + SWASH_STEP) {
+            unsigned h0 = (unsigned)col * 0x9E3779B9u ^ 0x5EA17u;
+            h0 ^= h0 >> 15; h0 *= 0x2545F491u; h0 ^= h0 >> 13;
+            float band = memQ - reach;
+            for (int k = 0; k < 5; k++) {                  // 3 → 5: daha yoğun
+                unsigned hk = h0 >> (k * 5);
+                if ((hk & 7u) == 0u) continue;             // ~%12 boş (eski %25)
+                float f = 0.12f + 0.76f * (float)((hk >> 2) & 15u) / 15.0f;
+                float fy = reach + band * f;
+                float hgt = 4.0f + 4.0f * (float)((hk >> 6) & 1u);
+                float wid = SWASH_COLW * (0.45f + 0.55f * (float)((hk >> 7) & 1u));
+                float xo  = ((hk >> 8) & 1u) ? (SWASH_COLW - wid) : 0.0f;
+                // Su ucundan uzaklaştıkça kurumuş → daha soluk
+                float fade = 1.0f - f * 0.85f;
+                SDL_FRect fr = { (sx + xo - camera->x) * zoom,
+                                 (shoreY - fy - camera->y) * zoom,
+                                 wid * zoom, hgt * zoom };
+                r2d_set_color(renderer, 240, 246, 250, (Uint8)(165.0f * fade));
+                r2d_fill_rect(renderer, &fr);
+            }
+        }
+    }
+    r2d_set_color(renderer, 255, 255, 255, 255);
+}
+
 // SU ÜSTÜ ÖRTÜSÜ (Faz SU 2): nilüferler — su geçişinden SONRA çizilir, yani
 // kırılmadan ve süzgeçten ETKİLENMEZLER: yüzeyin ÜSTÜNDE dururlar (referans
 // görüntünün imzası). Önce 3 px güneydoğuya koyu temas gölgesi, sonra pad —
@@ -645,6 +952,270 @@ static int wld_water_frame(void)
     return f < 0 ? 0 : f;
 }
 
+// ---------------------------------------------------------------------------
+// KIYI KESİTİ — PROGRAMATİK KARO SANATI (Faz SU)
+// Gölet/göl kıyısı "çukur" okunmuyordu çünkü kıyının KESİTİ çizili değildi.
+// ALttP haritasından piksel ölçümüyle çıkan anatomi yüklemede RGBA tampona
+// piksel piksel boyanır (r2d_texture_from_pixels) ve dual-grid köşe maskesiyle
+// kıyı çevresine basılır. Asset yok; atlasın tamamı koddan doğar.
+//
+// ANATOMİ (16 px sanat ölçeği — karo dokularıyla aynı):
+//   KUZEY kenar (kara üstte, su altta): karanın alt kenarından SU tarafına
+//     sarkan FİSTOLU kahverengi yamaç — açık(128,96,56) / orta(96,72,40) /
+//     dip(72,56,40) bantları + 1-2 px koyu kontur(40,40,40). Alt kenar düz
+//     değil: 4 px'lik yarım daire dişler, sütun başına hash'le 0/1 px oynar.
+//   GÜNEY kenar (su üstte, kara altta): karanın üst kenarında 2-3 px siluet
+//     dudağı (40,40,40) + suya 1-2 px sarkan çim saçağı.
+//   DOĞU/BATI: kuzeyle aynı gramer, dikey (bir tık ince yamaç).
+//   KÖŞELER: kontur KIRILMADAN döner — kara/su bölgesi köşe ıslaklıklarının
+//     BİLİNEER alanından türediği için çeyrek yay kendiliğinden çıkıyor,
+//     köşe parçaları ayrıca çizilmiyor.
+//
+// GEOMETRİ UZLAŞMASI: dual hücrenin su yarısı 8 sanat px — ALttP'nin 10 px'e
+// varan yamacı buraya sığmaz. Yamaç+kontur toplamı 8 px'te tavanlanır; taşan
+// parça komşu "tam su" (maske 15) hücresine düşerdi ve o hücre çizilmiyor.
+//
+// ATLAS DÜZENİ (256×96, hücre 16×16, yüklemede bir kez üretilir):
+//   sütun = 16'lık köşe maskesi (bit1=NW 2=NE 4=SW 8=SE ıslak; 0 ve 15 boş)
+//   satır 0-2 = varyant 0-2 (çim SAÇAKLI) · satır 3-5 = aynıları SAÇAKSIZ
+//   (saçak yalnız kara köşelerinin HEPSİ çim olan hücrede — yol/taş kıyısında
+//   yeşil püskül bitmez; dudak+yamaç her kara türünde aynı: kesit topraktır).
+// Parça wld_water_pass gibi yarım karo kaymış basılır: kuzey yamacı SU
+// karosunun üst şeridine, güney dudağı KARA karosunun alt şeridine düşer.
+#define SHORE_CELL    16                      // hücre kenarı (sanat px)
+#define SHORE_VARS    3                       // varyant sayısı — hash(col,row) seçer
+#define SHORE_REACH   12                      // en yakın kara taraması yarıçapı (px)
+#define SHORE_ATLAS_W (16 * SHORE_CELL)
+#define SHORE_ATLAS_H (SHORE_VARS * 2 * SHORE_CELL)
+
+static R2DTexture *shoreTex = NULL;   // programatik kıyı kesiti atlası
+
+// Taşınabilir tamsayı hash (scatter deseninin aynısı — frac/sin YOK)
+static inline unsigned shore_hash(unsigned a, unsigned b)
+{
+    unsigned h = a * 2654435761u ^ b * 40503u;
+    return (h >> 11) ^ h;
+}
+
+// Hücre içi (ve dışı: bilineer EKSTRAPOLASYON) ıslaklık alanı. Köşe değerleri
+// maskeden, eşik 0.5. Düz kenarlar hücre orta çizgisine, tek köşeler hiperbol
+// yayına oturur; alan hücre kenarında komşu hücreninkiyle aynı doğrusala
+// indiği için desen hücreler arası sürekli. Piksel MERKEZİ örneklenir (+0.5).
+static bool shore_wet(int mask, int px, int py)
+{
+    float u = ((float)px + 0.5f) / (float)SHORE_CELL;
+    float v = ((float)py + 0.5f) / (float)SHORE_CELL;
+    float top = ((mask & 1) ? (1.0f - u) : 0.0f) + ((mask & 2) ? u : 0.0f);
+    float bot = ((mask & 4) ? (1.0f - u) : 0.0f) + ((mask & 8) ? u : 0.0f);
+    return top * (1.0f - v) + bot * v >= 0.5f;
+}
+
+static void shore_bake_atlas(R2D *renderer)
+{
+    // Palet. Saçak yeşilleri zemin çim dokularından ÖRNEKLENDİ ve sabit
+    // yazıldı (dokular düz renk: Grass_1 62,137,72 · Grass_2 51,152,75) —
+    // GPU dokusundan geri okuma API'si yok, iki sabit için çalışma anında
+    // PNG çözmek gereksiz bağımlılık. Çim dokuları değişirse burası elle
+    // güncellenmeli. Kahveler ALttP kesit ölçümünden.
+    static const Uint8 SLOPE_HI[3]  = { 128,  96,  56 };   // yamaç açık kahve
+    static const Uint8 SLOPE_MID[3] = {  96,  72,  40 };   // yamaç orta
+    static const Uint8 SLOPE_LO[3]  = {  72,  56,  40 };   // yamaç dibi
+    static const Uint8 CONTOUR[3]   = {  40,  40,  40 };   // kontur + güney dudağı
+    static const Uint8 GRASS_A[3]   = {  62, 137,  72 };   // saçak (Grass_1)
+    static const Uint8 GRASS_B[3]   = {  51, 152,  75 };   // saçak açık (Grass_2)
+
+    static Uint8 pix[SHORE_ATLAS_W * SHORE_ATLAS_H * 4];
+    SDL_memset(pix, 0, sizeof(pix));
+
+    // Maske başına bir kez: her su pikselinin EN YAKIN KARA pikseline uzaklığı
+    // (d²) ve yönü. Geometri varyanttan bağımsız — varyantlar yalnız boyamada
+    // (diş/saçak zarları) ayrışır. Kaba tarama 16×16×25² ≈ 160k bakış/maske,
+    // yüklemede bir kez — ucuz.
+    static int   nd2[SHORE_CELL * SHORE_CELL];   // 0 = kara · -1 = kara erimde yok
+    static Sint8 nox[SHORE_CELL * SHORE_CELL];
+    static Sint8 noy[SHORE_CELL * SHORE_CELL];
+    static const int TOOTH[4] = { 0, 1, 1, 0 };  // 4 px'lik yarım daire diş profili
+
+    for (int mask = 1; mask <= 14; mask++) {
+        for (int py = 0; py < SHORE_CELL; py++)
+            for (int px = 0; px < SHORE_CELL; px++) {
+                int i = py * SHORE_CELL + px;
+                if (!shore_wet(mask, px, py)) { nd2[i] = 0; continue; }
+                int best = SHORE_REACH * SHORE_REACH + 1, bx = 0, by = 0;
+                for (int oy = -SHORE_REACH; oy <= SHORE_REACH; oy++)
+                    for (int ox = -SHORE_REACH; ox <= SHORE_REACH; ox++) {
+                        int dd = ox * ox + oy * oy;
+                        if (dd == 0 || dd >= best) continue;
+                        if (!shore_wet(mask, px + ox, py + oy)) {
+                            best = dd; bx = ox; by = oy;
+                        }
+                    }
+                nd2[i] = (best > SHORE_REACH * SHORE_REACH) ? -1 : best;
+                nox[i] = (Sint8)bx;
+                noy[i] = (Sint8)by;
+            }
+
+        for (int fringe = 0; fringe < 2; fringe++)        // 0 = saçaklı set
+            for (int var = 0; var < SHORE_VARS; var++) {
+                int cellX = mask * SHORE_CELL;
+                int cellY = (fringe * SHORE_VARS + var) * SHORE_CELL;
+                for (int py = 0; py < SHORE_CELL; py++)
+                    for (int px = 0; px < SHORE_CELL; px++) {
+                        const Uint8 *c = NULL;
+                        int i = py * SHORE_CELL + px;
+                        if (nd2[i] == 0) {
+                            // KARA — GÜNEY DUDAĞI: üstte 1-3 px içinde su varsa
+                            // siluet. 3. sıra sütun başına 1/3 zar (dudak 2-3 px).
+                            int k = 0;
+                            for (int s = 1; s <= 3 && k == 0; s++)
+                                if (shore_wet(mask, px, py - s)) k = s;
+                            if (k > 0 && (k <= 2 ||
+                                shore_hash((unsigned)px, 0xD1u + (unsigned)var) % 3u == 0))
+                                c = CONTOUR;
+                        } else if (nd2[i] > 0) {
+                            // SU — yön, bilineer alanın GRADYANINDAN (yüzey
+                            // normali). İlk sürüm en yakın kara PİKSELİNİN
+                            // yönünü kullanıyordu: ayrık ızgarada o yön komşu
+                            // pikseller arasında sıçrar ve güneye bakan
+                            // yaylarda incelme (taper) D'yi zıplatıp konturu
+                            // "tarak dişi" kopuk şeritlere dağıtıyordu
+                            // (Hakan: "köşeler garip"). Gradyan pürüzsüz —
+                            // kontur yay boyunca kırılmadan döner.
+                            float d = SDL_sqrtf((float)nd2[i]);
+                            float gu = ((float)px + 0.5f) / (float)SHORE_CELL;
+                            float gv = ((float)py + 0.5f) / (float)SHORE_CELL;
+                            float nw = (mask & 1) ? 1.0f : 0.0f;
+                            float ne = (mask & 2) ? 1.0f : 0.0f;
+                            float sw = (mask & 4) ? 1.0f : 0.0f;
+                            float se = (mask & 8) ? 1.0f : 0.0f;
+                            float lx = -((ne - nw) * (1.0f - gv) + (se - sw) * gv);
+                            float ly = -((sw - nw) * (1.0f - gu) + (se - ne) * gu);
+                            float len = SDL_sqrtf(lx * lx + ly * ly);
+                            if (len < 0.001f) {   // eyer merkezi (maske 6/9): gradyan söner
+                                lx = (float)nox[i]; ly = (float)noy[i]; len = d;
+                            }
+                            float down = (ly > 0.0f) ? ly / len : 0.0f;
+                            float ax = (lx < 0.0f) ? -lx : lx;
+                            float ay = (ly < 0.0f) ? -ly : ly;
+                            if (down >= 0.90f) {
+                                // kara dosdoğru altta = GÜNEY kıyısı: çim saçağı
+                                // suya 0-2 px sarkar (sütun başına zar — püsküllü)
+                                if (fringe == 0) {
+                                    unsigned fh = shore_hash((unsigned)px,
+                                                             0x5Cu + (unsigned)var);
+                                    int flen = (int)(fh % 8u);   // %25 0 · %50 1 · %25 2
+                                    flen = (flen < 2) ? 0 : (flen < 6) ? 1 : 2;
+                                    if (d <= (float)flen + 0.01f)
+                                        c = (fh & 8u) ? GRASS_B : GRASS_A;
+                                }
+                            } else {
+                                // YAMAÇ: dikey ağırlık = kuzey grameri, yatay = D/B
+                                bool vert = (ay >= ax);
+                                int t = vert ? px : py;
+                                float D = (vert ? 5.0f : 4.0f) + (float)TOOTH[t & 3];
+                                // fisto zarı: sütun başına 0/1 px — hücre SINIR
+                                // sütunlarında kapalı (varyantlar arası dikiş tutsun)
+                                if (t > 0 && t < SHORE_CELL - 1 &&
+                                    (shore_hash((unsigned)t, 0x33u + (unsigned)var) & 1u))
+                                    D += 1.0f;
+                                // güneye kıvrılırken yamaç incelir: kontur, dudağa
+                                // doğru kırılmadan süzülür (çeyrek yayın bitişi)
+                                if (down > 0.35f) D *= (0.90f - down) / 0.55f;
+                                if (D < 1.0f) D = 1.0f;
+                                if (d > D + 1.6f)        c = NULL;      // açık su
+                                else if (d > D)          c = CONTOUR;   // 1-2 px dip kontur
+                                else if (d <= D * 0.40f) c = SLOPE_HI;
+                                else if (d <= D * 0.72f) c = SLOPE_MID;
+                                else                     c = SLOPE_LO;
+                            }
+                        }
+                        if (c == NULL) continue;
+                        Uint8 *p = &pix[((size_t)(cellY + py) * SHORE_ATLAS_W
+                                         + (size_t)(cellX + px)) * 4];
+                        p[0] = c[0]; p[1] = c[1]; p[2] = c[2]; p[3] = 255;
+                    }
+            }
+    }
+    shoreTex = r2d_texture_from_pixels(renderer, pix, SHORE_ATLAS_W, SHORE_ATLAS_H);
+}
+
+// Kesit ıslaklığı: YALNIZ göl/deniz (2) ve gölet (20). Vaha suyu (17)
+// BİLEREK dışarıda: vaha kendi sanatçı kıyı atlasını taşıyor (dsrWaterTex
+// dual-grid), baked kesit onun üstüne binince ÇİFT KESİT çakışıyor — fisto +
+// koyu kontur, atlasın kum kıyı diline hiç oturmadı (Hakan'ın vaha ekran
+// görüntüsü). Harita DIŞI kara sayılır (wmask BFS'iyle aynı karar — kenar
+// suyu da kıyı kesiti alır).
+// Kıyı kesiti için ıslaklık. Vaha (17) BİLEREK yok: kendi sanatçı atlasını
+// (dsrWaterTex) taşıyor, baked kesit üstüne binince çift kesit çakışıyor.
+static inline bool shore_cut_wet(int col, int row)
+{
+    if (col < 0 || col >= mapW || row < 0 || row >= mapH) return false;
+    int t = tilemap[row][col];
+    return t == 2 || t == 20;
+}
+
+// HARİTA KENARI SU ŞERİDİ — batı (süt 0-1) ve doğu (son 2 süt) "dünyanın
+// kenarı" dolgusu, gerçek bir kıyı değil. Kesit oraya basılınca çöl geçidinin
+// yanında yapay bir sahil çıkıyordu (Hakan: "doğudaki kıyıları kaldır").
+// Güney kenarı HARİÇ: orası artık gerçek deniz.
+static inline bool shore_edge_filler(int col)
+{
+    return col <= 1 || col >= mapW - 2;
+}
+
+// Kıyı kesiti pass'i — wld_water_pass ile aynı dual-grid yerleşimi, ama
+// kara türü serbest (kesit toprak: çim de yol da aynı yamacı alır).
+// Deterministik: hash(col,row) varyantı, aynı karo hep aynı parçayı basar.
+static void shore_cut_pass(R2D *renderer, const Camera *camera,
+                           int colL, int rowT, int colR, int rowB)
+{
+    float zoom = camera->zoom;
+    for (int row = rowT - 1; row < rowB; row++) {
+        for (int col = colL - 1; col < colR; col++) {
+            int m = 0;
+            bool grassLand = true;   // kara köşelerin HEPSİ çim mi? (saçak koşulu)
+            for (int dy = 0; dy < 2; dy++)
+                for (int dx = 0; dx < 2; dx++) {
+                    int cc = col + dx, rr = row + dy;
+                    if (shore_cut_wet(cc, rr))
+                        m |= 1 << (dy * 2 + dx);
+                    else if (cc < 0 || cc >= mapW || rr < 0 || rr >= mapH ||
+                             tilemap[rr][cc] != 0)
+                        grassLand = false;
+                }
+            if (m == 0 || m == 15) continue;   // tam kara / açık su: parça yok
+            if (shore_edge_filler(col) || shore_edge_filler(col + 1))
+                continue;                       // dünya kenarı dolgusu: kesit yok
+            // KUMSALDA KESİT YOK. Kesit YÜKSELTİLMİŞ kıyı için tasarlandı
+            // (çim/toprak banket: görünen yamaç kesiti + koyu kontur — ALttP
+            // grameri). Kumsalda kum doğrudan suya girer, uçurum kesiti
+            // olmaz; düz sahilde kesit bütün kıyı boyunca tek tip koyu bir
+            // ŞERİT hâline geliyordu ve yapay duruyordu (Hakan). Kum kıyısını
+            // dalga vuruşu (swash) + ıslak kum zaten anlatıyor.
+            {
+                bool sandy = false;
+                for (int dy = 0; dy < 2 && !sandy; dy++)
+                    for (int dx = 0; dx < 2 && !sandy; dx++) {
+                        int cc = col + dx, rr = row + dy;
+                        if (cc >= 0 && cc < mapW && rr >= 0 && rr < mapH &&
+                            tilemap[rr][cc] == 15) sandy = true;
+                    }
+                if (sandy) continue;
+            }
+            int var = (int)(shore_hash((unsigned)col, (unsigned)row) % SHORE_VARS);
+            SDL_FRect src = {
+                (float)(m * SHORE_CELL),
+                (float)(((grassLand ? 0 : SHORE_VARS) + var) * SHORE_CELL),
+                (float)SHORE_CELL, (float)SHORE_CELL };
+            SDL_FRect dst = {
+                ((col + 0.5f) * TILE_SIZE - camera->x) * zoom,
+                ((row + 0.5f) * TILE_SIZE - camera->y) * zoom,
+                TILE_SIZE * zoom, TILE_SIZE * zoom };
+            r2d_draw_texture(renderer, shoreTex, &src, &dst);
+        }
+    }
+}
+
 void tilemap_load_details(R2D *renderer)
 {
     extern R2DTexture *load_texture(R2D *r, const char *path);   // main yardımcısı
@@ -674,6 +1245,8 @@ void tilemap_load_details(R2D *renderer)
         wldWaterTex = load_texture(renderer, "assets/Tiles/Water/Water_Tile_1.png");
         wldWaterFrames = 1;
     }
+    // KIYI KESİTİ atlası: dosyadan yüklenmez, koddan boyanır (shore_bake_atlas)
+    shore_bake_atlas(renderer);
 }
 
 void tilemap_free_details(void)
@@ -691,6 +1264,7 @@ void tilemap_free_details(void)
     if (dsrCliffTex) { r2d_texture_destroy(NULL, dsrCliffTex); dsrCliffTex = NULL; }
     if (caveWallTex) { r2d_texture_destroy(NULL, caveWallTex); caveWallTex = NULL; }
     if (wldWaterTex) { r2d_texture_destroy(NULL, wldWaterTex); wldWaterTex = NULL; }
+    if (shoreTex) { r2d_texture_destroy(NULL, shoreTex); shoreTex = NULL; }
 }
 
 // Deterministik varyant: hash(col,row) — save'e girmez, hep aynı görünür
@@ -708,9 +1282,16 @@ static inline bool is_grass(int col, int row)
 }
 
 // Çimenin taşabileceği taban mı? (dünya dış mekan tile'ları — zindan HARİÇ)
+// Çim hangi karonun üstüne TAŞAR (autotile kenar sistemi, grass_edges.png).
+// 15 (KUM) eklendi: çimen↔kumsal geçişi sert bir çizgiyle bitiyordu; çim
+// saçağı kumun üstüne sarkınca geçiş yumuşuyor. Deniz↔kumsal tarafını ise
+// kıyı kesiti (shore_cut_pass, çift-ızgara) + swash ıslaklığı kapatıyor;
+// yani üç bölge arasındaki geçişlerin HEPSİ artık autotile ile örülü:
+//   çimen→kum : bu fonksiyon (çim kenar atlası)
+//   kum→deniz : kıyı kesiti + dalga vuruşu
 static inline bool grass_bleeds_onto(int id)
 {
-    return id == 1 || id == 2 || id == 4 || id == 5;
+    return id == 1 || id == 2 || id == 4 || id == 5 || id == 15;
 }
 
 static void edge_cell_draw(R2D *renderer, int cell, const SDL_FRect *dst)
@@ -1230,6 +1811,11 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
     }
     if (wldWaterTex != NULL)
         wld_water_pass(renderer, camera, colL, rowT, colR, rowB);
+    // KIYI KESİTİ: kıyı atlasının ÜSTÜNE, su geçişinden (main.c r2d_water_flush)
+    // ÖNCE — su tarafına basılan yamaç süzgeçten geçip hafif maviye kayar
+    // (İSTENEN davranış) ve kuzeydeki kıyı gölgesi kesiti koyultur (doğru).
+    if (shoreTex != NULL)
+        shore_cut_pass(renderer, camera, colL, rowT, colR, rowB);
 }
 
 // --- SÜS SERPİŞTİRMESİ: dünya boş hissettirmesin (çarpışmasız, deterministik) ---
