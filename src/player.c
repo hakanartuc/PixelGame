@@ -32,6 +32,75 @@ static const LpcAnim PLAYER_ANIMS[] = {
 };
 
 // Oyuncuyu çizer - sadece OKUR, değiştirmez.
+// SU YANSIMASI (Faz SU kapanışı) — gövde katmanlarının dikey aynası, ayaktan
+// GÜNEYE, yalnız ıslak karolara kırpılı (decor_render_reflections deseni).
+// Su geçişinden ÖNCE çağrılır: kırılma büker, süzgeç koyultur.
+// Oversize silah katmanları (smash128/slash/thrust) BİLEREK atlanır: 3x'lik
+// savurma bloğunun aynası suda dev bir hayalet çiziyor; yansımada gövde yeter.
+void player_render_reflection(const Player *p, R2D *renderer,
+                              const PlayerLayer *layers, int layerCount,
+                              const Camera *camera)
+{
+    const LpcAnim *anim = &PLAYER_ANIMS[p->state];
+    int row = anim->startRow + (int)p->facing;
+    // Karede ayağın ÜSTÜ: 0..SPRITE_FEET_Y (altındaki 3 px şeffaf boşluk)
+    SDL_FRect src = { p->currentFrame * FRAME_W, row * FRAME_H,
+                      FRAME_W, SPRITE_FEET_Y };
+
+    float zoom = camera->zoom;
+    float scale = p->drawH / (float)FRAME_H;
+    float footY = p->rect.y + p->rect.h;             // görünen ayak çizgisi (dünya)
+    float wx = (p->rect.x + p->rect.w / 2.0f) - p->drawW / 2.0f;
+    float ww = p->drawW;
+    float wh = SPRITE_FEET_Y * scale * 0.82f;        // hafif kısaltılmış ayna
+
+    int c0 = (int)(wx / TILE_SIZE), c1 = (int)((wx + ww) / TILE_SIZE);
+    int r0 = (int)(footY / TILE_SIZE), r1 = (int)((footY + wh) / TILE_SIZE);
+    bool any = false;
+    for (int rr = r0; rr <= r1 && !any; rr++)
+        for (int cc = c0; cc <= c1 && !any; cc++)
+            if (tilemap_is_water(cc, rr)) any = true;
+    if (!any) return;
+
+    for (int i = 0; i < layerCount; i++) {
+        // Oversize bayrağı ÖZELLİKTİR, durum değil: kılıç/zırh katmanları bu
+        // bayrakları hep taşır ama oversize bloktan yalnız ilgili state'te
+        // çizilir. İlk sürüm bayrağı görünce katmanı tümden atlıyordu ve
+        // yansıma ÇIPLAK çıkıyordu (Hakan yakaladı). Doğrusu player_render'la
+        // aynı: smash128 yalnız SLASH'ta var; oversize çizim gerektiren
+        // durumlarda o katmanın YANSIMASINI atla (3x'lik savurma aynası suda
+        // dev hayalet), diğer her durumda standart satırdan yansıt.
+        if (layers[i].smash128 && p->state != PLAYER_SLASH) continue;
+        if (p->state == PLAYER_SLASH &&
+            (layers[i].smash128 || layers[i].slashOversize)) continue;
+        if (p->state == PLAYER_THRUST && layers[i].thrustOversize) continue;
+        SDL_FRect lsrc = src;
+        if (p->state == PLAYER_IDLE && layers[i].idleRowOverride >= 0) {
+            lsrc.x = 0;
+            lsrc.y = (layers[i].idleRowOverride + (int)p->facing) * FRAME_H;
+        }
+        for (int rr = r0; rr <= r1; rr++)
+            for (int cc = c0; cc <= c1; cc++) {
+                if (!tilemap_is_water(cc, rr)) continue;
+                float tx0 = cc * (float)TILE_SIZE, ty0 = rr * (float)TILE_SIZE;
+                float ix0 = wx > tx0 ? wx : tx0;
+                float iy0 = footY > ty0 ? footY : ty0;
+                float ix1 = (wx + ww) < (tx0 + TILE_SIZE) ? (wx + ww) : (tx0 + TILE_SIZE);
+                float iy1 = (footY + wh) < (ty0 + TILE_SIZE) ? (footY + wh) : (ty0 + TILE_SIZE);
+                if (ix1 <= ix0 || iy1 <= iy0) continue;
+                float fx0 = (ix0 - wx) / ww, fx1 = (ix1 - wx) / ww;
+                float fy0 = (iy0 - footY) / wh, fy1 = (iy1 - footY) / wh;
+                SDL_FRect ps = { lsrc.x + fx0 * lsrc.w,
+                                 lsrc.y + (1.0f - fy1) * lsrc.h,
+                                 (fx1 - fx0) * lsrc.w,
+                                 (fy1 - fy0) * lsrc.h };
+                SDL_FRect pd = { (ix0 - camera->x) * zoom, (iy0 - camera->y) * zoom,
+                                 (ix1 - ix0) * zoom, (iy1 - iy0) * zoom };
+                r2d_draw_texture_reflect(renderer, layers[i].tex, &ps, &pd, 135);
+            }
+    }
+}
+
 void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera)
 {
     const LpcAnim *anim = &PLAYER_ANIMS[p->state];

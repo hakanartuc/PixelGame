@@ -220,8 +220,9 @@ void r2d_postfx_flush(R2D *ctx);
 #define R2D_WATER_L_DASH     512  // ışıltı çizgicikleri (seyrek, ayrık, sürüklenen)
 #define R2D_WATER_L_ARC      1024 // dalga-yankı arkları (kıyıya paralel koyu sıralar)
 #define R2D_WATER_L_RING     2048 // halka dalgacık (balık/damla izi)
-#define R2D_WATER_L_ALL      4095
-#define R2D_WATER_L_COUNT    12   // izole modda dolaşılacak katman sayısı
+#define R2D_WATER_L_LAMP     4096 // gece lamba yansıması (titrek sıcak sütun)
+#define R2D_WATER_L_ALL      8191
+#define R2D_WATER_L_COUNT    13   // izole modda dolaşılacak katman sayısı
 
 typedef struct {
     R2DTexture *mask;
@@ -254,6 +255,12 @@ typedef struct {
     float dashes;                // ışıltı çizgicikleri gücü (EKLEMELİ, ~0.12)
     float arcs;                  // dalga-yankı arkları gücü (ÇARPIMSAL, 0..1)
     float wallFace;              // kuzey duvar prototipi (0 = RAFTA; karo sanatı gelince kıyas için 1)
+    // GECE LAMBA YANSIMASI — en parlak iki ışık (dünya px). darkness 0'ken
+    // katman kendiliğinden kapalı (gündüz).
+    float lamp1X, lamp1Y, lamp1I;
+    float lamp2X, lamp2Y, lamp2I;
+    float darkness;              // gametime_darkness01()
+    float rain;                  // yağmur şiddeti 0..1 (halkalar sıklaşır)
     float layers;                // katman bit maskesi; 0 = hepsi açık (bkz. R2D_WATER_L_*)
 } R2DWater;
 void r2d_water_flush(R2D *ctx, const R2DWater *w);

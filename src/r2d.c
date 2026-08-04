@@ -105,7 +105,9 @@ typedef struct {                      // shaders/water.frag.hlsl WaterU ile BİR
     float a[4]; float b[4]; float c[4]; float d[4];
     float e[4]; float f[4]; float g[4]; float h[4];
     float k[4];                       // shader'da da 'k': i/j bilinçli atlandı
-    float l[4];                       // x=kıyı gölgesi gücü, gerisi boş
+    float l[4];                       // x=gölge y=ışıltı z=ark w=duvar
+    float m[4];                       // lamba1 xy + lamba2 xy (dünya)
+    float n[4];                       // lamba şiddetleri + karanlık
 } R2DWaterU;
 
 // Işık uniform'ları — shaders/light.frag.hlsl LightU ile birebir aynı düzen
@@ -1202,6 +1204,8 @@ void r2d_water_flush(R2D *ctx, const R2DWater *w)
     float lay = (w->layers > 0.5f) ? w->layers : (float)R2D_WATER_L_ALL;
     wu.k[0] = w->wetBand; wu.k[1] = w->darkLine; wu.k[2] = w->meniscus; wu.k[3] = lay;
     wu.l[0] = w->bankShadow; wu.l[1] = w->dashes; wu.l[2] = w->arcs; wu.l[3] = w->wallFace;
+    wu.m[0] = w->lamp1X; wu.m[1] = w->lamp1Y; wu.m[2] = w->lamp2X; wu.m[3] = w->lamp2Y;
+    wu.n[0] = w->lamp1I; wu.n[1] = w->lamp2I; wu.n[2] = w->darkness; wu.n[3] = w->rain;
 
     // 1) O ana kadar çizilmiş zemin katmanı floorTex'e (temizleyerek)
     flush_to(cmdBuf, floorTex->tex, (float)swapW, (float)swapH, true,

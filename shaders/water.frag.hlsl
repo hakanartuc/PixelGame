@@ -32,7 +32,9 @@ struct WaterU {
     float4 h;   // rgb=güneş rengi w=karo boyu (dünya px)
     // 'i' ve 'j' bilinçli atlandı: main(PSIn i) parametresiyle karıştırılmasın.
     float4 k;   // x=ıslak bant y=koyu hat z=menisküs w=katman bit maskesi
-    float4 l;   // x=kıyı gölgesi gücü y=ışıltı çizgisi gücü z=ark sırası gücü w=(boş)
+    float4 l;   // x=kıyı gölgesi gücü y=ışıltı çizgisi gücü z=ark sırası gücü w=duvar anahtarı
+    float4 m;   // xy=lamba1 dünya konumu zw=lamba2 dünya konumu
+    float4 n;   // x=lamba1 şiddet y=lamba2 şiddet z=karanlık(0..1) w=yağmur(0..1)
 };
 cbuffer WaterUB : register(b0, space3) {
     WaterU u;
@@ -52,6 +54,7 @@ static const uint LB_BANK    = 256u;  // kıyı gölgesi (kuzey kıyının çuku
 static const uint LB_DASH    = 512u;  // ışıltı çizgicikleri (seyrek, ayrık, sürüklenen)
 static const uint LB_ARC     = 1024u; // dalga-yankı arkları (kıyıya paralel koyu sıralar)
 static const uint LB_RING    = 2048u; // halka dalgacık (balık/damla izi)
+static const uint LB_LAMP    = 4096u; // gece lamba yansıması (titrek sıcak sütun)
 
 bool layer_on(uint mask, uint bit) { return (mask & bit) != 0u; }
 
@@ -557,13 +560,16 @@ float4 main(PSIn i) : SV_Target0
     // yeni zar. Balık gölgeleriyle aynı suda yaşar — biri altta yüzer,
     // öteki yüzeyde iz bırakır.
     if (layer_on(L, LB_RING)) {
+        // YAĞMUR (u.n.w): damla halkaları — yağmurda hücrelerin çoğu aktif ve
+        // halka ömrü kısa (sık, hızlı, küçük). Kuru havada seyrek balık izi.
+        float rper = lerp(2.8, 1.0, u.n.w);
         float rcell = 32.0 * artW;
         float2 rc = floor(world / rcell);
-        float ep = floor(t / 2.8);
+        float ep = floor(t / rper);
         uint rh = uhash2((uint)(int)(rc.x + 8192.0) ^ ((uint)(int)ep) * 0x27D4EB2Du,
                          (uint)(int)(rc.y + 8192.0));
-        if ((rh & 7u) == 0u) {
-            float tt = t - ep * 2.8;
+        if ((rh & 7u) < (uint)(1.0 + u.n.w * 4.0)) {
+            float tt = t - ep * rper;
             float2 ctr = (rc + 0.5) * rcell
                        + (float2((float)((rh >> 8u) & 15u),
                                  (float)((rh >> 12u) & 15u)) - 7.5) * artW;
@@ -635,6 +641,37 @@ float4 main(PSIn i) : SV_Target0
         // çizgi sönük — ama tamamen silinmez (0.7), kıyı yine okunmalı.
         col += float3(0.90, 0.95, 1.00) * (mband * u.k.z * (1.0 - foam)
                                            * (1.0 - bshad * 0.7));
+    }
+
+    // LAMBA YANSIMASI — gece, ışık kaynağının GÜNEYİNE düşen titrek sıcak
+    // sütun (göl kenarında fener klasiği). Yatayda dar (dalga eğimiyle
+    // yalpalar — cetvel değil), dikeyde uzun ve sönümlü, 3 kademeli.
+    // Karanlık çarpanı (u.n.z): gündüz kendiliğinden kapanır.
+    if (layer_on(L, LB_LAMP) && u.n.z > 0.05) {
+        [unroll] for (int li = 0; li < 2; li++) {
+            float2 lp = (li == 0) ? u.m.xy : u.m.zw;
+            float  Li = (li == 0) ? u.n.x : u.n.y;
+            if (Li <= 0.0) continue;
+            float dyW = wq.y - lp.y;
+            if (dyW < 0.0) continue;
+            // Sütun kaynağın TAM altından değil, ~1/3 karo aşağıdan doğar:
+            // meşale taşıyan oyuncunun kendi ayağının altını turuncuya
+            // boyuyordu (Hakan'ın yakaladığı blok bunun doymuş hali).
+            float rise = smoothstep(6.0, 22.0, dyW);
+            float fy = saturate(1.0 - dyW / 130.0);
+            float dxW = abs(wq.x - lp.x + n2.x * 6.0);
+            float fx = 1.0 - smoothstep(3.0 * artW, 6.0 * artW, dxW);
+            float glow = floor(fx * fy * fy * rise * 3.0) / 3.0;
+            // Gece telafisi (ışık pass'i sahneyi ambient'la çarpıyor) AMA
+            // EKLEMELİ BÜTÇE TAVANIYLA: 0.45. İlk telafi (×4.5) tavansızdı,
+            // katkı 1.6'ya fırladı, piksel doydu ve basamaklı turuncu
+            // DİKDÖRTGEN çıktı — beyaza doyma hatasının üçüncü tekrarı,
+            // bu kez renkli. Tavan, kural: eklemeli katkı 0.45'i AŞAMAZ.
+            float amt = glow * 0.35 * Li * u.n.z * (1.0 + u.n.z * 2.5);
+            amt = min(amt, 0.45);
+            if (amt > 0.0)
+                col += float3(1.0, 0.72, 0.42) * (amt * (1.0 - bshad));
+        }
     }
 
     // Renk kademesi: paletli görünüm. 0 = kapalı (serbest gradyan).

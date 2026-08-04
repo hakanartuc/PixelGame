@@ -1520,6 +1520,7 @@ int main(int argc, char *argv[])
         { R2D_WATER_L_DASH,    "SU: yalniz ISILTI CIZGILERI (ayrik ogeler)" },
         { R2D_WATER_L_ARC,     "SU: yalniz ARK SIRALARI (kiyiya paralel yanki)" },
         { R2D_WATER_L_RING,    "SU: yalniz HALKA DALGACIK (balik/damla izi)" },
+        { R2D_WATER_L_LAMP,    "SU: yalniz LAMBA YANSIMASI (gece)" },
     };
     bool craftOpen = false;
     int craftStation = -1;    // panelin bağlı olduğu istasyon
@@ -10701,6 +10702,14 @@ int main(int argc, char *argv[])
         // büksün, derinlik süzgeci koyultsun. Sonra çizilse cam üstüne
         // yapıştırılmış çıkartma gibi dururdu.
         decor_render_reflections(renderer, decor_textures, &camera);
+        {   // Oyuncu yansıması — katman dizisi asıl çizim için 11163'te tekrar
+            // kurulur; burada ikinci kez kurmak taşımaktan ucuz ve güvenli
+            // (yalnız pointer montajı, kare başına iki kez zararsız).
+            PlayerLayer rbuilt[24];
+            int rn = build_player_layers(layers, LAYER_COUNT, &equipment,
+                                         &itemTex, rbuilt, 24);
+            player_render_reflection(&player, renderer, rbuilt, rn, &camera);
+        }
 
         // SU HACMİ (Faz SU). Buraya kadar çizilen HER ŞEY zemin sayılır (karo,
         // gölge, yer izi, dekor, geçit) ve suyun ALTINA girer: batık taş, urgan,
@@ -10729,6 +10738,39 @@ int main(int argc, char *argv[])
                 float sx = SDL_cosf(ang), sy = -0.5f;
                 float sl = SDL_sqrtf(sx * sx + sy * sy);
                 float sunI = 1.0f - gametime_darkness01();
+                // GECE LAMBA YANSIMASI: ışık listesi asıl pass için ileride
+                // yeniden toplanır; burada ikinci toplama ucuz ve güvenli
+                // (build_player_layers ile aynı gerekçe). En parlak iki ışık
+                // ekran→dünya çevrilip shader'a verilir.
+                float l1x = 0, l1y = 0, l1i = 0, l2x = 0, l2y = 0, l2i = 0;
+                float darkNow = gametime_darkness01();
+                if (darkNow > 0.05f) {
+                    bool rTorch = false;
+                    for (int ti = 0; ti < INVENTORY_SIZE; ti++)
+                        if (inventory.slots[ti].type == &ITEM_TYPES[ITEM_TORCH]) { rTorch = true; break; }
+                    R2DLight rl[R2D_MAX_LIGHTS];
+                    int rn = light_collect(rl, R2D_MAX_LIGHTS, &camera, winW, winH,
+                                           !map_is_dungeon(map_current()),
+                                           player.rect.x + player.rect.w / 2.0f,
+                                           player.rect.y + player.rect.h / 2.0f,
+                                           rTorch, player.weaponFx);
+                    int b1 = -1, b2 = -1;
+                    for (int li = 0; li < rn; li++) {
+                        float sc = rl[li].intensity * rl[li].radius;
+                        if (b1 < 0 || sc > rl[b1].intensity * rl[b1].radius) { b2 = b1; b1 = li; }
+                        else if (b2 < 0 || sc > rl[b2].intensity * rl[b2].radius) b2 = li;
+                    }
+                    if (b1 >= 0) {
+                        l1x = rl[b1].x / camera.zoom + camera.x;
+                        l1y = rl[b1].y / camera.zoom + camera.y;
+                        l1i = rl[b1].intensity;
+                    }
+                    if (b2 >= 0) {
+                        l2x = rl[b2].x / camera.zoom + camera.x;
+                        l2y = rl[b2].y / camera.zoom + camera.y;
+                        l2i = rl[b2].intensity;
+                    }
+                }
                 R2DWater w = {
                     .mask = wmTex, .maskW = (float)wmW, .maskH = (float)wmH,
                     .tilePx = (float)TILE_SIZE,
@@ -10779,6 +10821,11 @@ int main(int argc, char *argv[])
                     // Ark sıraları: kıyıya paralel koyu yankı çizgileri (ALttP).
                     .arcs = 1.0f,
                     .wallFace = 0.0f,          // duvar prototipi RAFTA (bkz. shader)
+                    .lamp1X = l1x, .lamp1Y = l1y, .lamp1I = l1i,
+                    .lamp2X = l2x, .lamp2Y = l2y, .lamp2I = l2i,
+                    .darkness = darkNow,
+                    // Yağmur halkaları: ıslak havada yüzey damlayla dolar
+                    .rain = weather_is_wet() ? weather_intensity() : 0.0f,
                     // Islak bant 0.85 → 0.55: tam güçte göletin çevresine koyu
                     // bir çerçeve çekiyor ve "kakma pano" hissini büyütüyordu
                     // (ıslak toprak: koyulaşır + doygunlaşır).

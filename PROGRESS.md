@@ -4,6 +4,27 @@ Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
+### Faz SU-3 — su kapanışı: oyuncu yansıması + gece + yağmur (2026-08-04)
+Su fazının kapanış turu (Hakan: "suyu son haline getirelim").
+
+- **Oyuncu yansıması:** `player_render_reflection` — anlık animasyon karesi +
+  TÜM giyili ekipman. İki hata düzeltildi: oversize bayrağı ÖZELLİK, durum
+  değil (bayrağı görünce katmanı atlamak yansımayı ÇIPLAK bırakıyordu);
+  alpha 84 renkleri yıkıyordu → 135.
+- **Balık düzeltmesi:** zar tabanlı yerleşim gitti — maske kurulurken gövde
+  başına GARANTİLİ çapa (raf halkasından, suyun şeffaf olduğu yerden).
+  Gölette kesin 1 balık. Gövde + kuyruk lekesi (yüzme yönü okunur).
+- **Su kenarı fenerleri:** gölet KD kıyısı + göl kıyısı (dekor + ışık aynı
+  koordinat) — köy ışıklarının hiçbiri suya 110 px yaklaşmıyordu.
+- **Gece lamba sütunu (LB_LAMP, Ctrl+B 14 durum):** en parlak 2 ışık suya
+  titrek sıcak sütun düşürür. İKİ DERS: (1) ışık pass'i sahneyi ambient'la
+  çarpar — sütun karanlıkta güçlenerek telafi eder; (2) telafi TAVANSIZ
+  bırakılınca katkı 1.6'ya fırladı, doymuş turuncu blok çıktı — EKLEMELİ
+  BÜTÇE ≤ 0.45 kuralı artık formülün içinde (3. doyma vakası).
+- **Yağmur halkaları:** weather → su; ıslak havada halka yoğun/hızlı/kısa.
+- **r2d_test su kapsaması:** sentetik maskeyle 5. pipeline da koşumda —
+  Windows'ta ilk çalıştırmada beş shader birden doğrulanır.
+
 ### Faz SU-2 — su yansımaları + su yaşamı (2026-08-04)
 Su 2. turu (Hakan seçimi; ateş paketi sıradaki).
 

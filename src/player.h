@@ -227,6 +227,10 @@ enum {
 
 
 void player_render(const Player *p, R2D *renderer, const PlayerLayer *layers, int layerCount, const Camera *camera);
+// Su yansıması: su geçişinden ÖNCE (zemin katmanına, ıslak karo kırpmalı)
+void player_render_reflection(const Player *p, R2D *renderer,
+                              const PlayerLayer *layers, int layerCount,
+                              const Camera *camera);
 void player_update(Player *p, const bool *keys, bool attackPressed, float dt, ParticleSystem *fx);
 // HUD barları: genişlik MAX değerle büyür (takı/taş görünür etki) +
 // sayısal değerler (font NULL ise yalnız bar)

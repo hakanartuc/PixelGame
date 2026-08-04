@@ -93,7 +93,7 @@ silaha uymayan beceri SOLUK çizilir (kullanım engeli hotbarPressed akışında
 G ızgara 8/16/32, Alt yapıştırmayı kapat; Tab sonraki, A çapa, **E en uygun çapa**, H hiza;
 Ctrl+oklar & köşe tutamağı boyut; **P ön izleme** — seçili panel kapalı olsa bile gerçek
 içeriğiyle çizilir; Ctrl+S kaydet, R diskten geri, Esc kapat. Açıkken oyuncu girdisi DURUR)
-· **Ctrl+B su katmanı izolasyonu** (13 durum: hepsi + 12 katman tek tek; Ctrl+Shift+B geri)
+· **Ctrl+B su katmanı izolasyonu** (14 durum: hepsi + 13 katman tek tek; Ctrl+Shift+B geri)
 · Ctrl+V su asset akışı/şerit demosu döngüsü (4 durum — demo rafta, tuş duruyor)
 · **F7 post-fx filtre döngüsü** (20 tarz + kapalı: SICAK/DARK FANTASY/CRT/VHS/NOIR/GAMEBOY... splash'ta ad; SICAK açılışta aktif — kalıcı tarz seçilmedi) · **F10 DEBUG +1M XP + malzeme/büyü seti + her ağaca 99 puan (yayında kaldır!)** · F5/F9 AKTİF slota kaydet/yükle (slot yoksa — otomatik kayıttan yüklendiyse — F5 kayıt ekranını açar, seçilen slot aktif olur) · ESC katmanlı kapatma/menü
 (K = skill listesi + ağaç paneli; ok mühimmatı sağ tıkla seçilir)
@@ -218,6 +218,15 @@ vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü
   `fx: kaba += 1` biçimiyle işler, req ile okunur).
 
 ## Sıradaki iş
+**FAZ SU-3 TAMAM (2026-08-04, su fazı KAPANDI)**: oyuncu yansıması (anlık
+kare + ekipman; oversize bayrağı ÖZELLİKTİR durum değil — dersi player.c'de),
+gövde başına garantili balık, su kenarı fenerleri (light.c + decor.c aynı
+koordinat), gece lamba sütunu (LB_LAMP; ambient telafisi TAVANLI ≤0.45 —
+3. doyma vakası), yağmur halkaları (weather→su), r2d_test su kapsaması.
+Ctrl+B 14 durum. KALAN su borcu: kıyı karo sanatı (Yol A) + NPC yansıması +
+vaha/loca deresi görsel doğrulama; Kışyolu buzu ve Tuzkapı limanı kendi
+fazlarında.
+
 **FAZ SU-2 TAMAM (2026-08-04)**: dekor yansımaları (r2d_draw_texture_reflect
 + decor_render_reflections, karo karo ıslak kırpma) · balık gölgeleri ·
 halka dalgacık (LB_RING, Ctrl+B 13 durum) · nilüferler (su üstü örtüsü —

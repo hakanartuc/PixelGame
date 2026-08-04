@@ -36,12 +36,52 @@ int main(int argc, char *argv[])
     };
     r2d_postfx_set(ctx, &fx);
 
+    // SU MASKESI — su pipeline'ini (water.frag) da surmek icin 8x8'lik sentetik
+    // maske: ortada derin govde, kenarlarda kiyi rampasi, iki mizac (sol yarim
+    // golet, sag yarim deniz). Amac gorsellik degil KAPSAM: Windows'ta ilk
+    // kosuda 5 shader'in beskini de dogrulamak (bkz. HANDOVER "r2d_test").
+    Uint8 wm[8 * 8 * 4];
+    for (int y = 0; y < 8; y++)
+        for (int x = 0; x < 8; x++) {
+            Uint8 *px = &wm[(y * 8 + x) * 4];
+            int d = x < 4 ? x : 7 - x; int dy = y < 4 ? y : 7 - y;
+            int dd = d < dy ? d : dy;                    // kenara uzaklik
+            px[0] = (Uint8)(dd * 80);                    // derinlik rampasi
+            px[1] = (Uint8)(dd * 60);                    // kiyi
+            px[2] = (x < 4) ? 26 : 255;                  // mizac: golet | deniz
+            px[3] = (y == 1) ? 255 : 0;                  // ust siride kiyi golgesi
+        }
+    R2DTexture *wmask = r2d_texture_from_pixels(ctx, wm, 8, 8);
+    if (wmask) r2d_texture_set_linear(wmask, true);
+
     for (int frame = 0; frame < 90; frame++) {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {}   // kuyruk bosalt (pencere olayları)
 
         if (!r2d_begin_frame(ctx, 30, 30, 45))
             continue;
+
+        // SU PASS'I — kare ortasinda, zemin cizimlerinden sonra (bkz. ust not)
+        if (wmask) {
+            R2DWater w = {
+                .mask = wmask, .maskW = 8, .maskH = 8, .tilePx = 64,
+                .camX = 0, .camY = 0, .zoom = 1.0f,
+                .time = frame / 60.0f,
+                .sunX = 0.7f, .sunY = -0.7f, .sunI = 0.8f,
+                .sunR = 1.0f, .sunG = 0.9f, .sunB = 0.7f,
+                .artPx = 4.0f,
+                .shallowR = 0.34f, .shallowG = 0.52f, .shallowB = 0.58f,
+                .shallowCover = 0.20f,
+                .deepR = 0.17f, .deepG = 0.27f, .deepB = 0.48f, .deepCover = 0.80f,
+                .waveHeight = 0.10f, .refract = 14.0f, .caustic = 0.14f,
+                .glint = 0.16f, .foamSpeed = 0.9f, .foamAmp = 0.16f,
+                .wetBand = 0.55f, .darkLine = 1.0f, .meniscus = 0.13f,
+                .bankShadow = 0.68f, .dashes = 0.12f, .arcs = 1.0f,
+                .lamp1X = 128, .lamp1Y = 64, .lamp1I = 0.9f,
+                .darkness = 0.6f, .rain = 0.5f,
+            };
+            r2d_water_flush(ctx, &w);
+        }
 
         // Primitifler
         r2d_set_color(ctx, 200, 60, 60, 255);

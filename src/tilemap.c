@@ -379,6 +379,14 @@ static Uint16 wmaskDist[WMASK_H_MAX][WMASK_W_MAX];
 static Uint8  wmaskComp[WMASK_H_MAX][WMASK_W_MAX];
 static Uint32 wmaskQ[WMASK_W_MAX * WMASK_H_MAX];
 static Uint16 wmaskBodyMax[WMASK_BODY_MAX + 1];
+// BALIK ÇAPALARI — gövde başına GARANTİLİ (zar değil). Raf halkasından
+// (dist==3 teksel = kıyıdan 1.5 karo) eşit aralıklı seçilir: balık suyun
+// ŞEFFAF olduğu yerde yüzer, opak ortada görünmez gölge çizmeyiz.
+#define WMASK_FISH_MAX 48
+static float wmaskFishXY[WMASK_FISH_MAX][2];
+static int   wmaskFishN = 0;
+static Uint16 wmaskCand[WMASK_BODY_MAX + 1];   // gövde başına aday sayısı
+static Uint16 wmaskPick[WMASK_BODY_MAX + 1];   // seçim adımı sayacı
 
 // 8-KOMŞULUK. 4-komşuluk yetmiyor: yalnız KÖŞESİYLE karaya değen bir su tekseli
 // 4-komşulukta uzaklık 2 alıyor (karaya ancak bir su tekselinden dolanarak
@@ -487,6 +495,30 @@ bool wld_water_mask_fill(int *outW, int *outH, const Uint8 **outPix)
             Uint8 c = wmaskComp[y][x];
             if (c != 0 && wmaskDist[y][x] > wmaskBodyMax[c])
                 wmaskBodyMax[c] = wmaskDist[y][x];
+        }
+
+    // 3b) BALIK ÇAPALARI: gövde başına aday say, eşit aralıkla seç.
+    //     Aday = raf halkası (dist==3 teksel). Gövde başına 1 + aday/40 balık
+    //     (gölet ~12 aday → 1 balık GARANTİ; göl ~yüzlerce → 5-8 balık).
+    wmaskFishN = 0;
+    for (int i = 0; i <= WMASK_BODY_MAX; i++) { wmaskCand[i] = 0; wmaskPick[i] = 0; }
+    for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++)
+            if (wmaskComp[y][x] != 0 && wmaskDist[y][x] == 3)
+                wmaskCand[wmaskComp[y][x]]++;
+    for (int y = 0; y < H && wmaskFishN < WMASK_FISH_MAX; y++)
+        for (int x = 0; x < W && wmaskFishN < WMASK_FISH_MAX; x++) {
+            Uint8 cB = wmaskComp[y][x];
+            if (cB == 0 || wmaskDist[y][x] != 3 || wmaskCand[cB] == 0) continue;
+            int want = 1 + wmaskCand[cB] / 24;   // gölde daha kalabalık
+            int stride = wmaskCand[cB] / want;
+            if (stride < 1) stride = 1;
+            if ((wmaskPick[cB]++ % stride) != (Uint16)(stride / 2)) continue;
+            if (wmaskPick[cB] / stride > want) continue;   // gövde kotası doldu
+            float ts = (float)TILE_SIZE / (float)WMASK_SUB;
+            wmaskFishXY[wmaskFishN][0] = (x + 0.5f) * ts;
+            wmaskFishXY[wmaskFishN][1] = (y + 0.5f) * ts;
+            wmaskFishN++;
         }
 
     // 4) Teksel yazımı
@@ -1218,6 +1250,40 @@ void tilemap_render_scatter(R2D *renderer, const Camera *camera)
     if (colR > mapW) colR = mapW;
     if (rowB > mapH) rowB = mapH;
 
+    // BALIK GÖLGELERİ — maske kurulurken gövde başına GARANTİLİ seçilen
+    // çapalar (bkz. wld_water_mask_fill 3b). Çapa etrafında yavaş yörünge;
+    // su geçişinden ÖNCE çizildiği için kırılma+süzgeç üstüne biner.
+    // İlk sürüm karo başına zardı ve gölette beklenen balık sayısı ~0 çıktı.
+    if (uwBushTex[0] != NULL) {
+        float ftm = (float)SDL_GetTicks() / 1000.0f;
+        for (int fi = 0; fi < wmaskFishN; fi++) {
+            unsigned fh = (unsigned)(fi * 2654435761u); fh = (fh >> 11) ^ fh;
+            float dir = (fh & 4) ? 1.0f : -1.0f;
+            float ang = ftm * 0.40f * dir + (float)(fh & 1023);
+            float fxp = wmaskFishXY[fi][0] + SDL_cosf(ang) * 30.0f;
+            float fyp = wmaskFishXY[fi][1] + SDL_sinf(ang) * 20.0f;
+            if (fxp < (colL - 1) * TILE_SIZE || fxp > (colR + 1) * TILE_SIZE ||
+                fyp < (rowT - 1) * TILE_SIZE || fyp > (rowB + 1) * TILE_SIZE)
+                continue;   // ekran dışı
+            // Gövde + geride küçük kuyruk lekesi: tek yuvarlak leke bitkiyle
+            // karışıyordu ("balık göremiyorum"); kuyruk, yüzme yönünü okutur.
+            float hx = -SDL_sinf(ang) * dir, hy = SDL_cosf(ang) * dir * 0.66f;
+            R2DTexture *fb = uwBushTex[0];
+            r2d_texture_set_color_mod(fb, 20, 32, 56);
+            r2d_texture_set_alpha_mod(fb, 190);
+            SDL_FRect fd = { (fxp - 11.0f - camera->x) * zoom,
+                             (fyp - 6.0f - camera->y) * zoom,
+                             22.0f * zoom, 12.0f * zoom };
+            r2d_draw_texture(renderer, fb, NULL, &fd);
+            SDL_FRect ft = { (fxp - 5.0f - hx * 14.0f - camera->x) * zoom,
+                             (fyp - 3.5f - hy * 14.0f - camera->y) * zoom,
+                             10.0f * zoom, 7.0f * zoom };
+            r2d_draw_texture(renderer, fb, NULL, &ft);
+            r2d_texture_set_alpha_mod(fb, 255);
+            r2d_texture_set_color_mod(fb, 255, 255, 255);
+        }
+    }
+
     for (int row = rowT; row < rowB; row++) {
         for (int col = colL; col < colR; col++) {
             int id = tilemap[row][col];
@@ -1273,28 +1339,6 @@ void tilemap_render_scatter(R2D *renderer, const Camera *camera)
                 // çizildiği için kırılma+süzgeç üstüne biner: "suyun içinde
                 // bir şey yüzüyor" okuması bedavaya çıkar (Stardew usulü).
                 // DUVAR saati: balık gece durmaz.
-                if ((h % 97) < 2) {
-                    bool allWet = true;
-                    for (int fy = -1; fy <= 1 && allWet; fy++)
-                        for (int fx = -1; fx <= 1 && allWet; fx++)
-                            if (!tilemap_is_water(col + fx, row + fy)) allWet = false;
-                    if (allWet) {
-                        float ft = (float)SDL_GetTicks() / 1000.0f;
-                        float ang = ft * 0.22f * ((h & 4) ? 1.0f : -1.0f)
-                                  + (float)(h & 1023);
-                        float fxp = (col + 0.5f) * TILE_SIZE + SDL_cosf(ang) * 42.0f;
-                        float fyp = (row + 0.5f) * TILE_SIZE + SDL_sinf(ang) * 26.0f;
-                        SDL_FRect fd = { (fxp - 11.0f - camera->x) * zoom,
-                                         (fyp - 7.0f - camera->y) * zoom,
-                                         22.0f * zoom, 14.0f * zoom };
-                        R2DTexture *fb = uwBushTex[0];
-                        r2d_texture_set_color_mod(fb, 26, 40, 66);
-                        r2d_texture_set_alpha_mod(fb, 150);
-                        r2d_draw_texture(renderer, fb, NULL, &fd);
-                        r2d_texture_set_alpha_mod(fb, 255);
-                        r2d_texture_set_color_mod(fb, 255, 255, 255);
-                    }
-                }
                 R2DTexture *bt = uwBushTex[(h >> 5) & 1];
                 unsigned roll = h % 100;
                 unsigned pPlant = nearLand ? 14 : (id == 20 ? 12 : 3);

@@ -82,6 +82,13 @@ const LightDef LIGHTS[] = {
     { .x = T(14), .y = T(6)  - 50.0f, .radius = 78.0f, .r = 1.00f, .g = 0.58f, .b = 0.28f, .intensity = 0.40f, .kind = LK_CANDLE },
     { .x = T(6),  .y = T(10) - 50.0f, .radius = 78.0f, .r = 1.00f, .g = 0.58f, .b = 0.28f, .intensity = 0.40f, .kind = LK_CANDLE },
 
+    // SU KENARI FENERLERİ (Faz SU kapanışı): lamba yansıması katmanının
+    // (LB_LAMP) suya düşecek ışığı olsun diye — köy ışıklarının hiçbiri suya
+    // 110 px yaklaşmıyordu, Hakan gece bakacak yer bulamadı. Fener dekorları
+    // decor.c'de aynı koordinatlarda (görsel gövde + ışık ayrı sistemler).
+    { .x = T(9.6f), .y = T(19.0f) - 40.0f, .radius = 220.0f, .r = 1.00f, .g = 0.62f, .b = 0.30f, .intensity = 0.60f, .kind = LK_CANDLE },
+    { .x = T(56.9f), .y = T(22.6f) - 40.0f, .radius = 220.0f, .r = 1.00f, .g = 0.62f, .b = 0.30f, .intensity = 0.60f, .kind = LK_CANDLE },
+
     // Köy meydanı meşale direkleri — DEVRE DIŞI, silinmedi (LORE §14.8).
     // Bu iki direk artık DURUMU OLAN kandil direği: lamp.c LAMPS[] tablosunda
     // (aynı koordinatlar, T(10),T(8) ve T(13),T(10)). Statik tabloda kalsalardı

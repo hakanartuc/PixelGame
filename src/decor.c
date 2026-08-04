@@ -67,6 +67,9 @@ const DecorDef DECORS[] = {
     { .texPath = "assets/decor/bush_2.png",     .x = T(66.4f), .y = T(23.8f), .scale = 4.0f, .conceals = true },
     // Gölet kuzeyine tek ağaç: yansıması sığlık rafına + koyu ortaya düşer
     { .texPath = "assets/decor/oak_medium.png", .x = T(7.5f),  .y = T(18.9f), .scale = 1.6f, .solidBase = true },
+    // Su kenarı fenerleri — light.c LIGHTS[] ile AYNI koordinat (ışık orada)
+    { .texPath = "assets/decor/lantern.png", .x = T(9.6f),  .y = T(19.0f), .scale = 2.0f, .solidBase = true },
+    { .texPath = "assets/decor/lantern.png", .x = T(56.9f), .y = T(22.6f), .scale = 2.0f, .solidBase = true },
     { .texPath = "assets/decor/bush_1.png", .x = T(22), .y = T(23), .scale = 4.0f, .conceals = true },
     { .texPath = "assets/decor/bush_2.png", .x = T(24), .y = T(21), .scale = 4.0f, .conceals = true },
     { .texPath = "assets/decor/bush_1.png", .x = T(21), .y = T(26), .scale = 4.0f, .conceals = true },
