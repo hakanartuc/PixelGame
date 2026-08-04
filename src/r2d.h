@@ -219,8 +219,9 @@ void r2d_postfx_flush(R2D *ctx);
 #define R2D_WATER_L_BANK     256  // kıyı gölgesi (kuzey kıyının çukura düşen gölgesi)
 #define R2D_WATER_L_DASH     512  // ışıltı çizgicikleri (seyrek, ayrık, sürüklenen)
 #define R2D_WATER_L_ARC      1024 // dalga-yankı arkları (kıyıya paralel koyu sıralar)
-#define R2D_WATER_L_ALL      2047
-#define R2D_WATER_L_COUNT    11   // izole modda dolaşılacak katman sayısı
+#define R2D_WATER_L_RING     2048 // halka dalgacık (balık/damla izi)
+#define R2D_WATER_L_ALL      4095
+#define R2D_WATER_L_COUNT    12   // izole modda dolaşılacak katman sayısı
 
 typedef struct {
     R2DTexture *mask;
@@ -262,6 +263,10 @@ void r2d_draw_texture(R2D *ctx, R2DTexture *tex,
                       const SDL_FRect *src, const SDL_FRect *dst);
 void r2d_draw_texture_flip(R2D *ctx, R2DTexture *tex, const SDL_FRect *src,
                            const SDL_FRect *dst, bool flipH);
+// Su yansıması: dikey aynalı + soluk (su geçişinden ÖNCE zemine çizilir,
+// kırılma/derinlik süzgeci üstüne bedava biner)
+void r2d_draw_texture_reflect(R2D *ctx, R2DTexture *tex, const SDL_FRect *src,
+                              const SDL_FRect *dst, Uint8 alpha);
 // Serbest 4 köşeli quad (eksen-hizalı DEĞİL) — gölge izdüşümü için.
 // Köşe sırası TL, TR, BL, BR (ekran px). UV eşlemesi sprite'ın tabanını
 // BL/BR'ye, tepesini TL/TR'ye bağlar: yani gölge kendiliğinden doğru yatar.

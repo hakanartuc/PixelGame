@@ -1519,6 +1519,7 @@ int main(int argc, char *argv[])
         { R2D_WATER_L_BANK,    "SU: yalniz KIYI GOLGESI (kuzey kiyinin cukuru)" },
         { R2D_WATER_L_DASH,    "SU: yalniz ISILTI CIZGILERI (ayrik ogeler)" },
         { R2D_WATER_L_ARC,     "SU: yalniz ARK SIRALARI (kiyiya paralel yanki)" },
+        { R2D_WATER_L_RING,    "SU: yalniz HALKA DALGACIK (balik/damla izi)" },
     };
     bool craftOpen = false;
     int craftStation = -1;    // panelin bağlı olduğu istasyon
@@ -10695,6 +10696,12 @@ int main(int argc, char *argv[])
             trap_render(renderer, map_current(), &camera);   // dikenler/plaka/arbalet (zemin)
         map_portals_render(renderer, &camera, gameFont, nearPortal);  // geçit kapı/merdivenleri
 
+        // SU YANSIMALARI: dekorlar (ağaç/çalı) suya aynalanır. Su geçişinden
+        // ÖNCE olmak ZORUNDA — yansıma zemin katmanına girer ki kırılma onu
+        // büksün, derinlik süzgeci koyultsun. Sonra çizilse cam üstüne
+        // yapıştırılmış çıkartma gibi dururdu.
+        decor_render_reflections(renderer, decor_textures, &camera);
+
         // SU HACMİ (Faz SU). Buraya kadar çizilen HER ŞEY zemin sayılır (karo,
         // gölge, yer izi, dekor, geçit) ve suyun ALTINA girer: batık taş, urgan,
         // çakıl hepsi bükülür. Varlıklar bundan SONRA çizildiği için oyuncu
@@ -10783,6 +10790,10 @@ int main(int argc, char *argv[])
                 r2d_water_flush(renderer, &w);
             }
         }
+
+        // SU ÜSTÜ ÖRTÜSÜ: nilüferler — sudan SONRA (yüzeyin üstünde dururlar,
+        // kırılma onları bükmez; bükülselerdi batık okunurlardı)
+        tilemap_render_water_overlay(renderer, &camera);
 
         // SESSİZ EL kontrat tahtası [E] ipucu (locada, sınıf açık) — MAP_WORLD
         // bloğunun DIŞINDA (içindeyken locada hiç çizilmiyordu, Hakan raporu)

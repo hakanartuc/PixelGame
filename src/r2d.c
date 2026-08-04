@@ -772,6 +772,31 @@ void r2d_draw_texture_flip(R2D *ctx, R2DTexture *tex, const SDL_FRect *src,
               (SDL_Color){ 255, 255, 255, 255 });
 }
 
+// SU YANSIMASI: dikey aynalı + soluk çizim. Ayrı fonksiyon, çünkü
+// r2d_draw_texture_flip imzasına flipV eklemek onlarca çağrı yerini bozar
+// ve tek müşteri bu. Yansıma su geçişinden ÖNCE zemine çizilir: kırılma ve
+// derinlik süzgeci üstüne kendiliğinden biner (ekstra shader yok).
+void r2d_draw_texture_reflect(R2D *ctx, R2DTexture *tex, const SDL_FRect *src,
+                              const SDL_FRect *dst, Uint8 alpha)
+{
+    (void)ctx;
+    if (tex == NULL || dst == NULL) return;
+    SDL_FRect s = (src != NULL) ? *src : (SDL_FRect){ 0, 0, tex->w, tex->h };
+    SDL_FRect d = *dst;
+    if (s.x < 0) { d.x -= s.x * (d.w / s.w); d.w += s.x * (d.w / s.w); s.w += s.x; s.x = 0; }
+    if (s.y < 0) { d.y -= s.y * (d.h / s.h); d.h += s.y * (d.h / s.h); s.h += s.y; s.y = 0; }
+    if (s.x + s.w > tex->w) { float over = s.x + s.w - tex->w; d.w -= over * (d.w / s.w); s.w -= over; }
+    if (s.y + s.h > tex->h) { float over = s.y + s.h - tex->h; d.h -= over * (d.h / s.h); s.h -= over; }
+    if (s.w <= 0.0f || s.h <= 0.0f || d.w <= 0.0f || d.h <= 0.0f) return;
+
+    float u0 = s.x / tex->w;
+    float v0 = (s.y + s.h) / tex->h;   // V TAKAS: dikey ayna
+    float u1 = (s.x + s.w) / tex->w;
+    float v1 = s.y / tex->h;
+    push_quad(tex, d.x, d.y, d.w, d.h, u0, v0, u1, v1,
+              (SDL_Color){ 255, 255, 255, alpha });
+}
+
 void r2d_draw_texture(R2D *ctx, R2DTexture *tex,
                       const SDL_FRect *src, const SDL_FRect *dst)
 {

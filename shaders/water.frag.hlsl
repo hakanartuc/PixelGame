@@ -51,6 +51,7 @@ static const uint LB_MENI    = 128u;  // menisküs (parlak kıyı çizgisi)
 static const uint LB_BANK    = 256u;  // kıyı gölgesi (kuzey kıyının çukura düşen gölgesi)
 static const uint LB_DASH    = 512u;  // ışıltı çizgicikleri (seyrek, ayrık, sürüklenen)
 static const uint LB_ARC     = 1024u; // dalga-yankı arkları (kıyıya paralel koyu sıralar)
+static const uint LB_RING    = 2048u; // halka dalgacık (balık/damla izi)
 
 bool layer_on(uint mask, uint bit) { return (mask & bit) != 0u; }
 
@@ -546,6 +547,31 @@ float4 main(PSIn i) : SV_Target0
             if (inY >= 1.0 && inY <= 6.0 && inX == xw + sway) {
                 // Suyun İÇİNDE: eklemeli değil KARIŞIM — parlamaz, boğuk
                 col = lerp(col, float3(0.22, 0.52, 0.46), 0.65);
+            }
+        }
+    }
+
+    // HALKA DALGACIK — balık/damla izi (Stardew: 8 kare @100ms; bizde
+    // prosedürel karşılığı). Seyrek hücrelerde 1 px'lik halka tam piksel
+    // adımlarıyla genişleyip sönüyor; merkez hash'ten kayık, her ~3 sn'de
+    // yeni zar. Balık gölgeleriyle aynı suda yaşar — biri altta yüzer,
+    // öteki yüzeyde iz bırakır.
+    if (layer_on(L, LB_RING)) {
+        float rcell = 32.0 * artW;
+        float2 rc = floor(world / rcell);
+        float ep = floor(t / 2.8);
+        uint rh = uhash2((uint)(int)(rc.x + 8192.0) ^ ((uint)(int)ep) * 0x27D4EB2Du,
+                         (uint)(int)(rc.y + 8192.0));
+        if ((rh & 7u) == 0u) {
+            float tt = t - ep * 2.8;
+            float2 ctr = (rc + 0.5) * rcell
+                       + (float2((float)((rh >> 8u) & 15u),
+                                 (float)((rh >> 12u) & 15u)) - 7.5) * artW;
+            float dpx = length(snap_art(world, artW) - ctr) / artW;
+            float rr = 1.0 + floor(tt * 3.0);          // 1..9 sanat px, tam adım
+            float fade = saturate(1.0 - tt / 2.2);
+            if (rr < 9.0 && abs(dpx - rr) < 0.6) {
+                col += float3(0.85, 0.92, 0.98) * (0.10 * fade * (1.0 - bshad));
             }
         }
     }

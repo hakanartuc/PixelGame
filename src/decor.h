@@ -33,6 +33,11 @@ void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
 
 // Güneş gölgeleri: zeminin üstüne, dekorun altına (shadow.h'den parametreler).
 // strength 0 ise (gece) hiç çizmez.
+// Su yansımaları: su geçişinden ÖNCE çağrılır (zemin katmanına),
+// yalnız ıslak karolara kırpılır — kırılma/süzgeç üstüne bedava biner
+void decor_render_reflections(R2D *renderer, R2DTexture **decorTextures,
+                              const Camera *camera);
+
 void decor_render_shadows(R2D *renderer, R2DTexture **decorTextures,
                           const Camera *camera,
                           float dx, float dy, float lenMul, float strength);

@@ -32,6 +32,12 @@ extern const int TILE_TYPE_COUNT;
 // Dönen tampon statiktir; çağıran sahiplenmez, harita değişince yeniden sorar.
 bool wld_water_mask_fill(int *outW, int *outH, const Uint8 **outPix);
 
+// Bu karo sıvı mı? (yansıma/nilüfer kırpması — wmask_base > 0 olan türler)
+bool tilemap_is_water(int col, int row);
+
+// Su ÜSTÜ örtüsü (nilüfer) — r2d_water_flush'tan SONRA çağrılır
+void tilemap_render_water_overlay(R2D *renderer, const Camera *camera);
+
 // --- Genel arayüz (başka modüller bunları kullanır) ---
 void generate_map(void);
 

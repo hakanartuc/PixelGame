@@ -1,4 +1,5 @@
 #include "decor.h"
+#include "tilemap.h"   // tilemap_is_water (yansıma kırpması)
 #include "shadow.h"   // temas lekesi (ayak izi)
 
 // Köy evleri — NPC'lerin gece gittiği kapılar bunların önü (npc.c rutinleri)
@@ -56,6 +57,16 @@ const DecorDef DECORS[] = {
     { .texPath = "assets/decor/oak_big.png",    .x = T(27), .y = T(19), .scale = 1.6f, .solidBase = true },
 
     // Çalılar: goblin kampına sneak yaklaşma hattı (içine eğilerek girilir)
+    // GÖL KUZEY KIYISI AĞAÇLARI (Faz SU 2 — Hakan: "göl kıyısında ağaç yok,
+    // ekler misin"): yansıma ayaktan GÜNEYE uzandığı için ağaç suyun KUZEY
+    // kıyısında durmalı ki aynası suya düşsün. Ayaklar kıyı çimeninin alt
+    // kenarına yakın — yansıma su çizgisinin hemen ardından başlar.
+    { .texPath = "assets/decor/oak_big.png",    .x = T(54.5f), .y = T(22.9f), .scale = 1.6f, .solidBase = true },
+    { .texPath = "assets/decor/oak_medium.png", .x = T(59.3f), .y = T(22.85f), .scale = 1.6f, .solidBase = true },
+    { .texPath = "assets/decor/oak_big.png",    .x = T(63.8f), .y = T(22.9f), .scale = 1.6f, .solidBase = true },
+    { .texPath = "assets/decor/bush_2.png",     .x = T(66.4f), .y = T(23.8f), .scale = 4.0f, .conceals = true },
+    // Gölet kuzeyine tek ağaç: yansıması sığlık rafına + koyu ortaya düşer
+    { .texPath = "assets/decor/oak_medium.png", .x = T(7.5f),  .y = T(18.9f), .scale = 1.6f, .solidBase = true },
     { .texPath = "assets/decor/bush_1.png", .x = T(22), .y = T(23), .scale = 4.0f, .conceals = true },
     { .texPath = "assets/decor/bush_2.png", .x = T(24), .y = T(21), .scale = 4.0f, .conceals = true },
     { .texPath = "assets/decor/bush_1.png", .x = T(21), .y = T(26), .scale = 4.0f, .conceals = true },
@@ -177,6 +188,76 @@ void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
             r.w * zoom, r.h * zoom,
         };
         r2d_draw_texture(renderer, decorTextures[i], NULL, &dst);
+    }
+}
+
+// SU YANSIMALARI — gölgenin kardeşi: ayak çizgisinde çakılı ama güneşe göre
+// değil AŞAĞI (aynada), soluk, ve YALNIZ ıslak karolara kırpılmış. Su
+// geçişinden ÖNCE çizilir: kırılma yansımayı büker, derinlik süzgeci
+// koyulaştırır, benekler üstünden geçer — yansıma "yapıştırılmış kopya"
+// değil "suyun içindeki görüntü" olur, ekstra shader gerekmez.
+// Kırpma karo karo: sprite dikdörtgeni ıslak olmayan karoya taşarsa o parça
+// hiç çizilmez (yoksa çimende baş aşağı ağaç hayaleti belirir).
+void decor_render_reflections(R2D *renderer, R2DTexture **decorTextures,
+                              const Camera *camera)
+{
+    if (!decorActive) return;
+    float zoom = camera->zoom;
+    for (int i = 0; i < DECOR_COUNT && i < DECOR_CAP; i++) {
+        if (decorTextures[i] == NULL) continue;
+        if (DECORS[i].map != decorMap) continue;
+        SDL_FRect r = decor_rect(i);
+
+        float opX, opY, opW, opH;
+        r2d_texture_opaque_bounds(decorTextures[i], &opX, &opY, &opW, &opH);
+        float texW2 = 0.0f, texH2 = 0.0f;
+        r2d_texture_size(decorTextures[i], &texW2, &texH2);
+        if (texH2 <= 0.0f || opH <= 1.0f) continue;
+
+        // Opak bölge DÜNYA koordinatlarında (gölgedeki hesabın aynısı, ekransız)
+        float sxScale = r.w / texW2, syScale = r.h / texH2;
+        float wx = r.x + opX * sxScale;          // yansımanın sol kenarı
+        float ww = opW * sxScale;
+        float footY = r.y + (opY + opH) * syScale;   // ayak çizgisi (dünya)
+        // Yansıma hafif KISA (0.82): eğik bakışta su yüzeyi sıkışık görünür
+        // (slynyrd: yansımalar hafifçe kısaltılır)
+        float wh = opH * syScale * 0.82f;
+
+        // Hızlı red: yansıma kutusu hiç ıslak karoya değmiyorsa hiç uğraşma
+        int c0 = (int)(wx / TILE_SIZE), c1 = (int)((wx + ww) / TILE_SIZE);
+        int r0 = (int)(footY / TILE_SIZE), r1 = (int)((footY + wh) / TILE_SIZE);
+        bool any = false;
+        for (int rr = r0; rr <= r1 && !any; rr++)
+            for (int cc = c0; cc <= c1 && !any; cc++)
+                if (tilemap_is_water(cc, rr)) any = true;
+        if (!any) continue;
+
+        // Karo karo kırp: her ıslak karoyla kesişen parça ayrı çizilir.
+        // Parça eşlemesi: yansımanın üstü sprite'ın AYAĞI — dst kesiti
+        // [f0,f1] ise src kesiti [1-f1, 1-f0] (reflect çizimi parçayı
+        // kendi içinde aynaladığı için toplam eşleme doğru çıkıyor).
+        for (int rr = r0; rr <= r1; rr++)
+            for (int cc = c0; cc <= c1; cc++) {
+                if (!tilemap_is_water(cc, rr)) continue;
+                float tx0 = cc * (float)TILE_SIZE, ty0 = rr * (float)TILE_SIZE;
+                float ix0 = wx > tx0 ? wx : tx0;
+                float iy0 = footY > ty0 ? footY : ty0;
+                float ix1 = (wx + ww) < (tx0 + TILE_SIZE) ? (wx + ww) : (tx0 + TILE_SIZE);
+                float iy1 = (footY + wh) < (ty0 + TILE_SIZE) ? (footY + wh) : (ty0 + TILE_SIZE);
+                if (ix1 <= ix0 || iy1 <= iy0) continue;
+
+                float fx0 = (ix0 - wx) / ww, fx1 = (ix1 - wx) / ww;
+                float fy0 = (iy0 - footY) / wh, fy1 = (iy1 - footY) / wh;
+                SDL_FRect ps = {
+                    opX + fx0 * opW,
+                    opY + (1.0f - fy1) * opH,
+                    (fx1 - fx0) * opW,
+                    (fy1 - fy0) * opH };
+                SDL_FRect pd = {
+                    (ix0 - camera->x) * zoom, (iy0 - camera->y) * zoom,
+                    (ix1 - ix0) * zoom, (iy1 - iy0) * zoom };
+                r2d_draw_texture_reflect(renderer, decorTextures[i], &ps, &pd, 96);
+            }
     }
 }
 

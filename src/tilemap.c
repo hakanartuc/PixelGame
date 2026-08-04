@@ -368,6 +368,12 @@ static Uint8 wmask_agitation(int id)
 //                                   karoluk haritada 256'yı geçebilir → Uint16)
 //   wmaskComp 512*512   =  256 KB   bağlı su gövdesi etiketi (0 = kara)
 //   wmaskQ    512*512*4 = 1024 KB   BFS/taşma-dolgu kuyruğu (iki geçiş paylaşır)
+bool tilemap_is_water(int col, int row)
+{
+    if (col < 0 || col >= mapW || row < 0 || row >= mapH) return false;
+    return wmask_base(tilemap[row][col]) > 0.0f;
+}
+
 static Uint8  wmaskPix[WMASK_W_MAX * WMASK_H_MAX * 4];
 static Uint16 wmaskDist[WMASK_H_MAX][WMASK_W_MAX];
 static Uint8  wmaskComp[WMASK_H_MAX][WMASK_W_MAX];
@@ -548,6 +554,54 @@ bool wld_water_mask_fill(int *outW, int *outH, const Uint8 **outPix)
     *outH = H;
     *outPix = wmaskPix;
     return true;
+}
+
+// SU ÜSTÜ ÖRTÜSÜ (Faz SU 2): nilüferler — su geçişinden SONRA çizilir, yani
+// kırılmadan ve süzgeçten ETKİLENMEZLER: yüzeyin ÜSTÜNDE dururlar (referans
+// görüntünün imzası). Önce 3 px güneydoğuya koyu temas gölgesi, sonra pad —
+// gölge, pad'i yüzeye "oturtan" şey. Deterministik hash; save'e girmez.
+void tilemap_render_water_overlay(R2D *renderer, const Camera *camera)
+{
+    if (uwBushTex[1] == NULL) return;
+    float zoom = camera->zoom;
+    int outW = 0, outH = 0;
+    r2d_output_size(renderer, &outW, &outH);
+    int colL = (int)(camera->x / TILE_SIZE) - 1;
+    int rowT = (int)(camera->y / TILE_SIZE) - 1;
+    int colR = (int)((camera->x + outW / zoom) / TILE_SIZE) + 2;
+    int rowB = (int)((camera->y + outH / zoom) / TILE_SIZE) + 2;
+    if (colL < 0) colL = 0;
+    if (rowT < 0) rowT = 0;
+    if (colR > mapW) colR = mapW;
+    if (rowB > mapH) rowB = mapH;
+
+    for (int row = rowT; row < rowB; row++)
+        for (int col = colL; col < colR; col++) {
+            if (tilemap[row][col] != 20) continue;   // nilüfer gölete özgü
+            unsigned h = (unsigned)(col * 2654435761u ^ row * 40503u);
+            h = (h >> 11) ^ h;
+            // Serpiştirmeden FARKLI zar (h>>17): pad batık bitkinin üstüne binmesin
+            if (((h >> 17) % 100) >= 7) continue;
+            // Kıyı çizgisine binmesin: dört komşu da ıslak olmalı
+            if (!tilemap_is_water(col-1, row) || !tilemap_is_water(col+1, row) ||
+                !tilemap_is_water(col, row-1) || !tilemap_is_water(col, row+1))
+                continue;
+            float px = col * TILE_SIZE + (float)((h >> 3) % 40);
+            float py = row * TILE_SIZE + (float)((h >> 8) % 40);
+            R2DTexture *bt = uwBushTex[(h >> 5) & 1];
+            SDL_FRect sh = { (px + 3.0f - camera->x) * zoom,
+                             (py + 4.0f - camera->y) * zoom,
+                             20.0f * zoom, 20.0f * zoom };
+            r2d_texture_set_color_mod(bt, 14, 30, 48);
+            r2d_texture_set_alpha_mod(bt, 120);
+            r2d_draw_texture(renderer, bt, NULL, &sh);
+            r2d_texture_set_alpha_mod(bt, 255);
+            SDL_FRect pd = { (px - camera->x) * zoom, (py - camera->y) * zoom,
+                             20.0f * zoom, 20.0f * zoom };
+            r2d_texture_set_color_mod(bt, 112, 188, 108);   // taze yaprak yeşili
+            r2d_draw_texture(renderer, bt, NULL, &pd);
+            r2d_texture_set_color_mod(bt, 255, 255, 255);
+        }
 }
 
 static int wld_water_frame(void)
@@ -1214,6 +1268,33 @@ void tilemap_render_scatter(R2D *renderer, const Camera *camera)
                 // Batık taş rafı + bitkiler. Gölet ortası da payını alıyor
                 // ('içine de taş ve bitkiler ekleyip doğallaştıralım' —
                 // Hakan): örtme 0.80'e indiği için orta artık siluet gösterir.
+                // BALIK GÖLGESİ: 3×3'ü tamamen ıslak seyrek çapalarda, çapa
+                // çevresinde yavaşça dolanan koyu leke. Su geçişinden ÖNCE
+                // çizildiği için kırılma+süzgeç üstüne biner: "suyun içinde
+                // bir şey yüzüyor" okuması bedavaya çıkar (Stardew usulü).
+                // DUVAR saati: balık gece durmaz.
+                if ((h % 97) < 2) {
+                    bool allWet = true;
+                    for (int fy = -1; fy <= 1 && allWet; fy++)
+                        for (int fx = -1; fx <= 1 && allWet; fx++)
+                            if (!tilemap_is_water(col + fx, row + fy)) allWet = false;
+                    if (allWet) {
+                        float ft = (float)SDL_GetTicks() / 1000.0f;
+                        float ang = ft * 0.22f * ((h & 4) ? 1.0f : -1.0f)
+                                  + (float)(h & 1023);
+                        float fxp = (col + 0.5f) * TILE_SIZE + SDL_cosf(ang) * 42.0f;
+                        float fyp = (row + 0.5f) * TILE_SIZE + SDL_sinf(ang) * 26.0f;
+                        SDL_FRect fd = { (fxp - 11.0f - camera->x) * zoom,
+                                         (fyp - 7.0f - camera->y) * zoom,
+                                         22.0f * zoom, 14.0f * zoom };
+                        R2DTexture *fb = uwBushTex[0];
+                        r2d_texture_set_color_mod(fb, 26, 40, 66);
+                        r2d_texture_set_alpha_mod(fb, 150);
+                        r2d_draw_texture(renderer, fb, NULL, &fd);
+                        r2d_texture_set_alpha_mod(fb, 255);
+                        r2d_texture_set_color_mod(fb, 255, 255, 255);
+                    }
+                }
                 R2DTexture *bt = uwBushTex[(h >> 5) & 1];
                 unsigned roll = h % 100;
                 unsigned pPlant = nearLand ? 14 : (id == 20 ? 12 : 3);

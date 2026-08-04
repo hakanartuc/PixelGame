@@ -4,6 +4,24 @@ Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
+### Faz SU-2 — su yansımaları + su yaşamı (2026-08-04)
+Su 2. turu (Hakan seçimi; ateş paketi sıradaki).
+
+- **Sprite yansımaları:** dekorlar (ağaç/çalı) suya aynalanır —
+  `r2d_draw_texture_reflect` (dikey ayna + alfa; flip imzası bozulmadı) +
+  `decor_render_reflections` (gölgenin kardeşi: ayak çizgisi opak sınırlardan,
+  aşağı doğru, 0.82 kısaltma, KARO KARO ıslak kırpma — `tilemap_is_water`).
+  Su geçişinden ÖNCE çizilir: kırılma büker, süzgeç koyultur. Oyuncu/NPC
+  yansıması SONRAYA (anim kare tesisatı gerekir).
+- **Balık gölgeleri:** 3×3'ü ıslak seyrek çapalarda dolanan koyu leke
+  (scatter'da, duvar saati) — su geçişinden önce, yani suyun İÇİNDE okunur.
+- **Halka dalgacık:** yeni shader katmanı (LB_RING, Ctrl+B 13 durum) —
+  1 px halka tam piksel adımlarıyla genişleyip söner, ~3 sn'de yeni zar.
+- **Nilüferler:** `tilemap_render_water_overlay` — su geçişinden SONRA çizilen
+  ilk öğe (bükülmezler; bükülselerdi batık okunurdu) + temas gölgesi.
+- **Göl kuzey kıyısına 3 meşe + çalı, gölete 1 meşe** (yansıma vitrini —
+  kural: ağaç suyun KUZEYİNDE durmalı ki aynası suya düşsün).
+
 ### Faz SU — su hacmi: tek geçişli shader su sistemi (2026-08-04)
 Motorun ilk gerçek shader efekti. Su artık doku değil HACİM: zemin katmanı
 ayrı target'a alınır, `shaders/water.frag.hlsl` onu dalga normaline göre
