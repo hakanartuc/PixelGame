@@ -826,9 +826,9 @@ void skillfx_update(ParticleSystem *fx, float dt)
                     // çatlayıp kalkıyor. Mesafe kapısı leke ile ortak, yani
                     // parça sayısı da kendiliğinden bütçeli.
                     float ga = sf_rnd() * 6.28318f;
-                    groundfx_burst(e->x + SDL_cosf(ga) * fR,
-                                   e->y + SDL_sinf(ga) * fR * 0.62f,
-                                   2, 0.70f, 0.55f);
+                    float gx = e->x + SDL_cosf(ga) * fR;
+                    float gy = e->y + SDL_sinf(ga) * fR * 0.62f;
+                    groundfx_burst(gx, gy, gy, 2, 0.70f, 0.55f);
                     // Leke ALANA yayılıyor (rim'e değil): çemberin içi de
                     // beyazlamalı. sqrt = düzgün alan dağılımı.
                     for (int q = 0; q < 2; q++) {
@@ -1069,7 +1069,7 @@ void skillfx_update(ParticleSystem *fx, float dt)
                 // ayrımı burada da geçerli.
                 if (elem == SKFX_EL_EARTH || elem == SKFX_EL_BOLT ||
                     elem == SKFX_EL_STEEL)
-                    groundfx_burst(e->x, e->y,
+                    groundfx_burst(e->x, e->y, e->y,
                                    (elem == SKFX_EL_EARTH) ? 6 : 3,
                                    0.85f * ((e->power < 2.0f) ? e->power : 2.0f),
                                    0.40f);
@@ -1126,15 +1126,15 @@ void skillfx_update(ParticleSystem *fx, float dt)
                 float prevU = u - dt / e->maxLife;
                 if (u >= delay && prevU < delay) {
                     // DİP: zemin kırılıyor — bol, her yöne, güçlü
-                    groundfx_burst(px, py, 5, 1.0f, 0.45f);
+                    groundfx_burst(px, py, py, 5, 1.0f, 0.45f);
                     // UÇ: dikenin YUKARI taşıdığı malzeme, tepeden dökülür.
                     // upBias yüksek: yukarı fırlayıp geri düşsün.
-                    groundfx_burst(px, py - hgt * 0.90f, 3, 0.85f, 0.90f);
+                    groundfx_burst(px, py - hgt * 0.90f, py, 3, 0.85f, 0.90f);
                 }
                 // ÇÖKME ANI zemin parçası: gövde geri gömülürken de kırar
                 float holdT = delay + 0.13f + 0.34f;
                 if (u >= holdT && prevU < holdT)
-                    groundfx_burst(px, py, 3, 0.75f, 0.30f);
+                    groundfx_burst(px, py, py, 3, 0.75f, 0.30f);
                 // ÇIKIŞ ANI: yalnız gövde yerden çıkarken kırıntı fışkırır.
                 // Sürekli kaya sağmak dikeni gizliyordu — kırıntı OLAYIN
                 // kendisi değil, olayın ARTIĞI.
@@ -1390,7 +1390,7 @@ void skillfx_update(ParticleSystem *fx, float dt)
                              0.0f, 0.0f, 2.4f, 7.0f, 255, 150, 60, WEAPON_FX_EMBER);
                 // ZEMİN TEMASI: patlama yeri kırıyor — o zeminin dokusundan
                 // parça savuruyor (kayada taş, kumda kum). Aynı motor katmanı.
-                groundfx_burst(e->tx, e->ty, 10, 1.25f, 0.35f);
+                groundfx_burst(e->tx, e->ty, e->ty, 10, 1.25f, 0.35f);
                 skillfx_punch(1.0f, 0.66f, 0.30f, 0.44f, 0.18f);   // sıcak flaş
                 // Çarpma: mermi YÖNÜNDE koni (uçuş vektöründen)
                 // Ateş topunun PATLAMASI tek ve kesin bir olay: donma hakkı var.

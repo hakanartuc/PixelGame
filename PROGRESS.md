@@ -88,6 +88,11 @@ GÖRKEMİ. Detaylı gerekçeler GDD §6.6'da.
   PNG'leri CPU'da okunup (stb_image) her karo için 4 yumuşak-kenarlı varyant
   üretiliyor. GPU dokusundan alfa maskelenemiyor (çarpımsal alfa blend'i yok).
   Yan kazanç: tüm parçalar tek dokudan çiziliyor, batch korunuyor.
+  Parça DÜNYAYA AİT: zemin hattına iner, durur, yatık çizilir, havada gölge
+  düşürür (yükseklik yalnız gölgeyle okunuyor), inişte toz kaldırır (kanca ile —
+  toz seçimi oyun katmanının). Parça başına parlaklık kırılması + 6 maske
+  varyantı. Zemin hattı doğum noktasından AYRI parametre (uç patlaması havada
+  "yere iniyordu" ve malzemeyi yanlış karodan okuyordu).
   Tüketiciler: taş dikeni (dip + UÇ + çökme) · ateş topu patlaması · buz novası
   cephesi · isabet katmanı (yalnız ağır elemanlar). Havuz 512, tepe ~250.
 - **TAŞ DİKENİ 2. TUR**: üç yüz (aydınlık/ara/gölge) · çentikli kenar (taş

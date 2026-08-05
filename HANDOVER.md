@@ -248,6 +248,11 @@ buz camgöbeği ayrımı okunuyor mu → Ctrl+G ile silah damgası döngüsü.
 olarak eklenecek mi (mekanik kodda ama HİÇBİR EŞYA damgayı vermiyor — şu an
 yalnız Ctrl+G ile erişilebilir) · kalan 14 büyü göç etsin mi.
 **YENİ MOTOR KURALLARI (bu turların bedeli)**:
+· **YERE AİT PARÇA HAVADA BUHARLAŞMAZ**: iner, durur, YATIK çizilir ve gölge
+  düşürür. Yükseklik bilgisi yalnız GÖLGEYLE görünür (yukarı kaymak tek başına
+  yükseklik anlatmıyor). Doğum noktası ile ZEMİN HATTI ayrı bilgidir — havada
+  doğan patlama zemin hattını vermek zorunda, yoksa parça havada "iniyor" ve
+  malzeme yanlış karodan okunuyor.
 · **DOKUDAN KESİLEN PARÇA MASKESİZ ise KESKİN KARE olur** — GPU dokusundan alfa
   maskelenemez (çarpımsal alfa blend'i yok). Çözüm: açılışta PNG'yi CPU'da oku
   (stb_image r2d.c'de derli), maskeli varyantları TEK atlasa bas. Yan kazanç:

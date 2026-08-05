@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include "groundfx.h"
 #include "tilemap.h"
+#include "shadow.h"
 
 // stb_image r2d.c'de zaten implementation ile derleniyor; burada yalnız
 // prototipini alıyoruz. Karo PNG'sini CPU'da okumak ŞART: parçanın alfasını
@@ -20,10 +21,18 @@ typedef struct {
     R2DTexture *tex;            // KARO dokusu — parça ondan kesiliyor
     float sx, sy, sw;           // doku içindeki pencere (doku pikseli)
     GroundClass cls;
+    // ── İNİŞ. Parça havada BUHARLAŞMIYOR: doğduğu zemin yüksekliğine (y0)
+    // dönünce YERE İNİYOR, duruyor ve orada soluyor. Havada yok olan kırıntı
+    // "dünyaya ait değil, üstünde yüzüyor" okunuyordu.
+    float y0;                   // doğduğu zemin y'si (iniş hedefi)
+    bool landed;
+    float restLife;             // yerde kalma süresi
+    Uint8 shade;                // parça başına parlaklık kırılması
 } Chunk;
 
 static Chunk s_ch[GROUNDFX_MAX];
 static R2DTexture **s_tiles = NULL;      // main'in karo doku dizisi (salt okunur)
+static GroundLandHook s_landHook = NULL;
 
 // ── MASKELENMİŞ PARÇA ATLASI.
 // HATA GEÇMİŞİ: parça, karo dokusundan doğrudan kesilen bir kare olarak
@@ -39,7 +48,7 @@ static R2DTexture **s_tiles = NULL;      // main'in karo doku dizisi (salt okunu
 // YAN KAZANÇ: bütün parçalar artık TEK dokudan çiziliyor, yani batch geri geldi.
 // Eskiden karo başına doku değişiyordu ve her parça batch'i kırıyordu.
 #define GF_FRAG 8            // parça hücresi (doku pikseli) → 32 dünya px tavanı
-#define GF_VAR  4            // karo başına parça varyantı
+#define GF_VAR  6            // karo başına parça varyantı (4 → 6: tekrar azalsın)
 static R2DTexture *s_fragTex = NULL;
 static bool s_fragHas[MAX_TILE_TYPES];
 
@@ -128,6 +137,7 @@ static inline float gf_rnd(void)
 static inline float gf_sym(void) { return gf_rnd() * 2.0f - 1.0f; }
 
 void groundfx_bind_tiles(R2DTexture **tileTextures) { s_tiles = tileTextures; }
+void groundfx_set_land_hook(GroundLandHook fn) { s_landHook = fn; }
 
 void groundfx_bake(R2D *renderer)
 {
@@ -147,16 +157,18 @@ int groundfx_active(void)
     return n;
 }
 
-void groundfx_burst(float wx, float wy, int count, float power, float upBias)
+void groundfx_burst(float wx, float wy, float groundY,
+                    int count, float power, float upBias)
 {
     if (s_tiles == NULL) return;
-    int id = tile_at_point(wx, wy);
+    // Malzeme ZEMİN HATTINDAN okunuyor, doğum noktasından değil (bkz. başlık).
+    int id = tile_at_point(wx, groundY);
     if (id < 0 || id >= MAX_TILE_TYPES) return;
 
     // SU karosunda parça YOK: su kırılmaz, sıçrar. Sıçrama su sisteminin işi
     // (tilemap yağmur halkaları / swash) — burada sessizce çıkıyoruz ki
     // gölette taş kırıntısı uçmasın.
-    int col = (int)(wx / TILE_SIZE), row = (int)(wy / TILE_SIZE);
+    int col = (int)(wx / TILE_SIZE), row = (int)(groundY / TILE_SIZE);
     if (tilemap_is_water(col, row)) return;
 
     // Parça ATLASINDAN çiziliyor (yumuşak kenar için maskelenmiş). Atlas
@@ -231,6 +243,12 @@ void groundfx_burst(float wx, float wy, int count, float power, float upBias)
             .size = sz, .tex = s_fragTex,
             .sx = (float)(var * GF_FRAG), .sy = (float)(id * GF_FRAG),
             .sw = (float)GF_FRAG, .cls = cls,
+            .y0 = groundY + gf_rnd() * 6.0f,  // iniş hattı hafif dağınık
+            .landed = false,
+            .restLife = 0.35f + gf_rnd() * 0.55f,
+            // PARLAKLIK KIRILMASI: hepsi aynı tonda olunca "kopyala-yapıştır"
+            // okunuyor; ±%8 kırılma parçaları birbirinden ayırıyor.
+            .shade = (Uint8)(196.0f + gf_rnd() * 38.0f),
         };
     }
 }
@@ -250,6 +268,12 @@ void groundfx_update(float dt)
         case GK_ROCK:  grav = 660.0f; drag = 0.5f; break;
         default:       grav = 430.0f; drag = 1.2f; break;
         }
+        if (c->landed) {
+            // YERDE: kaymayı hızla yitirir, dönmez, olduğu yerde solar
+            c->x += c->vx * dt;
+            c->vx *= (1.0f - 9.0f * dt);
+            continue;
+        }
         c->vx *= (1.0f - drag * dt);
         c->vy = c->vy * (1.0f - drag * 0.35f * dt) + grav * dt;
         c->x += c->vx * dt;
@@ -257,6 +281,20 @@ void groundfx_update(float dt)
         // Dönme yavaşlıyor: havada takla atan parça yere yaklaşırken durulur
         c->ang += c->spin * dt;
         c->spin *= (1.0f - 1.1f * dt);
+        // ── İNİŞ: aşağı inerken doğduğu zemin hizasını geçti mi?
+        if (c->vy > 0.0f && c->y >= c->y0) {
+            c->y = c->y0;
+            c->landed = true;
+            c->spin = 0.0f;
+            c->vy = 0.0f;
+            c->vx *= 0.22f;
+            // Yerde kalan süre ömrü aşmasın; kalan ömür kısaysa olduğu gibi
+            if (c->life > c->restLife) c->life = c->restLife;
+            // Açı sanat ızgarasına yakın bir yere otursun: yerde duran parça
+            // eğik değil YATIK okunmalı
+            c->ang = (c->ang < 3.14159f) ? 0.0f : 3.14159f;
+            if (s_landHook != NULL) s_landHook(c->x, c->y, (int)c->cls, c->size);
+        }
     }
 }
 
@@ -270,27 +308,43 @@ void groundfx_render_band(R2D *renderer, const Camera *camera,
         if (!c->active || c->tex == NULL) continue;
         if (c->y < yMin || c->y >= yMax) continue;      // derinlik bandı
 
+        // ── GÖLGE: havadaki parça yere leke düşürüyor. Gölgesiz parça
+        // "dünyaya değmiyor, üstünde yüzüyor" okunuyordu — yükseklik bilgisi
+        // yalnız gölgeyle görünür hale geliyor (parçanın kendisi yükseldikçe
+        // sadece yukarı kayıyor, bu tek başına yükseklik anlatmıyor).
+        // Yükseklik arttıkça gölge KÜÇÜLÜP SOLUYOR (ışık yayılıyor).
+        if (!c->landed) {
+            float hgt = c->y0 - c->y;                 // yerden yükseklik
+            if (hgt > 1.0f) {
+                float k = 1.0f - SDL_min(hgt / 70.0f, 0.85f);
+                shadow_ground_blob(renderer, camera, c->x, c->y0,
+                                   c->size * (0.55f + 0.45f * k), 0.42f * k);
+            }
+        }
         float t = c->life / c->maxLife;
         // Solma yalnız SONDA: parça ömrünün çoğunda tam opak durur (madde,
         // ışık değil). Baştan solan parça "hayalet" gibi okunuyor.
         Uint8 a = (Uint8)((t > 0.35f ? 1.0f : t / 0.35f) * 255.0f);
+        // Yerde duran parça YATIK: dikey ekseni bastırılıyor. Havadaki parça
+        // kare, yerdeki parça yayvan — 3/4 kamerada yerde yatan şey böyle görünür.
         float half = c->size * 0.5f;
+        float squash = c->landed ? 0.55f : 1.0f;
         float sx = (c->x - camera->x) * z, sy = (c->y - camera->y) * z;
         float ux = SDL_cosf(c->ang), uy = SDL_sinf(c->ang);
         float px = -uy, py = ux;
-        float h = half * z;
+        float h = half * z, hv = half * z * squash;
         SDL_FPoint q[4] = {
-            { sx - ux * h + px * h, sy - uy * h + py * h },   // TL
-            { sx + ux * h + px * h, sy + uy * h + py * h },   // TR
-            { sx - ux * h - px * h, sy - uy * h - py * h },   // BL
-            { sx + ux * h - px * h, sy + uy * h - py * h },   // BR
+            { sx - ux * h + px * hv, sy - uy * h + py * hv },   // TL
+            { sx + ux * h + px * hv, sy + uy * h + py * hv },   // TR
+            { sx - ux * h - px * hv, sy - uy * h - py * hv },   // BL
+            { sx + ux * h - px * hv, sy + uy * h - py * hv },   // BR
         };
         SDL_FRect src = { c->sx, c->sy, c->sw, c->sw };
         // HAFİF KOYULTMA: parça zeminin AYNI dokusundan geldiği için zemin
         // üstünde neredeyse görünmez kalıyor. %18 koyultma onu "havaya kalkmış,
         // kendi gölgesini taşıyan parça" yapıyor — renk kimliği bozulmuyor.
         r2d_draw_texture_quad(renderer, c->tex, &src, q,
-                              (SDL_Color){ 210, 210, 210, a });
+                              (SDL_Color){ c->shade, c->shade, c->shade, a });
     }
     r2d_set_color(renderer, 255, 255, 255, 255);
 }

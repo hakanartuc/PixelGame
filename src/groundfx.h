@@ -54,14 +54,29 @@ void groundfx_bind_tiles(R2DTexture **tileTextures);
 // üretir. Bunu yapmadan parçalar KESKİN KARE olur (alfa maskesi yok).
 void groundfx_bake(R2D *renderer);
 
-// ── ZEMİN PATLAMASI. (wx,wy) noktasındaki karonun dokusundan parça savurur.
-// tileTextures: main'in sahip olduğu karo doku dizisi (tilemap_render ile aynı).
-// count  : istenen parça sayısı (havuz dolarsa daha az doğar)
-// power  : hız/boy ölçeği (1.0 = normal)
-// upBias : 0 = her yöne, 1 = ağırlıklı YUKARI (yerden fışkırma)
+// ── ZEMİN PATLAMASI.
+// wx, wy  : parçaların DOĞDUĞU yer (havada olabilir — ör. dikenin ucu)
+// groundY : ZEMİN HATTI. İki işi var: (a) parça buraya inip DURUYOR, (b) karo
+//           malzemesi buradan okunuyor.
+//           YANLIŞ KULLANIM bir kez ısırdı: uç patlamasında groundY yoktu ve
+//           doğum y'si zemin sayılıyordu → parça HAVADA "yere iniyor" ve
+//           malzeme dikenin tepesindeki karodan okunuyordu. Zemin hattı, doğum
+//           noktasından AYRI bilgidir; havada doğan patlamalar onu vermek zorunda.
+//           Zemin seviyesinde patlıyorsa groundY == wy geçilir.
+// count   : istenen parça sayısı (havuz dolarsa daha az doğar)
+// power   : hız/boy ölçeği (1.0 = normal)
+// upBias  : 0 = her yöne, 1 = ağırlıklı YUKARI (yerden fışkırma)
 // Tüketiciler: taş dikeni (uç + dip), boss yer vuruşu, patlama zemin teması,
 // düşme hasarı, ok saplanması, ileride koşu tozu.
-void groundfx_burst(float wx, float wy, int count, float power, float upBias);
+void groundfx_burst(float wx, float wy, float groundY,
+                    int count, float power, float upBias);
+
+// ── YERE İNİŞ KANCASI (motor seam'i, fx_set_death_hook deseniyle aynı).
+// groundfx "parça yere indi" der; TOZ ya da SES seçimi OYUN katmanının işi.
+// groundfx partikül sistemine bağlanmıyor — modüller birbirini çağırmıyor.
+// cls: 0 bitki · 1 kaya · 2 tane (toz miktarı buna göre seçilebilir)
+typedef void (*GroundLandHook)(float x, float y, int cls, float size);
+void groundfx_set_land_hook(GroundLandHook fn);
 
 void groundfx_update(float dt);
 

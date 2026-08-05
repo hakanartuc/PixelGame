@@ -357,6 +357,23 @@ static int spell_elem_of(int ab)
     }
 }
 
+// ZEMİN PARÇASI İNİŞ KANCASI (motor seam'i). groundfx "parça yere indi" der,
+// TOZU bu katman seçiyor — groundfx partikül sistemine bağlanmıyor.
+// Toz miktarı sınıfa göre: kaya çarpar ve toz kaldırır, çim usulca konar.
+static ParticleSystem *g_landFx = NULL;
+static void groundfx_on_land(float x, float y, int cls, float size)
+{
+    if (g_landFx == NULL) return;
+    if (cls == 0) return;                     // bitki: toz kaldırmaz
+    int n = (cls == 1) ? 2 : 1;               // kaya 2, tane 1
+    for (int i = 0; i < n; i++)
+        fx_spawn(g_landFx, x + (randf() * 2.0f - 1.0f) * size * 0.4f,
+                 y + (randf() * 2.0f - 1.0f) * 3.0f,
+                 (randf() * 2.0f - 1.0f) * 14.0f, -8.0f - randf() * 8.0f,
+                 0.45f + randf() * 0.35f, 5.0f + randf() * 5.0f,
+                 118, 104, 88, WEAPON_FX_SMOKE);
+}
+
 // PARTİKÜL ÖLÜM KANCASI (motor seam'i). fx.c "öldü" der, kalıntıyı BU katman
 // seçer — motor decal/ses/hasar modüllerine bağlanmıyor. Şimdilik yalnız
 // kıvılcım iz bırakıyor; ileride buz→kırağı, kan→leke, asit→çukur aynı
@@ -1788,6 +1805,8 @@ int main(int argc, char *argv[])
     // Parça atlası: karo PNG'leri CPU'da okunup yumuşak-kenarlı parça
     // varyantları basılıyor. Bu olmadan parçalar keskin KARE olur.
     groundfx_bake(renderer);
+    g_landFx = &weaponFx;
+    groundfx_set_land_hook(groundfx_on_land);
     tilemap_load_details(renderer);   // çimen varyantları + kenar kaplamaları
 
     bool inventoryOpen = false;

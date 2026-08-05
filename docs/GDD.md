@@ -1179,6 +1179,24 @@ gövdenin üstüne binince onu yiyor. Diken ve buz kümesi KAHRAMAN nesne, kır�
 sıralama bunu yansıtmak zorunda.
 ⚠ **KONTRAST:** parça zeminin aynı dokusundan geldiği için zemin üstünde neredeyse görünmez kalıyor;
 %18 koyultma onu "havaya kalkmış, kendi gölgesini taşıyan parça" yapıyor (renk kimliği bozulmadan).
+**Karar 18b — PARÇA DÜNYAYA AİT OLMALI: iniş, gölge, kırılma.** Parçalar havada BUHARLAŞIYORDU;
+yere çarpıp durmuyor ve gölge düşürmüyorlardı, o yüzden "dünyaya ait değil, üstünde yüzüyor"
+okunuyordu (Hakan: *"bir tık daha iyi olabilir gibi"*). Üç ekleme:
+1. **İNİŞ ve DURMA**: parça doğduğu zemin hattına (`y0`) dönünce iner, dönmesi durur, kayması hızla
+   biter ve orada solar. Yerde duran parça **yatık** çiziliyor (dikey eksen %55'e bastırılıyor) —
+   3/4 kamerada yerde yatan şey böyle görünür.
+2. **GÖLGE** (`shadow_ground_blob`): havadaki parça yere leke düşürüyor, yükseklik arttıkça gölge
+   küçülüp soluyor. Yükseklik bilgisi YALNIZ gölgeyle görünür hale geliyor — parçanın kendisi
+   yükseldikçe sadece yukarı kayıyor ve bu tek başına yükseklik anlatmıyor.
+3. **İNİŞ KANCASI** (`groundfx_set_land_hook`, `fx_set_death_hook` deseniyle aynı): groundfx "parça
+   yere indi" der, TOZU oyun katmanı seçer. Kaya çarpar ve toz kaldırır, çim usulca konar (toz yok).
+   Modüller birbirini çağırmıyor — groundfx partikül sistemine bağlı değil.
+Ayrıca parça başına **parlaklık kırılması** (±%8) ve maske varyantı 4 → 6: hepsi aynı tonda ve aynı
+siluette olunca "kopyala-yapıştır" okunuyordu.
+⚠ **ZEMİN HATTI AYRI BİLGİDİR (yakalanan hata):** `groundfx_burst` başta doğum y'sini zemin sayıyordu.
+Dikenin UCUNDAN doğan patlamada bu iki şeyi bozdu: parça HAVADA "yere iniyor" ve malzeme dikenin
+tepesindeki karodan okunuyordu. Artık `groundY` ayrı parametre — havada doğan patlamalar onu vermek
+zorunda. Zemin seviyesindeki patlamalar `groundY == wy` geçiyor.
 **Bütçe:** havuz 512, tepe kullanım ~150 (diken 196 + patlama 14 + nova 39 + isabet 8). Dolu havuzda
 parça DÜŞER, sınırlı tarama 24 slot (fx.c'nin 2 milyon iterasyon dersi).
 
