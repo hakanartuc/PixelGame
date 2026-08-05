@@ -48,8 +48,8 @@ typedef struct {
 // şey gövdeyle, olay olan şey partikülle anlatılır.
 // Doku ALFA değil RGBA: ışıklı yüz / gölge yüz / koyu kontur baked — tek renk
 // tint ile üç yüz elde edilemez, taş da düz renk olursa kağıt gibi duruyor.
-#define SFX_SPK_W 24
-#define SFX_SPK_H 40
+#define SFX_SPK_W 26
+#define SFX_SPK_H 44
 #define SFX_SPK_N 3
 static R2DTexture *s_spikeTex = NULL;
 
@@ -57,34 +57,57 @@ static void sf_bake_spikes(R2D *renderer)
 {
     static Uint8 px[SFX_SPK_W * SFX_SPK_N * SFX_SPK_H * 4];
     const int W = SFX_SPK_W * SFX_SPK_N;
-    static const float LEAN[SFX_SPK_N] = { 0.00f,  0.16f, -0.22f };
-    static const float FQ[SFX_SPK_N]   = { 6.00f,  9.00f,  7.50f };
-    static const float AM[SFX_SPK_N]   = { 0.06f,  0.10f,  0.13f };
-    for (int c = 0; c < SFX_SPK_N; c++) {
-        for (int y = 0; y < SFX_SPK_H; y++) {
-            float t = 1.0f - ((float)y + 0.5f) / (float)SFX_SPK_H;  // 0 dip → 1 uç
-            float hw = ((float)SFX_SPK_W * 0.44f) * SDL_powf(1.0f - t, 0.72f)
-                     * (1.0f + AM[c] * SDL_sinf(t * FQ[c] + (float)c * 2.1f));
-            float cx = (float)SFX_SPK_W * 0.5f + LEAN[c] * t * t * SFX_SPK_W * 0.5f;
-            for (int x = 0; x < SFX_SPK_W; x++) {
-                float d = ((float)x + 0.5f) - cx;
-                Uint8 *o = &px[((y * W) + c * SFX_SPK_W + x) * 4];
-                if (SDL_fabsf(d) > hw || hw < 0.6f) {
-                    o[0] = o[1] = o[2] = o[3] = 0; continue;
-                }
-                if (SDL_fabsf(d) > hw - 1.0f) {          // koyu kontur
-                    o[0] = 54; o[1] = 46; o[2] = 36;
-                } else if (d < -hw * 0.18f) {            // ışıklı yüz (sol)
-                    o[0] = (Uint8)(158 + t * 26.0f);
-                    o[1] = (Uint8)(138 + t * 22.0f);
-                    o[2] = (Uint8)(108 + t * 18.0f);
-                } else {                                  // gölge yüz (sağ)
-                    o[0] = (Uint8)(96 - t * 14.0f);
-                    o[1] = (Uint8)(84 - t * 12.0f);
-                    o[2] = (Uint8)(66 - t * 10.0f);
-                }
-                o[3] = 255;
+    // ── HATA GEÇMİŞİ: ilk sürüm TEK KONİK gövdeydi, iki yüzlü (ışıklı/gölge) ve
+    // düz kenarlı. Buzdaki "üçgen" sorununun taş versiyonu. Dört düzeltme:
+    //  1) ÜÇ YÜZ (aydınlık / ara / gölge): iki yüz düz katlanmış karton gibi
+    //     duruyor, üçüncü yüz hacmi getiriyor.
+    //  2) ÇENTİKLİ KENAR: genişlik üç frekanslı modülasyonla dalgalanıyor.
+    //     Düzgün konik kenar taşta olmaz — taş kırılır, yontulmaz.
+    //  3) KIRIK UÇ (varyant 1 ve 2): kusursuz sivri uç yapay duruyor.
+    //  4) DİP YAKASI: dikenin KIRDIĞI toprak kabartısı. Yaka olmadan diken
+    //     zemine saplanmış gibi değil, üstünde duruyor gibi okunuyor.
+    static const float LEAN[SFX_SPK_N] = { 0.00f, 0.14f, -0.18f };
+    static const float CHIP[SFX_SPK_N] = { 0.00f, 0.10f,  0.06f };
+    static const float WID[SFX_SPK_N]  = { 0.30f, 0.27f,  0.34f };
+    for (int c = 0; c < SFX_SPK_N; c++)
+    for (int y = 0; y < SFX_SPK_H; y++)
+    for (int x = 0; x < SFX_SPK_W; x++) {
+        float ux = ((float)x + 0.5f) / SFX_SPK_W;
+        float uy = ((float)y + 0.5f) / SFX_SPK_H;
+        Uint8 *o = &px[((y * W) + c * SFX_SPK_W + x) * 4];
+        o[0] = o[1] = o[2] = o[3] = 0;
+        // DİP YAKASI önce: gövdenin altında kalır
+        if (uy > 0.88f) {
+            float yw = 0.42f * SDL_sqrtf((uy - 0.88f) / 0.12f);
+            if (SDL_fabsf(ux - 0.5f) < yw) {
+                float k = (uy - 0.88f) / 0.12f;         // dibe doğru koyulaşır
+                o[0] = (Uint8)(118 - 34.0f * k);
+                o[1] = (Uint8)( 98 - 28.0f * k);
+                o[2] = (Uint8)( 76 - 22.0f * k);
+                o[3] = (Uint8)(255 - 40.0f * k);
             }
+        }
+        float t = 1.0f - uy;                            // 0 dip → 1 uç
+        if (t > 1.0f - CHIP[c]) continue;               // KIRIK uç
+        float hw = WID[c] * SDL_powf(1.0f - t, 0.62f);
+        hw *= 1.0f + 0.16f * SDL_sinf(t * 11.0f + (float)c * 2.0f)
+                   + 0.09f * SDL_sinf(t * 23.0f + (float)c);
+        if (hw < 0.004f) continue;
+        float cx = 0.5f + LEAN[c] * t * t;
+        float d = (ux - cx) / hw;
+        if (SDL_fabsf(d) >= 1.0f) continue;
+        float sh = 1.0f - t * 0.14f;                    // uçta hafif kararma
+        if (SDL_fabsf(d) > 0.86f) {                     // koyu kontur
+            o[0] = 52; o[1] = 44; o[2] = 34; o[3] = 255;
+        } else if (d < -0.30f) {                        // AYDINLIK yüz
+            o[0] = (Uint8)(178 * sh); o[1] = (Uint8)(160 * sh);
+            o[2] = (Uint8)(130 * sh); o[3] = 255;
+        } else if (d < 0.18f) {                         // ARA yüz
+            o[0] = (Uint8)(140 * sh); o[1] = (Uint8)(124 * sh);
+            o[2] = (Uint8)(100 * sh); o[3] = 255;
+        } else {                                        // GÖLGE yüz
+            o[0] = (Uint8)( 96 * sh); o[1] = (Uint8)( 84 * sh);
+            o[2] = (Uint8)( 68 * sh); o[3] = 255;
         }
     }
     s_spikeTex = r2d_texture_from_pixels(renderer, px, W, SFX_SPK_H);
@@ -1858,7 +1881,11 @@ static void sf_draw(R2D *renderer, const Camera *camera,
                     float hold = delay + 0.13f + 0.34f;
                     float grow, fade = 1.0f;
                     if (p2 < 1.0f) {
-                        grow = 1.0f - (1.0f - p2) * (1.0f - p2);   // ease-out
+                        // AŞMA (overshoot): diken hedef boyunu %12 aşıp geri
+                        // oturuyor. Düz ease-out "büyüdü" der, aşma "YERDEN
+                        // FIŞKIRDI" der — darbe hissinin ucuz ve güçlü parçası.
+                        grow = 1.0f - (1.0f - p2) * (1.0f - p2);
+                        grow *= 1.0f + 0.12f * SDL_sinf(p2 * 3.14159f);
                     } else if (u < hold) {
                         grow = 1.0f;
                     } else {
@@ -1870,7 +1897,10 @@ static void sf_draw(R2D *renderer, const Camera *camera,
                     }
                     float hh = hgt * grow;
                     if (hh < 3.0f) continue;
-                    float ww = (float)SFX_SPK_W * 1.25f;
+                    // Genişlik de yere göre: aynı oranda 14 diken yapay duruyor
+                    unsigned wh = (unsigned)sIdx * 2246822519u;
+                    float ww = (float)SFX_SPK_W
+                             * (1.05f + (float)((wh >> 11) & 63) / 63.0f * 0.45f);
                     SDL_FRect src = { (float)(var * SFX_SPK_W), 0.0f,
                                       (float)SFX_SPK_W, (float)SFX_SPK_H };
                     // TABAN sabit: diken yukarı büyür, ortası sabit kalmaz
@@ -1880,7 +1910,10 @@ static void sf_draw(R2D *renderer, const Camera *camera,
                         ww * z, hh * z
                     };
                     r2d_texture_set_alpha_mod(s_spikeTex, (Uint8)(fade * 255.0f));
-                    r2d_draw_texture(renderer, s_spikeTex, &src, &dst);
+                    // AYNALAMA: 3 kalıp × ayna = 6 görünüm, bedava. 14 diken
+                    // üç kalıbı tekrar edince "damga basılmış" okunuyordu.
+                    bool smir = (((unsigned)sIdx * 2654435761u) & 0x10000u) != 0;
+                    r2d_draw_texture_flip(renderer, s_spikeTex, &src, &dst, smir);
                 }
                 r2d_texture_set_alpha_mod(s_spikeTex, 255);
             }

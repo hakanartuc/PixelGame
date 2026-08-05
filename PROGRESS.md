@@ -77,6 +77,10 @@ GÖRKEMİ. Detaylı gerekçeler GDD §6.6'da.
 - **Yol göstergesi**: prosedürel mod açıkken her büyü çağrısı ekrana
   `"<ad> -> PROSEDUREL"` / `"-> SPRITE (motor disi)"` yazıyor.
 
+- **TAŞ DİKENİ 2. TUR**: üç yüz (aydınlık/ara/gölge) · çentikli kenar (taş
+  kırılır, yontulmaz) · kırık uç · DİP YAKASI (dikenin kırdığı toprak kabartısı)
+  · %12 AŞMA (yerden fışkırma hissi) · aynalama + genişlik varyasyonu
+  (3 kalıp × ayna = 6 görünüm; 14 diken üç kalıbı tekrar edince damga gibi).
 - **DERİNLİK BÖLMESİ**: efekt oyuncunun ayak hizasında ikiye bölünüyor — uzak
   yarı oyuncudan önce, yakın yarı sonra. Oyuncu artık efektin İÇİNDE duruyor,
   ne kayboluyor ne de üstüne yapıştırılmış çıkartma gibi. Gövdeler banda tabi,

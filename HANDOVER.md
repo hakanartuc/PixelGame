@@ -244,6 +244,11 @@ buz camgöbeği ayrımı okunuyor mu → Ctrl+G ile silah damgası döngüsü.
 olarak eklenecek mi (mekanik kodda ama HİÇBİR EŞYA damgayı vermiyor — şu an
 yalnız Ctrl+G ile erişilebilir) · kalan 14 büyü göç etsin mi.
 **YENİ MOTOR KURALLARI (bu turların bedeli)**:
+· **PROSEDÜREL GÖVDE İÇİN BEŞ KURAL** (taş dikeni + buz kümesinde kanıtlandı):
+  ÜÇ yüz (iki yüz karton gibi durur) · kenar ÇENTİKLİ (düzgün konik yapay) ·
+  uç bazı varyantlarda KIRIK (kusursuz sivri yapay) · DİP YAKASI (nesne zemine
+  saplanmış görünsün) · yükselmede %12 AŞMA (düz ease-out "büyüdü" der, aşma
+  "fışkırdı" der). Çeşitlilik: aynalama bedava, kalıp sayısını ikiye katlar.
 · **EFEKT KARAKTERİ YUTUYORSA çözüm "karakteri üste al" DEĞİL, DERİNLİK
   BÖLMESİ.** Ayak hizasından yukarısı arkaya, aşağısı öne. Üste almak çıkartma
   gibi durur. Yere ait gövdeler banda tabi, havadaki anlık geometri değil

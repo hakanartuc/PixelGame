@@ -1105,6 +1105,20 @@ delege ediyor, böylece diğer çağrı yerleri bozulmadı.
 çift parlaklık. Ayrıca merkeze 22px AÇIKLIK: büyücü kaynağın kendisi, buz onun etrafında büyür;
 açıklık olmadan iç dolgu doğrudan gövdesinin üstünde doğup siluetini yiyordu.
 
+**Karar 17 — TAŞ DİKENİ İKİNCİ TUR: yüz, çentik, yaka, aşma, ayna.** İlk sürüm tek konik gövdeydi,
+iki yüzlü (ışıklı/gölge) ve düz kenarlı — buzdaki "üçgen" sorununun taş versiyonu. Beş düzeltme:
+1. **ÜÇ YÜZ** (aydınlık / ara / gölge): iki yüz düz katlanmış karton gibi duruyor, üçüncü yüz hacim
+   getiriyor.
+2. **ÇENTİKLİ KENAR**: genişlik üç frekanslı modülasyonla dalgalanıyor. Düzgün konik kenar taşta
+   olmaz — **taş kırılır, yontulmaz.**
+3. **KIRIK UÇ** (varyant 1 ve 2): kusursuz sivri uç yapay duruyor (aynı ders buz kümesinde de).
+4. **DİP YAKASI**: dikenin KIRDIĞI toprak kabartısı, dibe doğru koyulaşıyor. Yaka olmadan diken
+   zemine saplanmış gibi değil ÜSTÜNDE duruyor gibi okunuyor.
+5. **AŞMA (overshoot)**: diken hedef boyunu %12 aşıp geri oturuyor. Düz ease-out "büyüdü" der, aşma
+   "YERDEN FIŞKIRDI" der — darbe hissinin en ucuz ve en güçlü parçası.
+Çeşitlilik: **aynalama** (3 kalıp × ayna = 6 görünüm, bedava) + yere göre genişlik varyasyonu.
+14 diken üç kalıbı tekrar edince "damga basılmış" okunuyordu — aynı ders alev dilinde de çıkmıştı.
+
 **Açık kalan:** kamp ateşi sprite alevi kalsın mı (karar Hakan'da) · alev/buz rünü eşya olarak
 eklenecek mi (mekanik kodda, hiçbir eşya damgayı vermiyor — şu an yalnız Ctrl+G ile test edilebilir)
 · kalan 13 büyünün prosedürel motora göçü (beşi onaylanırsa). Göçmemiş olanlar artık ekranda
