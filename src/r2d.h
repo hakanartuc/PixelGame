@@ -165,7 +165,17 @@ typedef struct {
     // DİKKAT: post-fx tüm kareyi (HUD dahil) filtreler — eşik yüksek tutulmalı,
     // yoksa HUD'un beyaz yazısı da taşar. Sahne-only ayrımı: GDD §6.1 açık soru.
     float bloom;           // 0 = yok; taşma gücü (0.35 tipik, 1.0 aşırı)
-    float bloomThreshold;  // parlak-geçiş eşiği, luma 0..1 (0.75 tipik)
+    float bloomThreshold;  // parlak-geçiş eşiği, luma 0..1 (0.74 tipik)
+                           // LUMA NTSC: 0.299R + 0.587G + 0.114B (shader'da da öyle).
+                           // Ateş renkleri kara cisim eğrisine oturduktan sonra
+                           // (2026-08-05) tek parçacık bu eşiği GEÇMİYOR: 2700K
+                           // (255,167,87) luması 0.722 ve alfa çarpanı onu daha
+                           // da düşürüyor. Bu BİLİNÇLİ — bloom artık yoğunluktan
+                           // geliyor (iki parçacık üst üste binince toplamalı
+                           // katman eşiği rahat aşıyor), tek parçacıktan değil.
+                           // Fiziksel karşılığı da bu: tek kor hale yapmaz,
+                           // alev kütlesi yapar. Eşiği düşürmek isteyen 21
+                           // preset'in HEPSİNİ gözden geçirmek zorunda.
     float bloomRadius;     // taşma yarıçapı, uv birimi (0.004 tipik)
     // ISI BÜKÜLMESİ — ekran-uzayı UV kaydırma. Volkan, gayzer, lav, alev damgası
     // ve sıcak hava için. Ekranın ALTINA doğru güçlenir (sıcak hava yerden kalkar),
@@ -177,6 +187,39 @@ typedef struct {
 
 // Değerler kopyalanır (her kare çağırmak gerekmez). NULL = filtreyi kapat.
 void r2d_postfx_set(R2D *ctx, const R2DPostFX *fx);
+
+// --- BÜKÜLME ALANLARI (distortion fields) ----------------------------------
+// GENEL MOTOR KATMANI, tek bir efektin parçası DEĞİL. Ekran uzayında noktasal
+// bükülme kaynakları: post-fx geçişi sahne dokusunu bunların toplamına göre
+// kaydırarak örnekler. Aynı sistem şunların hepsini karşılıyor:
+//   · ısı titremesi (ocak, kamp ateşi, lav, volkan, çöl serabı)
+//   · şok dalgası (boss yer vuruşu, patlama, kapı kırılması)
+//   · büyü burgacı (portal, çağırma halkası, ışınlanma)
+//   · mercek (kalkan kubbesi, kristal, su damlası)
+// Kaynak sayısı tavanlı ve kare başına yenilenir (ışık listesiyle aynı desen):
+// çağıran her karede o an görünen kaynakları yazar, motor durum tutmaz.
+#define R2D_MAX_DISTORT 8
+
+typedef enum {
+    R2D_DIST_HEAT = 0,   // dikey titreme, YUKARI doğru güçlenir (sıcak hava kalkar)
+    R2D_DIST_SHOCK,      // merkezden dışa halka darbesi (phase = halkanın yarıçap oranı)
+    R2D_DIST_SWIRL,      // merkez etrafında dönme (burgaç)
+    R2D_DIST_LENS,       // radyal mercek (içe/dışa şişme; strength işareti yön)
+    R2D_DIST_COUNT,
+} R2DDistortStyle;
+
+typedef struct {
+    float x, y;        // EKRAN px (dünya→ekran dönüşümü çağıranda — ışıkla aynı)
+    float radius;      // ekran px — bu uzaklıkta etki sıfır
+    float strength;    // bükülme genliği, uv birimi (0.004 tipik; işaret LENS'te yön)
+    float style;       // R2DDistortStyle (float: uniform hizası)
+    float phase;       // 0..1 — SHOCK'ta halka konumu, HEAT/SWIRL'de faz kayması
+    float freq;        // dalga sıklığı çarpanı (1 = varsayılan)
+    float aniso;       // 1 = dairesel · <1 yatay basık (3/4 kamera zemin efektleri)
+} R2DDistort;
+
+// Kare başına bir kez, post-fx flush'tan ÖNCE. count=0 → bükülme yok.
+void r2d_distort_set(const R2DDistort *arr, int count);
 
 // SAHNE-ONLY FİLTRE. Bu noktaya kadar çizilen her şey (dünya) offscreen'e akar,
 // filtreden geçer ve ekrana basılır; BUNDAN SONRAKİ çizimler (HUD, panel, yazı)

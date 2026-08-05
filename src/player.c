@@ -451,7 +451,19 @@ void player_update(Player *p, const bool *keys, bool attackPressed, float dt, Pa
                 break;
             }
             }
+            // SİLAH ALEVİ de iki tonlu: büyüde kazandığımız kızıl karışımı
+            // burada da geçerli, yoksa alev damgalı kılıç saf sarı iz bırakıp
+            // büyülerden kopuyor. Diğer damgalar kendi rengini taşıyor (pembe/
+            // zehir palete girmiyor) — onlarda karışım etkisiz.
+            if (p->weaponFx == WEAPON_FX_FLAME) fx_set_pal_mix(0, 2, 0.36f);
+            else                                fx_set_pal_variant(0);
             fx_spawn(fx, ox, oy, vx, vy, life, size, pr, pg, pb, p->weaponFx);
+            // Alev damgası KIZIL ZARF da bırakır (bkz. fx.h FLAME_DEEP notu:
+            // toplamalı katman kırmızıyı yutuyor, zarf onu geri veriyor)
+            if (p->weaponFx == WEAPON_FX_FLAME && randf() < 0.45f)
+                fx_spawn(fx, ox, oy, vx * 0.85f, vy * 0.8f - 20.0f,
+                         life * 0.75f, size * 1.9f,
+                         224, 82, 46, WEAPON_FX_FLAME_DEEP);
         }
     }
 }

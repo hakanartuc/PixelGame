@@ -131,6 +131,9 @@ void shadow_init(R2D *renderer)
 static void blob_ellipse(R2D *r, float cx, float cy, float rw, float rh, Uint8 a)
 {
     if (s_blobTex == NULL || a == 0) return;
+    // BLEND AÇIKÇA (VFX borcu #1): gölge asla eklemeli çizilmemeli — ADD'de
+    // gölge KARARTMAK yerine AYDINLATIR. Eskiden mod miras alınıyordu.
+    r2d_set_blend(r, R2D_BLEND_ALPHA);
     r2d_texture_set_color_mod(s_blobTex, 16, 18, 28);
     r2d_texture_set_alpha_mod(s_blobTex, a);
     SDL_FRect dst = { cx - rw, cy - rh, rw * 2.0f, rh * 2.0f };

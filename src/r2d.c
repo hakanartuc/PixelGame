@@ -81,7 +81,19 @@ static SDL_GPUGraphicsPipeline *postfxPipeline = NULL;
 static SDL_GPUBuffer *fsQuadBuf = NULL;      // statik tam-ekran quad (pos 0..1)
 static R2DTexture *sceneTex = NULL;          // pencere boyutunda; resize'da yeniden kurulur
 static bool postfxOn = false;
-typedef struct { float a[4]; float b[4]; float c[4]; float d[4]; float e[4]; } R2DPostFXU;   // shaders/postfx.frag.hlsl PostU ile birebir
+// BÜKÜLME post-fx GEÇİŞİNDE uygulanıyor (sahne dokusu ve tam ekran quad orada).
+// Ama bükülme bir MOTOR katmanı, görsel tarz ayarı değil — F7 ile tarz
+// "kapalı"ya gelince ısı titremesi ve şok dalgaları da kayboluyordu. Gizli
+// bağımlılık: bu bayrak onu kırıyor, bükülme varsa geçiş tarzdan bağımsız çalışır.
+static bool distortOn = false;
+// shaders/postfx.frag.hlsl PostU ile BİREBİR. src/meta: bükülme alanları
+// (genel motor katmanı — ısı, şok, burgaç, mercek aynı sistemden).
+typedef struct {
+    float a[4]; float b[4]; float c[4]; float d[4]; float e[4];
+    float f[4];                          // x=aktif bükülme sayısı, y,z,w=(boş)
+    float src[R2D_MAX_DISTORT][4];       // x,y=ekran px · z=yarıçap · w=genlik
+    float meta[R2D_MAX_DISTORT][4];      // x=stil · y=faz · z=frekans · w=aniso
+} R2DPostFXU;
 static R2DPostFXU postfxU;
 // Sahne-only ayrımı bu karede yapıldı mı? Yapıldıysa end_frame kalan çizimleri
 // (HUD) doğrudan swapchain'e, TEMİZLEMEDEN basar — postfx_pass her pikseli
@@ -1130,7 +1142,8 @@ void r2d_postfx_flush(R2D *ctx)
     (void)ctx;
     // curTarget: bir render target pass'i açıkken ayrım yapılamaz (o pass kendi
     // vertex aralığını tutuyor, araya girmek ikisini de bozar).
-    if (cmdBuf == NULL || !postfxOn || postfxSplit || curTarget != NULL) return;
+    if (cmdBuf == NULL || (!postfxOn && !distortOn) ||
+        postfxSplit || curTarget != NULL) return;
     scene_target_ensure();
     if (sceneTex == NULL) return;
     // Sahneyi offscreen'e yaz (temizleyerek), filtreden geçirip ekrana bas.
@@ -1252,8 +1265,8 @@ void r2d_end_frame(R2D *ctx)
 
     // Post-fx açıkken sahne offscreen target'a akar, oradan filtreyle ekrana.
     // Sahne target'ı pencere boyutunu izler (resize'da yeniden kurulur).
-    if (postfxOn) scene_target_ensure();
-    if (postfxOn && sceneTex != NULL) {
+    if (postfxOn || distortOn) scene_target_ensure();
+    if ((postfxOn || distortOn) && sceneTex != NULL) {
         flush_to(cmdBuf, sceneTex->tex, (float)swapW, (float)swapH, true,
                  clearColor, targetPipeline, 0);
         postfx_pass();
@@ -1312,11 +1325,35 @@ void r2d_target_end(R2D *ctx)
 // ---------------------------------------------------------------------------
 // Post-fx
 // ---------------------------------------------------------------------------
+void r2d_distort_set(const R2DDistort *arr, int count)
+{
+    if (count < 0) count = 0;
+    if (count > R2D_MAX_DISTORT) count = R2D_MAX_DISTORT;
+    postfxU.f[0] = (float)count;
+    distortOn = (count > 0);
+    for (int i = 0; i < count; i++) {
+        postfxU.src[i][0] = arr[i].x;
+        postfxU.src[i][1] = arr[i].y;
+        postfxU.src[i][2] = (arr[i].radius > 1.0f) ? arr[i].radius : 1.0f;
+        postfxU.src[i][3] = arr[i].strength;
+        postfxU.meta[i][0] = arr[i].style;
+        postfxU.meta[i][1] = arr[i].phase;
+        postfxU.meta[i][2] = (arr[i].freq > 0.01f) ? arr[i].freq : 1.0f;
+        postfxU.meta[i][3] = (arr[i].aniso > 0.01f) ? arr[i].aniso : 1.0f;
+    }
+}
+
 void r2d_postfx_set(R2D *ctx, const R2DPostFX *fx)
 {
     (void)ctx;
     if (fx == NULL) {
         postfxOn = false;   // sceneTex dursun — tekrar açılışta hazır
+        // NÖTR GRADE: bükülme yüzünden geçiş yine çalışabilir, o durumda
+        // filtrenin görüntüyü DEĞİŞTİRMEMESİ lazım (doygunluk/kontrast 1,
+        // gerisi 0). Bu satırlar olmadan tarz kapalıyken sahne kararıyordu.
+        SDL_memset(&postfxU, 0, sizeof(postfxU));
+        postfxU.a[0] = 1.0f;   // doygunluk
+        postfxU.a[2] = 1.0f;   // kontrast
         return;
     }
     postfxU.a[0] = fx->saturation;

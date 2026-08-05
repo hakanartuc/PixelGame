@@ -266,7 +266,7 @@ typedef enum {
     ITEM_POUCH_MASTER,    // Usta Kesesi: Malzeme +15 daha (Smithing 35)
     // Büyü dalgası 2, parça 2 — SONA eklendi (save item indeksleri kaymasın)
     ITEM_TOME_SNAKEBITE,  // Tomar: Yılan Isırığı (Yıkım 20 — kervan havuzu)
-    ITEM_TOME_FIRELION,   // Tomar: Ateş Aslanı (Yıkım 50 — yalnız boss leşi)
+    ITEM_TOME_FIRESURGE,   // Tomar: Ateş Aslanı (Yıkım 50 — yalnız boss leşi)
     // Two-Handed hattı (Parça A)
     ITEM_SPEAR,           // Mızrak: uzun menzil + yavaş + delici + hat vuruşu
     // Block hattı (Parça B)

@@ -881,6 +881,169 @@ yavaşlatıyor, daha iyisi) · ekran sarsıntısı sönümüyle · `mob.e.hitFla
   Türkçe ünlü uyumu kodla üretilemez (dil standardının 1 numaralı kuralı).
 - `lamp.h` bayat yorum (165 → 122).
 
+### 6.6 VFX / SKİLL MOTORU v3 — prosedürel [KODDA — Hakan testi bekliyor]
+Hakan'ın çerçevesi (2026-08-04, bağlayıcı): *"Bunları sadece silaha, kamp ateşine alev, duman
+ekliyoruz gibi düşünme — biz aslında sistem/motor oluşturuyoruz. Skillerde, doğa olaylarında,
+bosslarda da kullanacağız."* Yani bu bölümün her kararı **tek bir tüketici için değil, katman
+olarak** yazılır; ateş, büyü, boss darbesi, hava olayı aynı çağrıları paylaşır.
+Görsel dil kararı: **KLASİK RPG GÖRKEMİ** (Hakan seçimi) — büyük, parlak, bol partikül, uzun ömür.
+Pixel-art disiplini (sanat ızgarası, kuantalanmış palet, sert kenar) yine bağlayıcı: görkem
+ÖLÇEKTEN ve SÜREDEN gelir, bulanıklıktan gelmez.
+
+**Karar 1 — BÜKÜLME ALANI genel motor katmanı (`r2d_distort_set`, 8 kaynak).** Isı bükülmesi
+§6.5'te tarz preset'ine bağlıydı: efekt isteyince tüm ekranı VOLKAN'a çevirmek gerekiyordu.
+Artık bükülme **ekran-uzayı kaynak listesi**: stil (ISI / ŞOK / BURGAÇ / MERCEK), yarıçap, şiddet,
+ömür. Post-fx pass'inin İÇİNDE uygulanıyor (sıra: bükülme → sapma → bloom → grade), `distortOn`
+bayrağı F7 grade seçiminden ayrı. Dört tüketici sistemi doğruladı: kamp ateşi ısısı, büyü şoku,
+buz kubbesi merceği, mermi izi. Boss vuruşu ve patlama da aynı çağrıyı kullanacak.
+
+**Karar 2 — EFEKT NEFESİ tek kaynaktan (`fx_breath`).** Bir ateşin partikül yoğunluğu, ısı
+bükülmesi genliği ve ışık şiddeti AYNI osilatörden okunuyor. Ayrı ayrı hesaplanınca üç katman
+birbirinden bağımsız titriyor ve göz "tek bir ateş" görmüyor. Kanon bağı (LORE §1.9): koruyan şey
+durur, korumayan gezinir — kandil sakin, ocak sıkı, kamp ateşi kaotik.
+
+**Karar 3 — MOTOR/OYUN DİKİŞLERİ istek kuyruğuyla.** Motor katmanı oyunun değişkenlerine uzanmaz;
+İSTEK bırakır, oyun katmanı tüketir: `skillfx_take_hitstop()` (zaman ölçeği main'in), 
+`skillfx_take_shake()` (kamera main'in), `fx_set_death_hook()` (motor "öldü" der, oyun kalıntıyı
+seçer). Böylece boss, tuzak, düşme hasarı da aynı kuyruğu kullanabiliyor.
+
+**Karar 4 — PROSEDÜREL SKİLL EFEKTLERİ (`skillfx.h/.c`), sprite yolu SİLİNMEDİ.** Hazır sheet'ler
+üç şeyi vermiyordu: tutarlılık (her sheet başka sanatçının dili), tepki (sheet mesafeye/güce/hava
+durumuna göre değişemez), sahiplik (yeni büyü = dosya indirmek). Prosedürel efekt mevcut katmanları
+BESTELİYOR — kendi çizim sistemini kurmuyor: fx partikülleri + bükülme + ışık + r2d primitifleri +
+decal kalıntı. **Ctrl+P A/B anahtarı**: karşılaştırma olmadan "daha iyi mi" sorusu cevaplanamaz;
+eski yol rafta duruyor (BOŞA ÇIKAN KODU SİLME kuralı).
+
+**Karar 5 — İSABET ELEMANA GÖRE (`skillfx_impact`, 7 eleman).** "Vurdum" hissinin çekirdeği
+YÖNDÜR: darbe her yöne saçılırsa vuruşun nereden geldiği okunmaz. Koni darbe yönünde açılır, yay
+darbeye DİK çizilir (bulut "toz" anlatır, yay "kesti/çarptı" anlatır). Hit-stop ve sarsıntı
+elemandan gelir: yıldırım keskin-kısa (0.090/7.5), toprak ağır-uzun (0.100/9.5), zehir neredeyse
+yok (0.020/1.5) — hepsi hasarla ölçekli, tavanı 2.5.
+
+**Karar 6 — PARÇACIK BİÇİM ATLASI kodda üretiliyor (7 hücre).** Tek yumuşak parıltı dokusuyla her
+efekt aynı görünüyordu. Biçimler: PUF (duman) · KIYMIK (buz) · ÇİZİK (kıvılcım, hıza göre uzar) ·
+YILDIZ (arcane) · NOKTA · **ALEV DİLİ** · İS PULU.
+*Hata geçmişi (Hakan ÜÇ tur üst üste bildirdi — bu bölümün en pahalı dersi):*
+(a) ateş patlaması 110 KIVILCIM kullanıyordu; kıvılcım çizik biçimi + hıza göre uzama taşıdığı için
+alev **yıldırım çizgisi** gibi okunuyordu → alev dili ve is pulu tipleri eklendi, kıvılcım 26'ya indi.
+(b) alev dilinin genişliği y ile DOĞRUSAL daralıyordu, sonuç keskin bir **üçgen huni** oluyordu
+(*"çok kötü duruyor"*) → profil yaprağa çevrildi: `pow(t,0.55)` uca sivrilik verir, `(1-0.34·t³)`
+en dibi toplar, en geniş yer dipte değil dibin biraz ÜSTÜNDE kalır.
+(c) **üçgenler GİTMEDİ** (*"alev skilinde hala üçgenler var ve yıldırım etkisi gibi efektler var"*).
+İki ayrı sebep vardı ve ikinci turda yanlış yere bakmıştım:
+  · İS PULU biçimi `|dx|+|dy|` ölçüsüyle yazılmıştı. O ölçü matematiksel olarak **eşkenar dörtgen**
+    çizer — sert kenarlı, eksene hizalı elmas; takla attığı için birçok açıda ÜÇGEN okunuyor. Her
+    patlama 34 tanesini fırlatıyordu. Düzeltme: yarıçapı **açıya göre** modüle et (üç frekans),
+    böylece düz kenar ve köşe hiç oluşmaz. Aynı numara `decal.c`'de yer izi kenarında zaten
+    kanıtlıydı — bilinen çözümü yeni yere taşımamak hatanın kendisiydi.
+  · Ateş HÂLÂ 26 kıvılcım atıyordu. Sayıyı azaltmak yetmez: **tip yanlış.** Kıvılcım çelik ve
+    yıldırıma ait; ateş KOR fırlatır (nokta biçim, uzama yok). Ateş bloğundan kıvılcım tamamen
+    çıkarıldı, yerine 44 kor geldi.
+**İki ders:** (1) prosedürel biçim koda girmeden önce siluetini ASCII bas — üç turun üçü de tek bir
+ASCII dökümüyle kapanırdı. (2) `|dx|+|dy|` (L1) ölçüsü "düzensiz" değil GEOMETRİK bir şekil verir;
+düzensizlik isteniyorsa açısal modülasyon kullanılır.
+*Bilinçli istisna:* KIYMIK (buz/kaya) eşkenar dörtgen KALIYOR — buz kırığı ve kaya parçası gerçekten
+köşelidir. Yuvarlak biçim yalnız ateş ve is için doğru.
+
+**Karar 7 — TON KİMLİĞİ palet varyantıyla (`fx_set_pal_variant`).** Hakan: *"her skill de farklı
+renk tonları olmalı."* Palet tablosu satır başına üç varyant taşıyor ve indeks her satırda AYNI
+aileyi gösteriyor: 0 = maddenin kanonik tonu, 1 = SOĞUK aile, 2 = SICAK aile. Bu yüzden olay başına
+tek indeks yeterli — yıldırımın kıvılcımı maviye giderken dumanı da soğuk griye kayıyor,
+uyum kendiliğinden kalıyor. `fx_spawn` imzası değişmedi (100+ çağrı yeri korundu); varyant "şu anki
+ton" global'i olarak spawn anında parçacığa geçiyor ve olay bitince sıfırlanıyor (kamp ateşi ile
+büyü aynı karede farklı ton taşır).
+*Bulunan çakışma:* yıldırım kolu (200,215,255) ile buz novası halkası (175,222,255) neredeyse AYNI
+renkti — iki büyü ekranda ayırt edilemiyordu. Yıldırım **mor-beyaza**, buz **camgöbeğine** çekildi.
+İsabet yayı da yedi elemanın tamamı için renklendi (önce yalnız ikisi özeldi, kalan beşi aynı altın
+yayı çiziyordu).
+
+**Karar 8 — PARÇACIK TAVANI gerçek darboğazdı.** Hakan *"üçü de çok cılız"* dediğinde sorun ayar
+değildi: `MAX_PARTICLES` 512'ydi ve fazlası SESSİZCE düşüyordu. 2560'a çıkarıldı (quad bütçesi
+16384). Ders: "cılız" şikayetinde önce tavanı ölç, sonra sayı büyüt.
+
+**Karar 9 — KAPSAMA BOŞLUĞU GÖRÜNÜR OLMALI (yol göstergesi).** Üçgen şikayeti dördüncü tura
+girdiğinde sebep biçim değildi: Hakan *"alev skili"* derken **ATEŞ ASLANI**'nı (`ABILITY_FIRELION`)
+deniyordu — F10'un verdiği tek ateş büyüsü o, ve o büyü sprite yolundaydı; Ctrl+P yalnız ateş
+topu ile taş dikeni kesiyordu. Ben her turda prosedürel ateş topunun biçimini düzeltiyordum,
+o başka bir şeye bakıyordu. **Hata benim: A/B anahtarı kısmi kapsamı gizliyordu.**
+İki düzeltme: (a) ateş dalgası motora alındı (aşağıda), (b) prosedürel mod açıkken her büyü
+çağrısı ekrana `"<büyü adı> -> PROSEDUREL (motor)"` ya da `"-> SPRITE (motor disi)"` yazıyor.
+Kapalı modda susuyor. **Kural: kısmi kapsamlı bir A/B anahtarı, kapsamı ekranda göstermek
+zorundadır** — yoksa test eden kişi kendi hatası sanır (*"yanlış mı bakıyorum?"*).
+
+**Karar 10 — ALEV SELİ (`SKILLFX_FIRE_WAVE`), eski adı Ateş Aslanı.** Bu karar ÜÇ turda oturdu ve
+üçü de aynı sorunun farklı yüzüydü: *prosedürel gövde neyi anlatabilir?*
+- **Tur 1 — koşan alev duvarı.** Sprite bir ASLAN çiziyordu; ilk prosedürel karşılık aslan taklidi
+  yapmaya çalışmadı, "hat dalgası" kanonundan bir alev duvarı kurdu. Hakan: *"tam istediğim gibi
+  değil"*.
+- **Tur 2 — maskeli aslan silueti.** Siluet kodda basıldı, partiküller yalnız maskenin içinde
+  doğdu. Başarısız oldu ve sebebi ÖLÇÜ: aslan 168px genişken fırça (partikül) 12-42px, yani siluet
+  dört blob genişliğinde kalıyor; üstüne partiküller 30-90px yol alıp şekli doğduğu anda dağıtıyor.
+  Hakan'ın tarifi tam isabetliydi: *"alev topunun büyüğü gibi, havan 2-3 parçalı iniyormuş gibi"*.
+- **Tur 3 — kodda basılmış gövde dokusu** (taş dikeninin yolu: nesne olan şey gövdeyle anlatılır).
+  Teknik olarak çalıştı — 3 görünüm × 3 koşu karesi, kızıl gövde ALPHA + parlak çekirdek ADD,
+  nefesle titreyen baş. Ama: *"gerçekten aslan çizmeye çalışmışsın ama çok kötü amatör durmuş."*
+
+**KALICI DERS:** prosedürel gövde **soyut** biçimlerde çalışıyor (taş dikeni, buz kristali, alev
+dili, is pulu); **tanınan bir canlıya** benzemekte çalışmıyor. Göz, canlı anatomisindeki en küçük
+hatayı yakalıyor — taşta yakalamıyor. Canlı görseli elle çizilmiş asset ister. Bu, taş dikeni
+kararının (Karar 8b) sınırını da tanımlıyor: "nesne gövdeyle anlatılır" doğru, ama nesne CANLI ise
+prosedürel gövde yetmez.
+
+**BENİMSENEN ÇÖZÜM — sarı sel + iç içe kırmızı siluetler.** Hakan'ın tarifi: *"düz bir hat üstünde
+ilerliyor ve sarı efekt içerisinde kırmızı silüetler olmalı"*, ardından iki netleştirme: *"kırmızı
+ve sarı iç içe olmalı, birbirinden ayrı hareket değil"* ve *"sarı üstüne kırmızılar gibi"*.
+Bu iki koşul birbiriyle çelişiyor gibi görünüyor ve mimariyi belirleyen de o çelişki:
+- kırmızı GÖRÜNMELİ → toplamalı (ADD) sarının altında kalırsa yutulur (R doyunca hue kaybolur),
+  demek ki sarının ÜSTÜNE çizilmeli;
+- ama AYRI HAREKET ETMEMELİ → sarının üstünde kayan ayrı bir geometri katmanı "iki efekt" okunur.
+
+Çözüm ikisini birleştiriyor: kırmızı bir katman değil, **aynı yayıcıda AYNI konum ve AYNI hızla
+doğan bir PARTİKÜL TİPİ** (`WEAPON_FX_FLAME_DARK`) — fizik aynı kod, akış aynı, yalnız çizim sırası
+farklı. `fx_render` bu yüzden **üç geçişli** oldu: 0 ALPHA (madde) → 1 ADD (ışık) → 2 ALPHA-ÜSTÜ
+(koyu siluet). Sel yalnız cephede değil geçtiği HATTIN TAMAMINDA yaşıyor (yoksa "uçan top"
+okunuyor), yoğunluk cepheye doğru artıyor, yan salınım düzgün mekânsal fonksiyondan geliyor
+(hash DEĞİL — su fazının 2. kuralı: hash düzensizliği komşuları koparır).
+**İSİM:** mekanik değişmediği için isim de değişmek zorunda değildi ama görsel artık aslan değil;
+`Ateş Aslanı` → **`Alev Seli`** (Hakan kararı). 22 yer güncellendi; kod tanımlayıcıları da
+(`ABILITY_FIRESURGE`). Yetenek İNDEKSİ yerinde kaldı — `spellsLearned` bit maskesi sırayla
+saklanıyor, indeks kaydırmak eski kayıtları bozardı.
+*Rafta duran:* alev duvarı ve aslan (maske + gövde dokusu) `#if 0` içinde gerekçeleriyle. Elle
+çizilmiş bir aslan sheet'i gelirse maske hâlâ yele/ağız bölgesi veriyor.
+
+**Karar 10b — ATEŞ RENKLERİ KARA CİSİM EĞRİSİNDEN (araştırma, deneme-yanılma DEĞİL).**
+Hakan üç tur renk ayarı istedikten sonra doğru kararı verdi: *"Sen internetten alev renklerini biraz
+araştır istersen deneme yanılma yapmayalım."* Alev rengi keyfi değil FİZİK: ısınan cismin ışıması
+kara cisim eğrisi üstündedir.
+Ölçülen eğri (Tanner Helland yaklaşımı; vendian.org ve firgelliauto tablolarıyla doğrulandı —
+2000K ve 3000K'da birebir):
+| K | RGB | K | RGB |
+|---|---|---|---|
+| 1100 | (255, 77, 0) | 2100 | (255,142, 27) |
+| 1500 | (255,108, 0) | 2500 | (255,159, 70) |
+| 1900 | (255,132, 0) | 2900 | (255,174,103) |
+
+**KÖK SEBEP:** eğride **mavi kanal 2000K altında SIFIR**, 3000K'da bile ancak ~110. Elle uydurduğum
+"sıcak" tonlarda B=48..132 vardı — yani eğrinin DIŞINDA. Bu tek hata iki şikayeti birden üretiyordu:
+sarı beyaza kaçıyordu ve *"iç alev rengi biraz garip"* (mat/pembemsi) duruyordu.
+**YAN KAZANÇ, ayarla elde edilemeyecek olan:** B≈0 olduğu için toplamalı (ADD) üst üste binme artık
+beyaza değil **sarı-turuncuya** doyuyor. Yoğun alevin beyazlaması matematiksel olarak ortadan kalktı;
+bu yüzden "sıcak ton payı" gibi telafi ayarları da geri açılabildi.
+**KURAL:** yeni bir ateş tonu gerekiyorsa elle RGB girilmez — sıcaklık seçilir ve eğriden hesaplanır
+(formül `fx.c` palet tablosunun yorumunda). Bilinçli istisnalar etiketli: arcane mavi-beyaz ateş ve
+mor ateş eğri DIŞI (büyü, ateş değil); çelik kıvılcımı beyaza yakın kalıyor (yanan demir gerçekten
+~3000K üstü).
+
+**Karar 11 — VARYANT AİLESİ HER SATIRDA AYNI ANLAMA GELMEK ZORUNDA.** Karar 7'nin ilk yazımında
+tablo karışıktı: FLAME'de varyant 1 = kızıl (sıcak) ama SPARK'ta 1 = mavi (soğuk). Sonuç ters
+çıkıyordu — **yıldırım sıcak kahve duman, toprak soğuk gri duman** alıyordu. Olay başına tek
+indeks kullanmanın bedeli bu tutarlılık: 0 = kanonik, 1 = SOĞUK aile, 2 = SICAK aile, istisnasız.
+
+**Açık kalan:** kamp ateşi sprite alevi kalsın mı (karar Hakan'da) · alev/buz rünü eşya olarak
+eklenecek mi (mekanik kodda, hiçbir eşya damgayı vermiyor — şu an yalnız Ctrl+G ile test edilebilir)
+· kalan 13 büyünün prosedürel motora göçü (beşi onaylanırsa). Göçmemiş olanlar artık ekranda
+kendini `SPRITE (motor disi)` diye ilan ediyor — hangi büyünün sırada olduğu tahmine kalmıyor.
+
 ## 7. UI / UX [KODDA]
 WoW hotbar · HUD (mevsimli saat, kontrat takipçisi) · panel ailesi
 (tooltip/drag&drop) · minimap · menü + 20+1 slot + yaratma-lite.

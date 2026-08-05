@@ -383,9 +383,9 @@ const ItemType ITEM_TYPES[] = {
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .tomeAbility = ABILITY_SNAKEBITE, .tomeReqLevel = 20,
       .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
-    { .name = "Tomar: Ateş Aslanı", .iconIndex = 0, .maxStack = 1, .value = 750,
+    { .name = "Tomar: Alev Seli", .iconIndex = 0, .maxStack = 1, .value = 750,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
-      .tomeAbility = ABILITY_FIRELION, .tomeReqLevel = 50,
+      .tomeAbility = ABILITY_FIRESURGE, .tomeReqLevel = 50,
       .iconSpritePath = "assets/icons/items/scrolls.png", .iconSrc = { 0, 0, 16, 16 } },
 
     // Two-Handed hattı (Parça A): mızrak — mesafe kontrolü silahı.

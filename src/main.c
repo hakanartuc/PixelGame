@@ -6,6 +6,7 @@
 #include "common.h"
 #include "menu.h"
 #include "floattext.h"
+#include "skillfx.h"
 #include "tilemap.h"
 #include "player.h"
 #include "mob.h"
@@ -332,11 +333,68 @@ static const Equipment *g_eqBridge = NULL;   // mob_die Nişan kontrolü için
 // Yer izi tipi için aktif silah efekti köprüsü (strike_fx_mob statik, player'a
 // erişimi yok). Her kare player.weaponFx'ten senkronlanır.
 static WeaponFxType g_fxBridge = WEAPON_FX_NONE;
-static void hitstop(float s) { if (s > g_hitStop) g_hitStop = s; }
+
+// AKTİF BÜYÜNÜN ELEMANI. strike_fx_mob "magic" gelince şimdiye kadar HER büyüyü
+// ARCANE sayıyordu — ateş topu moba çarpınca pembe yıldız çıkıyordu. Büyünün
+// kendi imzası olması istendiği için (Hakan: "her skill in kendi tarzına göre")
+// cast anında kurulur. Kalıcı alanlar (kutsal alan, hortum) son cast'in elemanını
+// taşır; imza yanlış olmaz çünkü o alanlar da kendi cast'inde kuruldu.
+static int g_spellElem = SKFX_EL_ARCANE;
+
+// Büyü → eleman. Tabloda olmayan büyü ARCANE kalır (büyü sonuçta büyüdür).
+static int spell_elem_of(int ab)
+{
+    switch (ab) {
+        case ABILITY_FIREBOLT: case ABILITY_FIRESURGE:
+        case ABILITY_FLAME_ARMOR:                        return SKFX_EL_FIRE;
+        case ABILITY_ICE_NOVA: case ABILITY_ICETACLE:
+        case ABILITY_ICE_ARROW:                          return SKFX_EL_ICE;
+        case ABILITY_LIGHTNING: case ABILITY_LIGHTNING_CLAW: return SKFX_EL_BOLT;
+        case ABILITY_SPIKES:                             return SKFX_EL_EARTH;
+        case ABILITY_SNAKEBITE: case ABILITY_NEEDLE_STING: return SKFX_EL_POISON;
+        default:                                         return SKFX_EL_ARCANE;
+    }
+}
+
+// PARTİKÜL ÖLÜM KANCASI (motor seam'i). fx.c "öldü" der, kalıntıyı BU katman
+// seçer — motor decal/ses/hasar modüllerine bağlanmıyor. Şimdilik yalnız
+// kıvılcım iz bırakıyor; ileride buz→kırağı, kan→leke, asit→çukur aynı
+// kancadan geçecek.
+static void fx_on_particle_death(float x, float y, WeaponFxType type, float size)
+{
+    if (type == WEAPON_FX_SPARK) {
+        // Her kıvılcım değil: yaklaşık altıda biri iz bırakıyor, yoksa zemin
+        // kısa sürede lekeye boğuluyor (decal havuzu da dolar).
+        static unsigned sc = 0;
+        if ((sc++ % 6u) == 0u)
+            decal_scorch(x, y, size * 0.8f + 2.0f);
+    }
+}
+// ── HİT-STOP BEKLEME SÜRESİ (motor koruması). Donma isteği hangi sistemden
+// gelirse gelsin (silah, büyü, boss, tuzak) arka arkaya UYGULANAMAZ.
+// NEDEN: Ateş Aslanı bir goblin KAMPINA girince 300px yolunda 4-6 gobline
+// değiyor ve her isabet ~0.03 sn donma istiyordu; üst üste binince oyun
+// takılıyor gibi oluyordu. Slime'larda görünmemesinin sebebi slime'ın dağınık
+// olması (tek isabet). Çağrı yerlerini tek tek düzeltmek yetmez — bir daha
+// unutulur; sınır MOTORDA duruyor.
+static float g_hitStopCd = 0.0f;
+static void hitstop(float s)
+{
+    if (s <= 0.0f) return;
+    // Aktif donma varken yalnız DAHA GÜÇLÜSÜ ezebilir (uzatma değil, ezme).
+    if (g_hitStop > 0.0f) { if (s > g_hitStop) g_hitStop = s; return; }
+    if (g_hitStopCd > 0.0f) return;          // yeni donma için henüz erken
+    g_hitStop = s;
+    g_hitStopCd = 0.22f;                     // iki donma arası en az bu kadar
+}
+
+// Oyuncu merkezi — darbe YÖNÜ için (vuran → vurulan). strike_fx_mob derin bir
+// çağrı yerinden çalışıyor; imza şişirmemek için g_fx deseni kullanılıyor.
+static float g_playerCx = 0.0f, g_playerCy = 0.0f;
 
 // İsabet efekti: silah patlaması / büyü çarpması + küçük kan + hit-stop.
 // stop 0 = donma yok (alan büyüleri/DoT kaynaklı spam engellenir)
-static void strike_fx_mob(const Mob *m, bool magic, float stop)
+static void strike_fx_mob(Mob *m, bool magic, float stop)
 {
     if (g_animFx == NULL || m == NULL) return;
     float cx = m->e.rect.x + m->e.rect.w / 2.0f;
@@ -367,6 +425,50 @@ static void strike_fx_mob(const Mob *m, bool magic, float stop)
     animfx_spawn(g_animFx, g_splatSmallTex, 10, 10, 32.0f, 32.0f,
                  cx + (float)(rand() % 13 - 6), cy + (float)(rand() % 13 - 6),
                  30.0f, 1.3f);
+    // ── PROSEDÜREL ÇARPMA (Ctrl+P): yönlü koni + darbe yayı + elemana özgü
+    // ikincil katman + elemana göre hit-stop/sarsıntı. Sprite patlaması yukarıda
+    // zaten çizildi; prosedürel katman onun ÜSTÜNE biniyor çünkü ikisi farklı
+    // şey anlatıyor (sprite temas, prosedürel katman darbenin YÖNÜ ve KİMLİĞİ).
+    if (skillfx_procedural()) {
+        int el = SKFX_EL_STEEL;
+        if (magic) el = g_spellElem;   // büyünün kendi imzası (ARCANE varsayılan)
+        switch (g_fxBridge) {
+            case WEAPON_FX_FLAME:  el = SKFX_EL_FIRE;   break;
+            case WEAPON_FX_ICE:    el = SKFX_EL_ICE;    break;
+            case WEAPON_FX_POISON:
+            case WEAPON_FX_VENOM:  el = SKFX_EL_POISON; break;
+            default: break;
+        }
+        // freeze = çağıranın stop isteği. stop=0 "donma yok" demek (alan
+        // büyüleri/DoT spam'i) — prosedürel katman bu sözleşmeye uyuyor.
+        skillfx_impact(cx, cy, cx - g_playerCx, cy - g_playerCy, el,
+                       (stop > 0.0f) ? 1.0f : 0.55f, stop > 0.0f);
+    }
+    // ── MOB TEPKİSİ: gövde sarsıntısı + elemanın izi. Prosedürel moda BAĞLI
+    // DEĞİL — "vurdum ve etkisi var" hissi bir A/B deneyi değil, oyunun temel
+    // geri bildirimi (Hakan: "mob sarsılmalı ve her skill bir etki bırakmalı").
+    {
+        MobMark mk = MOB_MARK_NONE;
+        if (magic) {
+            switch (g_spellElem) {
+                case SKFX_EL_FIRE:   mk = MOB_MARK_FIRE;   break;
+                case SKFX_EL_ICE:    mk = MOB_MARK_ICE;    break;
+                case SKFX_EL_BOLT:   mk = MOB_MARK_BOLT;   break;
+                case SKFX_EL_EARTH:  mk = MOB_MARK_EARTH;  break;
+                case SKFX_EL_POISON: mk = MOB_MARK_POISON; break;
+                default:             mk = MOB_MARK_ARCANE; break;
+            }
+        } else {
+            switch (g_fxBridge) {            // silah damgası
+                case WEAPON_FX_FLAME: mk = MOB_MARK_FIRE;   break;
+                case WEAPON_FX_ICE:   mk = MOB_MARK_ICE;    break;
+                case WEAPON_FX_POISON:
+                case WEAPON_FX_VENOM: mk = MOB_MARK_POISON; break;
+                default: break;              // çıplak çelik iz bırakmaz
+            }
+        }
+        mob_hit_react(m, mk, (stop > 0.0f) ? 1.25f : 0.7f);
+    }
     if (stop > 0.0f) hitstop(stop);
 }
 
@@ -461,7 +563,7 @@ static void mob_die(Mob *target, Mob *mobs, int mobCount, int *nextMobId,
             // Ateş Aslanı tomarı: türün TEK kaynağı Lord leşi (%35 — haftalık kural)
             if (li >= 0 && loots[li].itemCount < MAX_LOOT_ITEMS && randf() < 0.35f)
                 loots[li].items[loots[li].itemCount++] =
-                    item_make(&ITEM_TYPES[ITEM_TOME_FIRELION], 1, 0);
+                    item_make(&ITEM_TYPES[ITEM_TOME_FIRESURGE], 1, 0);
             floattext_spawn_text(floatTexts, MAX_FLOAT_TEXTS,
                                  player->rect.x + player->rect.w / 2.0f,
                                  player->rect.y - 50.0f,
@@ -1317,7 +1419,13 @@ int main(int argc, char *argv[])
         load_texture(renderer, "assets/fx/snakebite_up.png"),
         load_texture(renderer, "assets/fx/snakebite_side.png"),
     };
-    R2DTexture *firelionTex[4] = {    // 0 down / 1 up / 2 left / 3 right
+    // NOT: dosya adları firelion_* KALIYOR. Bunlar skill "Ateş Aslanı" iken
+    // gelen ELLE ÇİZİLMİŞ aslan sheet'leri ve sprite A/B yolunda (Ctrl+P kapalı)
+    // hâlâ çiziliyorlar. Skill 2026-08-05'te ALEV SELİ olarak yeniden
+    // adlandırıldı (aslan silueti prosedürel olarak amatör duruyordu); asset
+    // dosyalarını yeniden adlandırmak sanatı değiştirmiyor, sadece geçmişi
+    // gizler. Prosedürel yol artık hat üstünde akan sarı sel çiziyor.
+    R2DTexture *firesurgeTex[4] = {    // 0 down / 1 up / 2 left / 3 right
         load_texture(renderer, "assets/fx/firelion_down.png"),
         load_texture(renderer, "assets/fx/firelion_up.png"),
         load_texture(renderer, "assets/fx/firelion_left.png"),
@@ -1343,20 +1451,20 @@ int main(int argc, char *argv[])
     #define MAX_SNAKEBITE_FX 4
     typedef struct { bool active; float x, y, t; int dirRow; bool flip; } SnakeFxAnim;
     SnakeFxAnim snakeFx[MAX_SNAKEBITE_FX] = {0};   // dirRow: 0 down/1 up/2 side
-    #define MAX_FIRELIONS 3
+    #define MAX_FIRESURGES 3
     typedef struct {
         bool active;
         float x, y;          // merkez (dünya)
         float dirX, dirY;    // hamle yönü (birim)
-        float t;             // yaş (ömür = FIRELION_LIFE)
+        float t;             // yaş (ömür = FIRESURGE_LIFE)
         float damage;        // cast anında hesaplandı
         int hitIds[8];       // aynı moba İKİ KEZ vurmaz (tek dalga)
         int hitN;
         int facing;          // hangi sheet: 0 down/1 up/2 left/3 right
-    } FireLion;
-    FireLion firelions[MAX_FIRELIONS] = {0};
-    #define FIRELION_LIFE 0.7f
-    #define FIRELION_SPEED 430.0f
+    } FireSurge;
+    FireSurge firesurges[MAX_FIRESURGES] = {0};
+    #define FIRESURGE_LIFE 0.7f
+    #define FIRESURGE_SPEED 430.0f
     #define MAX_DARKBURST_FX 4
     SpikeFxAnim darkburstFx[MAX_DARKBURST_FX] = {0};   // dark_burst (16 kare 48×64)
     #define MAX_TORNADOES 3
@@ -1507,6 +1615,27 @@ int main(int argc, char *argv[])
     // hangisi olduğu görünmüyordu; izole bakış onu tek soruya indiriyor.
     // F1–F12 dolu olduğu için Ctrl+<harf> desenine uyuldu (Ctrl+L/O/V gibi).
     int   waterLayer = 0;
+    // ATEŞ KATMANLARI (Ctrl+F izole modu). Su fazının dersi: efekti
+    // ölçülebilir kılmadan ayar yapmak on tur harcıyor — bu kez izolasyon
+    // İLK iş olarak kuruldu, ayarlardan önce.
+    static const struct { int bit; const char *name; } FIRE_LAYERS[FX_L_COUNT] = {
+        { FX_L_FLAME, "ATES: yalniz ALEV (ADD, bloom esigini gecer)" },
+        { FX_L_SMOKE, "ATES: yalniz DUMAN (ALPHA, buyur ve soner)" },
+        { FX_L_SPARK, "ATES: yalniz KIVILCIM (ADD, yercekimi kavisi)" },
+        { FX_L_STEAM, "ATES: yalniz BUHAR (kazan)" },
+        { FX_L_EMBER, "ATES: yalniz KOR (sabit parlar, yerinde)" },
+        { FX_L_LICK,  "ATES: yalniz ALEV DILI (damla, yukari kivrilir)" },
+        { FX_L_SOOT,  "ATES: yalniz IS PULU (savrulur, duser)" },
+        { FX_L_DEEP,  "ATES: yalniz KIZIL ZARF (ALPHA, alevin dis govdesi)" },
+        { FX_L_DARK,  "ATES: yalniz KOYU SILUET (sarinin USTUNE cizilir)" },
+    };
+    int fireLayer = 0;   // 0 = hepsi açık
+    // DEV: silah efekti geçersiz kılma (Ctrl+G). COUNT = kapalı.
+    WeaponFxType devFxOverride = WEAPON_FX_COUNT;
+    // DEV: sınırsız mana/stamina (Ctrl+I). VFX ve skill testinde mana
+    // hemen bitiyor ve efekti izlemeye vakit kalmıyordu.
+    bool devInfinite = false;
+
     static const struct { int bit; const char *name; } WATER_LAYERS[R2D_WATER_L_COUNT] = {
         { R2D_WATER_L_REFRACT, "SU: yalniz KIRILMA (sualti bukulmesi)" },
         { R2D_WATER_L_DEPTH,   "SU: yalniz DERINLIK ortmesi (su rengi)" },
@@ -1548,8 +1677,12 @@ int main(int argc, char *argv[])
     bag_add(&ITEM_TYPES[ITEM_POTION_HP], 3, 0);
         
 
-    ParticleSystem weaponFx;
+    // static: 8192 partiküllük havuz ~460KB. main()'in yığınında durmasın
+    // (yığın taşması sessiz ve teşhisi zor bir çökme sınıfı).
+    static ParticleSystem weaponFx;
     fx_init(&weaponFx);
+    fx_set_death_hook(fx_on_particle_death);
+    skillfx_init();
 
     // Mob texture'ları: her tür için sprite yükle (TILE_TYPES gibi)
     R2DTexture *mob_textures[MAX_MOB_TYPES] = {0};
@@ -3921,6 +4054,96 @@ int main(int argc, char *argv[])
                                                    : WATER_LAYERS[waterLayer - 1].name;
                     splashTimer = 2.6f;
                 }
+                else if (event.key.key == SDLK_F &&
+                         (event.key.mod & SDL_KMOD_CTRL) &&
+                         gameState == GAME_PLAYING)
+                {
+                    // DEV: ATEŞ KATMANI İZOLE (Ctrl+F / Ctrl+Shift+F geri).
+                    // Dört katman + "hepsi açık" = 5 durum.
+                    int dir = (event.key.mod & SDL_KMOD_SHIFT) ? FX_L_COUNT : 1;
+                    fireLayer = (fireLayer + dir) % (FX_L_COUNT + 1);
+                    fx_set_layers(fireLayer == 0 ? FX_L_ALL
+                                                 : FIRE_LAYERS[fireLayer - 1].bit);
+                    splashText = (fireLayer == 0) ? "ATES: hepsi acik"
+                                                  : FIRE_LAYERS[fireLayer - 1].name;
+                    splashTimer = 2.6f;
+                }
+                else if (event.key.key == SDLK_G &&
+                         (event.key.mod & SDL_KMOD_CTRL) &&
+                         gameState == GAME_PLAYING)
+                {
+                    // DEV: SİLAH EFEKTİNİ DÖNGÜLE. Alev ve buz kodda var ama
+                    // onları veren EŞYA yok (rün listesinde yalnız pembe ve
+                    // zehir; item tablosunda weaponFx bilerek boş). Yani bu iki
+                    // efekt bugün erişilemez bir yol — alev rünü eklemek içerik
+                    // kararı, sahibine sorulmadan yapılmaz. Bu tuş yalnız GÖRSEL
+                    // test için efekti doğrudan basar (kalıcı değil: silah
+                    // değişince main 8258'deki atama üzerine yazar).
+                    static const struct { WeaponFxType t; const char *n; } WFX[] = {
+                        { WEAPON_FX_NONE,  "SILAH FX: yok" },
+                        { WEAPON_FX_FLAME, "SILAH FX: ALEV" },
+                        { WEAPON_FX_ICE,   "SILAH FX: BUZ" },
+                        { WEAPON_FX_PINK,  "SILAH FX: pembe enerji" },
+                        { WEAPON_FX_POISON,"SILAH FX: zehir" },
+                        { WEAPON_FX_VENOM, "SILAH FX: igne zehri" },
+                    };
+                    static int wfxIdx = 0;
+                    wfxIdx = (wfxIdx + 1) % (int)(sizeof(WFX) / sizeof(WFX[0]));
+                    // GEÇERSİZ KILMA ŞART: player.weaponFx her karede
+                    // kuşanılan silahtan yeniden atanıyor (aşağıda) ve
+                    // buradaki değeri eziyordu — tuş işe yaramıyordu.
+                    // 0. eleman (yok) seçilince geçersiz kılma KAPANIR.
+                    devFxOverride = (wfxIdx == 0) ? WEAPON_FX_COUNT : WFX[wfxIdx].t;
+                    player.weaponFx = WFX[wfxIdx].t;
+                    splashText = WFX[wfxIdx].n;
+                    splashTimer = 2.4f;
+                }
+                else if (event.key.key == SDLK_T &&
+                         (event.key.mod & SDL_KMOD_CTRL) &&
+                         gameState == GAME_PLAYING)
+                {
+                    // DEV: EĞİTİM KUKLASI koy — oyuncunun 2 karo önüne.
+                    // Saldırmaz, kaçmaz, ölmez: VFX/hasar testi için sabit hedef
+                    // (yaratıklar saldırdığı için efekt izlenemiyordu).
+                    float dx0 = 0.0f, dy0 = 0.0f;
+                    switch (player.facing) {
+                        case DIR_UP:    dy0 = -128.0f; break;
+                        case DIR_DOWN:  dy0 =  128.0f; break;
+                        case DIR_LEFT:  dx0 = -128.0f; break;
+                        default:           dx0 =  128.0f; break;
+                    }
+                    int did = mob_spawn(mobs, MAX_MOBS, &nextMobId,
+                                        &MOB_TYPES[MOB_DUMMY],
+                                        player.rect.x + dx0, player.rect.y + dy0, -1);
+                    splashText = (did >= 0) ? "KUKLA kondu (Ctrl+T)"
+                                            : "KUKLA: mob havuzu dolu";
+                    splashTimer = 2.0f;
+                }
+                else if (event.key.key == SDLK_Y &&
+                         (event.key.mod & SDL_KMOD_CTRL) &&
+                         gameState == GAME_PLAYING)
+                {
+                    // DEV: sınırsız mana + stamina + can (test modu).
+                    // Ctrl+I DEĞİL: I envanteri açıyor, tuş çakışıyordu.
+                    devInfinite = !devInfinite;
+                    splashText = devInfinite ? "DEV: sinirsiz mana/stamina/can ACIK"
+                                             : "DEV: sinirsiz KAPALI";
+                    splashTimer = 2.4f;
+                }
+                else if (event.key.key == SDLK_P &&
+                         (event.key.mod & SDL_KMOD_CTRL) &&
+                         gameState == GAME_PLAYING)
+                {
+                    // DEV A/B: PROSEDÜREL SKİLL EFEKTLERİ. Kapalı = eski sprite
+                    // sheet'leri (assets/fx/*.png), açık = kendi motorumuz.
+                    // Karşılaştırma olmadan "daha iyi mi" sorusu cevaplanamaz;
+                    // sprite yolu bu yüzden silinmiyor.
+                    skillfx_set_procedural(!skillfx_procedural());
+                    splashText = skillfx_procedural()
+                        ? "SKILL FX: PROSEDUREL (kendi motorumuz)"
+                        : "SKILL FX: sprite sheet (eski)";
+                    splashTimer = 2.8f;
+                }
                 else if (event.key.key == SDLK_F12 && gameState == GAME_PLAYING)
                 {
                     // DEV: A/B KARŞILAŞTIRMA — ekranın SOL yarısı orijinal
@@ -4062,7 +4285,7 @@ int main(int argc, char *argv[])
                     bag_add(&ITEM_TYPES[ITEM_TOME_ICETACLE], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_TOME_TORNADO], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_TOME_SNAKEBITE], 1, 0);
-                    bag_add(&ITEM_TYPES[ITEM_TOME_FIRELION], 1, 0);
+                    bag_add(&ITEM_TYPES[ITEM_TOME_FIRESURGE], 1, 0);
                     // Kutsal testi (Faz HOLY): 3 tomar
                     bag_add(&ITEM_TYPES[ITEM_TOME_HEAL], 1, 0);
                     bag_add(&ITEM_TYPES[ITEM_TOME_HOLYBEAM], 1, 0);
@@ -4464,7 +4687,7 @@ int main(int argc, char *argv[])
                             for (int i = 0; i < MAX_ICETACLE_FX; i++) icetacleFx[i].active = false;
                             for (int i = 0; i < MAX_TORNADOES; i++) tornadoes[i].active = false;
                             for (int i = 0; i < MAX_SNAKEBITE_FX; i++) snakeFx[i].active = false;
-                            for (int i = 0; i < MAX_FIRELIONS; i++) firelions[i].active = false;
+                            for (int i = 0; i < MAX_FIRESURGES; i++) firesurges[i].active = false;
                             for (int i = 0; i < MAX_DARKBURST_FX; i++) darkburstFx[i].active = false;
                             memset(floatTexts, 0, sizeof(FloatText) * MAX_FLOAT_TEXTS);
                             deathTimer = 0.0f;
@@ -5637,6 +5860,10 @@ int main(int argc, char *argv[])
 
         // HIT-STOP (VFX cilası): vuruş oturunca dünya bir anlığına yavaşlar
         // ("vuruş oturdu" hissi). Menü/ölüm ekranı gerçek zamanda kalır.
+        if (g_hitStopCd > 0.0f) {
+            g_hitStopCd -= dt;
+            if (g_hitStopCd < 0.0f) g_hitStopCd = 0.0f;
+        }
         if (g_hitStop > 0.0f)
         {
             if (gameState == GAME_PLAYING && deathTimer <= 0.0f)
@@ -5745,7 +5972,9 @@ int main(int argc, char *argv[])
                 player.targetMobId = 0;
                 player.autoAttack = false;
                 gatherRes = -1;
-                fx_init(&weaponFx);   // partiküller haritayla gitsin
+                fx_init(&weaponFx);
+    fx_set_death_hook(fx_on_particle_death);
+    skillfx_init();   // partiküller haritayla gitsin
                 decal_reset();        // yer izleri de haritaya ait
 
                 // 3) Yeni haritanın kampları + sandıkları + tuzak durumu
@@ -7110,9 +7339,12 @@ int main(int argc, char *argv[])
                         float pcx = player.rect.x + player.rect.w / 2.0f;
                         float pcy = player.rect.y + player.rect.h / 2.0f;
 
-                        player.mana -= cost;
-                        if (player.mana < 0.0f) player.mana = 0.0f;
+                        if (!devInfinite) {
+                            player.mana -= cost;
+                            if (player.mana < 0.0f) player.mana = 0.0f;
+                        }
                         player.abilityCd[castSpell] = sd->cooldown;
+                        g_spellElem = spell_elem_of(castSpell);
                         // Nur Yolu CD ayarları: Rahibe kısar, IŞIK TAŞIYICISI bedeli
                         if (castSpell == ABILITY_HEAL_LIGHT)
                             player.abilityCd[castSpell] -= perkFx.healCdCut;
@@ -7135,6 +7367,18 @@ int main(int argc, char *argv[])
                                     .active = true, .x = pcx, .y = pcy - 14.0f,
                                     .targetId = player.targetMobId,
                                 };
+                                // Prosedürel mod: kendi mermi+patlama efektimiz
+                                // (hasar/mermi mantığı DEĞİŞMİYOR — yalnız görsel)
+                                if (skillfx_procedural()) {
+                                    Mob *ft = mob_find_by_id(mobs, mobCount,
+                                                             player.targetMobId);
+                                    float fx2 = (ft != NULL)
+                                        ? ft->e.rect.x + ft->e.rect.w / 2.0f : pcx;
+                                    float fy2 = (ft != NULL)
+                                        ? ft->e.rect.y + ft->e.rect.h / 2.0f : pcy - 120.0f;
+                                    skillfx_cast(SKILLFX_FIREBOLT, pcx, pcy - 14.0f,
+                                                 fx2, fy2, 1.0f);
+                                }
                                 break;
                             }
                             audio_play(SFX_HIT);
@@ -7143,7 +7387,29 @@ int main(int argc, char *argv[])
                         {
                             // ÇEVRENE buz patlaması: hasar + alan yavaşlatma
                             float novaR = 120.0f + perkFx.novaRadiusBonus;
-                            fx_burst(&weaponFx, pcx, pcy, 26, 150.0f, 150, 210, 255);
+                            // PROSEDÜREL SKİLL MOTORU (Ctrl+P açıkken): sprite
+                            // yerine kendi efektimiz. Sprite yolu SİLİNMEDİ —
+                            // anahtar kapalıyken eski görsel çalışıyor, yani
+                            // A/B karşılaştırması her an mümkün.
+                            if (skillfx_procedural()) {
+                                // YER BÜYÜSÜ AYAK HİZASINDA doğar. pcy gövde
+                                // MERKEZİ — halka oradan başlayınca zeminden ~28px
+                                // yukarıda asılı kalıyor ve büyünün nereden çıktığı
+                                // okunmuyor (Hakan: "çıkış-bitiş noktaları garip").
+                                float pfy = player.rect.y + player.rect.h - 4.0f;
+                                skillfx_cast(SKILLFX_ICE_NOVA, pcx, pfy, pcx, pfy,
+                                             novaR / 120.0f);
+                                skillfx_impact(pcx, pfy, 0.0f, -1.0f,
+                                               SKFX_EL_ICE, 1.3f, true);
+                            }
+                            else
+                                fx_burst(&weaponFx, pcx, pcy, 26, 150.0f, 150, 210, 255);
+                            // BÜKÜLME (motor katmanı): buz kubbesi = MERCEK.
+                            // Sistem ateş için kurulmuştu; ilk skill müşterisi
+                            // burada — genel olup olmadığı ancak ikinci
+                            // kullanıcıyla anlaşılır.
+                            fx_distort_burst(pcx, pcy, R2D_DIST_LENS,
+                                             novaR * 1.5f, 5.0f, 0.45f);
                             audio_play(SFX_DODGE);   // buz whoosh
                             for (int m2 = 0; m2 < mobCount; m2++)
                             {
@@ -7205,6 +7471,15 @@ int main(int argc, char *argv[])
                             {
                                 float tx = lt->e.rect.x + lt->e.rect.w / 2.0f;
                                 float ty = lt->e.rect.y + lt->e.rect.h / 2.0f;
+                                if (skillfx_procedural()) {
+                                    skillfx_cast(SKILLFX_LIGHTNING, tx, ty, tx, ty, 1.0f);
+                                    // Yıldırım GÖKTEN iner: darbe yönü aşağı
+                                    skillfx_impact(tx, ty, 0.0f, 1.0f,
+                                                   SKFX_EL_BOLT, 1.6f, true);
+                                }
+                                else
+                                    fx_distort_burst(tx, ty, R2D_DIST_SHOCK,
+                                                     170.0f, 7.0f, 0.34f);
                                 HitResult sh = combat_spell_hit(&player, wpn,
                                                                 sd->damageScale,
                                                                 lt->type->defense, &perkFx);
@@ -7292,6 +7567,18 @@ int main(int argc, char *argv[])
                             // Toprak Dikenleri: çevrende patlama + yavaşlatma
                             float spikeR = 130.0f;
                             audio_play(SFX_HIT);
+                            if (skillfx_procedural()) {
+                                // Dikenler ZEMİNDEN çıkar — gövde merkezinden
+                                // değil ayak hizasından (bkz. buz novası notu)
+                                float pfy = player.rect.y + player.rect.h - 4.0f;
+                                skillfx_cast(SKILLFX_SPIKES, pcx, pfy, pcx, pfy, 1.0f);
+                                // Dikenler YERDEN çıkar: darbe yönü yukarı
+                                skillfx_impact(pcx, pfy, 0.0f, -1.0f,
+                                               SKFX_EL_EARTH, 1.4f, true);
+                            }
+                            else
+                                fx_distort_burst(pcx, pcy, R2D_DIST_SHOCK,
+                                                 spikeR * 2.0f, 8.5f, 0.5f);
                             for (int k = 0; k < 3; k++)   // 3 diken kümesi görseli
                             {
                                 float ang = (float)k * 2.094f + randf();
@@ -7712,7 +7999,7 @@ int main(int argc, char *argv[])
                                             questStatus, floatTexts, &player);
                             }
                         }
-                        else if (castSpell == ABILITY_FIRELION)
+                        else if (castSpell == ABILITY_FIRESURGE)
                         {
                             // ATEŞ ASLANI: bakış yönüne hat dalgası — 300px koşar,
                             // çarptığını yakar (tek dalga: mob başına 1 vuruş).
@@ -7724,10 +8011,22 @@ int main(int argc, char *argv[])
                             HitResult sh = combat_spell_hit(&player, wpn,
                                                             sd->damageScale,
                                                             0.0f, &perkFx);
-                            for (int q = 0; q < MAX_FIRELIONS; q++)
-                                if (!firelions[q].active)
+                            // PROSEDÜREL: sprite aslanın yerine koşan alev
+                            // duvarı. Oyun tarafı (hasar, hareket, çarpışma)
+                            // DEĞİŞMİYOR — yalnız görsel yol ayrılıyor.
+                            if (skillfx_procedural()) {
+                                // GÖRSEL ayak hizasından: aslan zeminde koşar.
+                                // Oyun tarafı (hasar küresi) pcy'de kalıyor —
+                                // o kürenin yeri aslanın gövdesinin içinde.
+                                float pfy2 = player.rect.y + player.rect.h - 4.0f;
+                                skillfx_cast(SKILLFX_FIRE_WAVE,
+                                             pcx + fxv * 30.0f, pfy2 + fyv * 20.0f,
+                                             fxv, fyv, 1.0f);
+                            }
+                            for (int q = 0; q < MAX_FIRESURGES; q++)
+                                if (!firesurges[q].active)
                                 {
-                                    firelions[q] = (FireLion){
+                                    firesurges[q] = (FireSurge){
                                         .active = true,
                                         .x = pcx + fxv * 30.0f, .y = pcy + fyv * 30.0f,
                                         .dirX = fxv, .dirY = fyv,
@@ -7761,6 +8060,29 @@ int main(int argc, char *argv[])
                                                  pcx, player.rect.y - 10.0f,
                                                  k == ALLY_SNAKE ? "Öz Yılanı!"
                                                                  : "Öz Kabuğu!", grn);
+                        }
+
+                        // ── YOL GÖSTERGESİ (yalnız A/B modu açıkken).
+                        // ÜÇ TUR kaybettik çünkü Hakan "alev skili" derken
+                        // ATEŞ ASLANI'nı deniyordu; o büyü sprite yolundaydı ve
+                        // Ctrl+P ona hiç dokunmuyordu — bense her turda
+                        // prosedürel ateş topunun biçimini düzeltiyordum.
+                        // Bundan sonra oyun hangi yolun çalıştığını SÖYLÜYOR.
+                        // Kapalı modda susuyor (normal oyunda gürültü olmasın).
+                        if (skillfx_procedural() && castSpell >= 0 &&
+                            castSpell < ABILITY_COUNT) {
+                            static char pathMsg[96];
+                            bool proc = (castSpell == ABILITY_FIREBOLT ||
+                                         castSpell == ABILITY_ICE_NOVA ||
+                                         castSpell == ABILITY_LIGHTNING ||
+                                         castSpell == ABILITY_SPIKES ||
+                                         castSpell == ABILITY_FIRESURGE);
+                            SDL_snprintf(pathMsg, sizeof pathMsg, "%s -> %s",
+                                         ABILITIES[castSpell].name,
+                                         proc ? "PROSEDUREL (motor)"
+                                              : "SPRITE (motor disi)");
+                            splashText = pathMsg;
+                            splashTimer = 2.0f;
                         }
 
                         castSpell = -1;
@@ -8233,6 +8555,9 @@ int main(int argc, char *argv[])
             player.weaponFx = (wpnStack->type == NULL) ? WEAPON_FX_NONE
                             : (player.coatTimer > 0.0f) ? player.coatFx
                             : (WeaponFxType)wpnStack->fx;
+            // DEV geçersiz kılma (Ctrl+G) — silah atamasının ÜSTÜNE yazar
+            if (devFxOverride != WEAPON_FX_COUNT)
+                player.weaponFx = devFxOverride;
             // Yay kuşanımı: attackPressed slash yerine SHOOT başlatsın (player_update)
             player.bowEquipped = (wpnStack->type != NULL &&
                                   wpnStack->type->weaponType == WEAPON_BOW);
@@ -8509,7 +8834,231 @@ int main(int argc, char *argv[])
                                          player.rect.y - 10.0f, "Kaplama geçti", dim);
                 }
             }
+            // ── ATEŞ YAYICILARI (VFX ateş paketi). Kaynaklar dünyada zaten
+            // var: istasyonlar (kamp ateşi / ocak / kazan) ve kandil direkleri.
+            // Ayrı emitter kaydı TUTULMUYOR — konumlar burada okunuyor, yani
+            // istasyon taşınınca ya da kandil sönünce senkron borcu doğmaz.
+            // Yalnız DÜNYA haritasında ve ekrana yakın kaynaklar işlenir.
+            // BÜKÜLME ALANLARI (genel motor katmanı). Bu listeyi ateş kaynakları
+            // dolduruyor AMA sistem onlara özel değil: skill (portal burgacı),
+            // boss (yer vuruşu şok dalgası), doğa olayı (çöl serabı, volkan) ve
+            // kalkan kubbesi (mercek) aynı diziye yazacak. Kare başına yenilenir.
+            R2DDistort distorts[R2D_MAX_DISTORT];
+            int distortN = 0;
+            // DUVAR saati: efekt nefesi oyun saatinden bağımsız (ateş
+            // geceleyin yavaşlamaz, mevsim onu söndürmez)
+            float nowSec = (float)SDL_GetTicks() / 1000.0f;
+            // ── RÜZGÂR (kuvvet alanı): hava sisteminden türüyor. Yön yavaş
+            // döner (gün içinde kayar), güç yağmur/fırtına şiddetiyle artar.
+            // Motor tarafı genel: patlama itmesi ya da boss savurması da aynı
+            // alana yazabilir (o an rüzgârın üstüne yazılır).
+            {
+                float wAng = nowSec * 0.035f + 0.7f;
+                float wStr = 12.0f + 46.0f * weather_intensity();
+                fx_set_wind(SDL_cosf(wAng) * wStr, SDL_sinf(wAng) * wStr * 0.4f);
+            }
+            if (!map_is_dungeon(map_current())) {
+                float exW = (float)winW / camera.zoom, exH = (float)winH / camera.zoom;
+                float vx0 = camera.x - 96.0f, vy0 = camera.y - 96.0f;
+                float vx1 = camera.x + exW + 96.0f, vy1 = camera.y + exH + 96.0f;
+                for (int i = 0; i < STATION_COUNT; i++) {
+                    float sxw = STATIONS[i].x, syw = STATIONS[i].y;
+                    if (sxw < vx0 || sxw > vx1 || syw < vy0 || syw > vy1) continue;
+                    // CAMPFIRE_PARKED NEGATİF (-99999): karşılaştırma >= idi ve
+                    // TÜM kaynakları park sayıp atlıyordu — hiç partikül doğmadı.
+                    if (sxw <= CAMPFIRE_PARKED + 1.0f) continue;   // sönük/park
+                    switch (STATIONS[i].type) {
+                        case STATION_CAMPFIRE: {
+                            // NEFES: parçacık yoğunluğu VE ısı genliği aynı
+                            // değerden türüyor — alev kabardığında havanın
+                            // titremesi de kabarıyor. Işık da aynı fonksiyonu
+                            // kullanacak (light.c tarafı sıradaki iş).
+                            // Yağmur ateşi bastırır: hasar tarafında çarpan
+                            // zaten vardı (weather_fire_mult), görsel tarafı yoktu.
+                            float wet = weather_is_wet()
+                                      ? (1.0f - 0.45f * weather_intensity()) : 1.0f;
+                            float br = fx_breath(FIRE_HEARTH, (unsigned)i, nowSec) * wet;
+                            fx_emit_fire(&weaponFx, sxw, syw - 14.0f,
+                                         FIRE_HEARTH, br, dt);
+                            if (distortN < R2D_MAX_DISTORT)
+                                distorts[distortN++] = (R2DDistort){
+                                    .x = (sxw - camera.x) * camera.zoom,
+                                    .y = (syw - 26.0f - camera.y) * camera.zoom,
+                                    .radius = 86.0f * camera.zoom,
+                                    .strength = 3.4f * br * camera.zoom,
+                                    .style = R2D_DIST_HEAT, .freq = 1.0f,
+                                    .phase = (float)i * 0.37f, .aniso = 1.0f };
+                            break; }
+                        case STATION_SMITH: {
+                            // Ocak kapalı mekânda sayılır: yağmurdan az etkilenir
+                            float wetF = weather_is_wet()
+                                       ? (1.0f - 0.15f * weather_intensity()) : 1.0f;
+                            float br = fx_breath(FIRE_FORGE, (unsigned)i, nowSec) * wetF;
+                            fx_emit_fire(&weaponFx, sxw, syw - 18.0f,
+                                         FIRE_FORGE, 0.85f * br, dt);
+                            if (distortN < R2D_MAX_DISTORT)
+                                distorts[distortN++] = (R2DDistort){
+                                    .x = (sxw - camera.x) * camera.zoom,
+                                    .y = (syw - 34.0f - camera.y) * camera.zoom,
+                                    .radius = 74.0f * camera.zoom,
+                                    .strength = 4.2f * br * camera.zoom,   // ocak daha sıcak
+                                    .style = R2D_DIST_HEAT, .freq = 1.35f,
+                                    .phase = (float)i * 0.61f, .aniso = 1.0f };
+                            break; }
+                        case STATION_ALCH:
+                            fx_emit_fire(&weaponFx, sxw, syw - 22.0f,
+                                         FIRE_CAULDRON, 1.0f, dt);
+                            if (distortN < R2D_MAX_DISTORT)
+                                distorts[distortN++] = (R2DDistort){
+                                    .x = (sxw - camera.x) * camera.zoom,
+                                    .y = (syw - 30.0f - camera.y) * camera.zoom,
+                                    .radius = 58.0f * camera.zoom,
+                                    .strength = 2.2f * camera.zoom,   // buhar hafif
+                                    .style = R2D_DIST_HEAT, .freq = 0.8f,
+                                    .phase = (float)i * 0.23f, .aniso = 1.0f };
+                            break;
+                        default: break;
+                    }
+                }
+                // Kandiller: yalnız YANANLAR (lamp_lit) ve gece daha güçlü
+                float lampStr = 0.55f + 0.45f * gametime_darkness01();
+                for (int i = 0; i < LAMP_COUNT; i++) {
+                    if (!lamp_lit(i)) continue;
+                    float lx = LAMPS[i].x, ly = LAMPS[i].y;
+                    if (lx < vx0 || lx > vx1 || ly < vy0 || ly > vy1) continue;
+                    fx_emit_fire(&weaponFx, lx, ly - 46.0f,
+                                 FIRE_CANDLE, lampStr, dt);
+                }
+            // ── İZ SIZDIRMASI: iz taşıyan moblar partikül üretir. Ton değişimi
+            // "durum var" der, partikül "durum SÜRÜYOR" der; ikisi birlikte
+            // olmadan yanan mob yalnız turuncu bir sprite gibi duruyor.
+            // Sızdırma İZİN GÜCÜYLE oranlı (iz solarken azalıyor) ve yalnız
+            // görüş alanındaki moblar için — ekran dışında partikül harcamak
+            // 5120 tavanı boşa yiyor.
+            for (int i = 0; i < mobCount; i++) {
+                Mob *mm = &mobs[i];
+                if (!mm->e.alive || mm->mark == MOB_MARK_NONE) continue;
+                if (mm->markTimer <= 0.0f || mm->markMax <= 0.0f) continue;
+                float mcx = mm->e.rect.x + mm->e.rect.w / 2.0f;
+                float mcy = mm->e.rect.y + mm->e.rect.h / 2.0f;
+                if (mcx < vx0 || mcx > vx1 || mcy < vy0 || mcy > vy1) continue;
+                float k = mm->markTimer / mm->markMax;          // 1 → 0
+                float hw = mm->e.rect.w * 0.45f, hh = mm->e.rect.h * 0.42f;
+                switch (mm->mark) {
+                case MOB_MARK_FIRE:
+                    // YANIYOR: gövdeden alev dili + kızıl zarf + is
+                    fx_set_pal_mix(0, 2, 0.45f);
+                    if (randf() < 26.0f * k * dt)
+                        fx_spawn(&weaponFx, mcx + (randf() * 2.0f - 1.0f) * hw,
+                                 mcy + (randf() * 2.0f - 1.0f) * hh,
+                                 (randf() * 2.0f - 1.0f) * 14.0f, -70.0f - randf() * 50.0f,
+                                 0.32f + randf() * 0.26f, 9.0f + randf() * 7.0f,
+                                 255, 196, 96, WEAPON_FX_LICK);
+                    if (randf() < 14.0f * k * dt)
+                        fx_spawn(&weaponFx, mcx + (randf() * 2.0f - 1.0f) * hw,
+                                 mcy + (randf() * 2.0f - 1.0f) * hh,
+                                 (randf() * 2.0f - 1.0f) * 10.0f, -46.0f,
+                                 0.30f + randf() * 0.20f, 17.0f + randf() * 10.0f,
+                                 224, 82, 46, WEAPON_FX_FLAME_DEEP);
+                    if (randf() < 7.0f * k * dt)
+                        fx_spawn(&weaponFx, mcx + (randf() * 2.0f - 1.0f) * hw, mcy - hh,
+                                 (randf() * 2.0f - 1.0f) * 12.0f, -30.0f,
+                                 1.1f, 8.0f, 70, 64, 60, WEAPON_FX_SOOT);
+                    fx_set_pal_variant(0);
+                    break;
+                case MOB_MARK_ICE:
+                    // DONUYOR: kırağı buharı yukarı, kristal kırıntısı aşağı
+                    if (randf() < 16.0f * k * dt)
+                        fx_spawn(&weaponFx, mcx + (randf() * 2.0f - 1.0f) * hw,
+                                 mcy + (randf() * 2.0f - 1.0f) * hh,
+                                 (randf() * 2.0f - 1.0f) * 8.0f, -18.0f - randf() * 14.0f,
+                                 0.9f + randf() * 0.6f, 10.0f + randf() * 8.0f,
+                                 226, 242, 255, WEAPON_FX_STEAM);
+                    if (randf() < 9.0f * k * dt)
+                        fx_spawn(&weaponFx, mcx + (randf() * 2.0f - 1.0f) * hw,
+                                 mcy + (randf() * 2.0f - 1.0f) * hh * 0.6f,
+                                 (randf() * 2.0f - 1.0f) * 20.0f, 30.0f + randf() * 40.0f,
+                                 0.5f + randf() * 0.4f, 7.0f + randf() * 6.0f,
+                                 218, 240, 255, WEAPON_FX_ICE);
+                    break;
+                case MOB_MARK_BOLT:
+                    // ÇARPILDI: yüklü toprak boşalır gibi tek tük kıvılcım
+                    if (randf() < 30.0f * k * dt)
+                        fx_spawn(&weaponFx, mcx + (randf() * 2.0f - 1.0f) * hw,
+                                 mcy + (randf() * 2.0f - 1.0f) * hh,
+                                 (randf() * 2.0f - 1.0f) * 60.0f, -80.0f - randf() * 60.0f,
+                                 0.22f, 3.0f, 255, 250, 235, WEAPON_FX_SPARK);
+                    break;
+                case MOB_MARK_EARTH:
+                    // TAŞ YEDİ: gövdeden kırıntı ve toz dökülür (AŞAĞI)
+                    if (randf() < 18.0f * k * dt)
+                        fx_spawn(&weaponFx, mcx + (randf() * 2.0f - 1.0f) * hw,
+                                 mcy + (randf() * 2.0f - 1.0f) * hh * 0.5f,
+                                 (randf() * 2.0f - 1.0f) * 26.0f, 20.0f + randf() * 30.0f,
+                                 0.5f + randf() * 0.4f, 7.0f + randf() * 6.0f,
+                                 120, 98, 76, WEAPON_FX_ROCK);
+                    if (randf() < 8.0f * k * dt)
+                        fx_spawn(&weaponFx, mcx + (randf() * 2.0f - 1.0f) * hw, mcy + hh,
+                                 (randf() * 2.0f - 1.0f) * 12.0f, -8.0f,
+                                 1.0f, 9.0f, 112, 98, 80, WEAPON_FX_SMOKE);
+                    break;
+                case MOB_MARK_POISON:
+                    if (randf() < 12.0f * k * dt)
+                        fx_spawn(&weaponFx, mcx + (randf() * 2.0f - 1.0f) * hw,
+                                 mcy + (randf() * 2.0f - 1.0f) * hh,
+                                 (randf() * 2.0f - 1.0f) * 8.0f, -26.0f - randf() * 18.0f,
+                                 0.8f + randf() * 0.5f, 6.0f + randf() * 5.0f,
+                                 150, 210, 110, WEAPON_FX_POISON);
+                    break;
+                default: break;
+                }
+            }
+            }
+            // Zamanlı patlamalar (skill/boss) ısı alanlarının ÜSTÜNE eklenir;
+            // ikisi aynı tavanı paylaşıyor (8), patlamalar daha alakalı olduğu
+            // için sonra yazılıyor — tavan dolarsa ısı düşer, patlama kalır.
+            fx_distort_update(dt);
+            distortN += fx_distort_collect(distorts + distortN,
+                                           R2D_MAX_DISTORT - distortN,
+                                           camera.x, camera.y, camera.zoom);
+            r2d_distort_set(distorts, distortN);
+            if (devInfinite) {
+                player.mana = player.maxMana;
+                player.stamina = player.maxStamina;
+                player.health = player.maxHealth;
+            }
+            // Darbe yönü için oyuncu merkezi (strike_fx_mob okuyor)
+            g_playerCx = player.rect.x + player.rect.w / 2.0f;
+            g_playerCy = player.rect.y + player.rect.h / 2.0f;
+            skillfx_update(&weaponFx, dt);
+            // ── DARBE İSTEKLERİNİ TÜKET: motor istek bırakır, oyun katmanı
+            // uygular (zaman ölçeği ve kamera oyunun malı, motorun değil).
+            {
+                float rs = skillfx_take_hitstop();
+                if (rs > 0.0f) hitstop(rs);
+                float sa = 0.0f, sd = 0.0f;
+                skillfx_take_shake(&sa, &sd);
+                if (sa > 0.0f && sa > shakeAmp * (shakeTime / SDL_max(shakeDur, 0.001f))) {
+                    shakeAmp = sa; shakeTime = shakeDur = sd;
+                }
+            }
             fx_update(&weaponFx, dt);
+            // CANLI SAYIM (izole modda): tuş anındaki sayım YANILTICIYDI —
+            // yeni mod henüz partikül doğurmamışken okuyordu, ekranda önceki
+            // modun kalıntısı görünüyordu. Şimdi her kare tazeleniyor, yani
+            // "doğmuyor mu / doğuyor da görünmüyor mu" ayrımı gerçekten okunur.
+            if (fireLayer != 0) {
+                static char fireDiag[160];
+                SDL_snprintf(fireDiag, sizeof(fireDiag),
+                             "%s  [alev %d duman %d kivilcim %d buhar %d]",
+                             FIRE_LAYERS[fireLayer - 1].name,
+                             fx_count_active(&weaponFx, WEAPON_FX_FLAME),
+                             fx_count_active(&weaponFx, WEAPON_FX_SMOKE),
+                             fx_count_active(&weaponFx, WEAPON_FX_SPARK),
+                             fx_count_active(&weaponFx, WEAPON_FX_STEAM));
+                splashText = fireDiag;
+                splashTimer = 0.4f;   // izole mod sürdükçe ekranda kalır
+            }
             animfx_update(animFxPool, dt);
             decal_update(dt);
 
@@ -9747,14 +10296,14 @@ int main(int argc, char *argv[])
             }
 
             // ATEŞ ASLANI: hat boyunca koşar — çarptığı HER moba bir kez vurur
-            for (int q = 0; q < MAX_FIRELIONS; q++)
+            for (int q = 0; q < MAX_FIRESURGES; q++)
             {
-                FireLion *fl = &firelions[q];
+                FireSurge *fl = &firesurges[q];
                 if (!fl->active) continue;
                 fl->t += dt;
-                if (fl->t >= FIRELION_LIFE) { fl->active = false; continue; }
-                fl->x += fl->dirX * FIRELION_SPEED * dt;
-                fl->y += fl->dirY * FIRELION_SPEED * dt;
+                if (fl->t >= FIRESURGE_LIFE) { fl->active = false; continue; }
+                fl->x += fl->dirX * FIRESURGE_SPEED * dt;
+                fl->y += fl->dirY * FIRESURGE_SPEED * dt;
                 for (int m2 = 0; m2 < mobCount; m2++)
                 {
                     Mob *nb = &mobs[m2];
@@ -11135,7 +11684,8 @@ int main(int argc, char *argv[])
         }
 
         // Toprak Dikenleri: zemin patlaması (moblardan/oyuncudan ÖNCE — yerden fışkırır)
-        if (spikesTex != NULL)
+        // PROSEDÜREL MODDA ÇİZİLMEZ (bkz. skillfx SPIKES tarifi)
+        if (spikesTex != NULL && !skillfx_procedural())
             for (int q = 0; q < MAX_SPIKE_FX; q++)
             {
                 if (!spikeFx[q].active) continue;
@@ -11196,13 +11746,16 @@ int main(int argc, char *argv[])
             else
                 r2d_draw_texture(renderer, stx, &csrc, &cdst);
         }
-        for (int q = 0; q < MAX_FIRELIONS; q++)
+        for (int q = 0; q < MAX_FIRESURGES; q++)
         {
-            const FireLion *fl = &firelions[q];
+            const FireSurge *fl = &firesurges[q];
             if (!fl->active) continue;
-            R2DTexture *ftx = firelionTex[fl->facing];
-            if (ftx == NULL) continue;
-            int fr = (int)(fl->t / (FIRELION_LIFE / 16.0f));
+            // Prosedürel modda sprite ÇİZİLMEZ. Ders (Hakan bildirdi): A/B
+            // anahtarı yalnız SPAWN tarafını keserse çizim tarafı sprite'ı
+            // basmaya devam eder ve "hala asset var" görünür.
+            R2DTexture *ftx = firesurgeTex[fl->facing];
+            if (ftx == NULL || skillfx_procedural()) continue;
+            int fr = (int)(fl->t / (FIRESURGE_LIFE / 16.0f));
             if (fr > 15) fr = 15;
             SDL_FRect csrc = { (float)((fr % 4) * 128), (float)((fr / 4) * 128),
                                128, 128 };
@@ -11373,8 +11926,10 @@ int main(int argc, char *argv[])
             r2d_line(renderer, tip.x - adx * 3.0f, tip.y - ady * 3.0f, tip.x, tip.y);
         }
 
-        // Ateş Topu mermileri: piksel küre sprite'ı (Sog paketi)
-        if (orbFireTex != NULL)
+        // Ateş Topu mermileri: piksel küre sprite'ı (Sog paketi).
+        // PROSEDÜREL MODDA ÇİZİLMEZ: alev kuyruğu + kor + ısı bükülmesi
+        // mermiyi zaten anlatıyor; sprite üstüne binince iki dil karışıyor.
+        if (orbFireTex != NULL && !skillfx_procedural())
             for (int sp = 0; sp < MAX_SPELL_PROJS; sp++)
             {
                 if (!spellProjs[sp].active) continue;
@@ -11499,6 +12054,7 @@ int main(int argc, char *argv[])
                                   echoShadow.facingLeft);
             r2d_texture_set_alpha_mod(echoWispTex, 255);
         }
+        skillfx_render(renderer, &camera);   // geometri (kol/halka)
         fx_render(&weaponFx, renderer, glowTex, &camera);
         animfx_render(animFxPool, renderer, &camera);
 
@@ -11668,6 +12224,41 @@ int main(int argc, char *argv[])
                 // oyuncu gördüğü halka ile korunduğu halkayı ayırt etmesin.
                 lightN = lamp_append_lights(lights, lightN, R2D_MAX_LIGHTS,
                                             &camera, winW, winH);
+                lightN = skillfx_append_lights(lights, lightN, R2D_MAX_LIGHTS,
+                                               &camera, winW, winH);
+
+                // ── İSTASYON ATEŞLERİNİN IŞIĞI, PARÇACIKLARLA AYNI NEFESTEN.
+                // Işık titremesi eskiden light.c'nin kendi gürültüsünden
+                // geliyordu ve parçacıklardan bağımsızdı — alev kabarırken
+                // ışık kabarmıyordu, ateş "iki ayrı şey" gibi okunuyordu.
+                // fx_breath tek kaynak: parçacık yoğunluğu, ısı bükülmesi
+                // genliği ve ışık şiddeti üçü birden ondan türüyor.
+                // Bu bağ genel: skill/boss efektleri de aynı fonksiyonu
+                // çağırıp kendi ışığını senkron sürebilir.
+                {
+                    float nSec = (float)SDL_GetTicks() / 1000.0f;
+                    for (int i = 0; i < STATION_COUNT && lightN < R2D_MAX_LIGHTS; i++) {
+                        float sxw = STATIONS[i].x, syw = STATIONS[i].y;
+                        if (sxw <= CAMPFIRE_PARKED + 1.0f) continue;
+                        FireKind fk;
+                        float rad, ir, ig, ib, base;
+                        switch (STATIONS[i].type) {
+                            case STATION_CAMPFIRE:
+                                fk = FIRE_HEARTH; rad = 190.0f; base = 0.62f;
+                                ir = 1.0f; ig = 0.60f; ib = 0.26f; break;
+                            case STATION_SMITH:
+                                fk = FIRE_FORGE;  rad = 150.0f; base = 0.58f;
+                                ir = 1.0f; ig = 0.72f; ib = 0.40f; break;
+                            default: continue;   // kazan ışık vermez (buhar)
+                        }
+                        float br = fx_breath(fk, (unsigned)i, nSec);
+                        lightN = light_append_point(lights, lightN, R2D_MAX_LIGHTS,
+                                    &camera, winW, winH, sxw, syw - 18.0f,
+                                    rad * (0.92f + 0.08f * br), ir, ig, ib,
+                                    base * br,
+                                    (fk == FIRE_HEARTH) ? LK_HEARTH : LK_STEADY);
+                    }
+                }
 
                 // K9 kandili (D1a): duruma göre ışık — yalan(2) = sönmüş
                 Uint8 k9L = player.storyFlags[SF_K9_KANDIL];
@@ -12205,9 +12796,59 @@ int main(int argc, char *argv[])
                         ((ad->skill == SKILL_ARCHERY) == player.bowEquipped);
             }
         }
+        skillfx_render_punch(renderer, winW, winH);   // ekran darbesi (HUD'dan ÖNCE)
+
         hotbar_render(&hotbar, renderer, itemIconTex, &itemTex, abilityIconTex, gameFont,
                       player.abilityCd, player.itemCd, &inventory, abilityUsable,
                       winW, winH);
+
+        // ── HOTBAR İPUCU: farenin altındaki slotun ADI. Hücrelerde yalnız
+        // kısaltma/ikon var, oyuncu (ve test eden) neyin ne olduğunu
+        // anlayamıyordu. Beceride ad + bekleme, eşyada ad + adet.
+        if (gameFont != NULL && gameState == GAME_PLAYING)
+        {
+            float hmx, hmy;
+            SDL_GetMouseState(&hmx, &hmy);
+            int hs = hotbar_slot_at(hmx, hmy, winW, winH);
+            if (hs >= 0 && hs < HOTBAR_SLOTS)
+            {
+                const HotbarSlot *sl = &hotbar.slots[hs];
+                char tip[96] = {0};
+                if (sl->kind == HOTBAR_SKILL &&
+                    sl->abilityId >= 0 && sl->abilityId < ABILITY_COUNT)
+                {
+                    const AbilityDef *ad = &ABILITIES[sl->abilityId];
+                    float cd = player.abilityCd[sl->abilityId];
+                    if (cd > 0.05f)
+                        SDL_snprintf(tip, sizeof(tip), "%s  (%.1f sn)", ad->name, cd);
+                    else if (ad->mana > 0.5f)
+                        SDL_snprintf(tip, sizeof(tip), "%s  (%.0f mana)", ad->name, ad->mana);
+                    else
+                        SDL_snprintf(tip, sizeof(tip), "%s", ad->name);
+                }
+                else if (sl->kind == HOTBAR_ITEM && sl->itemType != NULL)
+                {
+                    int cnt = bag_count(sl->itemType);
+                    SDL_snprintf(tip, sizeof(tip), "%s  x%d", sl->itemType->name, cnt);
+                }
+                if (tip[0] != '\0')
+                {
+                    // Kutu fareden YUKARI çizilir (imleç yazıyı kapatmasın) ve
+                    // ekran kenarına taşmaz.
+                    float tw = (float)SDL_strlen(tip) * 8.0f + 16.0f;
+                    float tx2 = hmx - tw * 0.5f;
+                    if (tx2 < 4.0f) tx2 = 4.0f;
+                    if (tx2 + tw > (float)winW - 4.0f) tx2 = (float)winW - 4.0f - tw;
+                    float ty2 = hmy - 34.0f;
+                    r2d_set_color(renderer, 18, 16, 24, 225);
+                    r2d_fill_rect(renderer, &(SDL_FRect){ tx2, ty2, tw, 24.0f });
+                    r2d_set_color(renderer, 120, 110, 90, 255);
+                    r2d_rect(renderer, &(SDL_FRect){ tx2, ty2, tw, 24.0f });
+                    draw_text(renderer, gameFont, tip, tx2 + 8.0f, ty2 + 4.0f,
+                              (SDL_Color){ 236, 228, 200, 255 });
+                }
+            }
+        }
 
         // Yay kuşanılıyken aktif ok sayacı (hotbar'ın üstünde) — tür adıyla
         if (player.bowEquipped && gameFont != NULL)
@@ -12815,7 +13456,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < 3; i++)
         if (snakebiteTex[i]) r2d_texture_destroy(NULL, snakebiteTex[i]);
     for (int i = 0; i < 4; i++)
-        if (firelionTex[i]) r2d_texture_destroy(NULL, firelionTex[i]);
+        if (firesurgeTex[i]) r2d_texture_destroy(NULL, firesurgeTex[i]);
     if (flameTex)   r2d_texture_destroy(NULL, flameTex);
 
     if (glowTex)

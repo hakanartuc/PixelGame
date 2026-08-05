@@ -30,7 +30,7 @@ typedef enum {
     ABILITY_ICETACLE,       // Buz Dikenleri: hedef alanda yerden buz + güçlü yavaş
     ABILITY_TORNADO,        // Hortum: ileri süzülen alan — tick hasarı + yavaşlatma
     ABILITY_SNAKEBITE,      // Yılan Isırığı: hedefe zehir DoT — Zehir Patlaması hattı
-    ABILITY_FIRELION,       // Ateş Aslanı: hat dalgası — çarptığını yakar
+    ABILITY_FIRESURGE,       // Ateş Aslanı: hat dalgası — çarptığını yakar
     // Two-Handed (Parça A): mızrak aktifleri — stamina yakar, ağaçtan açılır
     ABILITY_STAB,           // Saplama: ×2.2 tek hedef + sert geri itme
     ABILITY_SWEEP,          // Süpürme: ön 140° yay ×1.0 + %30 yavaş 2sn

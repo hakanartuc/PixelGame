@@ -109,8 +109,8 @@ const AbilityDef ABILITIES[ABILITY_COUNT] = {
         .damageScale = 12.0f,   // vuruş küçük — asıl yük zehir DoT'unda (%60/4sn)
         .cooldown = 7.0f, .mana = 20.0f,
     },
-    [ABILITY_FIRELION] = {
-        .name = "Ateş Aslanı", .abbrev = "AA",
+    [ABILITY_FIRESURGE] = {
+        .name = "Alev Seli", .abbrev = "AS",
         .skill = SKILL_DESTRUCTION, .unlockLevel = 1,
         .damageScale = 30.0f,   // hat dalgası: 300px ileri, çarptığını yakar
         .cooldown = 9.0f, .mana = 28.0f,

@@ -989,6 +989,39 @@ const MobType MOB_TYPES[] = {
             },
         },
     },
+    // ── EĞİTİM KUKLASI (DEV, indeks 26). Tablonun SONUNA eklendi: save
+    // indeksleri korunur (aynı gerekçeyle 16-25 de sona eklenmişti).
+    // Saldırmaz, kaçmaz, ölmez — VFX/hasar testi için sabit hedef.
+    // passive=true → asla saldırmaz · speed=0 → vurulunca kaçmaz ·
+    // maxHealth çok yüksek → test ortasında ölüp kaybolmaz · loot yok.
+    // dailyRespawn=false: dev tuşuyla (Ctrl+T) elle konur, dünyada durmaz.
+    {
+        .name = "Egitim Kuklasi",
+        .texturePath = "assets/characters/mobs/Desert_Warrior.png",
+        .level = 1, .maxHealth = 999999.0f, .speed = 0.0f,
+        .attackRange = 0.0f, .detectRange = 0.0f, .damage = 0.0f, .defense = 0.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 99, .attackRecover = 99.0f,
+        .lootTable = NULL, .lootTableCount = 0,
+        .goldMin = 0, .goldMax = 0,
+        .passive = true, .dailyRespawn = false,
+        .bodyW = 44.0f, .bodyH = 50.0f, .drawScale = 1.3f,
+        // anims[4][3] = 4 yön × 3 durum. Kuklanın hepsi AYNI tek kare:
+        // kıpırdamaz, yön değiştirmez — sabit hedef.
+        .anims = {
+            { { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
+              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
+              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 } },
+            { { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
+              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
+              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 } },
+            { { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
+              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
+              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 } },
+            { { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
+              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
+              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 } },
+        },
+    },
 };
 
 const int MOB_TYPE_COUNT = (int)(sizeof(MOB_TYPES) / sizeof(MOB_TYPES[0]));
@@ -1068,11 +1101,48 @@ void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Ca
     int typeIndex = (int)(m->type - MOB_TYPES);
     R2DTexture *texture = mob_textures[typeIndex];
 
+    // ── GÖVDE SARSINTISI: sönen genlikle YATAY titreme. Dikey titretmek
+    // "zıplıyor" okunuyor; yatay titreme "darbe yedi" okunuyor. Frekans yüksek
+    // (kare kare işaret değiştirir) ve sanat pikseline yuvarlanıyor — yarım
+    // piksel kayması pixel-art'ta bulanıklık olarak görünür.
+    if (m->shakeTimer > 0.0f && m->shakeMax > 0.0f) {
+        float k = m->shakeTimer / m->shakeMax;          // 1 → 0
+        float ph = m->shakeTimer * 62.0f;
+        float off = SDL_sinf(ph) * m->shakeAmp * k * k;
+        screen.x += SDL_floorf(off / 2.0f) * 2.0f * zoom;
+    }
+
+    // ── ELEMAN İZİ TONU. Çarpımsal color_mod olduğu için yalnız KISABİLİR;
+    // yanan mobun parlaması additive üst geçişten geliyor (hitFlash deseni).
+    // İz tonu vuruş flaşından SONRA gelir: flaş anlıktır, iz kalıcıdır.
+    Uint8 mkR = 255, mkG = 255, mkB = 255;
+    bool marked = (m->mark != MOB_MARK_NONE && m->markTimer > 0.0f);
+    if (marked) {
+        float k = (m->markMax > 0.0f) ? (m->markTimer / m->markMax) : 0.0f;
+        float w = 0.35f + 0.65f * k;                    // iz solarken ton çekilir
+        switch (m->mark) {
+            case MOB_MARK_FIRE:   mkG = (Uint8)(255 - 90.0f * w);
+                                  mkB = (Uint8)(255 - 165.0f * w); break;
+            case MOB_MARK_ICE:    mkR = (Uint8)(255 - 130.0f * w);
+                                  mkG = (Uint8)(255 -  40.0f * w); break;
+            case MOB_MARK_BOLT:   mkR = (Uint8)(255 -  20.0f * w);
+                                  mkG = (Uint8)(255 -  10.0f * w); break;
+            case MOB_MARK_EARTH:  mkG = (Uint8)(255 -  40.0f * w);
+                                  mkB = (Uint8)(255 -  85.0f * w); break;
+            case MOB_MARK_POISON: mkR = (Uint8)(255 - 120.0f * w);
+                                  mkB = (Uint8)(255 - 110.0f * w); break;
+            case MOB_MARK_ARCANE: mkG = (Uint8)(255 -  55.0f * w); break;
+            default: break;
+        }
+    }
+
     // VURUŞ FLAŞI iki kademeli: ilk ~2 kare BEYAZ-SICAK (aşağıda additive üst
     // geçişle), kalanı kırmızı tint. Çarpımsal color_mod beyaza ÇIKAMAZ (255 =
     // tint yok), o yüzden parlaklık additive ikinci çizimle geliyor.
     if (m->e.hitFlash > 0.0f)
         r2d_texture_set_color_mod(texture, 255, 150, 150);
+    else if (marked)
+        r2d_texture_set_color_mod(texture, mkR, mkG, mkB);
     else if (m->type->tintR != 0 || m->type->tintG != 0 || m->type->tintB != 0)
         r2d_texture_set_color_mod(texture, m->type->tintR, m->type->tintG, m->type->tintB);
     else
@@ -1174,6 +1244,48 @@ void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Ca
     #endif
 }
 
+// ── DARBE TEPKİSİ. Sarsıntı ve iz süresi elemana göre: taş ağır ve uzun,
+// zehir neredeyse yok. Değerler skillfx'in hit-stop tablosuyla aynı mantıkta
+// (yıldırım keskin-kısa, toprak ağır-uzun) — iki katman aynı dili konuşuyor.
+void mob_hit_react(Mob *m, MobMark mark, float power)
+{
+    if (m == NULL || !m->e.alive) return;
+    if (power < 0.05f) power = 1.0f;
+    if (power > 2.5f) power = 2.5f;                 // tavan: zincir vuruşta kilitlenmesin
+    static const float AMP[MOB_MARK_COUNT] = {
+        3.0f,   // NONE (çıplak vuruş)
+        3.4f,   // FIRE  — yanma sarsmaz, yakar
+        4.6f,   // ICE   — çarpma sert ama kısa
+        6.0f,   // BOLT  — keskin
+        7.5f,   // EARTH — en ağır
+        1.4f,   // POISON— neredeyse yok
+        3.2f,   // ARCANE
+    };
+    static const float MARKLIFE[MOB_MARK_COUNT] = {
+        0.0f, 1.60f, 1.90f, 0.45f, 0.90f, 2.40f, 0.70f
+    };
+    int mi = (mark >= 0 && mark < MOB_MARK_COUNT) ? (int)mark : 0;
+    float amp = AMP[mi] * power;
+    // EN GÜÇLÜ istek kazanır, toplanmaz: aynı karede beş vuruş alan mob
+    // titremeye kilitlenmesin.
+    if (amp > m->shakeAmp) {
+        m->shakeAmp = amp;
+        m->shakeTimer = m->shakeMax = 0.16f + 0.06f * power;
+    }
+    if (m->e.hitFlash < 0.15f) m->e.hitFlash = 0.15f;
+    if (mark != MOB_MARK_NONE) {
+        float L = MARKLIFE[mi];
+        // Yeni iz eskisini EZER (son vuran elemanın izi görünür) ama aynı
+        // elemanın tekrarı süreyi TAZELER — yanan mob yanmaya devam etsin.
+        if (m->mark != (int)mark || m->markTimer < L * 0.5f) {
+            m->mark = (int)mark;
+            m->markTimer = m->markMax = L;
+        } else {
+            m->markTimer = m->markMax = L;
+        }
+    }
+}
+
 void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, float dt,
                 float detectMul)
 {
@@ -1183,6 +1295,16 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
 
     // Buz Oku yavaşlatması: süre boyunca hareket hızı çarpanı düşük
     float slowK = (m->slowTimer > 0.0f) ? m->slowMult : 1.0f;
+    // ── DONMA GÖRÜNÜRLÜĞÜ: buz izi taşıyan mobun ANİMASYONU ağırlaşıyor.
+    // Yalnız hareket hızı düşünce "yavaşladı" okunmuyor; mob aynı tempoda
+    // koşarken yerinde sayıyor gibi duruyor.
+    // HATA (yakalandı): ilk yazımda `dt` TOPLUCA ölçeklenmişti. O zaman mobun
+    // markTimer'ı da yavaş azalıyor, yani donma KENDİ SÜRESİNİ uzatıyordu;
+    // üstüne saldırı beklemeleri de değişip mekaniğe sızıyordu. Ölçek yalnız
+    // ANİMASYON sayacına uygulanmak zorunda.
+    float animK = 1.0f;
+    if (m->mark == MOB_MARK_ICE && m->markMax > 0.0f)
+        animK = 1.0f - 0.55f * (m->markTimer / m->markMax);
     if (!map_is_dungeon(map_current()))
     {
         slowK *= weather_speed_mult();          // kar bastırıyor — herkes eşit
@@ -1195,7 +1317,7 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
     // Ölüm animasyonu oynuyorsa: sadece onu ilerlet, AI çalışmaz
     if (m->dying) {
         const AnimClip *clip = &m->type->anims[MOB_DYING][m->e.facing];
-        m->animTimer += dt;
+        m->animTimer += dt * animK;
         if (m->animTimer >= clip->frameDuration) {
             m->animTimer -= clip->frameDuration;
             m->currentFrame++;
@@ -1219,6 +1341,14 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
 
     // Flaş ve knockback (itilme de duvara çarpar)
     if (m->e.hitFlash > 0.0f) m->e.hitFlash -= dt;
+    if (m->shakeTimer > 0.0f) {
+        m->shakeTimer -= dt;
+        if (m->shakeTimer <= 0.0f) { m->shakeTimer = 0.0f; m->shakeAmp = 0.0f; }
+    }
+    if (m->markTimer > 0.0f) {
+        m->markTimer -= dt;
+        if (m->markTimer <= 0.0f) { m->markTimer = 0.0f; m->mark = MOB_MARK_NONE; }
+    }
     mob_move(m, m->e.knockbackX * dt, m->e.knockbackY * dt);
     float damping = 12.0f;
     m->e.knockbackX -= m->e.knockbackX * damping * dt;
@@ -1260,7 +1390,7 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
             m->currentFrame = 0; m->animTimer = 0.0f;
             m->lastState = m->state; m->lastFacing = m->e.facing;
         }
-        m->animTimer += dt;
+        m->animTimer += dt * animK;
         if (m->animTimer >= sclip->frameDuration) {
             m->animTimer -= sclip->frameDuration;
             m->currentFrame = (m->currentFrame + 1) % sclip->frameCount;
@@ -1326,7 +1456,7 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
             m->lastState = m->state;
             m->lastFacing = m->e.facing;
         }
-        m->animTimer += dt;
+        m->animTimer += dt * animK;
         if (m->animTimer >= pclip->frameDuration) {
             m->animTimer -= pclip->frameDuration;
             m->currentFrame = (m->currentFrame + 1) % pclip->frameCount;
@@ -1378,7 +1508,7 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
                             tyd / td * m->e.speed * 0.35f * slowK * dt);
             }
             const AnimClip *tclip = &m->type->anims[MOB_CHASE][m->e.facing];
-            m->animTimer += dt;
+            m->animTimer += dt * animK;
             if (m->animTimer >= tclip->frameDuration) {
                 m->animTimer -= tclip->frameDuration;
                 m->currentFrame = (m->currentFrame + 1) % tclip->frameCount;
@@ -1392,7 +1522,7 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
                 m->e.facingLeft = randf() < 0.5f;
             }
             const AnimClip *sclip = &m->type->anims[MOB_IDLE][m->e.facing];
-            m->animTimer += dt;
+            m->animTimer += dt * animK;
             if (m->animTimer >= sclip->frameDuration) {
                 m->animTimer -= sclip->frameDuration;
                 m->currentFrame = (m->currentFrame + 1) % sclip->frameCount;
@@ -1433,7 +1563,7 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
 
             // Koşma animasyonu (RETURN'un kendi satırı yok)
             const AnimClip *clip = &m->type->anims[MOB_CHASE][m->e.facing];
-            m->animTimer += dt;
+            m->animTimer += dt * animK;
             if (m->animTimer >= clip->frameDuration) {
                 m->animTimer -= clip->frameDuration;
                 m->currentFrame = (m->currentFrame + 1) % clip->frameCount;
@@ -1450,7 +1580,7 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
         m->state = MOB_ATTACK;   // attack clip'i (durum 2)
         const AnimClip *clip = &m->type->anims[MOB_ATTACK][m->e.facing];
 
-        m->animTimer += dt;
+        m->animTimer += dt * animK;
         if (m->animTimer >= clip->frameDuration) {
             m->animTimer -= clip->frameDuration;
             m->currentFrame++;
@@ -1586,7 +1716,7 @@ void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, f
             m->lastFacing = m->e.facing;
         }
 
-        m->animTimer += dt;
+        m->animTimer += dt * animK;
         if (m->animTimer >= clip->frameDuration) {
             m->animTimer -= clip->frameDuration;
             m->currentFrame = (m->currentFrame + 1) % clip->frameCount;

@@ -16,6 +16,7 @@ add_subdirectory(vendor/SDL_ttf EXCLUDE_FROM_ALL)
 
 add_executable(game
     src/main.c
+    src/skillfx.c
     src/tilemap.c
     src/player.c
     src/mob.c

@@ -6,7 +6,7 @@ Kodu ve kanonu okudum. Aşağıdakinin tamamı mevcut beş okulun üstüne kurul
 
 ## 1. ENVANTER (grep'lendi)
 
-**Yıkım** en dolu okul: 23 düğüm (16 pasif, 2 keystone, 5 aktif) ve **11 büyü** — Ateş Topu doğuştan (bootstrap; yoksa XP kazanılamaz), Buz Novası/Yıldırım/Alev Zırhı/Büyü Kalkanı/Toprak Dikenleri ağaçtan, Yıldırım Pençesi/Buz Dikenleri/Hortum/Yılan Isırığı/Ateş Aslanı tomardan (`item.c:349-387`, 350-750 gümüş, Yıkım 15/20/30/40/50 kapıları). Hepsi mana. XP büyü hasarından (`main.c` yedi ayrı yerde).
+**Yıkım** en dolu okul: 23 düğüm (16 pasif, 2 keystone, 5 aktif) ve **11 büyü** — Ateş Topu doğuştan (bootstrap; yoksa XP kazanılamaz), Buz Novası/Yıldırım/Alev Zırhı/Büyü Kalkanı/Toprak Dikenleri ağaçtan, Yıldırım Pençesi/Buz Dikenleri/Hortum/Yılan Isırığı/Alev Seli tomardan (`item.c:349-387`, 350-750 gümüş, Yıkım 15/20/30/40/50 kapıları). Hepsi mana. XP büyü hasarından (`main.c` yedi ayrı yerde).
 
 **Kutsal** 17 düğüm, ağaçta aktif yok, üç büyü tomardan geliyor (`ITEM_TOME_HEAL` reqLevel **0** — yani okulu hiç açmamış biri de okuyabilir; bunu bilinçli bir kapı olarak kullanacağım). XP şifadan (`healed*1.2f`) ve kutsal hasardan. `mob.h:91` undead'e ×1.6.
 
@@ -110,3 +110,13 @@ Savaşçı bir tomar okur ve iki butonu olur: Alev Zırhı ve Kutsal Hüzme — 
 **Kendi işaretlediğim çelişkiler:** (1) Kanon "ışık kalkmayı engeller, kalkmış olanı durdurmaz" diyor (04-npc, Cardew) ama Kutsal Alan kalkmış ölüye tick hasarı veriyor. Kanonu düzeltmeyi öneriyorum: *ışık kalkmışı durdurmaz, yakar.* (2) Yankı'nın kurgusal özü **duymak**, XP kaynağı ise hasar — uyuşmuyor. Idris'in taş dinleme mekaniği Echo XP'si vermeli. (3) `ability.c:160`'ta Can Emme ve Yankı Çağırma "KUTSAL okulu" yorumunun altında duruyor ama `SKILL_ECHO`'ya bağlı — yorum yanlış, kod doğru. (4) `ITEM_TOME_HEAL`'in vericisi eski MVP karakteri.
 
 **[AÇIK]:** Ateş Topu'nun doğuştan açık olması kurguda ne demek — herkes bir kıvılcım yakabiliyor mu, yoksa oyuncu bunu prologda mı öğrendi? · Ocakdoğanların çıplak elle öz tutması onları Çağırma'da doğuştan usta yapıyor mu (ırk bonusu kapısı) · sağır korun mana rejenini kesmesi gerekir mi (kurguya göre evet, dengeye göre bilmiyorum).
+
+---
+**İSİM DEĞİŞİKLİĞİ (2026-08-05, Hakan kararı):** *Ateş Aslanı* → **ALEV SELİ**.
+Sebep görsel: prosedürel skill motoruna geçerken aslan silueti iki farklı yolla
+denendi (maskeli partikül spawn'ı, kodda basılmış gövde dokusu) ve ikisi de
+amatör durdu — göz canlı anatomisindeki en küçük hatayı yakalıyor. Mekanik
+DEĞİŞMEDİ: hâlâ 300px ileri giden hat dalgası, çarptığını yakar, mob başına tek
+vuruş. Efekt artık düz hat üstünde akan sarı alev seli + içinde koyu kırmızı
+siluetler. Elle çizilmiş aslan sheet'leri sprite A/B yolunda duruyor
+(`assets/fx/firelion_*.png` — dosya adları geçmişi saklıyor).

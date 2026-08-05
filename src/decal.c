@@ -73,6 +73,12 @@ void decal_update(float dt)
 
 void decal_render(R2D *renderer, const Camera *camera)
 {
+    // BLEND AÇIKÇA KURULUYOR (VFX borcu #1): bu fonksiyon eskiden blend
+    // modunu HİÇ set etmiyordu, yani kendinden önce ne çizildiyse onun
+    // modunu miras alıyordu. Ateş efektleri ADD kullanmaya başlayınca
+    // yanık izleri sessizce EKLEMELİ çizilecekti (yer izi koyulaştırır,
+    // parlatmaz). Sessiz hata sınıfı: hiçbir uyarı vermez.
+    r2d_set_blend(renderer, R2D_BLEND_ALPHA);
     if (s_tex == NULL || camera == NULL) return;
     float z = camera->zoom;
     for (int i = 0; i < MAX_DECALS; i++) {

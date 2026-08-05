@@ -14,6 +14,19 @@
 #define MAX_SPAWN_ZONES 32 // bölge kamplarından kurulabilecek max spawn bölgesi
 
 // Dünyada var olan, hareket eden, hasar alabilen her şeyin ortak çekirdeği.
+// Elemanın mobta bıraktığı iz. mob.h skillfx.h'e BAĞLANMIYOR (motor katmanları
+// birbirini çağırmıyor); main eşlemeyi yapıyor.
+typedef enum {
+    MOB_MARK_NONE = 0,
+    MOB_MARK_FIRE,      // yanıyor: turuncu parlar, alev dili + is sızdırır
+    MOB_MARK_ICE,       // donuyor: maviye kayar, kırağı buharı, animasyon yavaş
+    MOB_MARK_BOLT,      // çarpıldı: beyaz titrer, kıvılcım atlar
+    MOB_MARK_EARTH,     // taş yedi: toz rengi, kırıntı dökülür
+    MOB_MARK_POISON,    // zehirli: yeşile kayar, kabarcık
+    MOB_MARK_ARCANE,    // büyü: soluk eflatun parıltı
+    MOB_MARK_COUNT,
+} MobMark;
+
 typedef struct {
     SDL_FRect rect;            // konum + boyut (collision/hurtbox)
     float health, maxHealth;   // can
@@ -124,6 +137,15 @@ typedef struct {
     float bossTimer;      // boss: yağmur sayacı
     bool bossSummoned;    // faz 2 çağrısı bir kez
     float slowMult, slowTimer;   // Buz Oku: süre boyunca hız çarpanı (0 = etkisiz)
+    // ── DARBE TEPKİSİ (motor katmanı). "Vurdum ve etkisi var" hissinin mob
+    // tarafı: kamera sarsıntısı vuranı anlatır, GÖVDE sarsıntısı vurulanı.
+    // İz (mark) elemanın mobta bıraktığı görsel durum: yanan mob turuncu
+    // parlar ve alev sızdırır, donan mob maviye kayıp yavaşlar, çarpılan mob
+    // beyaz titrer. Mekanik kanallar (burnDps, slowMult, poisonDps) zaten
+    // vardı — eksik olan onların GÖRÜNMESİ.
+    float shakeAmp, shakeTimer, shakeMax;   // gövde sarsıntısı
+    int   mark;                 // MobMark — hangi elemanın izi
+    float markTimer, markMax;   // izin kalan/toplam süresi
     float fleeTimer;      // pasif av: kalan kaçış süresi (vuruş tazeler)
     MobState state;         // AI durumu
     float attackCooldown;     // bir sonraki saldırıya kalan süre
@@ -180,6 +202,7 @@ typedef struct {
 #define MOB_MUMMY         23  // Mumya (Taşdurak tapınak vadisi — undead)
 #define MOB_SCARAB        24  // Akrep (çöl sürüsü — zehir basar)
 #define MOB_BANDIT        25  // Çöl Haydudu (kervan yolu — insan; 26/32)
+#define MOB_DUMMY         26  // Eğitim Kuklası (DEV: Ctrl+T ile konur; 27/32)
 
 extern const MobType MOB_TYPES[];
 extern const int MOB_TYPE_COUNT;
@@ -188,6 +211,12 @@ extern const int MOB_TYPE_COUNT;
 void mob_render(const Mob *m, R2D *renderer, R2DTexture **mob_textures, const Camera *camera, int targetMobId);
 
 // detectMul: algı menzili çarpanı (gece 1.5 — gametime'dan main geçirir)
+// ── DARBE TEPKİSİ. Vuran taraf ne olursa olsun (silah, büyü, boss, tuzak) bu
+// tek çağrıyı kullanır: flaş + gövde sarsıntısı + elemanın izi. power hasara
+// göre ölçek (1.0 = normal vuruş). Sarsıntı genliği elemana göre farklı:
+// taş ağır sarsar, zehir neredeyse sarsmaz.
+void mob_hit_react(Mob *m, MobMark mark, float power);
+
 void mob_update(Mob *m, Mob *mobs, int mobCount, float targetX, float targetY, float dt,
                 float detectMul);
 

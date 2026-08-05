@@ -4,6 +4,114 @@ Güncelleme: 2026-07-30
 
 ## ✅ Tamamlanan fazlar
 
+### Faz VFX — prosedürel VFX / skill motoru (2026-08-05)
+Hakan'ın çerçevesi bu fazın tamamını belirledi: *"Bunları sadece silaha, kamp
+ateşine alev, duman ekliyoruz gibi düşünme — biz aslında sistem/motor
+oluşturuyoruz."* Her parça katman olarak yazıldı; ateş, büyü, boss darbesi,
+hava olayı aynı çağrıları paylaşıyor. Görsel dil Hakan seçimi: KLASİK RPG
+GÖRKEMİ. Detaylı gerekçeler GDD §6.6'da.
+
+- **Blend borçları kapandı**: `decal_render` ve `shadow.c` blend kurmuyordu
+  (miras alıyorlardı); partiküller HER ZAMAN ALPHA'ydı, bu yüzden alev bloom
+  eşiğini (0.74) hiç geçemiyordu. Tip başına additive/alpha ayrımı geldi.
+- **Bükülme alanı sistemi** (`r2d_distort_set`, 8 ekran-uzayı kaynak): ISI /
+  ŞOK / BURGAÇ / MERCEK. Post-fx pass'inin İÇİNDE, `distortOn` bayrağı F7
+  grade seçiminden AYRI (eskiden ısı bükülmesi VOLKAN preset'ine bağlıydı —
+  efekt istemek tüm ekranı volkana çevirmek demekti).
+- **Efekt nefesi** (`fx_breath`): partikül yoğunluğu + ısı genliği + ışık
+  şiddeti aynı osilatörden. Ayrı hesaplanınca üç katman bağımsız titriyor ve
+  göz tek bir ateş görmüyordu. Kanon bağı LORE §1.9.
+- **Prosedürel skill motoru** (`skillfx.h/.c`, ~700 satır): buz novası,
+  yıldırım, ateş topu, taş dikenler — mevcut katmanları BESTELİYOR (partikül
+  + bükülme + ışık + r2d primitifleri + decal). Sprite yolu SİLİNMEDİ,
+  **Ctrl+P** A/B anahtarıyla yan yana.
+- **İsabet katmanı** (`skillfx_impact`, 7 eleman): yönlü koni + darbeye DİK
+  yay + elemana göre hit-stop/sarsıntı (yıldırım keskin-kısa, toprak
+  ağır-uzun, zehir neredeyse yok). Motor oyunun değişkenlerine uzanmıyor;
+  `skillfx_take_hitstop/shake` ile İSTEK bırakıyor, main tüketiyor.
+- **Parçacık biçim atlası** (7 hücre, kodda üretiliyor): puf, kıymık, çizik,
+  yıldız, nokta, alev dili, is pulu + hıza göre uzama ve dönme.
+- **Ton kimliği** (`fx_set_pal_variant`): palet satırı başına üç varyant,
+  indeks her satırda aynı aileyi gösteriyor (0 kanonik / 1 soğuk / 2 sıcak).
+  Olay başına tek indeks yetiyor. `fx_spawn` imzası korundu.
+- **Dummy hedef** (`MOB_DUMMY`): 999999 HP, hareketsiz, pasif, loot yok —
+  Hakan efektleri saldırı altında test edemiyordu.
+- **Dev tuşları**: Ctrl+F partikül tipi izolasyonu (8 durum) · Ctrl+G silah
+  damgası döngüsü (`devFxOverride` — damga her kare ekipmandan yeniden
+  atandığı için doğrudan yazmak işlemiyordu) · Ctrl+P prosedürel A/B ·
+  Ctrl+B/T/Y teşhis · hotbar üstünde skill adı ipucu.
+
+- **ALEV SELİ** (`SKILLFX_FIRE_WAVE`, eski adı *Ateş Aslanı* — isim 2026-08-05
+  değişti): düz hat üstünde akan sarı alev seli + İÇ İÇE koyu kırmızı siluetler.
+  Hat boyunca yaşıyor (yalnız cephede değil), yoğunluk cepheye artıyor, yan
+  salınım düzgün mekânsal fonksiyondan. Üç tur denedik: alev duvarı → maskeli
+  aslan silueti → kodda basılmış aslan gövdesi; üçü de reddedildi.
+  **Kalıcı ders:** prosedürel gövde SOYUT biçimlerde çalışıyor (diken, kristal,
+  alev dili), TANINAN BİR CANLIYA benzemekte çalışmıyor — göz canlı
+  anatomisindeki en küçük hatayı yakalıyor, taşta yakalamıyor.
+  Oyun tarafı (hasar/hareket) hiç değişmedi; aslan sheet'leri sprite A/B
+  yolunda, aslan kodu #if 0'da gerekçesiyle rafta.
+- **KIZIL ZARF** (`WEAPON_FX_FLAME_DEEP`) ve **KOYU SİLUET**
+  (`WEAPON_FX_FLAME_DARK`): alev "sarı" duruyordu ve palet ayarı işe yaramıyordu
+  çünkü sorun karıştırma matematiğiydi — ADD'de 300 parçacık üst üste binince R
+  doyup G tırmanıyor, sonuç kaçınılmaz sarı-beyaz. Kırmızı hue'yu koruyan ALPHA
+  katmanında olmak zorunda. Zarf çekirdeğin ARKASINDA (pass 0), siluet ÜSTÜNDE
+  (yeni pass 2) — ikisi de aynı yayıcıdan, aynı hızla doğuyor ki ayrı hareket
+  etmesinler.
+- **MOB TEPKİSİ** (`mob_hit_react`, motor katmanı): gövde sarsıntısı (yatay,
+  elemana göre genlik) + eleman izi tonu + iz sızdırması (yanan mob alev dili,
+  donan mob kırağı, çarpılan kıvılcım, taş yiyen kırıntı) + donma animasyonu.
+  Mekanik kanallar zaten vardı; eksik olan görünmeleriydi.
+- **TAKILMA ÜÇ KATMANDA KAPANDI**: (1) `skillfx_impact`'e `freeze` parametresi —
+  yol alan dalga zamanı durdurmuyor (sözleşme `strike_fx_mob`'un stop=0'ında
+  zaten yazılıydı, prosedürel katman onu ihlal etmişti); (2) `fx_spawn` havuz
+  doluyken TÜM havuzu tarıyordu → kare başına ~2 milyon boşa iterasyon, artık
+  128 slot probe; (3) motor çapında hit-stop bekleme süresi (0.22sn) — çağrı
+  yerlerini tek tek düzeltmek yetmez, bir daha unutulur.
+  Teşhisi Hakan'ın ipucu verdi: "slime'larda yok, goblinlerde var" — goblin
+  KAMP halinde, dalga 300px yolunda 4-6 gobline değiyor; slime dağınık.
+- **BÜTÇE DİSİPLİNİ**: havuz 8192 (yığından çıkarıldı — 460KB main'in
+  stack'inde durmasın) ve yayıcı hızları bütçeye OTURTULDU. Alev Seli 12.856
+  partikül istiyordu, %60'ı sessizce düşüyordu; yoğunluk kareden kareye kumardı.
+  **Kararlı hal = hız × ömür × 62.5** — yayıcı yazarken bu hesap yapılacak.
+- **Yol göstergesi**: prosedürel mod açıkken her büyü çağrısı ekrana
+  `"<ad> -> PROSEDUREL"` / `"-> SPRITE (motor disi)"` yazıyor.
+
+**Bu fazın dersleri (hepsi Hakan'ın bildirimiyle bulundu):**
+- *"üçü de çok cılız"* → sorun ayar değildi: `MAX_PARTICLES` 512'ydi ve
+  fazlası SESSİZCE düşüyordu. 2560. **"Cılız" şikayetinde önce tavanı ölç.**
+- *"alevlerde yıldırım gibi çizgiler"* → ateş patlaması 110 KIVILCIM
+  kullanıyordu; kıvılcım çizik biçimi + hıza göre uzama taşıyor. Alev dili ve
+  is pulu tipleri eklendi.
+- *"üçgen huni şeklinde parçacıklar çok kötü duruyor"* → alev dilinin
+  genişliği y ile DOĞRUSAL daralıyordu, sonuç keskin koni. Profil yaprağa
+  çevrildi (`pow(t,0.55)` uca sivrilik, `(1-0.34·t³)` dibi toplar).
+- *"hala üçgenler var ve yıldırım etkisi gibi efektler var"* (ÜÇÜNCÜ tur) →
+  üçgenler alev dili değil **İS PULU**'ydu: biçim `|dx|+|dy|` ölçüsüyle
+  yazılmış, o ölçü eşkenar dörtgen çiziyor ve takla attığı için üçgen okunuyor.
+  Yarıçap AÇIYA göre modüle edildi (decal.c'de kanıtlı numara). Yıldırım
+  çizgileri de ateşin 26 kıvılcımıydı: **sayıyı azaltmak yetmez, TİP yanlış** —
+  kıvılcım çelik/yıldırıma ait, ateş kor fırlatır. Ateşten kıvılcım tamamen
+  çıktı, 44 kor geldi.
+  **Prosedürel biçim koda girmeden önce siluetini ASCII bas** — üç turun üçü de
+  tek dökümle kapanırdı. **L1 ölçüsü (|dx|+|dy|) düzensizlik değil GEOMETRİ
+  verir**; düzensizlik açısal modülasyonla gelir.
+- *"hala var. Yanlış mı bakıyorum?"* (DÖRDÜNCÜ tur) → **hayır, doğru bakıyordu;
+  hata bendeydi.** "Alev skili" = ATEŞ ASLANI, F10'un verdiği tek ateş büyüsü;
+  o büyü sprite yolundaydı ve Ctrl+P onu hiç kesmiyordu. Ben dört tur boyunca
+  prosedürel ateş TOPUNUN biçimini düzelttim, o başka bir şeye bakıyordu.
+  **Kural: kısmi kapsamlı A/B anahtarı kapsamı EKRANDA göstermek zorundadır** —
+  yoksa test eden kişi kendi hatası sanır. Yol göstergesi bu yüzden eklendi.
+- **Kendi iddiamı denetlemek bir hata buldu**: palet varyant tablosunda indeks
+  anlamı satırlar arasında tutarsızdı (FLAME'de 1=kızıl, SPARK'ta 1=mavi) →
+  yıldırım sıcak kahve duman, toprak soğuk gri duman alıyordu. Tam ters.
+- *"pembe parlama beyaza dönmüş"* → PINK'i palet tablosuna koymuşum, silah
+  kimliğini ezdi. Palet tablosu yalnız KENDİ rengi olmayan tipler için.
+- *"hala asset kullanımı var gibi"* → yalnız SPAWN tarafını kapatmışım, ÇİZİM
+  tarafı sprite'ları basmaya devam ediyordu. A/B anahtarı iki tarafı da kesmeli.
+- Yıldırım kolu (200,215,255) ile buz halkası (175,222,255) neredeyse aynı
+  renkti; iki büyü ekranda ayırt edilemiyordu → mor-beyaz / camgöbeği.
+
 ### Faz SU-4 — kıyı: kesit, kumsal, deniz sırtları, iki karakterli ses (2026-08-04)
 Su fazının kıyı turu. Görsel test on tur sürdü; bulunan hataların çoğu ayar
 değil YAPISAL hataydı ve hepsi koda gerekçesiyle yazıldı.

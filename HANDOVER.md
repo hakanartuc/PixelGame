@@ -1,6 +1,6 @@
 # HANDOVER — Pixe Game
 
-Güncelleme: 2026-08-04 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
+Güncelleme: 2026-08-05 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumlar Türkçe
 
 ## Çalışma kuralları
 - **KOD EN SON GELİR (2026-07-28 Hakan direktifi)**: kod faturası tasarım
@@ -76,7 +76,12 @@ Cute_Fantasy paketleri (`/Users/hakanartuc/Cute Fantasy` — NPC, ev, düşman, 
   · ui_theme (9-grid paneller) · font (ttf→GPU upload) · tooltip · ambience · journal.
   · **jsonx** (cJSON sarmalayıcı: JSONC yorum temizliği + satır/kolon hatası + varsayılanlı getter)
   · **uilayout** (HUD yerleşimi veriden: çapa/hiza/dikey/boyut — `assets/ui/layout.json`)
-  · **uieditor** (oyun içi yerleşim düzenleyicisi, Ctrl+U).
+  · **uieditor** (oyun içi yerleşim düzenleyicisi, Ctrl+U)
+  · **fx** (parçacık motoru: 13 tip, 7 biçimli prosedürel atlas, palet varyantı,
+    kuvvet alanı/rüzgâr, ölüm kancası, `fx_breath` nefesi, tavan 2560)
+  · **skillfx** (PROSEDÜREL SKİLL MOTORU: dört büyü + isabet katmanı; kendi
+    çizim sistemi YOK, mevcut katmanları besteler. Ctrl+P ile sprite yoluna
+    A/B — eski yol silinmedi. Hit-stop/sarsıntı İSTEK olarak bırakılır).
 - **main.c** — tüm bağlantı/orkestrasyon burada (~5000 satır; ileride bölünebilir).
 
 ## Tuşlar
@@ -218,6 +223,67 @@ vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü
   `fx: kaba += 1` biçimiyle işler, req ile okunur).
 
 ## Sıradaki iş
+**FAZ VFX TAMAM — GÖRSEL TEST HAKAN'DA (2026-08-05)**: prosedürel VFX/skill
+motoru. Hakan'ın çerçevesi bağlayıcı: *"biz aslında sistem/motor
+oluşturuyoruz"* — her parça katman, tek tüketici için değil. Gerekçeler GDD §6.6.
+Bükülme alanı (8 kaynak: ISI/ŞOK/BURGAÇ/MERCEK, `distortOn` F7'den AYRI) · efekt
+nefesi (`fx_breath`: partikül+ısı+ışık tek osilatör) · `skillfx.h/.c` dört büyü
+(buz novası, yıldırım, ateş topu, taş dikenler) · isabet katmanı 7 eleman (yönlü
+koni + dik yay + elemana göre hit-stop/sarsıntı) · parçacık biçim atlası 7 hücre
+· ton kimliği (`fx_set_pal_variant`, satır başına 3 varyant: 0 kanonik / 1 soğuk
+/ 2 sıcak) · MOB_DUMMY hedef · Ctrl+P A/B, Ctrl+F izolasyon (8), Ctrl+G damga.
+**YOL GÖSTERGESİ**: prosedürel mod açıkken her büyü çağrısı ekrana
+`"<ad> -> PROSEDUREL (motor)"` ya da `"-> SPRITE (motor disi)"` yazıyor. Motorda
+olanlar: Ateş Topu · Buz Novası · Yıldırım · Toprak Dikenleri · **Alev Seli**
+(SKILLFX_FIRE_WAVE — eski adı *Ateş Aslanı*, 2026-08-05'te değişti).
+Kalan 13 büyü sprite — ekran söylüyor.
+**TEST EDİLECEK**: Ctrl+P ile prosedürel aç → dört büyüyü dummy'ye at (F10 ile
+tomarlar) → alev dilinin siluetine bak (üçgen huni gitti mi) → yıldırım mor,
+buz camgöbeği ayrımı okunuyor mu → Ctrl+G ile silah damgası döngüsü.
+**AÇIK KARAR (Hakan)**: kamp ateşi sprite alevi kalsın mı · alev/buz rünü eşya
+olarak eklenecek mi (mekanik kodda ama HİÇBİR EŞYA damgayı vermiyor — şu an
+yalnız Ctrl+G ile erişilebilir) · kalan 14 büyü göç etsin mi.
+**YENİ MOTOR KURALLARI (bu turların bedeli)**:
+· **ATEŞ RENGİ ELLE UYDURULMAZ — kara cisim eğrisinden hesaplanır.** Eğride
+  MAVİ kanal 2000K altında SIFIRDIR (3000K'da ~110). Elle girilen B=48..132
+  değerleri eğri dışıydı ve hem sarıyı beyazlatıyor hem iç alev rengini
+  matlaştırıyordu. B≈0 olunca ADD üst üste binmesi beyaza değil SARIYA doyuyor.
+  Formül ve doğrulanmış tablo `fx.c` palet yorumunda; GDD §6.6 Karar 10b.
+· **Biçim alfası 2-3 kademe = "kağıt gibi".** 6 kademe + KARESEL düşüş hacim
+  veriyor; kuantalama (pixel-art bandı) korunur, adım boyu küçülür.
+· **`|dx|+|dy|` ölçüsü dik kenar ve keskin köşe verir** — süperelips (üs ~1.55)
+  köşeyi yuvarlatır, `min(|dx|,|dy|)` yerine yumuşak minimum kullanılır.
+· **Prosedürel gövde SOYUT biçimlerde çalışır** (diken, kristal, alev dili);
+  tanınan bir CANLIYA benzemekte çalışmaz — canlı elle çizilmiş asset ister.
+· **ADD karıştırma hue'yu yutar**: 300 parçacık üst üste binince R doyup G
+  tırmanır, sonuç sarı-beyaz. Kırmızı/koyu renk ALPHA katmanında olmak zorunda.
+  fx_render üç geçişli: ALPHA (madde) → ADD (ışık) → ALPHA-ÜSTÜ (koyu siluet).
+· **İki renk "iç içe" görünecekse AYNI yayıcıdan aynı hız/konumla doğmalı** —
+  ayrı geometri katmanı sarının üstünde kayar ve "iki efekt" okunur.
+· **Kararlı hal = spawn hızı × ömür × 62.5.** Yayıcı yazarken hesaplanacak;
+  bütçeyi aşan istek sessizce düşer ve yoğunluk kumara döner.
+· **Zaman durduran istekler MOTORDA sınırlanır** (hit-stop bekleme 0.22sn),
+  çağrı yerlerinde değil — çağrı yeri unutulur.
+· **Yer büyüleri AYAK HİZASINDAN doğar** (gövde merkezi değil).
+· **Yoğun partikül bulutunu sanat ızgarasına ÇİVİLEME** (sf_snap): tek tek duran
+  nesne çivilenir, kalabalık çivilenirse göz kare kafes görür.
+
+**BU FAZIN DERSLERİ**: "cılız" şikayetinde önce TAVANI ölç (MAX_PARTICLES 512
+sessizce düşürüyordu) · **prosedürel biçim koda girmeden önce siluetini ASCII
+bas** (üçgen şikayeti ÜÇ tur sürdü; tek ASCII dökümü üçünü de kapatırdı) ·
+**`|dx|+|dy|` (L1) ölçüsü düzensizlik değil GEOMETRİ verir** — eşkenar dörtgen
+çizer, takla atınca üçgen okunur; düzensizlik AÇISAL modülasyonla gelir
+(decal.c'de kanıtlı) · **yanlış okuma tip seçiminden geliyorsa sayı azaltmak
+yetmez** (ateşin kıvılcımı: 110→26 yetmedi, kıvılcım tipi ateşe ait değildi) ·
+**KISMİ KAPSAMLI A/B ANAHTARI KAPSAMI EKRANDA GÖSTERMEK ZORUNDA** — dört tur
+kaybettik çünkü Hakan sprite yolundaki Alev Seli'ne (o zamanki Ateş Aslanı)
+bakıyordu, ben prosedürel
+Ateş Topu'nu düzeltiyordum; test eden kişi kendi hatası sandı ("yanlış mı
+bakıyorum?") · **kendi iddiasını denetle**: "varyant indeksi her satırda aynı
+aileyi gösterir" dedim, tablo öyle değildi ve yıldırım/toprak dumanı TERS çıktı · A/B anahtarı SPAWN ve ÇİZİM taraflarını birlikte
+kesmeli · palet tablosu yalnız kendi rengi olmayan tipler için (PINK'i koyunca
+silah kimliği ezildi) · iki büyünün rengi çakışabilir, tonları bilinçli ayır.
+
 **FAZ SU-4 TAMAM (2026-08-04)**: kıyı kesiti (baked atlas + çift-ızgara;
 vaha/kenar/kumsal hariç) · güney kumsalı (düz su çizgisi satır 141 + 4 karo kum)
 · kumsal dalga vuruşu (kara üstü geçiş, 6.5 sn, ease-in-out, bulanık kumlu su +
@@ -392,7 +458,7 @@ HER tree_compute_effects sonrası şart) + 3 büyü: Yıldırım Pençesi (koni,
 (süzülen alan, fırtınada güçlü). Kaynak: kervan (Pençe+Diken) + zindan USTA
 sandık %25 (Hortum). F10 5 tomar basar.
 **PARÇA 2 TAMAM — BÜYÜ DALGASI 2 KAPANDI**: Yılan Isırığı (zehir DoT kanala
-eklenir; Zehir Patlaması salt-büyü) + Ateş Aslanı (hat dalgası, tek-vuruş
+eklenir; Zehir Patlaması salt-büyü) + Alev Seli (hat dalgası, tek-vuruş
 takibi, yanma basar; YALNIZ boss leşi %35, Yıkım 50). Kervan tomarları
 RASTGELE havuz ({Pençe,Isırık,Diken}'den 2 farklı; startDay tohumlu).
 Yeni item'lar enum SONUNA (v28 indeks güvenliği).
