@@ -49,6 +49,11 @@ void groundfx_init(void);
 // olacağı için bağlama doğru olan.
 void groundfx_bind_tiles(R2DTexture **tileTextures);
 
+// ── PARÇA ATLASINI BAS (açılışta bir kez, renderer hazır olduktan sonra).
+// Karo PNG'lerini CPU'da okuyup her karo için yumuşak-kenarlı parça varyantları
+// üretir. Bunu yapmadan parçalar KESKİN KARE olur (alfa maskesi yok).
+void groundfx_bake(R2D *renderer);
+
 // ── ZEMİN PATLAMASI. (wx,wy) noktasındaki karonun dokusundan parça savurur.
 // tileTextures: main'in sahip olduğu karo doku dizisi (tilemap_render ile aynı).
 // count  : istenen parça sayısı (havuz dolarsa daha az doğar)

@@ -1785,6 +1785,9 @@ int main(int argc, char *argv[])
     // dokudan kesiliyor (düz renk değil), o yüzden bağlama dokular YÜKLENDİKTEN
     // sonra yapılmak zorunda.
     groundfx_bind_tiles(tile_textures);
+    // Parça atlası: karo PNG'leri CPU'da okunup yumuşak-kenarlı parça
+    // varyantları basılıyor. Bu olmadan parçalar keskin KARE olur.
+    groundfx_bake(renderer);
     tilemap_load_details(renderer);   // çimen varyantları + kenar kaplamaları
 
     bool inventoryOpen = false;

@@ -84,6 +84,10 @@ GÖRKEMİ. Detaylı gerekçeler GDD §6.6'da.
   türüyor (conceals→bitki, solid→kaya, diğer→tane, su→parça yok), id
   tablosundan DEĞİL: "harita her zaman değişebilir" (Hakan) kuralının kod
   karşılığı — yeni karo eklendiğinde kırıntısı kendiliğinden doğru.
+  Parça KESKİN KARE olmasın diye açılışta MASKELENMİŞ ATLAS basılıyor: karo
+  PNG'leri CPU'da okunup (stb_image) her karo için 4 yumuşak-kenarlı varyant
+  üretiliyor. GPU dokusundan alfa maskelenemiyor (çarpımsal alfa blend'i yok).
+  Yan kazanç: tüm parçalar tek dokudan çiziliyor, batch korunuyor.
   Tüketiciler: taş dikeni (dip + UÇ + çökme) · ateş topu patlaması · buz novası
   cephesi · isabet katmanı (yalnız ağır elemanlar). Havuz 512, tepe ~250.
 - **TAŞ DİKENİ 2. TUR**: üç yüz (aydınlık/ara/gölge) · çentikli kenar (taş

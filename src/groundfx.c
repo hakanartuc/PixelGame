@@ -2,6 +2,12 @@
 #include "groundfx.h"
 #include "tilemap.h"
 
+// stb_image r2d.c'de zaten implementation ile derleniyor; burada yalnız
+// prototipini alıyoruz. Karo PNG'sini CPU'da okumak ŞART: parçanın alfasını
+// maskelemek için piksellere erişmek gerekiyor (GPU dokusundan okunamıyor).
+extern unsigned char *stbi_load(const char *f, int *x, int *y, int *comp, int req);
+extern void stbi_image_free(void *p);
+
 // Davranış sınıfı (bkz. groundfx.h: karo ALANLARINDAN türetilir, id'den değil)
 typedef enum { GK_PLANT = 0, GK_ROCK, GK_GRAIN } GroundClass;
 
@@ -18,6 +24,99 @@ typedef struct {
 
 static Chunk s_ch[GROUNDFX_MAX];
 static R2DTexture **s_tiles = NULL;      // main'in karo doku dizisi (salt okunur)
+
+// ── MASKELENMİŞ PARÇA ATLASI.
+// HATA GEÇMİŞİ: parça, karo dokusundan doğrudan kesilen bir kare olarak
+// çiziliyordu. Doku doğruydu ama alfa her yerde 255 olduğu için kenar zorunlu
+// olarak KESKİN KARE kalıyordu — Hakan iki tur bildirdi: "hala parçacıklar kare
+// kare gözüküyor... daha yumuşak parçalar halinde yapsan".
+// Kareyi yumuşatmak için alfayı MASKELEMEK gerekiyor ve bu GPU dokusundan
+// yapılamaz (r2d'de çarpımsal alfa blend'i yok, çok-dokulu geçiş de yok).
+// ÇÖZÜM: açılışta karo PNG'leri CPU'da okunuyor (stb_image), her karo için DÖRT
+// yumuşak parça varyantı üretilip TEK atlasa basılıyor. Maske düzensiz-yuvarlak
+// (yarıçap açıya göre modüle — decal.c ve is pulunda kanıtlı numara), kenarı
+// 6 kademeli (biçim alfası 2-3 kademe olunca "kağıt gibi" duruyordu).
+// YAN KAZANÇ: bütün parçalar artık TEK dokudan çiziliyor, yani batch geri geldi.
+// Eskiden karo başına doku değişiyordu ve her parça batch'i kırıyordu.
+#define GF_FRAG 8            // parça hücresi (doku pikseli) → 32 dünya px tavanı
+#define GF_VAR  4            // karo başına parça varyantı
+static R2DTexture *s_fragTex = NULL;
+static bool s_fragHas[MAX_TILE_TYPES];
+
+static inline float gf_soft(float c)
+{
+    if (c <= 0.0f) return 0.0f;
+    float q = SDL_floorf(c * 6.0f + 0.5f) / 6.0f;
+    return (q > 1.0f) ? 1.0f : q;
+}
+
+// Düzensiz-yuvarlak maske. v = varyant (siluet ondan türüyor).
+static float gf_mask(int v, int i, int j)
+{
+    float dx = ((float)i + 0.5f) / GF_FRAG * 2.0f - 1.0f;
+    float dy = ((float)j + 0.5f) / GF_FRAG * 2.0f - 1.0f;
+    float fv = (float)v;
+    float dyf = dy * (1.0f + 0.18f * SDL_sinf(fv * 2.3f));
+    float r = SDL_sqrtf(dx * dx + dyf * dyf);
+    float ang = SDL_atan2f(dyf, dx);
+    float R = 0.86f + 0.15f * SDL_sinf(ang * 3.0f + fv * 1.7f)
+                    + 0.09f * SDL_sinf(ang * 5.0f + fv * 2.9f);
+    if (r >= R) return 0.0f;
+    return gf_soft(1.0f - SDL_powf(r / R, 2.4f) * 0.92f);
+}
+
+// Açılışta bir kez: karo PNG'lerinden yumuşak parça atlası bas.
+static void gf_bake_fragments(R2D *renderer)
+{
+    const int AW = GF_VAR * GF_FRAG, AH = MAX_TILE_TYPES * GF_FRAG;
+    static Uint8 atlas[GF_VAR * GF_FRAG * MAX_TILE_TYPES * GF_FRAG * 4];
+    SDL_memset(atlas, 0, sizeof atlas);
+    for (int id = 0; id < MAX_TILE_TYPES; id++) {
+        s_fragHas[id] = false;
+        const char *path = TILE_TYPES[id].texturePath;
+        if (path == NULL) continue;
+        int w = 0, h = 0, comp = 0;
+        unsigned char *px = stbi_load(path, &w, &h, &comp, 4);
+        if (px == NULL || w < GF_FRAG || h < GF_FRAG) {
+            if (px) stbi_image_free(px);
+            continue;
+        }
+        for (int v = 0; v < GF_VAR; v++) {
+            // Kaynak pencere: 16'ya hizalı hücre içinden, varyanta göre kaydırma.
+            // Hizalamayı bozmak iki karo hücresinin arasından kesip yapay dikiş
+            // çıkarıyor (dual-grid sayfaları).
+            int cellsX = (w / 16 > 0) ? w / 16 : 1;
+            int cellsY = (h / 16 > 0) ? h / 16 : 1;
+            int cx = (v * 7 + id * 3) % cellsX;
+            int cy = (v * 5 + id * 2) % cellsY;
+            int base = (w >= 16 && h >= 16) ? 16 : GF_FRAG;
+            int maxOff = base - GF_FRAG; if (maxOff < 0) maxOff = 0;
+            int ox = cx * base + ((v * 3 + id) % (maxOff + 1));
+            int oy = cy * base + ((v * 2 + id) % (maxOff + 1));
+            if (ox + GF_FRAG > w) ox = w - GF_FRAG;
+            if (oy + GF_FRAG > h) oy = h - GF_FRAG;
+            for (int j = 0; j < GF_FRAG; j++)
+            for (int i = 0; i < GF_FRAG; i++) {
+                const unsigned char *sp = &px[(((oy + j) * w) + (ox + i)) * 4];
+                float m = gf_mask(v, i, j);
+                Uint8 *o = &atlas[(((id * GF_FRAG + j) * AW)
+                                   + v * GF_FRAG + i) * 4];
+                o[0] = sp[0]; o[1] = sp[1]; o[2] = sp[2];
+                o[3] = (Uint8)((float)sp[3] * m);
+            }
+        }
+        stbi_image_free(px);
+        s_fragHas[id] = true;
+    }
+    s_fragTex = r2d_texture_from_pixels(renderer, atlas, AW, AH);
+    // TEŞHİS: sessiz başarısızlık en kötüsü. Kaç karo parça verdi, atlas kuruldu
+    // mu — açılışta bir satır. Sıfır görürsen PNG yolları çalışma dizinine göre
+    // bulunamıyor demektir.
+    int nOk = 0;
+    for (int i = 0; i < MAX_TILE_TYPES; i++) if (s_fragHas[i]) nOk++;
+    SDL_Log("groundfx: parca atlasi %s (%d karo, %dx%d)",
+            s_fragTex ? "kuruldu" : "KURULAMADI", nOk, AW, AH);
+}
 static int s_next = 0;
 static unsigned s_rng = 0x9E3779B9u;
 
@@ -29,6 +128,11 @@ static inline float gf_rnd(void)
 static inline float gf_sym(void) { return gf_rnd() * 2.0f - 1.0f; }
 
 void groundfx_bind_tiles(R2DTexture **tileTextures) { s_tiles = tileTextures; }
+
+void groundfx_bake(R2D *renderer)
+{
+    if (s_fragTex == NULL) gf_bake_fragments(renderer);
+}
 
 void groundfx_init(void)
 {
@@ -55,12 +159,9 @@ void groundfx_burst(float wx, float wy, int count, float power, float upBias)
     int col = (int)(wx / TILE_SIZE), row = (int)(wy / TILE_SIZE);
     if (tilemap_is_water(col, row)) return;
 
-    R2DTexture *tex = s_tiles[id];
-    if (tex == NULL) return;                 // dokusu olmayan karo (düz renk)
-
-    float tw = 0.0f, th = 0.0f;
-    r2d_texture_size(tex, &tw, &th);
-    if (tw < 16.0f || th < 16.0f) return;
+    // Parça ATLASINDAN çiziliyor (yumuşak kenar için maskelenmiş). Atlas
+    // basılmamışsa ya da bu karonun dokusu yoksa parça yok.
+    if (s_fragTex == NULL || !s_fragHas[id]) return;
 
     // Davranış sınıfı karo ALANLARINDAN (harita değişse de geçerli)
     const TileType *T = &TILE_TYPES[id];
@@ -70,9 +171,6 @@ void groundfx_burst(float wx, float wy, int count, float power, float upBias)
     // 16'ya hizalı rastgele bir hücre seçiliyor ki kenar parçası yerine gövde
     // parçası gelsin; hizalamayı bozmak iki hücrenin arasından kesip yapay bir
     // dikiş çıkarıyor.
-    int cellsX = (int)(tw / 16.0f), cellsY = (int)(th / 16.0f);
-    if (cellsX < 1) cellsX = 1;
-    if (cellsY < 1) cellsY = 1;
 
     for (int k = 0; k < count; k++) {
         // Havuz: en eskiyi ezmek yerine sıradan ilerle (halka). Dolu havuzda
@@ -85,20 +183,16 @@ void groundfx_burst(float wx, float wy, int count, float power, float upBias)
         if (slot < 0) { s_next = (s_next + 24) % GROUNDFX_MAX; break; }
         s_next = (slot + 1) % GROUNDFX_MAX;
 
-        // ── ÖLÇÜ (bir tur yanlış hesaplandı). Karo 64 dünya px = 16 doku px,
-        // yani 1 doku pikseli = 4 dünya px = 1 SANAT pikseli.
-        // İlk sürüm 3-5 doku px pencere kullanıyordu → 12-20 dünya px, kayada
-        // ×1.5 ile 30 px. 30 px karonun YARISI ve 7.5 sanat pikseli: bu kırıntı
-        // değil, zeminin BLOKLARA ayrılması. Hakan: "kare kare kutucuklar
-        // şeklinde yer parçalanıyor" — ve o bloklar dikeni de gömüyordu.
-        // Kırıntı 1-3 sanat pikseli olmalı: pencere 1.5-3 doku px → 6-12 px.
-        // O boyutta "kare" okuması kalmıyor, çünkü zaten bir-iki pikselden ibaret.
-        float win = 1.5f + gf_rnd() * 1.5f;
-        int cx = (int)(gf_rnd() * (float)cellsX);
-        int cy = (int)(gf_rnd() * (float)cellsY);
-        float maxOff = 16.0f - win;
-        float ox = gf_rnd() * maxOff, oy = gf_rnd() * maxOff;
-
+        // ── ÖLÇÜ. Karo 64 dünya px = 16 doku px = 16 SANAT pikseli.
+        // İki tur bu ölçü ısırdı:
+        //  1) pencere 3-5 doku px (12-20 dünya px, kayada 30) → "zemin bloklara
+        //     ayrılıyor" ve gövdeleri gömüyor.
+        //  2) küçültüldü ama kenar hâlâ keskin kareydi → "kare kare gözüküyor".
+        // Şimdi parça MASKELİ olduğu için biraz BÜYÜK olabilir: yumuşak kenarlı
+        // 4-6 sanat pikseli (16-24 dünya px) "toprak kesekli" okunuyor. Küçük
+        // parça maskeyi barındıramıyor (2 pikselde yuvarlaklık olmaz), büyük ama
+        // maskesiz parça kutu oluyor — ikisi arasındaki nokta burası.
+        int var = (int)(gf_rnd() * (float)GF_VAR) % GF_VAR;
         float ang = gf_rnd() * 6.28318f;
         // upBias: 1'e yakınken hız YUKARI ağırlıklı (yerden fışkırma)
         float dirX = SDL_cosf(ang) * (1.0f - upBias * 0.55f);
@@ -109,24 +203,24 @@ void groundfx_burst(float wx, float wy, int count, float power, float upBias)
         case GK_PLANT:   // çim/saman: hafif, yavaş, çok savrulur
             sp = 90.0f + gf_rnd() * 130.0f;
             life = 0.75f + gf_rnd() * 0.65f;
-            sz = win * 4.0f * (0.60f + gf_rnd() * 0.40f);
+            sz = 16.0f + gf_rnd() * 7.0f;
             spin = gf_sym() * 5.0f;
             break;
         case GK_ROCK:    // taş: ağır, hızlı, az savrulur, büyük
             sp = 150.0f + gf_rnd() * 210.0f;
             life = 0.60f + gf_rnd() * 0.45f;
-            sz = win * 4.0f * (0.80f + gf_rnd() * 0.40f);
+            sz = 18.0f + gf_rnd() * 8.0f;
             spin = gf_sym() * 9.0f;
             break;
         default:         // toprak/kum: orta, bol
             sp = 120.0f + gf_rnd() * 170.0f;
             life = 0.55f + gf_rnd() * 0.50f;
-            sz = win * 4.0f * (0.62f + gf_rnd() * 0.40f);
+            sz = 16.0f + gf_rnd() * 7.0f;
             spin = gf_sym() * 7.0f;
             break;
         }
         sp *= power; sz *= (0.90f + 0.18f * power);
-        if (sz > 14.0f) sz = 14.0f;     // tavan: 3.5 sanat pikseli
+        if (sz > 27.0f) sz = 27.0f;
 
         s_ch[slot] = (Chunk){
             .active = true,
@@ -134,9 +228,9 @@ void groundfx_burst(float wx, float wy, int count, float power, float upBias)
             .vx = dirX * sp, .vy = dirY * sp,
             .ang = gf_rnd() * 6.28318f, .spin = spin,
             .life = life, .maxLife = life,
-            .size = sz, .tex = tex,
-            .sx = (float)cx * 16.0f + ox, .sy = (float)cy * 16.0f + oy,
-            .sw = win, .cls = cls,
+            .size = sz, .tex = s_fragTex,
+            .sx = (float)(var * GF_FRAG), .sy = (float)(id * GF_FRAG),
+            .sw = (float)GF_FRAG, .cls = cls,
         };
     }
 }

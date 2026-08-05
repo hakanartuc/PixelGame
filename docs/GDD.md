@@ -1158,6 +1158,22 @@ ayrılması. Hakan: *"kare kare kutucuklar şeklinde yer parçalanıyor"* ve *"d
 6-12 dünya px, tavan 14). O boyutta "kare" okuması kalmıyor çünkü zaten bir-iki pikselden ibaret.
 **KURAL:** doku parçası ölçülürken birim SANAT PİKSELİ (4 dünya px); dünya pikseliyle düşünmek
 büyüklüğü dört kat şişiriyor.
+⚠ **KESKİN KARE SORUNU ve ÇÖZÜMÜ (iki tur sürdü).** Parça karo dokusundan DOĞRUDAN kesilen bir kare
+olarak çiziliyordu. Doku doğruydu ama alfa her yerde 255 olduğu için kenar zorunlu olarak keskin kare
+kalıyordu — Hakan: *"hala parçacıklar kare kare gözüküyor... daha yumuşak parçalar halinde yapsan"*.
+Kareyi yumuşatmak alfayı MASKELEMEK demek ve bu GPU dokusundan yapılamaz (r2d'de çarpımsal alfa
+blend'i ve çok-dokulu geçiş yok).
+**ÇÖZÜM — açılışta MASKELENMİŞ PARÇA ATLASI:** karo PNG'leri CPU'da okunuyor (`stb_image`, r2d.c'de
+zaten derli), her karo için DÖRT yumuşak parça varyantı üretilip tek atlasa basılıyor. Maske
+düzensiz-yuvarlak (yarıçap açıya göre modüle — `decal.c` ve is pulunda kanıtlı numara), kenar
+6 kademeli (biçim alfası 2-3 kademe olunca "kağıt gibi" duruyordu).
+**İKİ YAN KAZANÇ:** (1) bütün parçalar artık TEK dokudan çiziliyor → batch geri geldi; eskiden karo
+başına doku değişiyor ve her parça batch'i kırıyordu. (2) parça maskeli olduğu için biraz BÜYÜK
+olabiliyor: 4-6 sanat pikseli (16-27 dünya px) "toprak keseği" okunuyor. Küçük parça maskeyi
+barındıramıyor (2 pikselde yuvarlaklık olmaz), büyük ama maskesiz parça kutu oluyor — doğru nokta
+ikisinin arasında.
+**TEŞHİS:** açılışta bir satır log — kaç karo parça verdi, atlas kuruldu mu. Sıfır görülürse PNG
+yolları çalışma dizinine göre bulunamıyor demektir (sessiz başarısızlık bu projede dört kez ısırdı).
 ⚠ **ÇİZİM SIRASI:** kırıntı GÖVDELERDEN ÖNCE çizilir. Kırıntı zeminin aynı dokusundan geldiği için
 gövdenin üstüne binince onu yiyor. Diken ve buz kümesi KAHRAMAN nesne, kırıntı onların ARTIĞI —
 sıralama bunu yansıtmak zorunda.

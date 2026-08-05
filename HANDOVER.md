@@ -248,6 +248,10 @@ buz camgöbeği ayrımı okunuyor mu → Ctrl+G ile silah damgası döngüsü.
 olarak eklenecek mi (mekanik kodda ama HİÇBİR EŞYA damgayı vermiyor — şu an
 yalnız Ctrl+G ile erişilebilir) · kalan 14 büyü göç etsin mi.
 **YENİ MOTOR KURALLARI (bu turların bedeli)**:
+· **DOKUDAN KESİLEN PARÇA MASKESİZ ise KESKİN KARE olur** — GPU dokusundan alfa
+  maskelenemez (çarpımsal alfa blend'i yok). Çözüm: açılışta PNG'yi CPU'da oku
+  (stb_image r2d.c'de derli), maskeli varyantları TEK atlasa bas. Yan kazanç:
+  bütün parçalar tek dokudan çizilir, batch korunur.
 · **DOKU PARÇASI ÖLÇÜSÜ SANAT PİKSELİYLE düşünülür** (1 sanat px = 4 dünya px
   = 1 doku px). Kırıntı 1-3 sanat pikseli olmalı; dünya pikseliyle hesaplamak
   büyüklüğü dört kat şişirip "zemin bloklara ayrılıyor" görüntüsü veriyor.
