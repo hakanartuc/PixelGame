@@ -1151,7 +1151,19 @@ isabet katmanı yalnız AĞIR elemanlarda (toprak/yıldırım/çelik — zehir v
 Sırada: boss yer vuruşu, düşme hasarı, ok saplanması, koşu tozu.
 **Tek-seferlik tespiti:** diken siteleri durumsuz (tohumdan türüyor), o yüzden "bu kare pencereye
 GİRDİ mi" diye `prevU = u - dt/maxLife` ile önceki kareyle karşılaştırılıyor — ayrı bayrak dizisi yok.
-**Bütçe:** havuz 512, tepe kullanım ~250 (diken 196 + patlama 14 + nova 39 + isabet 8). Dolu havuzda
+⚠ **ÖLÇÜ HATASI (ilk turda ısırdı):** pencere 3-5 doku pikseli alınmıştı → 12-20 dünya px, kayada
+×1.5 ile 30 px. 30 px karonun YARISI ve 7.5 SANAT pikseli; bu kırıntı değil, zeminin BLOKLARA
+ayrılması. Hakan: *"kare kare kutucuklar şeklinde yer parçalanıyor"* ve *"dikenler gözükmüyor"* —
+196 blok gövdeleri gömüyordu. Doğrusu: kırıntı **1-3 sanat pikseli** (pencere 1.5-3 doku px →
+6-12 dünya px, tavan 14). O boyutta "kare" okuması kalmıyor çünkü zaten bir-iki pikselden ibaret.
+**KURAL:** doku parçası ölçülürken birim SANAT PİKSELİ (4 dünya px); dünya pikseliyle düşünmek
+büyüklüğü dört kat şişiriyor.
+⚠ **ÇİZİM SIRASI:** kırıntı GÖVDELERDEN ÖNCE çizilir. Kırıntı zeminin aynı dokusundan geldiği için
+gövdenin üstüne binince onu yiyor. Diken ve buz kümesi KAHRAMAN nesne, kırıntı onların ARTIĞI —
+sıralama bunu yansıtmak zorunda.
+⚠ **KONTRAST:** parça zeminin aynı dokusundan geldiği için zemin üstünde neredeyse görünmez kalıyor;
+%18 koyultma onu "havaya kalkmış, kendi gölgesini taşıyan parça" yapıyor (renk kimliği bozulmadan).
+**Bütçe:** havuz 512, tepe kullanım ~150 (diken 196 + patlama 14 + nova 39 + isabet 8). Dolu havuzda
 parça DÜŞER, sınırlı tarama 24 slot (fx.c'nin 2 milyon iterasyon dersi).
 
 **Açık kalan:** kamp ateşi sprite alevi kalsın mı (karar Hakan'da) · alev/buz rünü eşya olarak

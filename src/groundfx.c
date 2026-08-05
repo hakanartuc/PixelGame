@@ -85,8 +85,15 @@ void groundfx_burst(float wx, float wy, int count, float power, float upBias)
         if (slot < 0) { s_next = (s_next + 24) % GROUNDFX_MAX; break; }
         s_next = (slot + 1) % GROUNDFX_MAX;
 
-        // Pencere boyu doku pikseli cinsinden: 3-5 px → 12-20 dünya px
-        float win = 3.0f + gf_rnd() * 2.0f;
+        // ── ÖLÇÜ (bir tur yanlış hesaplandı). Karo 64 dünya px = 16 doku px,
+        // yani 1 doku pikseli = 4 dünya px = 1 SANAT pikseli.
+        // İlk sürüm 3-5 doku px pencere kullanıyordu → 12-20 dünya px, kayada
+        // ×1.5 ile 30 px. 30 px karonun YARISI ve 7.5 sanat pikseli: bu kırıntı
+        // değil, zeminin BLOKLARA ayrılması. Hakan: "kare kare kutucuklar
+        // şeklinde yer parçalanıyor" — ve o bloklar dikeni de gömüyordu.
+        // Kırıntı 1-3 sanat pikseli olmalı: pencere 1.5-3 doku px → 6-12 px.
+        // O boyutta "kare" okuması kalmıyor, çünkü zaten bir-iki pikselden ibaret.
+        float win = 1.5f + gf_rnd() * 1.5f;
         int cx = (int)(gf_rnd() * (float)cellsX);
         int cy = (int)(gf_rnd() * (float)cellsY);
         float maxOff = 16.0f - win;
@@ -102,23 +109,24 @@ void groundfx_burst(float wx, float wy, int count, float power, float upBias)
         case GK_PLANT:   // çim/saman: hafif, yavaş, çok savrulur
             sp = 90.0f + gf_rnd() * 130.0f;
             life = 0.75f + gf_rnd() * 0.65f;
-            sz = win * 4.0f * (0.70f + gf_rnd() * 0.40f);
+            sz = win * 4.0f * (0.60f + gf_rnd() * 0.40f);
             spin = gf_sym() * 5.0f;
             break;
         case GK_ROCK:    // taş: ağır, hızlı, az savrulur, büyük
             sp = 150.0f + gf_rnd() * 210.0f;
             life = 0.60f + gf_rnd() * 0.45f;
-            sz = win * 4.0f * (0.95f + gf_rnd() * 0.55f);
+            sz = win * 4.0f * (0.80f + gf_rnd() * 0.40f);
             spin = gf_sym() * 9.0f;
             break;
         default:         // toprak/kum: orta, bol
             sp = 120.0f + gf_rnd() * 170.0f;
             life = 0.55f + gf_rnd() * 0.50f;
-            sz = win * 4.0f * (0.75f + gf_rnd() * 0.45f);
+            sz = win * 4.0f * (0.62f + gf_rnd() * 0.40f);
             spin = gf_sym() * 7.0f;
             break;
         }
-        sp *= power; sz *= (0.85f + 0.30f * power);
+        sp *= power; sz *= (0.90f + 0.18f * power);
+        if (sz > 14.0f) sz = 14.0f;     // tavan: 3.5 sanat pikseli
 
         s_ch[slot] = (Chunk){
             .active = true,
@@ -184,8 +192,11 @@ void groundfx_render_band(R2D *renderer, const Camera *camera,
             { sx + ux * h - px * h, sy + uy * h - py * h },   // BR
         };
         SDL_FRect src = { c->sx, c->sy, c->sw, c->sw };
+        // HAFİF KOYULTMA: parça zeminin AYNI dokusundan geldiği için zemin
+        // üstünde neredeyse görünmez kalıyor. %18 koyultma onu "havaya kalkmış,
+        // kendi gölgesini taşıyan parça" yapıyor — renk kimliği bozulmuyor.
         r2d_draw_texture_quad(renderer, c->tex, &src, q,
-                              (SDL_Color){ 255, 255, 255, a });
+                              (SDL_Color){ 210, 210, 210, a });
     }
     r2d_set_color(renderer, 255, 255, 255, 255);
 }

@@ -248,6 +248,11 @@ buz camgöbeği ayrımı okunuyor mu → Ctrl+G ile silah damgası döngüsü.
 olarak eklenecek mi (mekanik kodda ama HİÇBİR EŞYA damgayı vermiyor — şu an
 yalnız Ctrl+G ile erişilebilir) · kalan 14 büyü göç etsin mi.
 **YENİ MOTOR KURALLARI (bu turların bedeli)**:
+· **DOKU PARÇASI ÖLÇÜSÜ SANAT PİKSELİYLE düşünülür** (1 sanat px = 4 dünya px
+  = 1 doku px). Kırıntı 1-3 sanat pikseli olmalı; dünya pikseliyle hesaplamak
+  büyüklüğü dört kat şişirip "zemin bloklara ayrılıyor" görüntüsü veriyor.
+  Ayrıca kırıntı GÖVDELERDEN ÖNCE çizilir (aynı dokudan geldiği için gövdeyi
+  yer) ve %18 koyultulur (yoksa zemin üstünde görünmez kalır).
 · **ZEMİNE BAĞLI GÖRSEL RENKLE DEĞİL DOKUYLA yapılır.** Düz renk haritayı
   takip etmez (karo sanatı değişince yanlış kalır) ve "boya" gibi durur.
   Karo dokusundan kesilen parça ikisini de çözer ve bedava güncellenir.

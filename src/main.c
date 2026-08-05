@@ -11838,9 +11838,13 @@ int main(int argc, char *argv[])
         // yakın taraf bacaklarının önünde. Işık pass'i de onu efektin rengiyle
         // boyadığı için "etkisinde" okuması tamamlanıyor.
         float fxSplitY = player.rect.y + player.rect.h;
+        // SIRA: zemin kırıntısı GÖVDELERDEN ÖNCE. Kırıntı zeminin aynı
+        // dokusundan geldiği için gövdenin üstüne binince onu yiyor (Hakan:
+        // "dikenler gözükmüyor"). Diken ve buz kümesi KAHRAMAN nesne, kırıntı
+        // onların artığı — sıralama bunu yansıtmak zorunda.
+        groundfx_render_band(renderer, &camera, -1.0e9f, fxSplitY);
         skillfx_render_band(renderer, &camera, -1.0e9f, fxSplitY);
         fx_render_band(&weaponFx, renderer, glowTex, &camera, -1.0e9f, fxSplitY);
-        groundfx_render_band(renderer, &camera, -1.0e9f, fxSplitY);
         player_render(&player, renderer, built, builtCount, &camera); // oyuncuyu
         
         for (int i = 0; i < mobCount; i++)
@@ -12079,10 +12083,10 @@ int main(int argc, char *argv[])
         // ait olmadıkları için yalnız bu tam-aralık çağrısında çiziliyorlar
         // (bant çağrılarında atlanıyorlar, yoksa iki kez çizilip toplamalı
         // katmanda iki kat parlıyorlar).
+        groundfx_render_band(renderer, &camera, fxSplitY, 1.0e9f);
         skillfx_render_band(renderer, &camera, fxSplitY, 1.0e9f);
         skillfx_render_air(renderer, &camera);   // yıldırım kolu / isabet yayı
         fx_render_band(&weaponFx, renderer, glowTex, &camera, fxSplitY, 1.0e9f);
-        groundfx_render_band(renderer, &camera, fxSplitY, 1.0e9f);
         animfx_render(animFxPool, renderer, &camera);
 
         if (openLootIndex >= 0)
