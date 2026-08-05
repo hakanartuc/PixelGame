@@ -244,6 +244,10 @@ buz camgöbeği ayrımı okunuyor mu → Ctrl+G ile silah damgası döngüsü.
 olarak eklenecek mi (mekanik kodda ama HİÇBİR EŞYA damgayı vermiyor — şu an
 yalnız Ctrl+G ile erişilebilir) · kalan 14 büyü göç etsin mi.
 **YENİ MOTOR KURALLARI (bu turların bedeli)**:
+· **KARARLI HAL HESABI GERİYE DÖNÜK DE YAPILACAK.** Kuralı bulup yeni koda
+  uygulamak yetmiyor: buz novası 15×, toprak dikenleri 5.7× aşımdaydı ve
+  partiküllerin %93'ü düşüyordu. Bir GÖRSEL şikayetin ("çemberin içi boş")
+  arkasında bütçe hatası vardı — ayarla düzeltilemezdi.
 · **HAVUZ TAVANLARI: partikül 8192 · quad 16384 · DECAL 64.** Efekt yazarken
   üçü de hesaplanacak. Leke "saniyede N" değil MESAFEYE bağlı bırakılır, yoksa
   havuz dövülür ve başka efektlerin izleri silinir (dördüncü sessiz-düşürme vakası).

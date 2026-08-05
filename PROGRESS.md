@@ -77,6 +77,16 @@ GÖRKEMİ. Detaylı gerekçeler GDD §6.6'da.
 - **Yol göstergesi**: prosedürel mod açıkken her büyü çağrısı ekrana
   `"<ad> -> PROSEDUREL"` / `"-> SPRITE (motor disi)"` yazıyor.
 
+- **BÜTÇE AŞIMI GERİYE DÖNÜK BULUNDU**: buz novası havuzun **15 KATINI**
+  istiyordu (124.900 / 8.192), toprak dikenleri 5.7 katını. Partiküllerin %93'ü
+  sessizce düşüyordu. Kuralı Alev Seli'nde bulmuş ama eski büyülere
+  uygulamamışım. Nova 5.695'e, toprak ~5.100'e oturtuldu.
+  **Görsel şikayetin arkasında bütçe hatası vardı:** "çemberin içi boş" —
+  havuz cephede doluyor, iç alana sıra gelmiyordu.
+- **DOLU DİSK**: nova artık halka değil ALAN (iç alan seyrek+alçak partikülle
+  dolu, bant en parlak kenar olarak kalıyor; yarıçap sqrt ile = düzgün alan).
+- **BUZ OLUŞUMU koni değil KÜME**: 6 plaka, farklı yükseklik/yatıklık, kırık
+  uçlar, ortak taban buzu. Üç konik plaka "üçgen buzlar" gibi duruyordu.
 - **BUZ NOVASI yer izi tamamlandı**: yerde duran buz oluşumları (3 varyant,
   kodda basılır, parlak kenar + saydam gövde), dalganın ardında yükseliyor,
   sonunda eriyor · kırağı artık cephe ilerledikçe bırakılıyor (eskiden tek

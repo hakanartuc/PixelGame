@@ -308,8 +308,8 @@ static void sf_bake_lion(R2D *renderer)
 // Buz saydam olduğu için gövde ALPHA ~205 ve kenarları PARLAK: buzu buz yapan
 // şey kütlesi değil kenarındaki ışık. Taş dikeninin tersi — orada ışıklı/gölge
 // yüz vardı, burada parlak KENAR + soluk gövde.
-#define SFX_ICE_W 20
-#define SFX_ICE_H 26
+#define SFX_ICE_W 28
+#define SFX_ICE_H 22
 #define SFX_ICE_N 3
 static R2DTexture *s_iceTex = NULL;
 
@@ -318,14 +318,23 @@ static void sf_bake_ice(R2D *renderer)
     static Uint8 px[SFX_ICE_W * SFX_ICE_N * SFX_ICE_H * 4];
     const int TW = SFX_ICE_W * SFX_ICE_N;
     SDL_memset(px, 0, sizeof px);
-    // Her oluşum 3 plakadan: merkez büyük + iki yan küçük, farklı yatıklıkta
-    static const float P[SFX_ICE_N][3][5] = {
-        {{0.50f,0.62f,0.20f,0.42f, 0.00f},{0.30f,0.78f,0.13f,0.26f,-0.20f},
-         {0.72f,0.80f,0.11f,0.22f, 0.18f}},
-        {{0.44f,0.58f,0.16f,0.46f, 0.14f},{0.66f,0.72f,0.15f,0.32f,-0.16f},
-         {0.26f,0.84f,0.10f,0.18f, 0.10f}},
-        {{0.54f,0.66f,0.22f,0.36f,-0.12f},{0.34f,0.74f,0.12f,0.30f, 0.16f},
-         {0.74f,0.86f,0.09f,0.16f, 0.00f}},
+    // ── HATA GEÇMİŞİ: ilk sürüm ÜÇ konik plakaydı ve Hakan'ın tarifiyle
+    // "üçgen buzlar, çok basit duruyor". Buz kristali tek koni değil KÜME:
+    // farklı yükseklikte ALTI plaka, farklı yönlere yatık, bazılarının ucu
+    // KIRIK (düz kesik — kusursuz sivri uç yapay duruyor), hepsi ortak bir
+    // TABAN BUZUNDAN çıkıyor. Taban olmadan plakalar havada duran kıymıklar
+    // gibi okunuyordu.
+    // Plaka: {merkez, taban_y, genişlik, yükseklik, yatıklık, kırık_pay}
+    static const float CL[SFX_ICE_N][6][6] = {
+      {{0.50f,0.98f,0.150f,0.72f, 0.02f,0.00f},{0.30f,0.99f,0.115f,0.46f,-0.16f,0.30f},
+       {0.68f,0.99f,0.125f,0.54f, 0.13f,0.00f},{0.16f,1.00f,0.085f,0.24f,-0.10f,0.45f},
+       {0.84f,1.00f,0.078f,0.20f, 0.12f,0.00f},{0.42f,1.00f,0.070f,0.30f,-0.05f,0.55f}},
+      {{0.44f,0.98f,0.140f,0.62f,-0.14f,0.00f},{0.62f,0.99f,0.158f,0.76f, 0.10f,0.35f},
+       {0.26f,0.99f,0.098f,0.34f,-0.08f,0.00f},{0.80f,1.00f,0.090f,0.28f, 0.16f,0.40f},
+       {0.52f,1.00f,0.068f,0.22f, 0.04f,0.00f},{0.12f,1.00f,0.062f,0.16f,-0.06f,0.00f}},
+      {{0.56f,0.98f,0.170f,0.66f, 0.08f,0.25f},{0.34f,0.99f,0.132f,0.52f,-0.15f,0.00f},
+       {0.72f,0.99f,0.104f,0.38f, 0.18f,0.45f},{0.20f,1.00f,0.082f,0.26f,-0.12f,0.00f},
+       {0.46f,1.00f,0.072f,0.32f,-0.02f,0.00f},{0.86f,1.00f,0.060f,0.18f, 0.10f,0.30f}},
     };
     for (int c = 0; c < SFX_ICE_N; c++)
     for (int j = 0; j < SFX_ICE_H; j++)
@@ -333,27 +342,34 @@ static void sf_bake_ice(R2D *renderer)
         float ux = ((float)i + 0.5f) / SFX_ICE_W;
         float uy = ((float)j + 0.5f) / SFX_ICE_H;
         int best = 0;
-        for (int k = 0; k < 3; k++) {
-            float cx = P[c][k][0], cy = P[c][k][1];
-            float rx = P[c][k][2], ry = P[c][k][3], lean = P[c][k][4];
-            if (uy <= cy - ry || uy >= cy + ry) continue;
-            float xx = ux - lean * (cy - uy) * 1.4f;
-            float g = (uy - (cy - ry)) / (2.0f * ry);
-            if (g < 0.05f) g = 0.05f;
-            float rr = rx * SDL_powf(g, 0.55f);      // yukarı daralan plaka
-            float d = SDL_fabsf(xx - cx) / rr;
+        // TABAN BUZU: alt %14, yayvan — plakaları birbirine bağlar
+        if (uy > 0.86f) {
+            float w = 0.44f * SDL_sqrtf((uy - 0.86f) / 0.14f);
+            if (w > 0.02f && SDL_fabsf(ux - 0.5f) / w < 1.0f) best = 2;
+        }
+        for (int k = 0; k < 6; k++) {
+            float cx = CL[c][k][0], base = CL[c][k][1], w = CL[c][k][2];
+            float h = CL[c][k][3], lean = CL[c][k][4], chip = CL[c][k][5];
+            if (uy < base - h || uy > base) continue;
+            float t = (base - uy) / h;                 // 0 taban → 1 uç
+            if (chip > 0.0f && t > 1.0f - chip) continue;   // KIRIK uç
+            float xx = ux - lean * t * 1.2f;
+            float ww = w * (1.0f - t * 0.72f);
+            float d = SDL_fabsf(xx - cx) / ww;
             if (d >= 1.0f) continue;
-            int v = (d < 0.30f) ? 3 : ((d < 0.72f) ? 2 : 1);
+            int v = (d > 0.74f) ? 1 : ((d < 0.26f) ? 3 : 2);
             if (v > best) best = v;
         }
         if (best == 0) continue;
         Uint8 *o = &px[((j * TW) + c * SFX_ICE_W + i) * 4];
-        if (best == 1) {          // PARLAK KENAR: buzu buz yapan ışık
-            o[0] = 236; o[1] = 252; o[2] = 255; o[3] = 235;
-        } else if (best == 3) {   // omurga: hafif koyu (kalın buz mavileşir)
-            o[0] = 126; o[1] = 186; o[2] = 230; o[3] = 205;
+        // Buzu buz yapan KENAR IŞIĞI (taş dikeninin tersi: orada ışıklı/gölge
+        // yüz vardı, burada parlak kenar + soluk saydam gövde)
+        if (best == 1) {          // parlak kenar
+            o[0] = 238; o[1] = 253; o[2] = 255; o[3] = 240;
+        } else if (best == 3) {   // omurga: kalın buz mavileşir
+            o[0] = 122; o[1] = 184; o[2] = 232; o[3] = 210;
         } else {                  // gövde: soluk camgöbeği, saydam
-            o[0] = 176; o[1] = 224; o[2] = 246; o[3] = 190;
+            o[0] = 178; o[1] = 226; o[2] = 247; o[3] = 194;
         }
     }
     s_iceTex = r2d_texture_from_pixels(renderer, px, TW, SFX_ICE_H);
@@ -641,7 +657,15 @@ void skillfx_update(ParticleSystem *fx, float dt)
                 // yerini KÜTLE anlatmak zorunda. Bant kalınlığı ±16 → ±30 ve
                 // sayı 2.3× arttı; kristaller de büyüdü. İnce bantta partiküller
                 // "birkaç nokta", kalın bantta BUZ DUVARI okunuyor.
-                int n = (int)((300.0f - (float)w * 50.0f) * dt / 0.016f
+                // ── BÜTÇE (kararlı hal = kare_spawn × ömür × 62.5).
+                // ÖLÇÜM: bant 600/kare × 1.125sn = 42.188 partikül istiyordu ve
+                // havuz 8192. Mızrak + iç alan ile toplam istek 124.900, yani
+                // 15 KAT AŞIM — partiküllerin %93'ü sessizce düşüyordu. Bu
+                // "çemberin içi boş" görüntüsünün de sebebi: havuz cephede
+                // doluyor, iç alana hiç sıra gelmiyordu.
+                // Bütçe kuralını Alev Seli'ne uygulamış, NOVAYA UYGULAMAMIŞIM.
+                // Nova payı ~6400 (alan büyüsü hak ediyor, gerisi diğerlerine).
+                int n = (int)((17.0f - (float)w * 5.0f) * dt / 0.016f
                               * (1.0f - wu * 0.35f));
                 for (int k = 0; k < n; k++) {
                     float a = sf_rnd() * 6.28318f;
@@ -657,13 +681,46 @@ void skillfx_update(ParticleSystem *fx, float dt)
                              0.70f + sf_rnd() * 0.85f, 12.0f + sf_rnd() * 16.0f,
                              (Uint8)(200 + sf_rnd() * 55), 232, 255, WEAPON_FX_ICE);
                 }
+                // ── DOLU DİSK. HATA: yalnız BANT dolduruluyordu (R ± 30) ve
+                // çemberin içi BOŞ kalıyordu — Hakan: "çember içerisinde boşluk
+                // olmadan, skill efekti sırasında çemberin içi dolu olmalı".
+                // Alan büyüsü halka değil ALAN: cephenin gerisi de donmuş
+                // olmalı. Bant en parlak KENAR olarak kalıyor (dalganın yeri
+                // okunsun), iç alan daha seyrek ve daha alçak dolduruluyor.
+                // Yarıçap sqrt ile seçiliyor: düzgün ALAN dağılımı (doğrusal
+                // seçim merkeze yığıyor).
+                {
+                    int nf = (int)((17.0f - (float)w * 5.0f) * dt / 0.016f
+                                   * (1.0f - wu * 0.30f));
+                    for (int k = 0; k < nf; k++) {
+                        float a = sf_rnd() * 6.28318f;
+                        float rr = R * SDL_sqrtf(sf_rnd());
+                        float px = e->x + SDL_cosf(a) * rr;
+                        float py = e->y + SDL_sinf(a) * rr * 0.62f;
+                        // İç alan ALÇAK ve yavaş: kenar kabarır, iç donar
+                        fx_spawn(fx, px, py,
+                                 SDL_cosf(a) * 22.0f, -26.0f - sf_rnd() * 34.0f,
+                                 0.55f + sf_rnd() * 0.65f,
+                                 9.0f + sf_rnd() * 13.0f,
+                                 (Uint8)(206 + sf_rnd() * 49), 236, 255,
+                                 WEAPON_FX_ICE);
+                        // Zemin pusu: alanın "donmuş yüzeyi"
+                        if (sf_rnd() < 0.30f)
+                            fx_spawn(fx, px, py,
+                                     sf_sym() * 10.0f, -8.0f - sf_rnd() * 8.0f,
+                                     1.1f + sf_rnd() * 0.8f,
+                                     14.0f + sf_rnd() * 12.0f,
+                                     234, 248, 255, WEAPON_FX_STEAM);
+                    }
+                }
                 // KRİSTAL MIZRAKLAR: eskiden 36 ADD ÇİZGİ ile çizilen radyal
                 // ışınlar, şimdi 9 azimutta yoğun kristal kümesi. Küme dalga
                 // cephesinde yerden yukarı fışkırıyor — "yerden çıkan buz".
                 for (int sp2 = 0; sp2 < 9; sp2++) {
                     float a = (float)sp2 / 9.0f * 6.28318f
                             + (float)w * 0.23f + 0.11f;
-                    int m = (int)(46.0f * dt / 0.016f);
+                    // 46 → 1: 9 azimut × 3 dalga = 27/kare (eskiden 1242!)
+                    int m = (int)(1.0f * dt / 0.016f + 0.5f);
                     for (int k = 0; k < m; k++) {
                         float t2 = sf_rnd();                  // mızrak boyunca
                         float rr = R * (0.55f + 0.45f * t2) + sf_sym() * 9.0f;
@@ -712,7 +769,8 @@ void skillfx_update(ParticleSystem *fx, float dt)
                 }
             }
             // Merkezde soğuk buhar — daha yoğun ve uzun
-            for (int k = 0; k < (int)(46.0f * dt / 0.016f); k++)
+            // 46 → 5/kare: merkez buharı 1.8sn yaşıyor, 46/kare = 5175 partikül
+            for (int k = 0; k < (int)(5.0f * dt / 0.016f + 0.5f); k++)
                 fx_spawn(fx, e->x + sf_sym() * 44.0f, e->y + sf_sym() * 24.0f,
                          sf_sym() * 14.0f, -24.0f, 1.8f, 20.0f,
                          218, 238, 255, WEAPON_FX_STEAM);
@@ -734,12 +792,16 @@ void skillfx_update(ParticleSystem *fx, float dt)
                 // cephe her 22px ilerlediğinde bir leke → sweep boyunca ~9 leke.
                 // Toplam nova bütçesi: 9 (kademeli) + 1 (merkez) + 16 (halka) = 26.
                 if (fR > e->emitAcc) {
-                    e->emitAcc = fR + 22.0f;
-                    float a = sf_rnd() * 6.28318f;
-                    float rr = fR * (0.82f + sf_rnd() * 0.18f);
-                    decal_frost(e->x + SDL_cosf(a) * rr,
-                                e->y + SDL_sinf(a) * rr * 0.62f,
-                                24.0f + sf_rnd() * 16.0f);
+                    e->emitAcc = fR + 15.0f;
+                    // Leke ALANA yayılıyor (rim'e değil): çemberin içi de
+                    // beyazlamalı. sqrt = düzgün alan dağılımı.
+                    for (int q = 0; q < 2; q++) {
+                        float a = sf_rnd() * 6.28318f;
+                        float rr = fR * SDL_sqrtf(sf_rnd());
+                        decal_frost(e->x + SDL_cosf(a) * rr,
+                                    e->y + SDL_sinf(a) * rr * 0.62f,
+                                    26.0f + sf_rnd() * 18.0f);
+                    }
                 }
                 // KAR HİSSİ: zemine yakın, yavaş sürüklenen beyaz pus + tek tük
                 // düşen taneler. Kırağı lekesi "boya", pus + tane "hava soğuk"
@@ -1013,7 +1075,10 @@ void skillfx_update(ParticleSystem *fx, float dt)
                 // Sürekli kaya sağmak dikeni gizliyordu — kırıntı OLAYIN
                 // kendisi değil, olayın ARTIĞI.
                 if (u >= delay && u < delay + 0.13f) {
-                    int n = (int)(46.0f * dt / 0.016f);
+                    // BÜTÇE: ~5.7 diken yeri eşzamanlı yayıyor. 46/kare × 5.7 ×
+                    // 1.1sn = 18.000 partikül isteği (havuz 8192) → aşım.
+                    // 13/kare ile toplam ~5100. (Kararlı hal = spawn × ömür × 62.5)
+                    int n = (int)(13.0f * dt / 0.016f + 0.5f);
                     for (int k = 0; k < n; k++) {
                         float ox = sf_sym() * 13.0f;
                         fx_spawn(fx, sf_snap(px + ox), sf_snap(py + sf_sym() * 6.0f),

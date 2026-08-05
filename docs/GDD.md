@@ -1062,6 +1062,32 @@ ateş YANAN ZEMİN bırakıyor, buz ise yalnız düz bir kırağı lekesi bırak
   leke. Nova bütçesi 9 (kademeli) + 1 (merkez) + 16 (halka) = **26**. Bu projede sessiz düşürme
   dördüncü kez ısırmak üzereydi (512 partikül · 16384 quad · save tamponları · şimdi 64 leke).
 
+**Karar 13 — BÜTÇE KURALI GERİYE DÖNÜK UYGULANDI (15 kat aşım bulundu).**
+Kararlı hal = `kare_başına_spawn × ömür × 62.5`. Bu kuralı Alev Seli yazılırken bulup uygulamış,
+ama **daha önce yazılmış büyülere hiç uygulamamıştım.** Ölçüm:
+| Büyü | Eski istek | Havuz | Aşım | Yeni istek |
+|---|---|---|---|---|
+| Buz Novası | 124.900 | 8.192 | **15×** | 5.695 |
+| Toprak Dikenleri | 46.900 | 8.192 | **5.7×** | ~5.100 |
+
+Novanın dökümü: bant 42.188 · kristal mızrak 65.981 (9 azimut × 3 dalga × 46/kare = 1242/kare!) ·
+iç alan 16.734. Partiküllerin **%93'ü sessizce düşüyordu** ve bu yalnız "yoğunluk kumarı" değil,
+Hakan'ın *"çemberin içi boş"* şikayetinin de sebebiydi: havuz cephede doluyor, iç alana hiç sıra
+gelmiyordu. Yani görsel bir şikayetin arkasında bir BÜTÇE hatası vardı — ayarla düzeltilemezdi.
+**KURAL (bağlayıcı):** yeni yayıcı yazan ya da mevcut bir yayıcının hızını değiştiren, kararlı hal
+hesabını YAPMAK ZORUNDA. Bir-seferlik burst'ler (doğum flaşı, çatlama) bu hesaba girmez.
+
+**Karar 14 — DOLU DİSK: alan büyüsü halka değil ALAN.** Nova yalnız bandı (R ± 30) doldurıyordu,
+çemberin içi boştu. Cephenin gerisi de donmuş olmalı: iç alan daha seyrek ve daha ALÇAK
+partiküllerle dolduruluyor, bant en parlak KENAR olarak kalıyor (dalganın yeri okunsun).
+Yarıçap `sqrt(rnd)` ile seçiliyor — doğrusal seçim merkeze yığıyor, sqrt düzgün ALAN dağılımı verir.
+Kırağı lekesi de rim'e değil alana yayıldı (aynı sqrt).
+
+**Karar 15 — BUZ OLUŞUMU: koni değil KÜME.** İlk sürüm üç konik plakaydı ve *"üçgen buzlar, çok
+basit duruyor"*. Buz kristali tek koni değil: farklı yükseklikte ALTI plaka, farklı yönlere yatık,
+bazılarının ucu KIRIK (düz kesik — kusursuz sivri uç yapay duruyor), hepsi ortak bir TABAN
+BUZUNDAN çıkıyor. Taban olmadan plakalar havada duran kıymıklar gibi okunuyordu.
+
 **Açık kalan:** kamp ateşi sprite alevi kalsın mı (karar Hakan'da) · alev/buz rünü eşya olarak
 eklenecek mi (mekanik kodda, hiçbir eşya damgayı vermiyor — şu an yalnız Ctrl+G ile test edilebilir)
 · kalan 13 büyünün prosedürel motora göçü (beşi onaylanırsa). Göçmemiş olanlar artık ekranda
