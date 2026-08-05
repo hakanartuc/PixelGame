@@ -244,6 +244,11 @@ buz camgöbeği ayrımı okunuyor mu → Ctrl+G ile silah damgası döngüsü.
 olarak eklenecek mi (mekanik kodda ama HİÇBİR EŞYA damgayı vermiyor — şu an
 yalnız Ctrl+G ile erişilebilir) · kalan 14 büyü göç etsin mi.
 **YENİ MOTOR KURALLARI (bu turların bedeli)**:
+· **HAVUZ TAVANLARI: partikül 8192 · quad 16384 · DECAL 64.** Efekt yazarken
+  üçü de hesaplanacak. Leke "saniyede N" değil MESAFEYE bağlı bırakılır, yoksa
+  havuz dövülür ve başka efektlerin izleri silinir (dördüncü sessiz-düşürme vakası).
+· **Buz gövdesi taş gövdesinin TERSİ boyanır**: taşta ışıklı/gölge yüz, buzda
+  parlak KENAR + soluk saydam gövde. Buzu buz yapan kenar ışığı.
 · **ATEŞ RENGİ ELLE UYDURULMAZ — kara cisim eğrisinden hesaplanır.** Eğride
   MAVİ kanal 2000K altında SIFIRDIR (3000K'da ~110). Elle girilen B=48..132
   değerleri eğri dışıydı ve hem sarıyı beyazlatıyor hem iç alev rengini

@@ -300,6 +300,80 @@ static void sf_bake_lion(R2D *renderer)
 
 #endif
 
+// ── YERDE KALAN BUZ OLUŞUMLARI (dokusu kodda basılır, 3 varyant).
+// NEDEN VAR: üç büyüyü yan yana koyunca buzun eksiği ortaya çıktı —
+// toprak yere GERÇEK GÖVDE (diken) bırakıyor, ateş YANAN ZEMİN bırakıyor, buz
+// ise yalnız düz bir kırağı lekesi bırakıyordu. Hacim yok (Hakan: "vurduğu
+// alanda yerde buz etkileri bırakmalı gibi, bir şeyi eksik").
+// Buz saydam olduğu için gövde ALPHA ~205 ve kenarları PARLAK: buzu buz yapan
+// şey kütlesi değil kenarındaki ışık. Taş dikeninin tersi — orada ışıklı/gölge
+// yüz vardı, burada parlak KENAR + soluk gövde.
+#define SFX_ICE_W 20
+#define SFX_ICE_H 26
+#define SFX_ICE_N 3
+static R2DTexture *s_iceTex = NULL;
+
+static void sf_bake_ice(R2D *renderer)
+{
+    static Uint8 px[SFX_ICE_W * SFX_ICE_N * SFX_ICE_H * 4];
+    const int TW = SFX_ICE_W * SFX_ICE_N;
+    SDL_memset(px, 0, sizeof px);
+    // Her oluşum 3 plakadan: merkez büyük + iki yan küçük, farklı yatıklıkta
+    static const float P[SFX_ICE_N][3][5] = {
+        {{0.50f,0.62f,0.20f,0.42f, 0.00f},{0.30f,0.78f,0.13f,0.26f,-0.20f},
+         {0.72f,0.80f,0.11f,0.22f, 0.18f}},
+        {{0.44f,0.58f,0.16f,0.46f, 0.14f},{0.66f,0.72f,0.15f,0.32f,-0.16f},
+         {0.26f,0.84f,0.10f,0.18f, 0.10f}},
+        {{0.54f,0.66f,0.22f,0.36f,-0.12f},{0.34f,0.74f,0.12f,0.30f, 0.16f},
+         {0.74f,0.86f,0.09f,0.16f, 0.00f}},
+    };
+    for (int c = 0; c < SFX_ICE_N; c++)
+    for (int j = 0; j < SFX_ICE_H; j++)
+    for (int i = 0; i < SFX_ICE_W; i++) {
+        float ux = ((float)i + 0.5f) / SFX_ICE_W;
+        float uy = ((float)j + 0.5f) / SFX_ICE_H;
+        int best = 0;
+        for (int k = 0; k < 3; k++) {
+            float cx = P[c][k][0], cy = P[c][k][1];
+            float rx = P[c][k][2], ry = P[c][k][3], lean = P[c][k][4];
+            if (uy <= cy - ry || uy >= cy + ry) continue;
+            float xx = ux - lean * (cy - uy) * 1.4f;
+            float g = (uy - (cy - ry)) / (2.0f * ry);
+            if (g < 0.05f) g = 0.05f;
+            float rr = rx * SDL_powf(g, 0.55f);      // yukarı daralan plaka
+            float d = SDL_fabsf(xx - cx) / rr;
+            if (d >= 1.0f) continue;
+            int v = (d < 0.30f) ? 3 : ((d < 0.72f) ? 2 : 1);
+            if (v > best) best = v;
+        }
+        if (best == 0) continue;
+        Uint8 *o = &px[((j * TW) + c * SFX_ICE_W + i) * 4];
+        if (best == 1) {          // PARLAK KENAR: buzu buz yapan ışık
+            o[0] = 236; o[1] = 252; o[2] = 255; o[3] = 235;
+        } else if (best == 3) {   // omurga: hafif koyu (kalın buz mavileşir)
+            o[0] = 126; o[1] = 186; o[2] = 230; o[3] = 205;
+        } else {                  // gövde: soluk camgöbeği, saydam
+            o[0] = 176; o[1] = 224; o[2] = 246; o[3] = 190;
+        }
+    }
+    s_iceTex = r2d_texture_from_pixels(renderer, px, TW, SFX_ICE_H);
+}
+
+// Oluşum yeri olay tohumundan (dizi tutmuyoruz)
+static void sf_ice_site(const SkillEvent *e, int idx, float *ox, float *oy,
+                        float *orad, float *oh, int *ovar)
+{
+    unsigned h = (unsigned)idx * 2246822519u ^ (e->seed * 3266489917u);
+    float a = (float)idx / 13.0f * 6.28318f
+            + (float)((h >> 7) & 255) / 255.0f * 0.30f;
+    float rr = (34.0f + (float)((h >> 3) & 127) / 127.0f * 128.0f) * e->power;
+    *ox = e->x + SDL_cosf(a) * rr;
+    *oy = e->y + SDL_sinf(a) * rr * 0.62f;
+    *orad = rr;                      // dalga buraya varınca oluşum başlar
+    *oh = 34.0f + (float)((h >> 19) & 63) / 63.0f * 30.0f;
+    *ovar = (int)((h >> 26) % SFX_ICE_N);
+}
+
 static SkillEvent s_ev[SKILLFX_MAX_EVENT];
 static bool s_procedural = false;
 static unsigned s_rng = 0x51ED270Bu;
@@ -378,7 +452,10 @@ bool skillfx_procedural(void) { return s_procedural; }
 static float sf_life(SkillFxKind k)
 {
     switch (k) {
-        case SKILLFX_ICE_NOVA:  return 1.75f;
+        // 1.75 → 2.70: halkalar ~1.4 sn'de bitiyor, kalanı DONMUŞ ZEMİN evresi
+        // (oluşumlar ayakta, pus geziniyor, sonunda erime). Yer büyüsünün izi
+        // bir an değil bir SÜRE olmalı.
+        case SKILLFX_ICE_NOVA:  return 2.70f;
         case SKILLFX_LIGHTNING: return 0.85f;
         case SKILLFX_FIREBOLT:  return 2.20f;   // uçuş + patlama
         // 1.10 → 1.45: son dikenin gecikme+yükselme+duruş+çökme toplamı 0.97'ye
@@ -639,19 +716,71 @@ void skillfx_update(ParticleSystem *fx, float dt)
                 fx_spawn(fx, e->x + sf_sym() * 44.0f, e->y + sf_sym() * 24.0f,
                          sf_sym() * 14.0f, -24.0f, 1.8f, 20.0f,
                          218, 238, 255, WEAPON_FX_STEAM);
-            // Kırağı kalıntısı bir kez
+            // ── DONAN ZEMİN, DALGA İLERLERKEN. Kırağı eskiden TEK SEFERDE,
+            // u>0.25'te bırakılıyordu: zemin efektin ortasında bir anda
+            // beyazlıyordu ve büyünün geri kalanında hiçbir şey olmuyordu.
+            // Hakan: "yere beyaz-buz alanları, kar hissi bırakmalı; skill efekti
+            // ESNASINDA da öyle olmalı, sadece sonda değil."
+            // Şimdi kırağı dalga cephesinin ARDINA bırakılıyor: zemin dalga
+            // geçtikçe, gerçek zamanlı beyazlıyor. Sebep-sonuç görünür oluyor.
+            if (u > 0.13f) {
+                float ubF = (u - 0.13f) / 0.87f;
+                float fR = 26.0f + 190.0f * ubF * e->power;
+                // ── BÜTÇE UYARISI: MAX_DECALS 64 ve havuz dolunca EN ESKİYİ
+                // eziyor. Kırağıyı "saniyede N leke" diye bırakmak (ilk yazım:
+                // 120/sn → nova ömründe ~280 leke) havuzu döver, kendi izini ve
+                // başka efektlerin yanık izlerini siler. Bu projede sessiz
+                // düşürme üç kez ısırdı; leke MESAFEYE bağlı bırakılıyor:
+                // cephe her 22px ilerlediğinde bir leke → sweep boyunca ~9 leke.
+                // Toplam nova bütçesi: 9 (kademeli) + 1 (merkez) + 16 (halka) = 26.
+                if (fR > e->emitAcc) {
+                    e->emitAcc = fR + 22.0f;
+                    float a = sf_rnd() * 6.28318f;
+                    float rr = fR * (0.82f + sf_rnd() * 0.18f);
+                    decal_frost(e->x + SDL_cosf(a) * rr,
+                                e->y + SDL_sinf(a) * rr * 0.62f,
+                                24.0f + sf_rnd() * 16.0f);
+                }
+                // KAR HİSSİ: zemine yakın, yavaş sürüklenen beyaz pus + tek tük
+                // düşen taneler. Kırağı lekesi "boya", pus + tane "hava soğuk"
+                // diyor; ikisi birlikte kar okunuyor.
+                if (sf_rnd() < 70.0f * dt) {
+                    float a = sf_rnd() * 6.28318f;
+                    float rr = sf_rnd() * fR;
+                    fx_spawn(fx, e->x + SDL_cosf(a) * rr,
+                             e->y + SDL_sinf(a) * rr * 0.62f,
+                             SDL_cosf(a) * 16.0f, -4.0f - sf_rnd() * 6.0f,
+                             1.4f + sf_rnd() * 1.0f, 13.0f + sf_rnd() * 12.0f,
+                             240, 250, 255, WEAPON_FX_STEAM);
+                }
+                if (sf_rnd() < 55.0f * dt) {
+                    float a = sf_rnd() * 6.28318f;
+                    float rr = sf_rnd() * fR;
+                    fx_spawn(fx, e->x + SDL_cosf(a) * rr,
+                             e->y + SDL_sinf(a) * rr * 0.62f - 40.0f
+                               - sf_rnd() * 50.0f,
+                             sf_sym() * 14.0f, 26.0f + sf_rnd() * 22.0f,
+                             1.2f + sf_rnd() * 0.9f, 5.0f + sf_rnd() * 5.0f,
+                             246, 252, 255, WEAPON_FX_ICE);
+                }
+            }
+            // Kırağı kalıntısı bir kez (merkez + halka: izin ŞEKLİ)
             if (!e->impacted && u > 0.25f) {
                 e->impacted = true;
                 // HALKA KALINTISI: tek büyük leke yerine çember boyunca 14
                 // küçük kırağı. Tek leke "boya lekesi" gibi duruyor; halka
                 // efektin ŞEKLİNİ zeminde bırakıyor, yani iz anlam taşıyor.
-                decal_frost(e->x, e->y, 44.0f * e->power);
-                for (int k = 0; k < 14; k++) {
-                    float a = (float)k / 14.0f * 6.28318f + sf_sym() * 0.16f;
+                decal_frost(e->x, e->y, 62.0f * e->power);
+                for (int k = 0; k < 8; k++) {   // 14 → 8: leke bütçesi (yukarı bkz.)
+                    float a = (float)k / 8.0f * 6.28318f + sf_sym() * 0.16f;
                     float rr = 150.0f * e->power;
                     decal_frost(e->x + SDL_cosf(a) * rr,
                                 e->y + SDL_sinf(a) * rr * 0.62f,
-                                20.0f + sf_rnd() * 12.0f);
+                                26.0f + sf_rnd() * 16.0f);
+                    // Ara halka: tek halka "çember", iki halka ALAN okunuyor
+                    decal_frost(e->x + SDL_cosf(a + 0.24f) * rr * 0.62f,
+                                e->y + SDL_sinf(a + 0.24f) * rr * 0.62f * 0.62f,
+                                22.0f + sf_rnd() * 14.0f);
                 }
             }
             // GECİKMELİ ÇATLAMA: halkalar geçtikten sonra donan zemin ÇATLAR.
@@ -1682,7 +1811,47 @@ void skillfx_render(R2D *renderer, const Camera *camera)
             // bandıyla anlatılıyor (bkz. update: kalın bant + kristal mızrak
             // kümeleri). Primitif çizgi, partikülle anlatılamayan geometri için
             // (yıldırım kolu) saklı — buzda o gerekçe yoktu.
-            (void)z;
+            // ── AMA YERDE KALAN OLUŞUM GÖVDEYLE çizilir: buz kütlesi bir NESNE
+            // (taş dikeni kuralı). Oluşum, genişleyen dalga kendi yarıçapına
+            // VARINCA yerden çıkıyor — buz dalganın ARDINDA donuyor, hepsi
+            // birden belirmiyor.
+            if (s_iceTex == NULL) sf_bake_ice(renderer);
+            if (s_iceTex != NULL) {
+                float ubD2 = (u - 0.13f) / 0.87f;
+                float frontR = 26.0f + 190.0f * ubD2 * e->power;
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                for (int sIdx = 0; sIdx < 13; sIdx++) {
+                    float ix, iy, irad, ih; int ivar;
+                    sf_ice_site(e, sIdx, &ix, &iy, &irad, &ih, &ivar);
+                    if (frontR < irad) continue;               // dalga gelmedi
+                    // Yükselme: dalga geçtikten sonra ~0.16 sn ease-out
+                    float since = (frontR - irad) / (190.0f * e->power)
+                                * (e->maxLife * 0.87f);
+                    float grow = since / 0.16f;
+                    if (grow > 1.0f) grow = 1.0f;
+                    grow = 1.0f - (1.0f - grow) * (1.0f - grow);
+                    // ERİME: ömrün son %22'sinde küçülüp solar
+                    float fade = 1.0f;
+                    if (u > 0.78f) {
+                        float m = (u - 0.78f) / 0.22f;
+                        fade = 1.0f - m;
+                        grow *= (1.0f - m * 0.55f);
+                    }
+                    float hh = ih * grow;
+                    if (hh < 3.0f || fade <= 0.02f) continue;
+                    float ww = (float)SFX_ICE_W * 2.1f * (0.75f + 0.25f * grow);
+                    SDL_FRect src = { (float)(ivar * SFX_ICE_W), 0.0f,
+                                      (float)SFX_ICE_W, (float)SFX_ICE_H };
+                    SDL_FRect dst = {
+                        (sf_snap(ix - ww * 0.5f) - camera->x) * z,
+                        (sf_snap(iy - hh) - camera->y) * z,
+                        ww * z, hh * z
+                    };
+                    r2d_texture_set_alpha_mod(s_iceTex, (Uint8)(fade * 255.0f));
+                    r2d_draw_texture(renderer, s_iceTex, &src, &dst);
+                }
+                r2d_texture_set_alpha_mod(s_iceTex, 255);
+            }
         }
     }
 }

@@ -1039,6 +1039,29 @@ tablo karışıktı: FLAME'de varyant 1 = kızıl (sıcak) ama SPARK'ta 1 = mavi
 çıkıyordu — **yıldırım sıcak kahve duman, toprak soğuk gri duman** alıyordu. Olay başına tek
 indeks kullanmanın bedeli bu tutarlılık: 0 = kanonik, 1 = SOĞUK aile, 2 = SICAK aile, istisnasız.
 
+**Karar 12 — BUZUN YERDE BIRAKTIĞI İZ: alan + oluşum + eş zamanlılık.**
+Üç büyü yan yana konunca buzun eksiği ortaya çıktı: toprak yere GERÇEK GÖVDE (diken) bırakıyor,
+ateş YANAN ZEMİN bırakıyor, buz ise yalnız düz bir kırağı lekesi bırakıyordu — hacim yok
+(Hakan: *"vurduğu alanda yerde buz etkileri bırakmalı gibi, bir şeyi eksik"*).
+- **Oluşum GÖVDEYLE** (`sf_bake_ice`, 3 varyant, kodda basılır): köşeli plakalardan kümeler.
+  Taş dikeninin TERSİ boyanıyor — dikende ışıklı/gölge yüz vardı, buzda **parlak KENAR + soluk
+  saydam gövde** (alfa ~205). Buzu buz yapan şey kütlesi değil kenarındaki ışık.
+  Oluşum, genişleyen dalga kendi yarıçapına VARINCA yerden çıkıyor: buz dalganın ardında donuyor,
+  hepsi birden belirmiyor. Ömrün son %22'sinde küçülüp soluyor (erime).
+- **EŞ ZAMANLILIK** (Hakan'ın ikinci notu): *"skill efekti esnasında da öyle olmalı, sadece sonda
+  değil."* Kırağı eskiden TEK SEFERDE u>0.25'te bırakılıyordu; zemin bir anda beyazlayıp büyünün
+  geri kalanında hiçbir şey olmuyordu. Artık kırağı cephenin ARDINA bırakılıyor, zemin dalga
+  geçtikçe gerçek zamanlı beyazlıyor — sebep-sonuç görünür.
+- **KAR HİSSİ**: kırağı lekesi "boya" der, zemine yakın sürüklenen beyaz pus + tek tük düşen taneler
+  "hava soğuk" der. İkisi birlikte kar okunuyor.
+- **ÖMÜR 1.75 → 2.70 sn**: halkalar ~1.4 sn'de bitiyor, kalanı DONMUŞ ZEMİN evresi. Yer büyüsünün
+  izi bir an değil bir SÜRE olmalı.
+- ⚠ **LEKE BÜTÇESİ (yakalanan tuzak):** `MAX_DECALS 64` ve havuz dolunca EN ESKİYİ eziyor. Kırağıyı
+  "saniyede 120 leke" diye bırakmak nova ömründe ~280 leke demekti — havuzu döver, kendi izini ve
+  başka efektlerin yanık izlerini siler. Leke artık MESAFEYE bağlı: cephe her 22px ilerlediğinde bir
+  leke. Nova bütçesi 9 (kademeli) + 1 (merkez) + 16 (halka) = **26**. Bu projede sessiz düşürme
+  dördüncü kez ısırmak üzereydi (512 partikül · 16384 quad · save tamponları · şimdi 64 leke).
+
 **Açık kalan:** kamp ateşi sprite alevi kalsın mı (karar Hakan'da) · alev/buz rünü eşya olarak
 eklenecek mi (mekanik kodda, hiçbir eşya damgayı vermiyor — şu an yalnız Ctrl+G ile test edilebilir)
 · kalan 13 büyünün prosedürel motora göçü (beşi onaylanırsa). Göçmemiş olanlar artık ekranda

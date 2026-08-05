@@ -77,6 +77,12 @@ GÖRKEMİ. Detaylı gerekçeler GDD §6.6'da.
 - **Yol göstergesi**: prosedürel mod açıkken her büyü çağrısı ekrana
   `"<ad> -> PROSEDUREL"` / `"-> SPRITE (motor disi)"` yazıyor.
 
+- **BUZ NOVASI yer izi tamamlandı**: yerde duran buz oluşumları (3 varyant,
+  kodda basılır, parlak kenar + saydam gövde), dalganın ardında yükseliyor,
+  sonunda eriyor · kırağı artık cephe ilerledikçe bırakılıyor (eskiden tek
+  seferde) · kar hissi (zemine yakın pus + düşen taneler) · ömür 1.75 → 2.70 sn.
+  Leke bütçesi MAX_DECALS 64'e oturtuldu (mesafeye bağlı bırakma).
+
 **Bu fazın dersleri (hepsi Hakan'ın bildirimiyle bulundu):**
 - *"üçü de çok cılız"* → sorun ayar değildi: `MAX_PARTICLES` 512'ydi ve
   fazlası SESSİZCE düşüyordu. 2560. **"Cılız" şikayetinde önce tavanı ölç.**
