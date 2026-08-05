@@ -76,6 +76,10 @@ Cute_Fantasy paketleri (`/Users/hakanartuc/Cute Fantasy` — NPC, ev, düşman, 
   · ui_theme (9-grid paneller) · font (ttf→GPU upload) · tooltip · ambience · journal.
   · **jsonx** (cJSON sarmalayıcı: JSONC yorum temizliği + satır/kolon hatası + varsayılanlı getter)
   · **uilayout** (HUD yerleşimi veriden: çapa/hiza/dikey/boyut — `assets/ui/layout.json`)
+  · **groundfx** (ZEMİN PARÇASI: kırıntı zeminin gerçek DOKUSUNDAN kesilir,
+    davranış karo alanlarından türer — conceals/solid/diğer. Motor katmanı:
+    diken, patlama, nova cephesi, isabet kullanıyor; boss/düşme/ok sırada.
+    `groundfx_bind_tiles` main açılışta bir kez.)
   · **uieditor** (oyun içi yerleşim düzenleyicisi, Ctrl+U)
   · **fx** (parçacık motoru: 13 tip, 7 biçimli prosedürel atlas, palet varyantı,
     kuvvet alanı/rüzgâr, ölüm kancası, `fx_breath` nefesi, tavan 2560)
@@ -244,6 +248,11 @@ buz camgöbeği ayrımı okunuyor mu → Ctrl+G ile silah damgası döngüsü.
 olarak eklenecek mi (mekanik kodda ama HİÇBİR EŞYA damgayı vermiyor — şu an
 yalnız Ctrl+G ile erişilebilir) · kalan 14 büyü göç etsin mi.
 **YENİ MOTOR KURALLARI (bu turların bedeli)**:
+· **ZEMİNE BAĞLI GÖRSEL RENKLE DEĞİL DOKUYLA yapılır.** Düz renk haritayı
+  takip etmez (karo sanatı değişince yanlış kalır) ve "boya" gibi durur.
+  Karo dokusundan kesilen parça ikisini de çözer ve bedava güncellenir.
+  Sınıflandırma da id tablosuyla DEĞİL karo ALANLARIYLA yapılır — harita her
+  zaman değişebilir, tablo bakım borcu olur.
 · **PROSEDÜREL GÖVDE İÇİN BEŞ KURAL** (taş dikeni + buz kümesinde kanıtlandı):
   ÜÇ yüz (iki yüz karton gibi durur) · kenar ÇENTİKLİ (düzgün konik yapay) ·
   uç bazı varyantlarda KIRIK (kusursuz sivri yapay) · DİP YAKASI (nesne zemine

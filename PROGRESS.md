@@ -77,6 +77,15 @@ GÖRKEMİ. Detaylı gerekçeler GDD §6.6'da.
 - **Yol göstergesi**: prosedürel mod açıkken her büyü çağrısı ekrana
   `"<ad> -> PROSEDUREL"` / `"-> SPRITE (motor disi)"` yazıyor.
 
+- **ZEMİN PARÇASI MOTORU** (`groundfx.c/h`, yeni modül): kırıntı, zeminin
+  GERÇEK DOKUSUNDAN kesilmiş bir kare — düz renk değil. Karo 16×16 ve dünyada
+  64px olduğu için 1 doku pikseli = 4 dünya px; 3-5 piksellik pencere doğal
+  ölçekte 12-20px, hiç bulanıklık yok. Davranış sınıfı karo ALANLARINDAN
+  türüyor (conceals→bitki, solid→kaya, diğer→tane, su→parça yok), id
+  tablosundan DEĞİL: "harita her zaman değişebilir" (Hakan) kuralının kod
+  karşılığı — yeni karo eklendiğinde kırıntısı kendiliğinden doğru.
+  Tüketiciler: taş dikeni (dip + UÇ + çökme) · ateş topu patlaması · buz novası
+  cephesi · isabet katmanı (yalnız ağır elemanlar). Havuz 512, tepe ~250.
 - **TAŞ DİKENİ 2. TUR**: üç yüz (aydınlık/ara/gölge) · çentikli kenar (taş
   kırılır, yontulmaz) · kırık uç · DİP YAKASI (dikenin kırdığı toprak kabartısı)
   · %12 AŞMA (yerden fışkırma hissi) · aynalama + genişlik varyasyonu

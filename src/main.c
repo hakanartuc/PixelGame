@@ -7,6 +7,7 @@
 #include "menu.h"
 #include "floattext.h"
 #include "skillfx.h"
+#include "groundfx.h"
 #include "tilemap.h"
 #include "player.h"
 #include "mob.h"
@@ -1683,6 +1684,7 @@ int main(int argc, char *argv[])
     fx_init(&weaponFx);
     fx_set_death_hook(fx_on_particle_death);
     skillfx_init();
+    groundfx_init();
 
     // Mob texture'ları: her tür için sprite yükle (TILE_TYPES gibi)
     R2DTexture *mob_textures[MAX_MOB_TYPES] = {0};
@@ -1779,6 +1781,10 @@ int main(int argc, char *argv[])
             // not: yüklenemezse NULL kalır, render renk fallback'ine düşer — oyunu çökertme
         }
     }
+    // ZEMİN PARÇASI: karo dokularını bağla. Zemin kırıntısı bu dizideki gerçek
+    // dokudan kesiliyor (düz renk değil), o yüzden bağlama dokular YÜKLENDİKTEN
+    // sonra yapılmak zorunda.
+    groundfx_bind_tiles(tile_textures);
     tilemap_load_details(renderer);   // çimen varyantları + kenar kaplamaları
 
     bool inventoryOpen = false;
@@ -9017,6 +9023,7 @@ int main(int argc, char *argv[])
             // Zamanlı patlamalar (skill/boss) ısı alanlarının ÜSTÜNE eklenir;
             // ikisi aynı tavanı paylaşıyor (8), patlamalar daha alakalı olduğu
             // için sonra yazılıyor — tavan dolarsa ısı düşer, patlama kalır.
+            groundfx_update(dt);
             fx_distort_update(dt);
             distortN += fx_distort_collect(distorts + distortN,
                                            R2D_MAX_DISTORT - distortN,
@@ -11833,6 +11840,7 @@ int main(int argc, char *argv[])
         float fxSplitY = player.rect.y + player.rect.h;
         skillfx_render_band(renderer, &camera, -1.0e9f, fxSplitY);
         fx_render_band(&weaponFx, renderer, glowTex, &camera, -1.0e9f, fxSplitY);
+        groundfx_render_band(renderer, &camera, -1.0e9f, fxSplitY);
         player_render(&player, renderer, built, builtCount, &camera); // oyuncuyu
         
         for (int i = 0; i < mobCount; i++)
@@ -12074,6 +12082,7 @@ int main(int argc, char *argv[])
         skillfx_render_band(renderer, &camera, fxSplitY, 1.0e9f);
         skillfx_render_air(renderer, &camera);   // yıldırım kolu / isabet yayı
         fx_render_band(&weaponFx, renderer, glowTex, &camera, fxSplitY, 1.0e9f);
+        groundfx_render_band(renderer, &camera, fxSplitY, 1.0e9f);
         animfx_render(animFxPool, renderer, &camera);
 
         if (openLootIndex >= 0)

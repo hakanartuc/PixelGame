@@ -1119,6 +1119,41 @@ iki yüzlü (ışıklı/gölge) ve düz kenarlı — buzdaki "üçgen" sorununun
 Çeşitlilik: **aynalama** (3 kalıp × ayna = 6 görünüm, bedava) + yere göre genişlik varyasyonu.
 14 diken üç kalıbı tekrar edince "damga basılmış" okunuyordu — aynı ders alev dilinde de çıkmıştı.
 
+**Karar 18 — ZEMİN PARÇASI MOTORU (`groundfx.c/h`): kırıntı, zeminin GERÇEK DOKUSUNDAN kesilir.**
+Hakan fikri: *"Dikenlerin üst uç kısımlarına çıktığı zemine göre parçacıklar gelse. Çimden çıkıyorsa
+ucunda çim parçacıkları, kum, çöl veya toprak, taş gibi yerden çıkıyorsa ona göre parçacıklar olsa."*
+Ardından iki netleştirme mimariyi belirledi:
+· *"Bu yapıyı muhtemelen başka yerlerde de kullanırız"* → tek büyüye gömülmez, MOTOR KATMANI olur.
+· *"Harita her zaman değişebilir. Basit bir renk değil DOKU gibi olmalı."*
+
+**ÇEKİRDEK KARAR: parça = karo dokusundan kesilmiş kare.** Düz renkle boyanmış parçacık iki şeyi
+kaybediyor: (1) haritayı takip etmez — karo sanatı değişince kırıntı yanlış kalır; (2) "boya" gibi
+durur, malzeme gibi durmaz. Doku parçası ikisini birden çözüyor ve BEDAVA güncellenir: yeni bir karo
+eklendiğinde kırıntısı kendiliğinden doğru olur, elle bakım gerekmez.
+**ÖLÇÜ ŞANSI:** karo dokusu 16×16, dünyada 64px → 1 doku pikseli = 4 dünya pikseli (ART_PX).
+3-5 piksellik pencere doğal ölçekte 12-20 dünya px eder — hiç ölçekleme bulanıklığı olmadan
+gerçek zemin parçası. Dual-grid sayfalarında pencere 16'ya HİZALI hücreden seçiliyor; hizayı bozmak
+iki hücrenin arasından kesip yapay dikiş çıkarıyor.
+**NEDEN AYRI MODÜL (fx.c'ye eklenmedi):** fx.c tek atlas dokusundan çiziyor ve batch'i buna dayanıyor;
+zemin parçası karo başına farklı doku istiyor. fx.c'ye sokmak tek-doku batch'ini bozardı.
+**DAVRANIŞ SINIFI KARO ALANLARINDAN TÜRETİLİYOR, id tablosundan DEĞİL** — "harita her zaman
+değişebilir" kuralının kod karşılığı:
+| Karo alanı | Sınıf | Davranış |
+|---|---|---|
+| `conceals` (çim, saman) | BİTKİ | hafif, yerçekimi 190, savrulur, küçük |
+| `solid` (taş, kaya, duvar) | KAYA | ağır, yerçekimi 660, hızlı düşer, büyük |
+| diğer (toprak, kum, yol) | TANE | orta, yerçekimi 430, bol |
+| su karosu | — | parça YOK (su kırılmaz, sıçrar) |
+Yeni karo eklendiğinde bu alanlar zaten dolduruluyor, davranış kendiliğinden makul çıkıyor.
+**TÜKETİCİLER (bugün bağlanan):** taş dikeni (dip = zemini kırıyor + UÇ = yukarı taşıdığı malzeme +
+çökme) · ateş topu patlaması · buz novası dalga cephesi (leke ile ortak mesafe kapısı, yani bütçeli) ·
+isabet katmanı yalnız AĞIR elemanlarda (toprak/yıldırım/çelik — zehir ve arcane yeri kırmaz).
+Sırada: boss yer vuruşu, düşme hasarı, ok saplanması, koşu tozu.
+**Tek-seferlik tespiti:** diken siteleri durumsuz (tohumdan türüyor), o yüzden "bu kare pencereye
+GİRDİ mi" diye `prevU = u - dt/maxLife` ile önceki kareyle karşılaştırılıyor — ayrı bayrak dizisi yok.
+**Bütçe:** havuz 512, tepe kullanım ~250 (diken 196 + patlama 14 + nova 39 + isabet 8). Dolu havuzda
+parça DÜŞER, sınırlı tarama 24 slot (fx.c'nin 2 milyon iterasyon dersi).
+
 **Açık kalan:** kamp ateşi sprite alevi kalsın mı (karar Hakan'da) · alev/buz rünü eşya olarak
 eklenecek mi (mekanik kodda, hiçbir eşya damgayı vermiyor — şu an yalnız Ctrl+G ile test edilebilir)
 · kalan 13 büyünün prosedürel motora göçü (beşi onaylanırsa). Göçmemiş olanlar artık ekranda
