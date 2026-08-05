@@ -731,8 +731,16 @@ void fx_update(ParticleSystem *fx, float dt)
     }
 }
 
+// Tüm aralık: eski çağrı yerleri bozulmasın (bant sarmalayıcısı aşağıda)
 void fx_render(ParticleSystem *fx, R2D *renderer,
                R2DTexture *glowTex, const Camera *camera)
+{
+    fx_render_band(fx, renderer, glowTex, camera, -1.0e9f, 1.0e9f);
+}
+
+void fx_render_band(ParticleSystem *fx, R2D *renderer,
+                    R2DTexture *glowTex, const Camera *camera,
+                    float yMin, float yMax)
 {
     if (glowTex == NULL) return;
     if (s_shapeTex == NULL) fx_bake_shapes(renderer);   // ilk karede bir kez
@@ -757,6 +765,8 @@ void fx_render(ParticleSystem *fx, R2D *renderer,
         if (!p->active) continue;
         // Geçiş seçimi: 2. geçiş yalnız "üstüne çizilen" tipleri alır, ilk iki
         // geçiş onları ATLAR (yoksa iki kez çizilirler).
+        // DERİNLİK BANDI: aralık dışındaki partikül bu çağrıda çizilmez
+        if (p->y < yMin || p->y >= yMax) continue;
         bool over = fx_type_over(p->fxType);
         if (pass == 2) { if (!over) continue; }
         else if (over || p->additive != wantAdd) continue;

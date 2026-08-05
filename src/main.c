@@ -11821,6 +11821,18 @@ int main(int argc, char *argv[])
             };
             r2d_draw_texture(renderer, castCircleTex, &ccSrc, &ccDst);
         }
+        // ── EFEKTİN ARKA YARISI (oyuncudan ÖNCE). Alan büyülerinde oyuncu
+        // tamamen kayboluyordu çünkü tüm partiküller varlıklardan SONRA tek blok
+        // halinde çiziliyordu. Çözüm "oyuncuyu üste al" DEĞİL — o zaman efektin
+        // üstüne yapıştırılmış çıkartma gibi durur (Hakan bunu bilerek dışladı:
+        // "direk skill efektlerinin üstüne çizim gibi değil, etkisinde gözükse").
+        // 2.5B derinlik: ayak hizasından YUKARIDAKİ efekt oyuncunun ARKASINA,
+        // aşağıdaki ÖNÜNE. Oyuncu efektin İÇİNDE duruyor — uzak taraf arkasında,
+        // yakın taraf bacaklarının önünde. Işık pass'i de onu efektin rengiyle
+        // boyadığı için "etkisinde" okuması tamamlanıyor.
+        float fxSplitY = player.rect.y + player.rect.h;
+        skillfx_render_band(renderer, &camera, -1.0e9f, fxSplitY);
+        fx_render_band(&weaponFx, renderer, glowTex, &camera, -1.0e9f, fxSplitY);
         player_render(&player, renderer, built, builtCount, &camera); // oyuncuyu
         
         for (int i = 0; i < mobCount; i++)
@@ -12054,8 +12066,14 @@ int main(int argc, char *argv[])
                                   echoShadow.facingLeft);
             r2d_texture_set_alpha_mod(echoWispTex, 255);
         }
-        skillfx_render(renderer, &camera);   // geometri (kol/halka)
-        fx_render(&weaponFx, renderer, glowTex, &camera);
+        // ── EFEKTİN ÖN YARISI (oyuncudan SONRA) + yere ait olmayan geometri.
+        // Yıldırım kolu ve isabet yayı havada duran ANLIK geometri: bir derinliğe
+        // ait olmadıkları için yalnız bu tam-aralık çağrısında çiziliyorlar
+        // (bant çağrılarında atlanıyorlar, yoksa iki kez çizilip toplamalı
+        // katmanda iki kat parlıyorlar).
+        skillfx_render_band(renderer, &camera, fxSplitY, 1.0e9f);
+        skillfx_render_air(renderer, &camera);   // yıldırım kolu / isabet yayı
+        fx_render_band(&weaponFx, renderer, glowTex, &camera, fxSplitY, 1.0e9f);
         animfx_render(animFxPool, renderer, &camera);
 
         if (openLootIndex >= 0)

@@ -244,6 +244,10 @@ buz camgöbeği ayrımı okunuyor mu → Ctrl+G ile silah damgası döngüsü.
 olarak eklenecek mi (mekanik kodda ama HİÇBİR EŞYA damgayı vermiyor — şu an
 yalnız Ctrl+G ile erişilebilir) · kalan 14 büyü göç etsin mi.
 **YENİ MOTOR KURALLARI (bu turların bedeli)**:
+· **EFEKT KARAKTERİ YUTUYORSA çözüm "karakteri üste al" DEĞİL, DERİNLİK
+  BÖLMESİ.** Ayak hizasından yukarısı arkaya, aşağısı öne. Üste almak çıkartma
+  gibi durur. Yere ait gövdeler banda tabi, havadaki anlık geometri değil
+  (`skillfx_render_air` — yoksa üç kez çizilir).
 · **KARARLI HAL HESABI GERİYE DÖNÜK DE YAPILACAK.** Kuralı bulup yeni koda
   uygulamak yetmiyor: buz novası 15×, toprak dikenleri 5.7× aşımdaydı ve
   partiküllerin %93'ü düşüyordu. Bir GÖRSEL şikayetin ("çemberin içi boş")

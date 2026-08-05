@@ -695,6 +695,11 @@ void skillfx_update(ParticleSystem *fx, float dt)
                     for (int k = 0; k < nf; k++) {
                         float a = sf_rnd() * 6.28318f;
                         float rr = R * SDL_sqrtf(sf_rnd());
+                        // MERKEZ AÇIKLIĞI: büyücü kaynağın KENDİSİ, buz onun
+                        // ETRAFINDA büyür. Açıklık olmadan iç dolgu doğrudan
+                        // gövdesinin üstünde doğuyor ve derinlik bölmesine
+                        // rağmen siluetini yiyor.
+                        if (rr < 22.0f) continue;
                         float px = e->x + SDL_cosf(a) * rr;
                         float py = e->y + SDL_sinf(a) * rr * 0.62f;
                         // İç alan ALÇAK ve yavaş: kenar kabarır, iç donar
@@ -1635,7 +1640,12 @@ void skillfx_update(ParticleSystem *fx, float dt)
 // ── ÇİZİM. Partiküller fx_render'da çizildiği için burada YALNIZ partikülle
 // anlatılamayan geometri var: yıldırım kolu (kırıklı çizgi) ve buz halkası
 // (kuantalı çember). Primitifler mevcut r2d ile — yeni pipeline yok.
-void skillfx_render(R2D *renderer, const Camera *camera)
+// bodies: yere ait gövdeler (taş dikeni, buz kümesi) — derinlik bandına tabi.
+// air:    havada duran anlık geometri (yıldırım kolu, isabet yayı) — bandı yok.
+// Ayrım ŞART: gövdeler iki bant çağrısında çizildiği için, üçüncü bir tam-aralık
+// çağrısı onları ÜÇÜNCÜ kez çizerdi (toplamalı katmanda çift parlaklık).
+static void sf_draw(R2D *renderer, const Camera *camera,
+                    float yMin, float yMax, bool bodies, bool air)
 {
     if (!s_procedural) return;
     float z = camera->zoom;
@@ -1645,7 +1655,12 @@ void skillfx_render(R2D *renderer, const Camera *camera)
         if (!e->active) continue;
         float u = 1.0f - e->life / e->maxLife;
 
+        // Yıldırım kolu ve isabet yayı HAVADA duran anlık geometri: derinlik
+        // bandına girmiyorlar (bir yere ait değiller). Bant çağrılarında
+        // atlanıyor, yalnız tam aralıkta çiziliyorlar — yoksa iki kez çizilip
+        // toplamalı katmanda iki kat parlıyorlar.
         if (e->kind == SKILLFX_LIGHTNING) {
+            if (!air) continue;
             // KOL: gökten hedefe kırıklı yol. Ömrün ilk %35'inde görünür ve
             // her karede yeniden kırılır (yıldırım titrer, sabit durmaz).
             if (u < 0.35f) {
@@ -1709,6 +1724,7 @@ void skillfx_render(R2D *renderer, const Camera *camera)
             }
         }
         else if (e->kind == SKILLFX_IMPACT) {
+            if (!air) continue;
             // ── DARBE YAYI: temas noktasında, darbeye DİK açılan kısa kavis.
             // Kılıç/çarpma hissinin geometrik imzası: parçacık bulutu "toz"
             // anlatır, yay "KESTİ/ÇARPTI" anlatır. Hızla açılıp söner (0.34 sn
@@ -1826,6 +1842,7 @@ void skillfx_render(R2D *renderer, const Camera *camera)
 #endif
         }
         else if (e->kind == SKILLFX_SPIKES) {
+            if (!bodies) continue;
             // ── DİKEN GÖVDELERİ. Yükselme: ease-out (yerden ÇIKAR, süzülmez);
             // tepede kısa duruş; sonra ÇÖKME + moloz. Partikül tozu bunun
             // üstüne biniyor — toz artık ana anlatıcı değil, EŞLİKÇİ.
@@ -1835,6 +1852,7 @@ void skillfx_render(R2D *renderer, const Camera *camera)
                 for (int sIdx = 0; sIdx < 14; sIdx++) {
                     float sx2, sy2, delay, hgt; int var;
                     sf_spike_site(e, sIdx, &sx2, &sy2, &delay, &hgt, &var);
+                    if (sy2 < yMin || sy2 >= yMax) continue;   // derinlik bandı
                     float p2 = (u - delay) / 0.13f;          // yükselme oranı
                     if (p2 <= 0.0f) continue;
                     float hold = delay + 0.13f + 0.34f;
@@ -1868,6 +1886,7 @@ void skillfx_render(R2D *renderer, const Camera *camera)
             }
         }
         else if (e->kind == SKILLFX_ICE_NOVA) {
+            if (!bodies) continue;
             // ── ÇİZİM YOK. HATA GEÇMİŞİ: burada 3 halka × 2 kat × 56 segment
             // ADD çizgi + 12 radyal mızrak × 3 kaydırma çiziliyordu; toplam
             // ~370 parlak çizgi. Sonuç Hakan'ın tarifiyle *"çok çizgisel daire,
@@ -1888,6 +1907,7 @@ void skillfx_render(R2D *renderer, const Camera *camera)
                 for (int sIdx = 0; sIdx < 13; sIdx++) {
                     float ix, iy, irad, ih; int ivar;
                     sf_ice_site(e, sIdx, &ix, &iy, &irad, &ih, &ivar);
+                    if (iy < yMin || iy >= yMax) continue;      // derinlik bandı
                     if (frontR < irad) continue;               // dalga gelmedi
                     // Yükselme: dalga geçtikten sonra ~0.16 sn ease-out
                     float since = (frontR - irad) / (190.0f * e->power)
@@ -1919,6 +1939,22 @@ void skillfx_render(R2D *renderer, const Camera *camera)
             }
         }
     }
+}
+
+void skillfx_render(R2D *renderer, const Camera *camera)
+{
+    sf_draw(renderer, camera, -1.0e9f, 1.0e9f, true, true);
+}
+
+void skillfx_render_band(R2D *renderer, const Camera *camera,
+                         float yMin, float yMax)
+{
+    sf_draw(renderer, camera, yMin, yMax, true, false);
+}
+
+void skillfx_render_air(R2D *renderer, const Camera *camera)
+{
+    sf_draw(renderer, camera, -1.0e9f, 1.0e9f, false, true);
 }
 
 // ── IŞIK: efekt kendi ışığını taşır. Ateş topu uçarken yeri aydınlatır,

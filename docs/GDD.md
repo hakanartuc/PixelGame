@@ -1088,6 +1088,23 @@ basit duruyor"*. Buz kristali tek koni değil: farklı yükseklikte ALTI plaka, 
 bazılarının ucu KIRIK (düz kesik — kusursuz sivri uç yapay duruyor), hepsi ortak bir TABAN
 BUZUNDAN çıkıyor. Taban olmadan plakalar havada duran kıymıklar gibi okunuyordu.
 
+**Karar 16 — KARAKTER EFEKTİN İÇİNDE: 2.5B DERİNLİK BÖLMESİ.** Alan büyülerinde karakter
+tamamen kayboluyordu çünkü partiküller varlıklardan SONRA tek blok halinde çiziliyordu.
+Hakan sorunu ve YANLIŞ çözümü birlikte tarif etti: *"karakter skill efektleri arasında gözükebilse
+ama direk skill efektlerinin üstüne çizim gibi değil, skill efektlerinin ETKİSİNDE gözükse."*
+Yani "oyuncuyu üste al" reddedildi — o zaman efektin üstüne yapıştırılmış çıkartma gibi durur.
+**ÇÖZÜM:** efekt oyuncunun AYAK HİZASINDA ikiye bölünüyor. Yukarıda kalan (uzak) yarı oyuncudan
+ÖNCE, aşağıda kalan (yakın) yarı SONRA çiziliyor. Oyuncu efektin İÇİNDE duruyor: uzak taraf
+arkasında, yakın taraf bacaklarının önünde. Işık pass'i onu efektin rengiyle boyadığı için
+"etkisinde" okuması tamamlanıyor — ayrı bir tint katmanı gerekmedi.
+`fx_render_band` ve `skillfx_render_band` eklendi; eski `fx_render`/`skillfx_render` tam aralıkla
+delege ediyor, böylece diğer çağrı yerleri bozulmadı.
+**AYRIM ŞART:** yere ait GÖVDELER (taş dikeni, buz kümesi) banda tabi; havada duran ANLIK geometri
+(yıldırım kolu, isabet yayı) bir derinliğe ait değil ve `skillfx_render_air` ile BİR KEZ çiziliyor.
+İlk denemede bu ayrım yoktu ve gövdeler üç kez çizildi (iki bant + tam aralık) — toplamalı katmanda
+çift parlaklık. Ayrıca merkeze 22px AÇIKLIK: büyücü kaynağın kendisi, buz onun etrafında büyür;
+açıklık olmadan iç dolgu doğrudan gövdesinin üstünde doğup siluetini yiyordu.
+
 **Açık kalan:** kamp ateşi sprite alevi kalsın mı (karar Hakan'da) · alev/buz rünü eşya olarak
 eklenecek mi (mekanik kodda, hiçbir eşya damgayı vermiyor — şu an yalnız Ctrl+G ile test edilebilir)
 · kalan 13 büyünün prosedürel motora göçü (beşi onaylanırsa). Göçmemiş olanlar artık ekranda

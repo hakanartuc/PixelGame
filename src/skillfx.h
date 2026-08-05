@@ -63,6 +63,18 @@ void skillfx_update(ParticleSystem *fx, float dt);
 // Çizim (varlıklardan SONRA, ışık pass'inden ÖNCE — efekt zeminde değil havada)
 void skillfx_render(R2D *renderer, const Camera *camera);
 
+// ── DERİNLİK BANDI (gövdeler için). Taş dikeni ve buz kümesi YERDE DURAN
+// NESNELER: karakterin ayak hizasından yukarıdakiler onun arkasına, aşağıdakiler
+// önüne çizilmeli. Yoksa karakterin önündeki diken arkasında kalıyor ya da
+// arkasındaki diken onu kapatıyor — ikisi de derinliği bozuyor.
+// Bant dışı = bu çağrıda çizilmez. Tam aralık için skillfx_render kullanılır.
+void skillfx_render_band(R2D *renderer, const Camera *camera,
+                         float yMin, float yMax);
+
+// Havada duran anlık geometri (yıldırım kolu, isabet yayı) — derinliği yok,
+// bir kez çizilir. Bant çağrıları bunu ATLAR, yoksa üç kez çizilir.
+void skillfx_render_air(R2D *renderer, const Camera *camera);
+
 // ── EKRAN DARBESİ (genel motor katmanı): çarpma anında tam ekran kısa flaş.
 // Görkemli VFX'in en ucuz ve en etkili parçası — göz "bir şey oldu" der.
 // HUD'dan SONRA çizilmez: yalnız sahne katmanına biner (r2d postfx ayrımı).

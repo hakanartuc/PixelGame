@@ -312,6 +312,18 @@ int  fx_distort_collect(R2DDistort *out, int cap,
 void fx_emit_fire(ParticleSystem *fx, float x, float y, FireKind kind,
                   float strength, float dt);
 
+// ── DERİNLİK BANDI. Parçacıkları YALNIZ [yMin, yMax) dünya-y aralığında çizer.
+// NEDEN VAR: partiküller varlıklardan SONRA tek blok halinde çizilince alan
+// büyülerinde karakter tamamen kayboluyordu (Hakan: "karakter bazı anlarda
+// görünmez hale geliyor"). Çözüm "karakteri üste çiz" DEĞİL — o zaman efektin
+// üstüne yapıştırılmış çıkartma gibi durur (Hakan bunu da bilerek dışladı).
+// Doğrusu 2.5B derinlik: karakterin AYAK HİZASINDAN yukarıda kalan partiküller
+// onun ARKASINA, aşağıda kalanlar ÖNÜNE çizilir. Böylece karakter efektin
+// İÇİNDE durur — yakın taraf bacaklarını kapatır, uzak taraf arkasında kalır.
+void fx_render_band(ParticleSystem *fx, R2D *renderer,
+                    R2DTexture *glowTex, const Camera *camera,
+                    float yMin, float yMax);
+
 void fx_render(ParticleSystem *fx, R2D *renderer,
                R2DTexture *glowTex, const Camera *camera);
 

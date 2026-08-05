@@ -77,6 +77,11 @@ GÖRKEMİ. Detaylı gerekçeler GDD §6.6'da.
 - **Yol göstergesi**: prosedürel mod açıkken her büyü çağrısı ekrana
   `"<ad> -> PROSEDUREL"` / `"-> SPRITE (motor disi)"` yazıyor.
 
+- **DERİNLİK BÖLMESİ**: efekt oyuncunun ayak hizasında ikiye bölünüyor — uzak
+  yarı oyuncudan önce, yakın yarı sonra. Oyuncu artık efektin İÇİNDE duruyor,
+  ne kayboluyor ne de üstüne yapıştırılmış çıkartma gibi. Gövdeler banda tabi,
+  havadaki anlık geometri (yıldırım kolu, isabet yayı) bir kez çiziliyor.
+  Merkeze 22px açıklık: büyücü kaynağın kendisi.
 - **BÜTÇE AŞIMI GERİYE DÖNÜK BULUNDU**: buz novası havuzun **15 KATINI**
   istiyordu (124.900 / 8.192), toprak dikenleri 5.7 katını. Partiküllerin %93'ü
   sessizce düşüyordu. Kuralı Alev Seli'nde bulmuş ama eski büyülere
