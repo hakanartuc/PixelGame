@@ -1855,8 +1855,8 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
         dsr_dual_pass(renderer, dsrWaterTex, 21, 32.0f, of, camera, colL, rowT, colR, rowB);
     }
     if (seaCoastTex != NULL) {
-        // DENİZ test göleti (22): 16 karelik dalga kıyısı (çim kenarına doğrudan)
-        float sof = (float)((SDL_GetTicks() / 100) % 16) * 128.0f;
+        // DENİZ test göleti (22): 8 karelik dalga kıyısı (çim kenarına doğrudan)
+        float sof = (float)((SDL_GetTicks() / 120) % 8) * 128.0f;   // river seti 8 kare
         dsr_dual_pass(renderer, seaCoastTex, 22, 32.0f, sof, camera, colL, rowT, colR, rowB);
     }
     if (dsrCliffTex != NULL)
