@@ -36,12 +36,13 @@ mask_atlas(DS, "Rocky ground-to-sand", "rocky_atlas.png")
 
 # 3) VAHA KIYISI ANİMASYONLU (Hakan: "kıyıda dalga animasyonu var") —
 # Oasis sheet'inde parçalar kolon 1 ve 10'da; animasyon YATAY: kare başına
-# 1 kolon sağa, 9 kare. Maske atlası kare başına 4×4 blok, bloklar DİKEY
+# 1 kolon sağa, 8 KARE (kolon 9 ve 18 BOŞ AYRAÇ — 9 saymak göleti
+# kare başı yok ediyordu, Hakan bulgusu). Maske atlası kare başına 4×4 blok, bloklar DİKEY
 # istiflenir (src.y += kare*128); iç su ayrı 9 karelik yatay şerit.
 DSW = P("Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/water-to-sand.tsx")
 img, cols, bm = wang(DSW, "water-to-sand")
 w, h, px = sheet(img)
-FR = 9
+FR = 8
 atlas = bytearray(4 * TILE * (4 * TILE * FR) * 4)
 for f in range(FR):
     for m, tids in bm.items():

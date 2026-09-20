@@ -1788,7 +1788,7 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
             {
                 tile_draw(renderer, tileTextures, 15, dst);   // 15 = kum
                 if (oasisWaterTex != NULL) {   // iç su = kıyı setinin kendi suyu
-                    float wf = (float)((SDL_GetTicks() / 140) % 9);
+                    float wf = (float)((SDL_GetTicks() / 140) % 8);   // 8 kare (9. boş ayraçtı)
                     SDL_FRect wsrc = { wf * 32.0f, 0, 32, 32 };
                     r2d_draw_texture(renderer, oasisWaterTex, &wsrc, &dst);
                 }
@@ -1842,8 +1842,8 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
     // ÇÖL AUTOTILE: taban pass'i bitti — su ve kaya sınır overlay'leri
     // (yalnız bu id'leri içeren haritada iş yapar; diğerlerinde mask hep 0)
     if (dsrWaterTex != NULL) {
-        // vaha kıyısı ANİMASYONLU (9 kare, blok dikey): dalga kuma vurur
-        float of = (float)((SDL_GetTicks() / 140) % 9) * 128.0f;
+        // vaha kıyısı ANİMASYONLU (8 kare, blok dikey): dalga kuma vurur
+        float of = (float)((SDL_GetTicks() / 140) % 8) * 128.0f;   // 8 kare
         dsr_dual_pass(renderer, dsrWaterTex, DSR_WATER, 32.0f, of, camera, colL, rowT, colR, rowB);
         // saf ERW test göleti (21): aynı kıyı atlası — kum halkasıyla sarılır
         dsr_dual_pass(renderer, dsrWaterTex, 21, 32.0f, of, camera, colL, rowT, colR, rowB);
