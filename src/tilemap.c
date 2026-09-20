@@ -1316,7 +1316,7 @@ static inline bool grass_bleeds_onto(int id)
 {
     // id 1 (yol) LİSTEDE DEĞİL: çim↔yol sınırını erw_path_pass çizer ve
     // toprak blob'unun çim saçağı GÖMÜLÜ — üstüne ayrıca saçak binmesin.
-    return id == 2 || id == 4 || id == 5 || id == 15;
+    return id == 4 || id == 5 || id == 15;   // (id 2 çıktı: göl şevi kıyıyı çiziyor)
 }
 
 // --- ERW MASKE-SIRALI DUAL-GRID (Faz EPIC-1) --------------------------------
@@ -1851,13 +1851,32 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
         // vaha kıyısı ANİMASYONLU (8 kare, blok dikey): dalga kuma vurur
         float of = (float)((SDL_GetTicks() / 140) % 8) * 128.0f;   // 8 kare
         dsr_dual_pass(renderer, dsrWaterTex, DSR_WATER, 32.0f, of, camera, colL, rowT, colR, rowB);
-        // saf ERW test göleti (21): aynı kıyı atlası — kum halkasıyla sarılır
-        dsr_dual_pass(renderer, dsrWaterTex, 21, 32.0f, of, camera, colL, rowT, colR, rowB);
-    }
+    }   // (test göleti 21 pass'i kaldırıldı — göletler temizlendi)
     if (seaCoastTex != NULL) {
-        // DENİZ test göleti (22): 8 karelik dalga kıyısı (çim kenarına doğrudan)
-        float sof = (float)((SDL_GetTicks() / 120) % 8) * 128.0f;   // river seti 8 kare
-        dsr_dual_pass(renderer, seaCoastTex, 22, 32.0f, sof, camera, colL, rowT, colR, rowB);
+        // GÖL DİLİ DÜNYA SULARINDA (Hakan onayı "evet yay"): id 2'nin ÇİM
+        // kıyılarında toprak şevli kıyı + 8 kare dalga (river seti). Kum/
+        // bataklık kıyısı pass dışı — kumsalı shore_cut + swash anlatıyor.
+        // Su shader'ı ÜSTTE VFX katmanı olarak sürüyor (yansıma/kırılma/
+        // balık/halka); renk örtmesi main'de kısıldı ki karo dili görünsün.
+        float sof = (float)((SDL_GetTicks() / 120) % 8) * 128.0f;
+        for (int row = rowT - 1; row < rowB; row++)
+            for (int col = colL - 1; col < colR; col++) {
+                int m = 0; bool shoreGrass = true;
+                for (int dy = 0; dy < 2; dy++)
+                    for (int dx = 0; dx < 2; dx++) {
+                        int tt = erw_tile_at(col + dx, row + dy);
+                        if (tt == 2 || tt == 22) m |= 1 << (dy * 2 + dx);
+                        else if (tt != 0) shoreGrass = false;
+                    }
+                if (m == 0 || m == 15 || !shoreGrass) continue;
+                SDL_FRect src = { (float)(m % 4) * 32.0f,
+                                  sof + (float)(m / 4) * 32.0f, 32, 32 };
+                SDL_FRect dst = {
+                    ((col + 0.5f) * TILE_SIZE - camera->x) * camera->zoom,
+                    ((row + 0.5f) * TILE_SIZE - camera->y) * camera->zoom,
+                    TILE_SIZE * camera->zoom, TILE_SIZE * camera->zoom };
+                r2d_draw_texture(renderer, seaCoastTex, &src, &dst);
+            }
     }
     if (dsrCliffTex != NULL)
         dsr_dual_pass(renderer, dsrCliffTex, DSR_ROCK, 32.0f, 0.0f, camera, colL, rowT, colR, rowB);

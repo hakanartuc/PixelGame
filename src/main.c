@@ -11496,13 +11496,13 @@ int main(int argc, char *argv[])
                     // yuvarlandığı birim. Kesirli ofset = titreme.
                     .artPx = camera.zoom * ((float)TILE_SIZE / 16.0f),
                     .shallowR = 0.30f, .shallowG = 0.62f, .shallowB = 0.72f,   // ERW türkuaz (dalga-5)
-                    .shallowCover = 0.20f,     // sığda taban NET okunur
+                    .shallowCover = 0.0f,      // GÖL DİLİ: karo tabanı tam görünür (yay kararı)
                     // Koyu uç MORA/MAVİYE kaydırıldı (0.07,0.21,0.34 → düz
                     // koyulaştırmaydı): pixel-art hue-shift kuralı — ALttP
                     // ölçümü de aynı şeyi söylüyor (gölge tonu morlaşıyor).
                     // Referans: göletin ortası OPAK KOYU LACİVERT (gri değil).
                     .deepR = 0.12f, .deepG = 0.32f, .deepB = 0.56f,   // ERW koyu mavi (dalga-5)
-                    .deepCover = 0.80f,        // derin ama ışık geçiren (Hakan: açık+şeffaf)
+                    .deepCover = 0.12f,        // hafif derinlik tonu — karo dili esas
                     .waveHeight = 0.10f,       // sırt sığ, çukur derin görünür
                     .refract = 14.0f,          // EKRAN px tepe ofseti; snap sonrası 2-3 sanat px
                     //   (7'de gölette 2.4 px kalıp sanat ızgarasında sıfıra yuvarlanıyordu)
@@ -11519,12 +11519,12 @@ int main(int argc, char *argv[])
                     // SU ÇİZGİSİ. Islak bant ve koyu hat ÇARPIMSAL (bütçe dışı),
                     // menisküs EKLEMELİ: 0.14 kostik + 0.16 parlama + 0.13 =
                     // 0.43 ≤ 0.45 tavanı. Tavan R8G8B8A8_UNORM yüzünden.
-                    .darkLine = 1.0f,          // suyun silueti — tam güçte istiyoruz
-                    .meniscus = 0.13f,
+                    .darkLine = 0.0f,          // kapalı: kıyı siluetini ERW şevi çiziyor
+                    .meniscus = 0.0f,          // kapalı: şev + dalga animasyonu var
                     // KIYI GÖLGESİ — kamera 3/4 eğik, gölet bir çukur: kuzey
                     // kıyının iç duvarı suya gölge düşürür (maske A kanalı).
                     // ÇARPIMSAL, bütçe dışı. Gölgede kostik+parlama da söner.
-                    .bankShadow = 0.68f,
+                    .bankShadow = 0.25f,       // hafif — şevle çifte gölge olmasın
                     // Işıltı çizgicikleri: pixel-su imzası, ayrık öğe. EKLEMELİ
                     // bütçede: 0.12 + kostik 0.14 + parlama 0.16 = 0.42 ≤ 0.45.
                     .dashes = 0.12f,

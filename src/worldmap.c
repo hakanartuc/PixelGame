@@ -69,7 +69,9 @@ const MapPortal PORTALS[] = {
     // DOĞU (Taşdurak): kervan yolunun doğu ucu — çöl geçidi
     { .from = MAP_WORLD, .x = T(197), .y = T(19), .radius = 80.0f,
       .to = MAP_DOGU, .tx = T(4), .ty = T(35),
-      .label = "[E] Çöl Geçidi — Taşdurak", .decorTex = NULL },
+      // Görsel işaret (Hakan: "çöle geçiş nerede?" — işaretsizdi): çöl obeliski
+      .label = "[E] Çöl Geçidi — Taşdurak",
+      .decorTex = "assets/decor/erw/ds_obelisk.png", .decorScale = 1.0f },
     { .from = MAP_DOGU, .x = T(2.5f), .y = T(35), .radius = 80.0f,
       .to = MAP_WORLD, .tx = T(195.5f), .ty = T(19),
       .label = "[E] Batıya — Kervan Yolu", .decorTex = NULL },
