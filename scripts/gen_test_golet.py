@@ -21,5 +21,13 @@ for r in range(int(CY - RY) - 2, int(CY + RY) + 3):
             put(c, r, 21); n_water += 1
         elif d <= 2.1:
             put(c, r, 15); n_sand += 1
+# İKİNCİ GÖLET (deniz seti, id 22): çim kıyısına doğrudan — halkasız
+CX2, CY2, RX2, RY2 = 44.0, 5.5, 3.5, 2.5
+n_sea = 0
+for r in range(int(CY2 - RY2) - 1, int(CY2 + RY2) + 2):
+    for c in range(int(CX2 - RX2) - 1, int(CX2 + RX2) + 2):
+        d = ((c + 0.5 - CX2) / RX2) ** 2 + ((r + 0.5 - CY2) / RY2) ** 2
+        if d <= 1.0:
+            put(c, r, 22); n_sea += 1
 open(CSV, "w").write("\n".join(",".join(r) for r in rows) + "\n")
-print(f"OK: golet ({CX},{CY}) su={n_water} kum={n_sand}")
+print(f"OK: vaha golet ({CX},{CY}) su={n_water} kum={n_sand} | deniz golet ({CX2},{CY2}) su={n_sea}")

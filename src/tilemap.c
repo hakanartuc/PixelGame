@@ -48,7 +48,10 @@ const TileType TILE_TYPES[] = {
     // GİRMEZ (wmask_base default 0) — görünüm %100 paket asset'i: animasyonlu
     // taban + vaha kıyı atlası. Karar sonrası ya kaldırılır ya da göletlerin
     // yeni dili olur.
-    [21] = { .solid = true,  .r = 60,  .g = 140, .b = 180, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // saf ERW su (test göleti)
+    [21] = { .solid = true,  .r = 60,  .g = 140, .b = 180, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // saf ERW su (test göleti — vaha seti)
+    // DENİZ TEST SUYU (Hakan, 2. gölet): Sea Adventures kıyı seti — daha mavi
+    // iç su (GL16) + 16 karelik dalga kıyısı; shader'sız, çim kıyısına doğrudan.
+    [22] = { .solid = true,  .r = 40,  .g = 110, .b = 200, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // deniz test suyu
 };
 const int TILE_TYPE_COUNT = (int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0]));
 
@@ -249,7 +252,8 @@ SDL_FRect feet_box(float rectX, float rectY, float rectW, float rectH)
 // Yalnız DÜNYA tile'larına taşar (yol/su/bataklık/diken) — zindan dokunulmaz.
 static R2DTexture *grassVar[4] = {0};   // [0] ana doku (tileTextures'tan gelmez — kendi kopyası)
 static R2DTexture *waterAnimTex = NULL; // ERW su animasyonu (8 kare — deniz tabanı, shader üstünü boyar)
-static R2DTexture *oasisWaterTex = NULL; // vaha/saf gölet iç suyu (9 kare — kıyı atlasıyla AYNI ton)
+static R2DTexture *oasisWaterTex = NULL; // vaha/saf gölet iç suyu (8 kare — kıyı atlasıyla AYNI ton)
+static R2DTexture *seaCoastTex = NULL;   // deniz kıyı atlası (16 kare blok — test göleti 22)
 static R2DTexture *pathEdgeTex = NULL;  // ERW toprak blob'u — maske-sıralı 4×4, 32px hücre
 static R2DTexture *grassEdgeTex = NULL; // ERW çim saçağı blob'u — aynı düzen
 static R2DTexture *flowerTex = NULL;    // erw/scatter_atlas.png (10×3 hücre 32px)
@@ -1239,6 +1243,7 @@ void tilemap_load_details(R2D *renderer)
     grassVar[3] = load_texture(renderer, "assets/Tiles/erw/grass_4.png");
     waterAnimTex = load_texture(renderer, "assets/Tiles/erw/water_anim.png");
     oasisWaterTex = load_texture(renderer, "assets/Tiles/erw/oasis_water_anim.png");
+    seaCoastTex = load_texture(renderer, "assets/Tiles/erw/sea_atlas.png");
     pathEdgeTex  = load_texture(renderer, "assets/Tiles/erw/path_edge_atlas.png");
     grassEdgeTex = load_texture(renderer, "assets/Tiles/erw/grass_edge_atlas.png");
     // ERW dalga-2: serpiştirme atlası bake_erw_wave2.py'den (hücre 32px).
@@ -1272,6 +1277,7 @@ void tilemap_free_details(void)
         if (grassVar[i]) { r2d_texture_destroy(NULL, grassVar[i]); grassVar[i] = NULL; }
     if (waterAnimTex) { r2d_texture_destroy(NULL, waterAnimTex); waterAnimTex = NULL; }
     if (oasisWaterTex) { r2d_texture_destroy(NULL, oasisWaterTex); oasisWaterTex = NULL; }
+    if (seaCoastTex) { r2d_texture_destroy(NULL, seaCoastTex); seaCoastTex = NULL; }
     if (pathEdgeTex) { r2d_texture_destroy(NULL, pathEdgeTex); pathEdgeTex = NULL; }
     if (grassEdgeTex) { r2d_texture_destroy(NULL, grassEdgeTex); grassEdgeTex = NULL; }
     if (flowerTex) { r2d_texture_destroy(NULL, flowerTex); flowerTex = NULL; }
@@ -1799,7 +1805,7 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
             // ERW SU ANİMASYONU: deniz/gölet(2) tabanı 8 karelik şeritten
             // akar — tüm su AYNI karede (faz farkı ızgara gösterir; wld
             // dersi). Asıl görünüm su shader'ında; taban sığlıkta okunur.
-            else if (tileID == 2 && waterAnimTex != NULL)
+            else if ((tileID == 2 || tileID == 22) && waterAnimTex != NULL)
             {
                 float wf = (float)((SDL_GetTicks() / 160) % 8);
                 SDL_FRect wsrc = { wf * 32.0f, 0, 32, 32 };
@@ -1847,6 +1853,11 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
         dsr_dual_pass(renderer, dsrWaterTex, DSR_WATER, 32.0f, of, camera, colL, rowT, colR, rowB);
         // saf ERW test göleti (21): aynı kıyı atlası — kum halkasıyla sarılır
         dsr_dual_pass(renderer, dsrWaterTex, 21, 32.0f, of, camera, colL, rowT, colR, rowB);
+    }
+    if (seaCoastTex != NULL) {
+        // DENİZ test göleti (22): 16 karelik dalga kıyısı (çim kenarına doğrudan)
+        float sof = (float)((SDL_GetTicks() / 100) % 16) * 128.0f;
+        dsr_dual_pass(renderer, seaCoastTex, 22, 32.0f, sof, camera, colL, rowT, colR, rowB);
     }
     if (dsrCliffTex != NULL)
         dsr_dual_pass(renderer, dsrCliffTex, DSR_ROCK, 32.0f, 0.0f, camera, colL, rowT, colR, rowB);
