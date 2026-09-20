@@ -248,7 +248,8 @@ SDL_FRect feet_box(float rectX, float rectY, float rectW, float rectH)
 // Eski sistemin kodu git geçmişinde (bu satırın blame'i).
 // Yalnız DÜNYA tile'larına taşar (yol/su/bataklık/diken) — zindan dokunulmaz.
 static R2DTexture *grassVar[4] = {0};   // [0] ana doku (tileTextures'tan gelmez — kendi kopyası)
-static R2DTexture *waterAnimTex = NULL; // ERW su animasyonu (8 kare 32px — deniz/gölet/vaha tabanı)
+static R2DTexture *waterAnimTex = NULL; // ERW su animasyonu (8 kare — deniz tabanı, shader üstünü boyar)
+static R2DTexture *oasisWaterTex = NULL; // vaha/saf gölet iç suyu (9 kare — kıyı atlasıyla AYNI ton)
 static R2DTexture *pathEdgeTex = NULL;  // ERW toprak blob'u — maske-sıralı 4×4, 32px hücre
 static R2DTexture *grassEdgeTex = NULL; // ERW çim saçağı blob'u — aynı düzen
 static R2DTexture *flowerTex = NULL;    // erw/scatter_atlas.png (10×3 hücre 32px)
@@ -1237,6 +1238,7 @@ void tilemap_load_details(R2D *renderer)
     grassVar[2] = load_texture(renderer, "assets/Tiles/erw/grass_3.png");
     grassVar[3] = load_texture(renderer, "assets/Tiles/erw/grass_4.png");
     waterAnimTex = load_texture(renderer, "assets/Tiles/erw/water_anim.png");
+    oasisWaterTex = load_texture(renderer, "assets/Tiles/erw/oasis_water_anim.png");
     pathEdgeTex  = load_texture(renderer, "assets/Tiles/erw/path_edge_atlas.png");
     grassEdgeTex = load_texture(renderer, "assets/Tiles/erw/grass_edge_atlas.png");
     // ERW dalga-2: serpiştirme atlası bake_erw_wave2.py'den (hücre 32px).
@@ -1269,6 +1271,7 @@ void tilemap_free_details(void)
     for (int i = 0; i < 4; i++)
         if (grassVar[i]) { r2d_texture_destroy(NULL, grassVar[i]); grassVar[i] = NULL; }
     if (waterAnimTex) { r2d_texture_destroy(NULL, waterAnimTex); waterAnimTex = NULL; }
+    if (oasisWaterTex) { r2d_texture_destroy(NULL, oasisWaterTex); oasisWaterTex = NULL; }
     if (pathEdgeTex) { r2d_texture_destroy(NULL, pathEdgeTex); pathEdgeTex = NULL; }
     if (grassEdgeTex) { r2d_texture_destroy(NULL, grassEdgeTex); grassEdgeTex = NULL; }
     if (flowerTex) { r2d_texture_destroy(NULL, flowerTex); flowerTex = NULL; }
@@ -1411,7 +1414,7 @@ static inline bool dsr_rockish(int col, int row)
 }
 
 static void dsr_dual_pass(R2D *renderer, R2DTexture *atlas, int id,
-                          float cellPx,   // atlas hücresi: ERW 32, Cute klif 16
+                          float cellPx, float frameOffY,  // animasyonlu atlas: kare bloğu dikey
                           const Camera *camera, int colL, int rowT,
                           int colR, int rowB)
 {
@@ -1431,7 +1434,8 @@ static void dsr_dual_pass(R2D *renderer, R2DTexture *atlas, int id,
                   | (dsr_is(col, row + 1, id) ? 4 : 0)
                   | (dsr_is(col + 1, row + 1, id) ? 8 : 0);
             if (m == 0 || lut[m].cx == 255) continue;
-            SDL_FRect src = { lut[m].cx * cellPx, lut[m].cy * cellPx,
+            SDL_FRect src = { lut[m].cx * cellPx,
+                              frameOffY + lut[m].cy * cellPx,
                               cellPx, cellPx };
             SDL_FRect dst = {
                 ((col + 0.5f) * TILE_SIZE - camera->x) * zoom,
@@ -1780,13 +1784,13 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
             // kıyı hücrelerini maske-sıralı vaha atlası (dual pass) örter.
             // (Eski Cute sistemde vaha içi atlas m15 hücresinden geliyordu;
             // ERW kimlik LUT m15'i atlar — iç su tabanı buradan.)
-            if (tileID == DSR_WATER && dsrWaterTex != NULL)
+            if ((tileID == DSR_WATER || tileID == 21) && dsrWaterTex != NULL)
             {
                 tile_draw(renderer, tileTextures, 15, dst);   // 15 = kum
-                if (waterAnimTex != NULL) {
-                    float wf = (float)((SDL_GetTicks() / 160) % 8);
+                if (oasisWaterTex != NULL) {   // iç su = kıyı setinin kendi suyu
+                    float wf = (float)((SDL_GetTicks() / 140) % 9);
                     SDL_FRect wsrc = { wf * 32.0f, 0, 32, 32 };
-                    r2d_draw_texture(renderer, waterAnimTex, &wsrc, &dst);
+                    r2d_draw_texture(renderer, oasisWaterTex, &wsrc, &dst);
                 }
             }
             // (ERW dalga-5: çöl kayası MESA/yüz özel dalı emekli — kaya
@@ -1795,7 +1799,7 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
             // ERW SU ANİMASYONU: deniz/gölet(2) tabanı 8 karelik şeritten
             // akar — tüm su AYNI karede (faz farkı ızgara gösterir; wld
             // dersi). Asıl görünüm su shader'ında; taban sığlıkta okunur.
-            else if ((tileID == 2 || tileID == 21) && waterAnimTex != NULL)
+            else if (tileID == 2 && waterAnimTex != NULL)
             {
                 float wf = (float)((SDL_GetTicks() / 160) % 8);
                 SDL_FRect wsrc = { wf * 32.0f, 0, 32, 32 };
@@ -1838,12 +1842,14 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
     // ÇÖL AUTOTILE: taban pass'i bitti — su ve kaya sınır overlay'leri
     // (yalnız bu id'leri içeren haritada iş yapar; diğerlerinde mask hep 0)
     if (dsrWaterTex != NULL) {
-        dsr_dual_pass(renderer, dsrWaterTex, DSR_WATER, 32.0f, camera, colL, rowT, colR, rowB);
-        // saf ERW test göleti (21): aynı vaha kıyı atlası — kum halkasıyla sarılır
-        dsr_dual_pass(renderer, dsrWaterTex, 21, 32.0f, camera, colL, rowT, colR, rowB);
+        // vaha kıyısı ANİMASYONLU (9 kare, blok dikey): dalga kuma vurur
+        float of = (float)((SDL_GetTicks() / 140) % 9) * 128.0f;
+        dsr_dual_pass(renderer, dsrWaterTex, DSR_WATER, 32.0f, of, camera, colL, rowT, colR, rowB);
+        // saf ERW test göleti (21): aynı kıyı atlası — kum halkasıyla sarılır
+        dsr_dual_pass(renderer, dsrWaterTex, 21, 32.0f, of, camera, colL, rowT, colR, rowB);
     }
     if (dsrCliffTex != NULL)
-        dsr_dual_pass(renderer, dsrCliffTex, DSR_ROCK, 32.0f, camera, colL, rowT, colR, rowB);
+        dsr_dual_pass(renderer, dsrCliffTex, DSR_ROCK, 32.0f, 0.0f, camera, colL, rowT, colR, rowB);
     if (caveRingTex != NULL)
         cave_dual_pass(renderer, caveRingTex, CAVE_WALL, camera, colL, rowT, colR, rowB);
     if (mzRockTex != NULL)

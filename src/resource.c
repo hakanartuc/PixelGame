@@ -161,7 +161,7 @@ const ResourceDef RESOURCES[] = {
 
     // Kesilebilir ağaçlar (orman sınırı — Oduculuk + Balta)
     { .texPath = "assets/decor/erw/tree2_anim.png", .src = { 0, 0, 87, 148 },
-      .x = T(34), .y = T(8), .scale = 2.0f, .itemIdx = ITEM_WOOD,
+      .x = T(39), .y = T(10), .scale = 2.0f, .itemIdx = ITEM_WOOD,   // (test göletinden taşındı)
       .minCount = 2, .maxCount = 3, .skill = SKILL_WOODCUTTING,
       .toolItem = ITEM_AXE, .work = 7.0f, .verb = "Kes" },
     { .texPath = "assets/decor/erw/tree2_anim.png", .src = { 0, 0, 87, 148 },

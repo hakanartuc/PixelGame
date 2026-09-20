@@ -33,3 +33,26 @@ print(f"  water_anim.png: {w//32} kare 32x32")
 # yüz/plato sistemi emekli — ERW çöl dokusunda rocky yamalar böyle)
 interior(DS, "Rocky ground-to-sand", "rock.png")
 mask_atlas(DS, "Rocky ground-to-sand", "rocky_atlas.png")
+
+# 3) VAHA KIYISI ANİMASYONLU (Hakan: "kıyıda dalga animasyonu var") —
+# Oasis sheet'inde parçalar kolon 1 ve 10'da; animasyon YATAY: kare başına
+# 1 kolon sağa, 9 kare. Maske atlası kare başına 4×4 blok, bloklar DİKEY
+# istiflenir (src.y += kare*128); iç su ayrı 9 karelik yatay şerit.
+DSW = P("Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/water-to-sand.tsx")
+img, cols, bm = wang(DSW, "water-to-sand")
+w, h, px = sheet(img)
+FR = 9
+atlas = bytearray(4 * TILE * (4 * TILE * FR) * 4)
+for f in range(FR):
+    for m, tids in bm.items():
+        tid = sorted(tids)[0] + f          # kare = 1 kolon sağa
+        blit_tile(atlas, 4 * TILE, (m % 4) * TILE,
+                  f * 4 * TILE + (m // 4) * TILE, px, w, tid, cols)
+png_write_rgba(os.path.join(TIL, "oasis_atlas.png"), 4 * TILE, 4 * TILE * FR, atlas)
+print(f"  oasis_atlas.png: {FR} kare x 4x4 blok (dikey istif)")
+wtid = sorted(bm[15])[0]
+strip = bytearray(TILE * FR * TILE * 4)
+for f in range(FR):
+    blit_tile(strip, TILE * FR, f * TILE, 0, px, w, wtid + f, cols)
+png_write_rgba(os.path.join(TIL, "oasis_water_anim.png"), TILE * FR, TILE, strip)
+print(f"  oasis_water_anim.png: {FR} kare 32x32")
