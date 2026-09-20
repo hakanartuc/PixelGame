@@ -64,9 +64,12 @@ Hakan kararı). Göç fazlı: durum PROGRESS "Faz EPIC-1". Ham paket repoya GİR
 (`scripts/bake_erw_terrain.py` → `assets/Tiles/erw/`; kesimler paketin Tiled
 .tsx wangset verisinden, elle koordinat yok).
 **HEDEF DURUM (Hakan, 2026-09-20): Cute Fantasy KOMPLE ÇIKACAK** — LPC oyuncu
-hariç yalnız ERW kalacak. Her göç dilimi kendi Cute dosyalarını da SİLER
-(git geçmişi sigorta; BOŞA ÇIKAN KOD kuralı asset'lere uygulanmaz — Hakan
-direktifi + Cute'un ticari lisans belirsizliği zaten CREDITS'te TODO'ydu).
+hariç yalnız ERW kalacak. **DURUM: ~%95 TAMAM (Faz EPIC-4 süpürmesi)** —
+dünya/karakter/karo/dekor/istasyon/sandık/tuzak seti ERW. KALAN: ikonlar+UI
+(ERW'de item-ikon seti YOK — ayrı paket önerisi Hakan'da), çöl kaya/klif
+(ÇÖL-KLİF dilimi), çöl yapıları 1.0 ölçek (TAŞDURAK-YENİDEN borcu),
+plate/crossbow/nests/allies (muadilsiz), sofra+scenes (bizim üretim),
+fx/* (ayrı satıcı). Ayrıntı PROGRESS "Faz EPIC-4".
 
 ## Mimari (modüller)
 - **r2d** — SDL_GPU üstünde KENDİ 2D renderer'ımız (SDL_Renderer tamamen söküldü, 2026-07-09):

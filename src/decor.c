@@ -18,39 +18,46 @@ const DecorDef DECORS[] = {
     { .texPath = "assets/decor/erw/well.png",
       .x = T(26), .y = T(15), .scale = 2.0f, .solidBase = true,
       .baseWFrac = 0.85f, .baseHFrac = 0.30f },
-    { .texPath = "assets/buildings/House_1_Limestone_Base_Red.png",
-      .x = T(10), .y = T(4),  .scale = 1.6f, .solidBase = true },   // Baran'ın evi (dükkanın arkası)
-    { .texPath = "assets/buildings/House_2_Limestone_Base_Blue.png",
-      .x = T(14), .y = T(6),  .scale = 1.6f, .solidBase = true },   // Kemal'in evi
-    { .texPath = "assets/buildings/House_3_Limestone_Base_Black.png",
-      .x = T(6),  .y = T(10), .scale = 1.6f, .solidBase = true },   // Osman'ın evi
-    // HAN (K2 — köy GD köşesi): gerçek Inn binası (Unique_Buildings — ev
-    // kopyası değil; 240px geniş sprite, 0.8 ölçek ≈ ev ayak izi)
-    { .texPath = "assets/buildings/Inn_Red.png",
-      .x = T(17), .y = T(10), .scale = 0.8f, .solidBase = true },
+    // KÖY-YENİDEN (Faz EPIC-3): ERW evleri — orta boy üçlü meydan çevresine,
+    // BÜYÜK han yolun GÜNEYİNE (K2 kanonu: kervan yolu üstü, köy GD; feet
+    // T24,30 → row 17-18 ana yolu ÇATI ÖRTMEZ). Kapı önleri npc.c duraklarıyla
+    // eş — taşıyan ikisini birlikte taşır.
+    { .texPath = "assets/buildings/erw/house_baran.png",
+      .x = T(5.2f), .y = T(10.5f), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.92f, .baseHFrac = 0.28f },   // Baran'ın evi (dükkanın batısı)
+    { .texPath = "assets/buildings/erw/house_kemal.png",
+      .x = T(19), .y = T(7.5f), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.92f, .baseHFrac = 0.28f },   // Kemal'in evi (meydan doğusu)
+    { .texPath = "assets/buildings/erw/house_osman.png",
+      .x = T(4.5f), .y = T(16.5f), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.92f, .baseHFrac = 0.28f },   // Osman'ın kulübesi (tarla batısı)
+    // HAN (K2): ERW büyük taş yapı — yol kıyısı, güney cephe
+    { .texPath = "assets/buildings/erw/inn.png",
+      .x = T(24), .y = T(30), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.92f, .baseHFrac = 0.26f },
 
     // KÖY DETAYLARI (harita görsel yenileme): el yerleşimi — rutin yollarının
     // dışında, meydanı çerçeveleyen küçük yaşam izleri
     { .texPath = "assets/decor/erw/barrel_1.png",
       .x = T(9.2f), .y = T(5.8f), .scale = 2.0f, .solidBase = true },   // Baran'ın dükkan yanı
-    { .texPath = "assets/decor/Benches.png",
-      .x = T(12.3f), .y = T(8.3f), .scale = 1.2f, .solidBase = false }, // meydan bankı
+    { .texPath = "assets/decor/erw/bench.png",
+      .x = T(12.3f), .y = T(8.3f), .scale = 2.0f, .solidBase = false }, // meydan bankı
     { .texPath = "assets/decor/erw/barrel_2.png",
-      .x = T(18.6f), .y = T(11.4f), .scale = 2.0f, .solidBase = true }, // han önü fıçılar
+      .x = T(20.5f), .y = T(30.3f), .scale = 2.0f, .solidBase = true }, // han önü fıçılar
     { .texPath = "assets/decor/erw/fence.png",
-      .x = T(7.5f), .y = T(8.6f), .scale = 2.0f, .solidBase = true },   // ocak arkası çit
+      .x = T(12), .y = T(6.5f), .scale = 2.0f, .solidBase = true },   // meydan kuzeyi çiti
     // REVİR (Faz REVIR): köy KB köşesi — 3 yatak, Şifacı Ela başında
-    { .texPath = "assets/decor/bed_single.png",
-      .x = T(3.6f), .y = T(6.2f), .scale = 1.6f, .solidBase = false },
-    { .texPath = "assets/decor/bed_single.png",
-      .x = T(4.5f), .y = T(6.2f), .scale = 1.6f, .solidBase = false },
-    { .texPath = "assets/decor/bed_single.png",
-      .x = T(5.4f), .y = T(6.2f), .scale = 1.6f, .solidBase = false },
-    { .texPath = "assets/decor/Benches.png",
-      .x = T(14.6f), .y = T(10.8f), .scale = 1.2f, .solidBase = false },// güney yolu bankı
+    { .texPath = "assets/decor/erw/bed.png",
+      .x = T(21), .y = T(10.5f), .scale = 1.2f, .solidBase = false },
+    { .texPath = "assets/decor/erw/bed.png",
+      .x = T(21.9f), .y = T(10.5f), .scale = 1.2f, .solidBase = false },
+    { .texPath = "assets/decor/erw/bed.png",
+      .x = T(22.8f), .y = T(10.5f), .scale = 1.2f, .solidBase = false },
+    { .texPath = "assets/decor/erw/bench.png",
+      .x = T(14.6f), .y = T(10.8f), .scale = 2.0f, .solidBase = false },// güney yolu bankı
 
     // Ağaçlar: köy çevresi + goblin kampına giden yol (siper/LoS oyunu için)
-    { .texPath = "assets/decor/erw/tree1_anim.png", .frames = 8, .x = T(18), .y = T(8),  .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
+    { .texPath = "assets/decor/erw/tree1_anim.png", .frames = 8, .x = T(24.5f), .y = T(6),  .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },   // doğu koruluğu (Kemal evinin yolunu açtı)
     { .texPath = "assets/decor/erw/tree2_anim.png", .frames = 8, .x = T(19), .y = T(12), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
     { .texPath = "assets/decor/erw/tree1_anim.png", .frames = 8, .x = T(21), .y = T(15), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
     { .texPath = "assets/decor/erw/tree2_anim.png", .frames = 8, .x = T(16), .y = T(17), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
@@ -78,34 +85,34 @@ const DecorDef DECORS[] = {
     { .texPath = "assets/decor/erw/bush_1.png", .x = T(23), .y = T(28), .scale = 2.0f, .conceals = true },
 
     // Saman balyaları: Osman'ın tarlası (çiftlik gizlenmesi)
-    { .texPath = "assets/decor/hay_bale.png", .x = T(6), .y = T(12),   .scale = 3.0f, .conceals = true },
-    { .texPath = "assets/decor/hay_bale.png", .x = T(8), .y = T(12.3f), .scale = 3.0f, .conceals = true },
+    { .texPath = "assets/decor/erw/hay.png", .x = T(9.5f), .y = T(13),   .scale = 3.0f, .conceals = true },
+    { .texPath = "assets/decor/erw/hay.png", .x = T(11), .y = T(13.5f), .scale = 3.0f, .conceals = true },
     // --- LANETLİ MEZARLIK dekorları (map = MEZARLIK) ---
-    { .texPath = "assets/decor/undead/lich.png",          // DEV İSKELET KALINTISI
+    { .texPath = "assets/decor/erw/mz_lich.png",          // DEV İSKELET KALINTISI
       .x = T(30), .y = T(15), .scale = 2.2f, .solidBase = true, .map = DM_MEZARLIK },
-    { .texPath = "assets/decor/undead/skulls.png",
+    { .texPath = "assets/decor/erw/mz_skulls.png",
       .x = T(27), .y = T(17), .scale = 1.4f, .solidBase = false, .map = DM_MEZARLIK },
-    { .texPath = "assets/decor/undead/dead_tree1.png",
+    { .texPath = "assets/decor/erw/mz_dead_tree1.png",
       .x = T(10), .y = T(16), .scale = 1.6f, .solidBase = true, .map = DM_MEZARLIK },
-    { .texPath = "assets/decor/undead/dead_tree2.png",
+    { .texPath = "assets/decor/erw/mz_dead_tree2.png",
       .x = T(50), .y = T(18), .scale = 1.6f, .solidBase = true, .map = DM_MEZARLIK },
-    { .texPath = "assets/decor/undead/dead_tree1.png",
+    { .texPath = "assets/decor/erw/mz_dead_tree1.png",
       .x = T(38), .y = T(36), .scale = 1.5f, .solidBase = true, .map = DM_MEZARLIK },
-    { .texPath = "assets/decor/undead/ruin1.png",
+    { .texPath = "assets/decor/erw/mz_ruin.png",
       .x = T(12), .y = T(9), .scale = 1.8f, .solidBase = true, .map = DM_MEZARLIK },   // Sağlam sandık harabesi
-    { .texPath = "assets/decor/undead/grave1.png",
+    { .texPath = "assets/decor/erw/mz_grave1.png",
       .x = T(17), .y = T(29), .scale = 1.6f, .solidBase = true, .map = DM_MEZARLIK },
-    { .texPath = "assets/decor/undead/grave2.png",
+    { .texPath = "assets/decor/erw/mz_grave2.png",
       .x = T(20), .y = T(31), .scale = 1.6f, .solidBase = true, .map = DM_MEZARLIK },
-    { .texPath = "assets/decor/undead/grave1.png",
+    { .texPath = "assets/decor/erw/mz_grave1.png",
       .x = T(43), .y = T(29), .scale = 1.6f, .solidBase = true, .map = DM_MEZARLIK },
-    { .texPath = "assets/decor/undead/grave2.png",
+    { .texPath = "assets/decor/erw/mz_grave2.png",
       .x = T(41), .y = T(32), .scale = 1.6f, .solidBase = true, .map = DM_MEZARLIK },
-    { .texPath = "assets/decor/undead/bones1.png",
+    { .texPath = "assets/decor/erw/mz_bones1.png",
       .x = T(24), .y = T(24), .scale = 1.6f, .solidBase = false, .map = DM_MEZARLIK },
-    { .texPath = "assets/decor/undead/bones2.png",
+    { .texPath = "assets/decor/erw/mz_bones2.png",
       .x = T(36), .y = T(22), .scale = 1.6f, .solidBase = false, .map = DM_MEZARLIK },
-    { .texPath = "assets/decor/undead/crystal.png",
+    { .texPath = "assets/decor/erw/mz_crystal.png",
       .x = T(52), .y = T(9), .scale = 1.5f, .solidBase = true, .map = DM_MEZARLIK },
 
     // SESSİZ EL kontrat tahtası (loca T32,19 — salon sağ-alt, NPC'lerden uzak, [E] açar)
@@ -113,31 +120,31 @@ const DecorDef DECORS[] = {
       .x = T(32), .y = T(19), .scale = 1.8f, .solidBase = true, .map = DM_LOCA },
 
     // --- TAŞDURAK dekorları (Faz DOGU — map 6) ---
-    { .texPath = "assets/decor/desert/house1.png",       // Tüccar Ferah'ın evi
+    { .texPath = "assets/decor/erw/ds_house1.png",       // Tüccar Ferah'ın evi
       .x = T(13), .y = T(27), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
-    { .texPath = "assets/decor/desert/house2.png",       // Han (Duman)
+    { .texPath = "assets/decor/erw/ds_house2.png",       // Han (Duman)
       .x = T(20), .y = T(28), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
-    { .texPath = "assets/decor/desert/house3.png",       // Kâtip konağı
+    { .texPath = "assets/decor/erw/ds_house3.png",       // Kâtip konağı
       .x = T(27), .y = T(27), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
-    { .texPath = "assets/decor/desert/pergola.png",      // meydan gölgeliği
+    { .texPath = "assets/decor/erw/ds_house4.png",      // meydan gölgeliği
       .x = T(17), .y = T(34), .scale = 1.6f, .solidBase = false, .map = DM_DOGU },
-    { .texPath = "assets/decor/desert/market.png",       // pazar sahnesi (deve+halı)
+    { .texPath = "assets/decor/erw/ds_house6.png",       // pazar sahnesi (deve+halı)
       .x = T(24), .y = T(35), .scale = 1.6f, .solidBase = true, .map = DM_DOGU },
-    { .texPath = "assets/decor/desert/acacia.png",       // vaha akasyası
+    { .texPath = "assets/decor/erw/ds_acacia.png",       // vaha akasyası
       .x = T(19), .y = T(41), .scale = 1.6f, .solidBase = true, .map = DM_DOGU },
-    { .texPath = "assets/decor/desert/cactus.png",
+    { .texPath = "assets/decor/erw/ds_cactus.png",
       .x = T(38), .y = T(30), .scale = 2.0f, .solidBase = true, .map = DM_DOGU },
-    { .texPath = "assets/decor/desert/cactus.png",
+    { .texPath = "assets/decor/erw/ds_cactus.png",
       .x = T(52), .y = T(44), .scale = 2.0f, .solidBase = true, .map = DM_DOGU },
-    { .texPath = "assets/decor/desert/dead_bush.png",
+    { .texPath = "assets/decor/erw/ds_dead_bush.png",
       .x = T(45), .y = T(22), .scale = 1.8f, .solidBase = false, .map = DM_DOGU },
-    { .texPath = "assets/decor/desert/dead_bush.png",
+    { .texPath = "assets/decor/erw/ds_dead_bush.png",
       .x = T(66), .y = T(40), .scale = 1.8f, .solidBase = false, .map = DM_DOGU },
-    { .texPath = "assets/decor/desert/temple.png",       // TAPINAK (mumya vadisi)
+    { .texPath = "assets/decor/erw/ds_temple.png",       // TAPINAK (mumya vadisi)
       .x = T(80), .y = T(14), .scale = 2.0f, .solidBase = true, .map = DM_DOGU },
-    { .texPath = "assets/decor/desert/obelisk.png",
+    { .texPath = "assets/decor/erw/ds_obelisk.png",
       .x = T(75), .y = T(16), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
-    { .texPath = "assets/decor/desert/obelisk.png",
+    { .texPath = "assets/decor/erw/ds_obelisk.png",
       .x = T(85), .y = T(16), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
 };
 const int DECOR_COUNT = (int)(sizeof(DECORS) / sizeof(DECORS[0]));

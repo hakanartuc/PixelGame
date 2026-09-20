@@ -13,32 +13,30 @@
 // const DEĞİL: oyuncu kamp ateşi (STATION_PLAYER_FIRE_IDX) konumunu main yazar.
 StationDef STATIONS[] = {
     { .type = STATION_SMITH, .name = "Demirci Ocağı",
-      .texPath = "assets/decor/furnace.png", .src = { 0, 0, 16, 32 }, .frames = 5,
-      .x = T(8), .y = T(7), .scale = 3.0f,
+      .texPath = "assets/decor/erw/fire_pot.png", .src = { 0, 0, 21, 42 }, .frames = 8,
+      .x = T(9.5f), .y = T(7.2f), .scale = 2.0f,
       .permQuest = "demirci_ocak", .ownerNpcId = "dunya_koy_demirci" },
     { .type = STATION_ALCH, .name = "Simya Kazanı",
-      .texPath = "assets/decor/cauldron.png", .src = { 0, 0, 32, 32 }, .frames = 6,
-      .x = T(11), .y = T(5), .scale = 2.5f,
+      .texPath = "assets/decor/erw/alch_bench.png", .src = { 0, 0, 71, 70 }, .frames = 1,
+      .x = T(11), .y = T(5), .scale = 2.0f,
       .permQuest = "simya_masa", .ownerNpcId = "dunya_koy_tuccar" },
     { .type = STATION_ENCHANT, .name = "Kadim Sunak",
-      .texPath = "assets/decor/obelisk.png", .src = { 0, 0, 32, 80 }, .frames = 1,
+      .texPath = "assets/decor/erw/obelisk.png", .src = { 0, 0, 46, 123 }, .frames = 1,
       .x = T(102), .y = T(14), .scale = 2.0f,   // Karanlık Orman sınırı — keşifle bulunur
       .permQuest = NULL, .ownerNpcId = NULL },   // sahipsiz harabe: kapı yok
     // Faz 6: kamp ateşleri — KAPISIZ (ateş kimsenin değil), yemek pişirme
-    // KAMP ATEŞİ = ODUN-ONLY TÜRETİLMİŞ ASSET (Hakan kararı 2026-08-22, Faz
-    // ALEV): alev artık shader'dan (flame.frag, main.c çizer). campfire_wood.png
-    // scripts/bake_campfire_wood.py ile campfire.png'nin odun bölümünden (satır
-    // 20-31) türetilir; içindeki gömülü alev pikselleri ŞEFFAF. Ortadaki delik
-    // ÖZELLİK: shader alevi odunların ARKASINA çizilir ve delikten görünür.
-    // Orijinal campfire.png dosyada rafta (BOŞA ÇIKAN KODU SİLME).
+    // KAMP ATEŞİ = ERW taş çemberli ocak (dalga-2; alev İLKE OLARAK hâlâ
+    // shader'dan — flame.frag, main.c çizer; görselde gömülü alev YOK,
+    // görsel iterasyonla doğrulandı). Cute türevi campfire_wood.png ve
+    // bake_campfire_wood.py emekli (git geçmişinde).
     { .type = STATION_CAMPFIRE, .name = "Kamp Ateşi",
-      .texPath = "assets/decor/campfire_wood.png", .src = { 0, 0, 16, 12 }, .frames = 8,
-      .x = T(15), .y = T(7) + 20.0f, .scale = 3.0f,   // köy: pano yanı (sabit)
+      .texPath = "assets/decor/erw/campfire_wood2.png", .src = { 0, 0, 79, 60 }, .frames = 1,
+      .x = T(15), .y = T(7) + 20.0f, .scale = 2.0f,   // köy: pano yanı (sabit)
       .permQuest = NULL, .ownerNpcId = NULL },
     { .type = STATION_CAMPFIRE, .name = "Kamp Ateşi",   // STATION_PLAYER_FIRE_IDX (4)
-      .texPath = "assets/decor/campfire_wood.png", .src = { 0, 0, 16, 12 }, .frames = 8,
+      .texPath = "assets/decor/erw/campfire_wood2.png", .src = { 0, 0, 79, 60 }, .frames = 1,
       .x = CAMPFIRE_PARKED, .y = CAMPFIRE_PARKED,      // sönük: park (main kurar/söndürür)
-      .scale = 3.0f,
+      .scale = 2.0f,
       .permQuest = NULL, .ownerNpcId = NULL },
 };
 const int STATION_COUNT = (int)(sizeof(STATIONS) / sizeof(STATIONS[0]));

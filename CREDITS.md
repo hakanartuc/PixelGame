@@ -10,8 +10,11 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
 - Lisans: SATIN ALINDI (Hakan, 2026-09) — ticari kullanım paket lisansına dahil,
   varlıkların yeniden dağıtımı yasak (repo'da yalnız TÜRETİLMİŞ kesimler durur,
   ham paket repo DIŞINDA: `~/Assets/2D Pixel-Art/Epic RPG`).
-- Dosyalar: `assets/Tiles/erw/` (bake: `scripts/bake_erw_terrain.py`).
-  Göç ilerledikçe bu liste büyüyecek (Faz EPIC — PROGRESS.md).
+- Dosyalar: `assets/Tiles/erw/`, `assets/decor/erw/`, `assets/buildings/erw/`,
+  `assets/characters/erw/` (bake: `scripts/bake_erw_*.py` — 7 script).
+- Kullanılan paketler: Grass Land 1.6+2.0, Village, Cemetery, Crypt, Old
+  Prison, Sewers, Desert, Depths of the Mountain, Highlands, Ancient Ruins,
+  Volcano (elemental).
 - TODO: itch.io lisans metnini indirip tam maddeyi buraya işle.
 
 ### LPC / Universal LPC Spritesheet (oyuncu paper-doll)

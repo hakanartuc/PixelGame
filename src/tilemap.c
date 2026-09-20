@@ -12,38 +12,38 @@ const TileType TILE_TYPES[] = {
     // Cute Fantasy yolları git geçmişinde — eski görünüşe dönüş yol değişikliği.
     [0] = { .solid = false, .r = 50,  .g = 200, .b = 50,  .texturePath = "assets/Tiles/erw/grass_1.png", .speedMultiplier = 1.0f, .damage = 0.0f, .conceals = true }, // çimen — eğilince içine girilir
     [1] = { .solid = false, .r = 150, .g = 100, .b = 50,  .texturePath = "assets/Tiles/erw/path.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // yol
-    [2] = { .solid = true,  .r = 50,  .g = 50,  .b = 200, .texturePath = "assets/Tiles/Water/Water_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // su
-    [3] = { .solid = true,  .r = 110, .g = 110, .b = 120, .texturePath = "assets/Tiles/terrain/stone.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // taş
-    [4] = { .solid = false, .r = 90, .g = 110, .b = 70, .texturePath = "assets/Tiles/terrain/swamp.png", .speedMultiplier = 0.4f, .damage = 0.0f },  // bataklık: yavaşlatır
-    [5] = { .solid = false, .r = 200, .g = 60, .b = 40, .texturePath = "assets/Tiles/terrain/thorns.png", .speedMultiplier = 1.0f, .damage = 20.0f },  // diken: saniyede 20 hasar
+    [2] = { .solid = true,  .r = 50,  .g = 50,  .b = 200, .texturePath = "assets/Tiles/erw/water.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // su
+    [3] = { .solid = true,  .r = 110, .g = 110, .b = 120, .texturePath = "assets/Tiles/erw/stone.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // taş
+    [4] = { .solid = false, .r = 90, .g = 110, .b = 70, .texturePath = "assets/Tiles/erw/swamp.png", .speedMultiplier = 0.4f, .damage = 0.0f },  // bataklık: yavaşlatır
+    [5] = { .solid = false, .r = 200, .g = 60, .b = 40, .texturePath = "assets/Tiles/erw/thorns.png", .speedMultiplier = 1.0f, .damage = 20.0f },  // diken: saniyede 20 hasar
 
     // --- Zindan tile'lari (Cute_Fantasy Dungeons, 16px kirpimlar) ---
-    [6] = { .solid = false, .r = 60,  .g = 62,  .b = 88,  .texturePath = "assets/Tiles/dungeon/d1_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // K1 doseme
-    [7] = { .solid = true,  .r = 95,  .g = 100, .b = 130, .texturePath = "assets/Tiles/dungeon/d1_wall.png",  .speedMultiplier = 1.0f, .damage = 0.0f }, // K1 duvar
-    [8] = { .solid = false, .r = 70,  .g = 72,  .b = 100, .texturePath = "assets/Tiles/dungeon/d2_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // K2 doseme
-    [9] = { .solid = true,  .r = 105, .g = 110, .b = 140, .texturePath = "assets/Tiles/dungeon/d2_wall.png",  .speedMultiplier = 1.0f, .damage = 0.0f }, // K2 duvar
+    [6] = { .solid = false, .r = 60,  .g = 62,  .b = 88,  .texturePath = "assets/Tiles/erw/d1_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // K1 doseme
+    [7] = { .solid = true,  .r = 95,  .g = 100, .b = 130, .texturePath = "assets/Tiles/erw/d1_wall.png",  .speedMultiplier = 1.0f, .damage = 0.0f }, // K1 duvar
+    [8] = { .solid = false, .r = 70,  .g = 72,  .b = 100, .texturePath = "assets/Tiles/erw/d2_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // K2 doseme
+    [9] = { .solid = true,  .r = 105, .g = 110, .b = 140, .texturePath = "assets/Tiles/erw/d2_wall.png",  .speedMultiplier = 1.0f, .damage = 0.0f }, // K2 duvar
     [10] = { .solid = true, .r = 7,   .g = 7,   .b = 13,  .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // void: oda disi karanlik (duz renk)
 
     // --- Lanetli Mezarlık (Faz HG-B — undead paleti, açık hava zindanı) ---
-    [12] = { .solid = false, .r = 111, .g = 115, .b = 106, .texturePath = "assets/Tiles/undead/mz_ground.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü toprak
+    [12] = { .solid = false, .r = 111, .g = 115, .b = 106, .texturePath = "assets/Tiles/erw/mz_ground.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü toprak
     [13] = { .solid = true,  .r = 57,  .g = 31,  .b = 33,  .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // mezarlık kayası (üstü koyu — doku dual-grid'den)
-    [14] = { .solid = true,  .r = 26,  .g = 32,  .b = 46,  .texturePath = "assets/Tiles/undead/mz_water.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü su
+    [14] = { .solid = true,  .r = 26,  .g = 32,  .b = 46,  .texturePath = "assets/Tiles/erw/mz_water.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü su
     // Doğu çölü (Taşdurak — Faz DOGU)
-    [15] = { .solid = false, .r = 222, .g = 180, .b = 120, .texturePath = "assets/Tiles/desert/sand.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // kum
+    [15] = { .solid = false, .r = 222, .g = 180, .b = 120, .texturePath = "assets/Tiles/erw/sand.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // kum
     [16] = { .solid = true,  .r = 160, .g = 110, .b = 70,  .texturePath = "assets/Tiles/desert/rock.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // çöl kayası
-    [17] = { .solid = true,  .r = 70,  .g = 190, .b = 200, .texturePath = "assets/Tiles/desert/water.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // vaha suyu
+    [17] = { .solid = true,  .r = 70,  .g = 190, .b = 200, .texturePath = "assets/Tiles/erw/oasis_water.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // vaha suyu
 
     // Mağara (Loca v2 — Faz MAPGEN-2): düz renk tabanlar, doku dual-grid
     // ring/yüz parçalarından gelir (Cave_Walls atlası)
-    [18] = { .solid = false, .r = 138, .g = 72,  .b = 54,  .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // mağara zemini
-    [19] = { .solid = true,  .r = 225, .g = 163, .b = 122, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // mağara duvarı (üstü ten)
+    [18] = { .solid = false, .r = 138, .g = 72,  .b = 54,  .texturePath = "assets/Tiles/erw/cave_floor.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // mağara zemini
+    [19] = { .solid = true,  .r = 225, .g = 163, .b = 122, .texturePath = "assets/Tiles/erw/cave_wall.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // mağara duvarı (üstü ten)
 
     // SUALTI TABAN (Faz SU): suyun ALTINDA kalan yürünebilir kaya. Dokusu taş —
     // yani bu karo su asseti KULLANMIYOR. Sualtı görünümünün tamamı su hacmi
     // geçişinden geliyor (shaders/water.frag.hlsl): kaya bükülüyor, derinlik
     // gradyanı üstüne biniyor, kostik ağı üstünde geziyor. Katı DEĞİL: sığlık,
     // içine girilir ama su ayağı ağırlaştırır.
-    [20] = { .solid = false, .r = 96,  .g = 104, .b = 112, .texturePath = "assets/Tiles/terrain/stone.png", .speedMultiplier = 0.72f, .damage = 0.0f },  // sualtı taban (sığlık)
+    [20] = { .solid = false, .r = 96,  .g = 104, .b = 112, .texturePath = "assets/Tiles/erw/stone.png", .speedMultiplier = 0.72f, .damage = 0.0f },  // sualtı taban (sığlık)
 };
 const int TILE_TYPE_COUNT = (int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0]));
 
@@ -245,14 +245,14 @@ SDL_FRect feet_box(float rectX, float rectY, float rectW, float rectH)
 static R2DTexture *grassVar[4] = {0};   // [0] ana doku (tileTextures'tan gelmez — kendi kopyası)
 static R2DTexture *pathEdgeTex = NULL;  // ERW toprak blob'u — maske-sıralı 4×4, 32px hücre
 static R2DTexture *grassEdgeTex = NULL; // ERW çim saçağı blob'u — aynı düzen
-static R2DTexture *flowerTex = NULL;    // flowers.png (160×160 — 10×10 hücre 16px)
-static R2DTexture *pathDecTex = NULL;   // Path_Decoration.png (3 hücre 16px)
-static R2DTexture *waterDecTex = NULL;  // Water_Decoration.png (3 hücre 16px)
+static R2DTexture *flowerTex = NULL;    // erw/scatter_atlas.png (10×3 hücre 32px)
+static R2DTexture *pathDecTex = NULL;   // erw/pathdec_atlas.png (3 hücre 32px)
 static R2DTexture *uwBushTex[2] = { NULL, NULL };  // bush_1/2 — sualtı bitkisi+taşı (renk moduyla)
 static R2DTexture *mzGround2 = NULL;    // mezarlık zemin 2. varyantı
 static R2DTexture *dsrWaterTex = NULL;  // çöl vaha atlası (dual-grid 16 parça)
 static R2DTexture *dsrCliffTex = NULL;  // çöl kaya atlası (dual-grid 16 parça)
-static R2DTexture *caveWallTex = NULL;  // mağara duvar atlası (Loca — dual-grid)
+static R2DTexture *caveRingTex = NULL;  // ERW loca duvar ringi (maske-sıralı 4×4, 32px)
+static R2DTexture *mzRockTex = NULL;    // ERW mezarlık kaya ringi (aynı düzen)
 static R2DTexture *wldWaterTex = NULL;  // dünya suyu kıyı atlası (dual-grid)
 
 // SU AKIŞI. Kıyı atlası animasyonlu sürümde 8 kare taşıyor; kare seçimi DUVAR
@@ -1232,27 +1232,27 @@ void tilemap_load_details(R2D *renderer)
     grassVar[3] = load_texture(renderer, "assets/Tiles/erw/grass_4.png");
     pathEdgeTex  = load_texture(renderer, "assets/Tiles/erw/path_edge_atlas.png");
     grassEdgeTex = load_texture(renderer, "assets/Tiles/erw/grass_edge_atlas.png");
-    flowerTex = load_texture(renderer, "assets/decor/flowers.png");
-    pathDecTex = load_texture(renderer, "assets/Tiles/Grass/Path_Decoration.png");
-    waterDecTex = load_texture(renderer, "assets/Tiles/Water/Water_Decoration.png");
+    // ERW dalga-2: serpiştirme atlası bake_erw_wave2.py'den (hücre 32px).
+    flowerTex = load_texture(renderer, "assets/Tiles/erw/scatter_atlas.png");
+    pathDecTex = load_texture(renderer, "assets/Tiles/erw/pathdec_atlas.png");
     uwBushTex[0] = load_texture(renderer, "assets/decor/erw/bush_1.png");
     uwBushTex[1] = load_texture(renderer, "assets/decor/erw/bush_2.png");
-    mzGround2 = load_texture(renderer, "assets/Tiles/undead/mz_ground2.png");
-    dsrWaterTex = load_texture(renderer, "assets/Tiles/desert/water_atlas.png");
+    mzGround2 = load_texture(renderer, "assets/Tiles/erw/mz_ground2.png");
+    dsrWaterTex = load_texture(renderer, "assets/Tiles/erw/oasis_atlas.png");
     dsrCliffTex = load_texture(renderer, "assets/Tiles/desert/cliff_atlas.png");
     // Keyed varyant: koyu blokların düz arka planı şeffaf (bake_cave_ring.py) —
     // ışık bloklar dokunulmamış; loca + mezarlık AYNI atlası kullanır
-    caveWallTex = load_texture(renderer, "assets/Tiles/Cave/Cave_Walls_Keyed.png");
+    caveRingTex = load_texture(renderer, "assets/Tiles/erw/cave_ring_atlas.png");
+    mzRockTex = load_texture(renderer, "assets/Tiles/erw/mz_rock_atlas.png");
     // SU ANİMASYONU: atlasın animasyonlu sürümü aynı 3x5 düzeni 8 KARE yan yana
     // taşıyor (384x80 = 24x5 hücre). Yani LUT değişmiyor; kıyı hücresinin cx'ine
     // "kare * 3" ekleyince su akmaya başlıyor. Statik sürüm yedek olarak duruyor —
     // animasyonlu dosya bulunamazsa akış durur, kıyı yine çizilir.
-    wldWaterTex = load_texture(renderer, "assets/Tiles/Water/Water_Tile_1_Anim.png");
-    if (wldWaterTex != NULL) wldWaterFrames = WLD_WATER_FRAMES;
-    else {
-        wldWaterTex = load_texture(renderer, "assets/Tiles/Water/Water_Tile_1.png");
-        wldWaterFrames = 1;
-    }
+    // ERW dalga-2: Cute kıyı animasyon overlay'i (Water_Tile_1_Anim) EMEKLİ —
+    // kıyı işini su shader'ı yapıyor (menisküs/köpük/çırpıntı/ıslak bant).
+    // wldWaterTex NULL kalır, wld_water_pass kendiliğinden susar; geri almak
+    // = bu yüklemeyi geri koymak. (KALDIRILDI: yükleme satırları)
+    wldWaterFrames = 1;   // (EMEKLİ yol — wldWaterTex hep NULL, pass susuyor)
     // KIYI KESİTİ atlası: dosyadan yüklenmez, koddan boyanır (shore_bake_atlas)
     shore_bake_atlas(renderer);
 }
@@ -1265,13 +1265,13 @@ void tilemap_free_details(void)
     if (grassEdgeTex) { r2d_texture_destroy(NULL, grassEdgeTex); grassEdgeTex = NULL; }
     if (flowerTex) { r2d_texture_destroy(NULL, flowerTex); flowerTex = NULL; }
     if (pathDecTex) { r2d_texture_destroy(NULL, pathDecTex); pathDecTex = NULL; }
-    if (waterDecTex) { r2d_texture_destroy(NULL, waterDecTex); waterDecTex = NULL; }
     for (int i = 0; i < 2; i++)
         if (uwBushTex[i]) { r2d_texture_destroy(NULL, uwBushTex[i]); uwBushTex[i] = NULL; }
     if (mzGround2) { r2d_texture_destroy(NULL, mzGround2); mzGround2 = NULL; }
     if (dsrWaterTex) { r2d_texture_destroy(NULL, dsrWaterTex); dsrWaterTex = NULL; }
     if (dsrCliffTex) { r2d_texture_destroy(NULL, dsrCliffTex); dsrCliffTex = NULL; }
-    if (caveWallTex) { r2d_texture_destroy(NULL, caveWallTex); caveWallTex = NULL; }
+    if (caveRingTex) { r2d_texture_destroy(NULL, caveRingTex); caveRingTex = NULL; }
+    if (mzRockTex) { r2d_texture_destroy(NULL, mzRockTex); mzRockTex = NULL; }
     if (wldWaterTex) { r2d_texture_destroy(NULL, wldWaterTex); wldWaterTex = NULL; }
     if (shoreTex) { r2d_texture_destroy(NULL, shoreTex); shoreTex = NULL; }
 }
@@ -1373,13 +1373,15 @@ static void erw_grass_fringe_pass(R2D *renderer, const Camera *camera,
 // mask bitleri (dual hücrenin köşeleri): 1=NW 2=NE 4=SW 8=SE hedef tür.
 // LUT[mask] = atlas hücre {cx,cy} (16px grid). mask 0 çizilmez.
 typedef struct { Uint8 cx, cy; } DsrCell;
-static const DsrCell DSR_WATER_LUT[16] = {
-    [1]={5,2}, [2]={3,2}, [4]={5,0}, [8]={3,0},      // tek köşe su
-    [3]={4,2}, [12]={4,0}, [5]={5,1}, [10]={3,1},    // yarımlar (S/N/E/W kenarı)
-    [7]={0,0}, [11]={2,0}, [13]={0,2}, [14]={2,2},   // iç köşe (ada bloğu)
-    [6]={3,2}, [9]={3,0},                            // çapraz (sette yok → köşe)
-    [15]={4,1},                                      // tam su
+// ERW MASKE-SIRALI ATLAS SÖZLEŞMESİ (bake_erw_biome.py): hücre = köşe
+// maskesi (m%4, m/4), hücre 32px. Vaha, loca ringi ve mezarlık kayası aynı
+// kimlik tablosunu kullanır; m15 atlasta var ama İÇ taban zaten çizili → atla.
+static const DsrCell ERW_ID_LUT[16] = {
+    [1]={1,0}, [2]={2,0}, [3]={3,0}, [4]={0,1}, [5]={1,1}, [6]={2,1},
+    [7]={3,1}, [8]={0,2}, [9]={1,2}, [10]={2,2}, [11]={3,2}, [12]={0,3},
+    [13]={1,3}, [14]={2,3}, [15]={255,255},
 };
+#define DSR_WATER_LUT ERW_ID_LUT
 static const DsrCell DSR_ROCK_LUT[16] = {
     [1]={5,4}, [2]={3,4}, [4]={5,2}, [8]={3,2},
     [3]={4,4}, [12]={4,2}, [5]={5,3}, [10]={3,3},
@@ -1408,6 +1410,7 @@ static inline bool dsr_rockish(int col, int row)
 }
 
 static void dsr_dual_pass(R2D *renderer, R2DTexture *atlas, int id,
+                          float cellPx,   // atlas hücresi: ERW 32, Cute klif 16
                           const Camera *camera, int colL, int rowT,
                           int colR, int rowB)
 {
@@ -1427,7 +1430,8 @@ static void dsr_dual_pass(R2D *renderer, R2DTexture *atlas, int id,
                   | (dsr_is(col, row + 1, id) ? 4 : 0)
                   | (dsr_is(col + 1, row + 1, id) ? 8 : 0);
             if (m == 0 || lut[m].cx == 255) continue;
-            SDL_FRect src = { lut[m].cx * 16.0f, lut[m].cy * 16.0f, 16, 16 };
+            SDL_FRect src = { lut[m].cx * cellPx, lut[m].cy * cellPx,
+                              cellPx, cellPx };
             SDL_FRect dst = {
                 ((col + 0.5f) * TILE_SIZE - camera->x) * zoom,
                 ((row + 0.5f) * TILE_SIZE - camera->y) * zoom,
@@ -1445,21 +1449,8 @@ static void dsr_dual_pass(R2D *renderer, R2DTexture *atlas, int id,
 #define CAVE_WALL  19
 #define MZ_ROCK    13
 
-// Işık bloklar (loca): ring (0-2,0-2) + delikli iç köşe (0-2,3-4)
-static const DsrCell CAVE_LUT[16] = {
-    [1]={2,2}, [2]={0,2}, [4]={2,0}, [8]={0,0},
-    [3]={1,2}, [12]={1,0}, [5]={2,1}, [10]={0,1},
-    [7]={0,3}, [11]={2,3}, [13]={0,4}, [14]={2,4},   // iç köşe (delikli blok)
-    [6]={255,255}, [9]={255,255},   // çapraz: parçasız (yuvarlak kötü durur)
-    [15]={255,255},                 // duvar içi: düz taban kalır
-};
-// Koyu bloklar (mezarlık): ring (4-6,0-2) + delikli (4-6,3-4) — keyed atlas
-static const DsrCell MZ_LUT[16] = {
-    [1]={6,2}, [2]={4,2}, [4]={6,0}, [8]={4,0},
-    [3]={5,2}, [12]={5,0}, [5]={6,1}, [10]={4,1},
-    [7]={4,3}, [11]={6,3}, [13]={4,4}, [14]={6,4},
-    [6]={255,255}, [9]={255,255}, [15]={255,255},
-};
+// (ERW dalga-3: CAVE_LUT/MZ_LUT emekli — iki ring de maske-sıralı ERW
+// atlasından ERW_ID_LUT ile okunur; Cave_Walls_Keyed düzeni git geçmişinde.)
 
 // Duvar id'sine göre "zemin" sayılan komşu (ring yalnız zemine bakar)
 static inline bool cave_floor_at(int wallId, int col, int row)
@@ -1481,10 +1472,11 @@ static inline bool cave_wallish(int wallId, int col, int row)
     return dsr_is(col, row, wallId) && !cave_is_face(wallId, col, row);
 }
 
-static void cave_dual_pass(R2D *renderer, const DsrCell *lut, int wallId,
+static void cave_dual_pass(R2D *renderer, R2DTexture *atlas, int wallId,
                            const Camera *camera,
                            int colL, int rowT, int colR, int rowB)
 {
+    const DsrCell *lut = ERW_ID_LUT;
     float zoom = camera->zoom;
     for (int row = rowT - 1; row < rowB; row++) {
         for (int col = colL - 1; col < colR; col++) {
@@ -1498,18 +1490,19 @@ static void cave_dual_pass(R2D *renderer, const DsrCell *lut, int wallId,
                                 cave_floor_at(wallId, col, row + 1) ||
                                 cave_floor_at(wallId, col + 1, row + 1);
             if (!touchesFloor) continue;   // duvar|void tarafı çizgisiz
-            SDL_FRect src = { lut[m].cx * 16.0f, lut[m].cy * 16.0f, 16, 16 };
+            SDL_FRect src = { lut[m].cx * 32.0f, lut[m].cy * 32.0f, 32, 32 };
             SDL_FRect dst = {
                 ((col + 0.5f) * TILE_SIZE - camera->x) * zoom,
                 ((row + 0.5f) * TILE_SIZE - camera->y) * zoom,
                 TILE_SIZE * zoom, TILE_SIZE * zoom };
-            r2d_draw_texture(renderer, caveWallTex, &src, &dst);
+            r2d_draw_texture(renderer, atlas, &src, &dst);
         }
     }
 }
 
 // --- DÜNYA SUYU KIYI GEÇİŞLERİ (Faz MAPGEN-2) ---
-// Su(2) kıyıları Water_Tile_1 dual-grid setiyle yumuşar: çimen tutamlı
+// (EMEKLİ — ERW dalga-2: kıyıyı su shader'ı süslüyor, wldWaterTex artık
+// yüklenmiyor; LUT+pass geri dönüş kolaylığı için duruyor.) Eski not: çimen tutamlı
 // toprak dudak. Parça yalnız kıyının TAMAMI ÇİMEN(0) olduğunda basılır —
 // yol/bataklık/taş kıyısı bugünkü sert haliyle kalır (parça bg'si çimen).
 static const DsrCell WLD_WATER_LUT[16] = {
@@ -1819,22 +1812,9 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
             // MAĞARA/MEZARLIK YÜZÜ: güneyi zemin olan duvar hücresi kaya
             // yığını duvarı gösterir (atlas satır 6; loca L/M/R, mezarlık
             // 2 koyu varyant hash ile)
-            if (tileID == CAVE_WALL && caveWallTex != NULL &&
-                cave_is_face(CAVE_WALL, col, row))
-            {
-                bool fl = cave_is_face(CAVE_WALL, col - 1, row);
-                bool fr = cave_is_face(CAVE_WALL, col + 1, row);
-                int fc = (fl && fr) ? 1 : (fr ? 0 : (fl ? 2 : 1));
-                SDL_FRect fsrc = { fc * 16.0f, 6 * 16.0f, 16, 16 };
-                r2d_draw_texture(renderer, caveWallTex, &fsrc, &dst);
-            }
-            else if (tileID == MZ_ROCK && caveWallTex != NULL &&
-                     cave_is_face(MZ_ROCK, col, row))
-            {
-                SDL_FRect fsrc = { (4 + grass_variant(col, row) % 2) * 16.0f,
-                                   6 * 16.0f, 16, 16 };
-                r2d_draw_texture(renderer, caveWallTex, &fsrc, &dst);
-            }
+            // (ERW dalga-3: kaya yığını YÜZ hücresi çizimi emekli — ERW
+            // duvar taban karosu (slope bloğu) yüz görünümünü kendisi taşıyor;
+            // cave_is_face ring pass'inde hâlâ kullanılıyor, o kalır.)
 
             // KENAR KAPLAMALARI: çimen komşu tabana taşar (yumuşak geçiş)
             // (ERW GEÇİŞİ: eski tile-merkezli 12 hücreli çim saçağı bloğu
@@ -1851,14 +1831,13 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
     // ÇÖL AUTOTILE: taban pass'i bitti — su ve kaya sınır overlay'leri
     // (yalnız bu id'leri içeren haritada iş yapar; diğerlerinde mask hep 0)
     if (dsrWaterTex != NULL)
-        dsr_dual_pass(renderer, dsrWaterTex, DSR_WATER, camera, colL, rowT, colR, rowB);
+        dsr_dual_pass(renderer, dsrWaterTex, DSR_WATER, 32.0f, camera, colL, rowT, colR, rowB);
     if (dsrCliffTex != NULL)
-        dsr_dual_pass(renderer, dsrCliffTex, DSR_ROCK, camera, colL, rowT, colR, rowB);
-    if (caveWallTex != NULL)
-    {
-        cave_dual_pass(renderer, CAVE_LUT, CAVE_WALL, camera, colL, rowT, colR, rowB);
-        cave_dual_pass(renderer, MZ_LUT, MZ_ROCK, camera, colL, rowT, colR, rowB);
-    }
+        dsr_dual_pass(renderer, dsrCliffTex, DSR_ROCK, 16.0f, camera, colL, rowT, colR, rowB);
+    if (caveRingTex != NULL)
+        cave_dual_pass(renderer, caveRingTex, CAVE_WALL, camera, colL, rowT, colR, rowB);
+    if (mzRockTex != NULL)
+        cave_dual_pass(renderer, mzRockTex, MZ_ROCK, camera, colL, rowT, colR, rowB);
     if (wldWaterTex != NULL)
         wld_water_pass(renderer, camera, colL, rowT, colR, rowB);
     // KIYI KESİTİ: kıyı atlasının ÜSTÜNE, su geçişinden (main.c r2d_water_flush)
@@ -1928,9 +1907,9 @@ void tilemap_render_scatter(R2D *renderer, const Camera *camera)
             float dx = (float)((h >> 4) % 40) / 40.0f;   // tile içi kayma
             float dy = (float)((h >> 9) % 40) / 40.0f;
             SDL_FRect dst = {
-                (col * TILE_SIZE + dx * (TILE_SIZE - 20) - camera->x) * zoom,
-                (row * TILE_SIZE + dy * (TILE_SIZE - 20) - camera->y) * zoom,
-                20.0f * zoom, 20.0f * zoom };
+                (col * TILE_SIZE + dx * (TILE_SIZE - 32) - camera->x) * zoom,
+                (row * TILE_SIZE + dy * (TILE_SIZE - 32) - camera->y) * zoom,
+                32.0f * zoom, 32.0f * zoom };   // ERW hücresi 32px → yarım karo
 
             if (id == 0) {   // çimen: %6 çiçek/ot tömreği
                 bool nearPath = (col > 0 && tilemap[row][col-1] == 1) ||
@@ -1938,13 +1917,13 @@ void tilemap_render_scatter(R2D *renderer, const Camera *camera)
                                 (row > 0 && tilemap[row-1][col] == 1) ||
                                 (row < mapH-1 && tilemap[row+1][col] == 1);
                 if (nearPath && (h % 100) < 10 && pathDecTex != NULL) {
-                    SDL_FRect src = { (float)((h >> 6) % 3) * 16.0f, 0, 16, 16 };
+                    SDL_FRect src = { (float)((h >> 6) % 3) * 32.0f, 0, 32, 32 };
                     r2d_draw_texture(renderer, pathDecTex, &src, &dst);
                 }
                 else if ((h % 100) < 6) {
-                    // flowers.png: 10×10 hücre — üst 3 satırdan seç (çiçek/ot)
+                    // scatter_atlas: 10×3 hücre 32px — satır 0-1 bitki, 2 taş
                     int fc = (int)((h >> 6) % 10), fr = (int)((h >> 13) % 3);
-                    SDL_FRect src = { fc * 16.0f, fr * 16.0f, 16, 16 };
+                    SDL_FRect src = { fc * 32.0f, fr * 32.0f, 32, 32 };
                     r2d_draw_texture(renderer, flowerTex, &src, &dst);
                 }
             }
@@ -1961,12 +1940,9 @@ void tilemap_render_scatter(R2D *renderer, const Camera *camera)
                                 (col < mapW-1 && tilemap[row][col+1] != id) ||
                                 (row > 0 && tilemap[row-1][col] != id) ||
                                 (row < mapH-1 && tilemap[row+1][col] != id);
-                // Göl/deniz sazı korunur: raftaki taş/bitkiden ÖNCE zar atar
-                if (id == 2 && waterDecTex != NULL && nearLand && (h % 100) >= 90) {
-                    SDL_FRect src = { (float)((h >> 6) % 3) * 16.0f, 0, 16, 16 };
-                    r2d_draw_texture(renderer, waterDecTex, &src, &dst);
-                }
-                else {
+                // (ERW dalga-2: Cute kıyı sazı emekli — kıyıyı shader süslüyor;
+                // saz hücreleri de raf/bitki zarına katılır)
+                {
                 // Batık taş rafı + bitkiler. Gölet ortası da payını alıyor
                 // ('içine de taş ve bitkiler ekleyip doğallaştıralım' —
                 // Hakan): örtme 0.80'e indiği için orta artık siluet gösterir.

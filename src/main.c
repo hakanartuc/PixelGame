@@ -1273,8 +1273,8 @@ int main(int argc, char *argv[])
     int postfxIdx = 1;   // SICAK ile başla
     r2d_postfx_set(renderer, &POSTFX_PRESETS[postfxIdx].fx);
 
-    R2DTexture *crateTex = load_texture(renderer, "assets/loot/chest_small.png");
-    R2DTexture *chestTex = load_texture(renderer, "assets/decor/Chest_anim.png");
+    R2DTexture *crateTex = load_texture(renderer, "assets/decor/erw/crate.png");
+    R2DTexture *chestTex = load_texture(renderer, "assets/decor/erw/chest_anim.png");
     if (crateTex == NULL)
     {
         SDL_Log("Kasa texture yuklenemedi");
@@ -1453,7 +1453,7 @@ int main(int argc, char *argv[])
     R2DTexture *bookTex  = load_texture(renderer, "assets/ui/Book_UI.png");   // Yolculuk günlüğü
     R2DTexture *nestsTex = load_texture(renderer, "assets/decor/nests.png");   // yuva görselleri (E1)
     R2DTexture *abilityIconTex = load_texture(renderer, "assets/icons/abilities.png");  // beceri ikonları (Cila)
-    R2DTexture *lanternTex = load_texture(renderer, "assets/decor/lantern.png");  // K9 kandili (D1a)
+    R2DTexture *lanternTex = load_texture(renderer, "assets/decor/erw/lantern.png");  // K9 kandili (D1a)
     R2DTexture *sofraTex = load_texture(renderer, "assets/decor/sofra.png");  // K2 sofrası (D1b)
     R2DTexture *snakeTex  = load_texture(renderer, "assets/characters/allies/snake.png");   // M4
     R2DTexture *turtleTex = load_texture(renderer, "assets/characters/allies/turtle.png");
@@ -1596,8 +1596,8 @@ int main(int argc, char *argv[])
     int nuhIdx     = npc_index_by_id("dunya_ova_sayan");     // S3 Sayan Adam (D1c)
     int zehraIdx   = npc_index_by_id("dunya_koy_torun");     // S3 — Nuh'un torunu
     int nuhLockDay = -1;   // yanlış cevap: o gün kilit (save'e girmez — zar kilidi gibi)
-    #define SOFRA_X (19.4f * TILE_SIZE)   // han önü (köy GD) — gece kurulur
-    #define SOFRA_Y (13.1f * TILE_SIZE)
+    #define SOFRA_X (25.5f * TILE_SIZE)   // han önü (köy GD, KÖY-YENİDEN) — gece kurulur
+    #define SOFRA_Y (30.5f * TILE_SIZE)
     #define KAYIT_X (20.5f * TILE_SIZE)    // S3: kayıt odası kapısı (konak)
     #define KAYIT_Y (6.0f * TILE_SIZE)
     #define ECHO_K9 2                            // ECHOES[2] = Kerem (F2)
@@ -11591,15 +11591,12 @@ int main(int argc, char *argv[])
                 for (int i = 0; i < STATION_COUNT; i++) {
                     if (STATIONS[i].x <= CAMPFIRE_PARKED + 1.0f) continue;  // sönük
                     if (STATIONS[i].type != STATION_CAMPFIRE) continue;
-                    // Dünya px kutusu: odun-only yığın y-36..y'de (craft.c
-                    // campfire_wood 16×12 × ölçek 3, taban çapası y). Alev
-                    // ODUNDAN DAR (24 < 48) ve tabanı yığının ortasında (y-12):
-                    // alt ~24px kütüklerin arkasında, gövde üst kollardaki
-                    // DELİKTEN görünür, diller yığının üstünden taşar. İki tur
-                    // "ateş kampı kapatıyor" dedirten şey alevin yığından
-                    // büyük olmasıydı — oran artık ters: yığın büyük, alev dar.
-                    float fw = 24.0f, fh = 40.0f;
-                    float baseY = STATIONS[i].y - 12.0f;
+                    // ERW taş çemberli ocak (dalga-2): 79×60 × ölçek 2 →
+                    // y-120..y. Alev taş çemberin İÇİNDEN, odun yatağının
+                    // ortasından yükselir (taban y-52); oran dersi korunur:
+                    // ocak geniş (158px), alev dar (32px).
+                    float fw = 32.0f, fh = 48.0f;
+                    float baseY = STATIONS[i].y - 52.0f;
                     SDL_FRect fdst = {
                         (STATIONS[i].x - fw * 0.5f - camera.x) * camera.zoom,
                         (baseY - fh - camera.y) * camera.zoom,
@@ -12026,7 +12023,7 @@ int main(int argc, char *argv[])
         ally_render(allies, renderer, snakeTex, turtleTex, &camera);   // M4 dostlar
 
         npc_render_infirmary(renderer, npc_textures, &camera, gameFont,
-                             3.6f * TILE_SIZE, 6.2f * TILE_SIZE);
+                             21.0f * TILE_SIZE, 10.5f * TILE_SIZE);
         npc_render_all(renderer, npc_textures, &camera, gameFont, nearestNpc,
                        player.sneaking);
 

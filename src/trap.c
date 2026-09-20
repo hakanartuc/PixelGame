@@ -21,7 +21,7 @@ static float trapClock = 0.0f;             // diken fazları için ortak saat
 
 bool trap_init(R2D *renderer)
 {
-    spikeTex = load_texture(renderer, "assets/decor/Floor_spikes_1.png");
+    spikeTex = load_texture(renderer, "assets/decor/erw/floor_spikes.png");
     plateTex = load_texture(renderer, "assets/decor/Dungeon_1_Pressure_Plate_Anim.png");
     bowTex   = load_texture(renderer, "assets/decor/Mounted_Crossbow_anim.png");
     return spikeTex != NULL;

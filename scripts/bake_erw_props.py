@@ -171,7 +171,28 @@ HOUSES = [
 ]
 for name, (bx, by, bw_, bh_) in HOUSES:
     x, y, cw, ch = bbox(hpx, hw, hh, bx, by, bx + bw_, by + bh_)
-    png_write_rgba(os.path.join(BLD, name), cw, ch, crop(hpx, hw, hh, x, y, cw, ch))
+    cut = crop(hpx, hw, hh, x, y, cw, ch)
+    # inn: kaba kutu komşu binanın kiremit sütununu kapıyor (sol üst L-bölge,
+    # kutuyla dışlanamıyor) — kesim SONRASI şeffaflanır (görsel iterasyon bulgusu)
+    if name == "inn.png":
+        for yy in range(min(235, ch)):
+            for xx in range(min(55, cw)):
+                o = (yy * cw + xx) * 4
+                cut[o:o + 4] = b"\x00\x00\x00\x00"
+    png_write_rgba(os.path.join(BLD, name), cw, ch, cut)
+    rapor.append(f"{name}: {cw}x{ch}")
+
+# KÖY-YENİDEN: orta boy evler (Premade_houses3) — dev evler köye sığmadı
+# (12 karo boy, tepe kuzey denizine taşıyor); köy evleri 5-8 karo sınıfından.
+hw3, hh3, hpx3 = png_read_rgba(os.path.join(VIL, "buildings/Premade_houses3.png"))
+HOUSES3 = [
+    ("house_baran.png", (1120, 390, 245, 250)),  # kırmızı-ahşap ev (tüccar)
+    ("house_kemal.png", (0, 425, 195, 200)),     # küçük taş ev (yaşlı)
+    ("house_osman.png", (505, 25, 200, 175)),    # küçük taş kulübe (çiftçi)
+]
+for name, (bx, by, bw_, bh_) in HOUSES3:
+    x, y, cw, ch = bbox(hpx3, hw3, hh3, bx, by, bx + bw_, by + bh_)
+    png_write_rgba(os.path.join(BLD, name), cw, ch, crop(hpx3, hw3, hh3, x, y, cw, ch))
     rapor.append(f"{name}: {cw}x{ch}")
 
 print("OK:")

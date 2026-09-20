@@ -83,6 +83,79 @@ kıyısı) ② odun kesme düğümleri (T31,11 civarı) yeni ağaçla çalışı
 kuyu/fıçı/çit/pano köyde yerli yerinde ve ölçek göze oturuyor mu ④ pano [E]
 etkileşimi hâlâ hizalı mı ⑤ çalıya eğilince gizlenme çalışıyor mu (conceals).
 
+### Faz EPIC-4: BÜYÜK SÜPÜRME — kalan dünya asset'leri (2026-09-20,
+### "işlerin tamamını bitir, devam bekleme")
+Dört bake dalgası (`bake_erw_wave2/biome/wave4.py`); her dalga build+smoke
+doğrulamalı. Cute Fantasy envanteri ~%95 SIFIRLANDI.
+
+**Dalga 2 — çayır+istasyon+iç dekor:** scatter atlası (10×3, çiçek/mantar/
+taş; tilemap hücre 16→32) · yol taşları · ERW su karosu (taban; **Cute kıyı
+overlay'i Water_Tile_1_Anim EMEKLİ — kıyı işi su shader'ında**, wldWaterTex
+NULL/pass susuyor) · ot düğümleri (renk analiziyle kırmızı/mavi çiçek) ·
+yatak/bank/saman · **istasyonlar**: demirci=Depths ateş potası (8 kare),
+simya=masa+şişe kompoziti (görsel tezgah, ad "Kazan" kaldı — metin borcu),
+sunak=Desert obelisk, kamp ateşi=Highlands taş çember (görsel iterasyon:
+4 dosya animasyon değil 4 AYRI tasarımmış — tek kare #2; alev gömülü değil,
+shader alevi üstünde, taban y-52).
+
+**Dalga 3 — biyom karoları (bake_erw_biome.py, hepsi wangset'ten):**
+d1=Crypt, d2=Depths(+platform duvarı), mezarlık=Cemetery (yaprak örtüsü
+varyant), loca=Crypt ground2+slope, kum+VAHA=Desert (maske-sıralı vaha
+atlası), taş/bataklık/diken=Cemetery/Prison. **ERW_ID_LUT**: vaha + loca
+ringi + mezarlık kayası TEK kimlik tablosu (maske-sıralı atlas sözleşmesi);
+dsr_dual_pass'e cellPx parametresi (ERW 32 / Cute klif 16); CAVE/MZ_LUT +
+kaya yığını YÜZ çizimleri emekli (ERW slope tabanı yüzü taşıyor).
+Cave/Grass/Water/terrain/dungeon/undead karo klasörleri SİLİNDİ.
+
+**Dalga 4 — biyom dekorları:** mezarlık (heykel-lich, kemikler, ölü ağaçlar,
+kripta-harabe, 2 mezar taşı, kristal, kripta-kapı; K9 KANDİLİ=mumluk-yanık) ·
+çöl (kaktüs/kuru çalı/akasya/tapınak/obelisk + **bağlı-bileşen kesiciyle**
+tents-houses sheet'inden 6 yapı — ev1-3/market/pergola ataması) · zindan
+geçitleri (kripta kapısı + Crypt merdiveni) · diken tuzağı (4 kare, sözleşme
+aynı) · SANDIKLAR (Sewers rustic 8 kare 64×64 + ahşap kasa; CRATE açılma
+animasyonu emekli — tek kare) · maden düğümü (Depths'in EN BÜYÜK kristali,
+otomatik seçim) · öz item ikonları kristallere geçti.
+
+**BİLİNÇLİ KALANLAR (gerekçeli):**
+- **İkonlar (17 sheet) + UI (Frames/Book)**: ERW koleksiyonunda item-ikon
+  seti YOK — yarım derleme yapılmadı. ÖNERİ: ayrı ikon paketi alınmalı
+  (Hakan kararı); o zamana dek Cute ikonlar ekranda.
+- Çöl kaya+klif (rock/cliff_atlas): ERW klifleri 2-3 karo boylu ayrı
+  mimari — ÇÖL-KLİF dilimi (yüz sistemi yeniden tasarım).
+- Çöl yapıları 1.0 ölçekte (piksel yoğunluğu yarım): TAŞDURAK-YENİDEN
+  dilimi 2×+yerleşim borcu (köy dersi).
+- Pressure plate + Mounted crossbow (tuzaklar) + nests (yuvalar) + allies
+  (yılan/kaplumbağa): ERW muadili yok. sofra.png + scenes panelleri bizim
+  üretim. fx/* ayrı satıcı (Cute değil).
+
+### Faz EPIC-3: KÖY-YENİDEN — ERW evleri sahnede (2026-09-20, "devam")
+Dev evler (12 karo) köye sığmadı (tepe kuzey denizine taşıyordu) → köy evleri
+ORTA BOY sınıfından yeniden kesildi (Premade_houses3), BÜYÜK han yolun
+GÜNEYİNE indi (K2 kanonu: kervan yolu üstü). Yerleşim mock'la doğrulandı:
+**`docs/konsept/koy-yeniden-mock-2026-09-20.png`** (görsel iterasyon 2 hata
+yakaladı: han kesiminde komşu bina sütunu → kesim-sonrası silme; Kemal'in
+evine giren ağaç → doğu koruluğuna).
+
+- Evler: Baran = ahşap A-çatı ev feet T(5.2,10.5) · Kemal = yosunlu taş kulübe
+  T(19,7.5) · Osman = taş kulübe T(4.5,16.5) · HAN T(24,30) (row 17-18 ana
+  yolu çatı ÖRTMEZ). Hepsi scale 2, base .92/.28 (han .26).
+- Taşınanlar (kapı önü = durak kuralı): ocak T(9.5,7.2) (Baran'ın evi eski
+  yerine oturdu) + demirci durakları · revir yatakları + Ela + infirmary
+  çağrısı → T(21,10.5) doğu · saman balyaları + Osman tarla durakları →
+  T(9.5-11,13) · SOFRA + Nazife + Kemal han ziyareti + han fıçısı → han önü
+  T(20.5-25.5,30.3-30.6) · çit meydan kuzeyi · 6 NPC indoors kapısı.
+- KUYU + kör kuyu mekaniği + Yabancı YERİNDE kaldı (han güneye inince
+  çakışma kalktı). Kazan, pano, kamp ateşi, muhafız, Fatma, guard YERİNDE.
+- Cute buildings/ 4 dosya SİLİNDİ. KALAN İNCE İŞ: kapılara patika (world.csv
+  path yaması — gen script'i, Hakan turundan sonra).
+
+**TEST (Hakan, EPIC-3):** ① köy silueti (mock'taki dizilim) ② NPC rutinleri:
+Baran/Kemal/Zehra/Osman gece kapılarına giriyor mu, Nazife-Kemal han önünde
+buluşuyor mu, sofra gece han önünde kuruluyor mu ③ demirci ocak başında mı,
+craft [E] çalışıyor mu ④ revir: sivil bayılt → doğudaki yataklara düşüyor mu
+⑤ kör kuyu gece bırakma hâlâ çalışıyor mu (yerinde) ⑥ ev çarpışmaları: kapı
+önleri yürünür, duvar arkasından geçilebilir mi.
+
 ### Faz EPIC-2: MOBLAR — 22 tür ERW (2026-09-20, "devam et sen")
 **Hakan kararları:** ① Slime ailesi → ÖRÜMCEK (Crypt Spider var1/var2 =
 yeşil/mavi; boy drawScale 2.0/1.2/0.7; bölünme = yavru örümcek — mekanik

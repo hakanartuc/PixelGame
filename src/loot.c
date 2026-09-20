@@ -10,23 +10,23 @@
 
 #define CRATE_SCALE  1.2f
 
-// Kasa açılma animasyonu clip'i (Crate_Anim.png: 6 kare, 48×48, 48px aralık)
-// Şimdilik tek clip — kapalı=kare 0, açılma=kare 0→5.
+// Kasa (ERW dalga-4: erw/crate.png — TEK kare ahşap sandık; Cute
+// Crate_Anim'in açılma animasyonu emekli, kasa açılınca loot zaten fırlıyor)
 static const AnimClip CRATE_CLIP = {
     .x = 0, .y = 0,
-    .frameW = 48, .frameH = 48,
-    .frameCount = 6,
+    .frameW = 34, .frameH = 32,
+    .frameCount = 1,
     .frameDuration = 0.08f,
-    .feetY = 33,   // kasa alt hizası (ölçtüğümüz son kare ~33)
+    .feetY = 30,
 };
 
-// Zindan sandığı (Chest_anim.png: 8 kare, 32×32 — kapalı→açık)
+// Zindan sandığı (ERW dalga-4: erw/chest_anim.png — 8 kare, 64×64, kapalı→açık)
 static const AnimClip CHEST_CLIP = {
     .x = 0, .y = 0,
-    .frameW = 32, .frameH = 32,
+    .frameW = 64, .frameH = 64,
     .frameCount = 8,
     .frameDuration = 0.07f,
-    .feetY = 28,
+    .feetY = 58,
 };
 
 static const AnimClip *loot_clip(const Loot *l)

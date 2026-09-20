@@ -22,7 +22,7 @@ const NpcDef NPCS[] = {
       .isVendor = true, .questId = "simya_masa",
       .schedule = {
           { .hour =  8.0f, .x = T(10),   .y = T(5),   .indoors = false },  // dükkan başı
-          { .hour = 20.0f, .x = T(10),   .y = T(4.2f), .indoors = true },  // eve girer
+          { .hour = 20.0f, .x = T(5.2f), .y = T(10.7f), .indoors = true },  // eve girer
       }, .stopCount = 2 },
     { .id = "dunya_koy_ihtiyar", .name = "Yaşlı Kemal",
       .sheetPath = "assets/characters/erw/npc_wizard_idle.png",
@@ -31,9 +31,9 @@ const NpcDef NPCS[] = {
       .isVendor = false, .questId = "goblin_derdi",
       .schedule = {
           { .hour =  7.0f, .x = T(13),    .y = T(7),     .indoors = false }, // meydan
-          { .hour = 12.0f, .x = T(17.5f), .y = T(11.5f), .indoors = false }, // han önü (Nazife ziyareti)
+          { .hour = 12.0f, .x = T(22), .y = T(30.4f), .indoors = false }, // han önü (Nazife ziyareti)
           { .hour = 16.0f, .x = T(7),     .y = T(12),    .indoors = false }, // tarla kıyısı
-          { .hour = 21.0f, .x = T(14),    .y = T(6.2f),  .indoors = true },
+          { .hour = 21.0f, .x = T(19),    .y = T(7.7f),  .indoors = true },
       }, .stopCount = 4 },
     { .id = "dunya_koy_koylu", .name = "Köylü Osman",
       .sheetPath = "assets/characters/erw/npc_koylu_e11_idle.png",
@@ -41,10 +41,10 @@ const NpcDef NPCS[] = {
       .dialogFile = "assets/dialogs/villager.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
-          { .hour =  9.0f, .x = T(7),    .y = T(11),   .indoors = false }, // tarla
+          { .hour =  9.0f, .x = T(9.5f), .y = T(12.5f), .indoors = false }, // tarla
           { .hour = 13.0f, .x = T(11),   .y = T(8),    .indoors = false }, // meydanda mola
-          { .hour = 15.0f, .x = T(7),    .y = T(11),   .indoors = false }, // tarlaya dönüş
-          { .hour = 19.0f, .x = T(6),    .y = T(10.2f), .indoors = true },
+          { .hour = 15.0f, .x = T(9.5f), .y = T(12.5f), .indoors = false }, // tarlaya dönüş
+          { .hour = 19.0f, .x = T(4.5f), .y = T(16.7f), .indoors = true },
       }, .stopCount = 4 },
     { .id = "dunya_koy_demirci", .name = "Demirci Mahir",
       .sheetPath = "assets/characters/erw/npc_blacksmith_idle.png",
@@ -52,8 +52,8 @@ const NpcDef NPCS[] = {
       .dialogFile = "assets/dialogs/demirci.txt",
       .isVendor = false, .questId = "demirci_ocak",
       .schedule = {
-          { .hour =  7.0f, .x = T(8), .y = T(7.6f), .indoors = false },  // ocak başı
-          { .hour = 21.0f, .x = T(8), .y = T(6.4f), .indoors = true },   // gece kapanır
+          { .hour =  7.0f, .x = T(9.5f), .y = T(8.0f), .indoors = false },  // ocak başı
+          { .hour = 21.0f, .x = T(9.5f), .y = T(6.4f), .indoors = true },   // gece kapanır
       }, .stopCount = 2 },
     { .id = "dunya_koy_muhafiz", .name = "Muhafız",
       .sheetPath = "assets/characters/erw/npc_warrior_idle.png",
@@ -84,8 +84,8 @@ const NpcDef NPCS[] = {
       .dialogFile = "assets/dialogs/nazife.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
-          { .hour = 7.0f,  .x = T(18),   .y = T(12.6f), .indoors = false }, // han kapısı
-          { .hour = 19.0f, .x = T(19.2f), .y = T(13),    .indoors = false }, // sofra başı
+          { .hour = 7.0f,  .x = T(23),   .y = T(30.3f), .indoors = false }, // han kapısı
+          { .hour = 19.0f, .x = T(25.5f), .y = T(30.6f), .indoors = false }, // sofra başı
       }, .stopCount = 2 },
 
     // S3 Sayan Adam (D1c): Nuh — gündüz sunak yolunda sayarak volta, gece köy kenarı
@@ -108,7 +108,7 @@ const NpcDef NPCS[] = {
       .isVendor = false, .questId = NULL,
       .schedule = {
           { .hour = 8.0f,  .x = T(12), .y = T(7.5f), .indoors = false },  // meydan
-          { .hour = 20.0f, .x = T(14), .y = T(6.2f), .indoors = true },   // gece içeri
+          { .hour = 20.0f, .x = T(19), .y = T(7.7f), .indoors = true },   // gece içeri
       }, .stopCount = 2,
       .frameSize = 0 },
 
@@ -207,7 +207,7 @@ const NpcDef NPCS[] = {
       .dialogFile = "assets/dialogs/sifaci.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
-          { .hour = 0.0f, .x = T(4.5f), .y = T(6.5f), .indoors = false },  // revir başı
+          { .hour = 0.0f, .x = T(20.5f), .y = T(10.8f), .indoors = false },  // revir başı
       }, .stopCount = 1,
       .frameSize = 0 },
 };

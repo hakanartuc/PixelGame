@@ -176,10 +176,10 @@ const ItemType ITEM_TYPES[] = {
     // --- Meslek paketi Faz 4: sunak — ozler, runler, stat taslari ---
     { .name = "Soluk Öz", .material = true, .iconIndex = 0, .maxStack = 99, .value = 10,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
-      .iconSpritePath = "assets/decor/ores.png", .iconSrc = { 80, 112, 16, 16 } },
+      .iconSpritePath = "assets/decor/erw/mz_crystal.png", .iconSrc = { 0, 0, 29, 26 } },
     { .name = "Zehirli Öz", .material = true, .iconIndex = 0, .maxStack = 99, .value = 12,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
-      .iconSpritePath = "assets/decor/ores.png", .iconSrc = { 80, 48, 16, 16 } },
+      .iconSpritePath = "assets/decor/erw/ore_node.png", .iconSrc = { 0, 0, 52, 40 } },
     { .name = "Pembe Rün", .iconIndex = 0, .maxStack = 10, .value = 70,
       .equipable = false, .equipSlot = EQUIP_NONE, .weaponType = WEAPON_NONE,
       .iconSpritePath = "assets/icons/items/resources.png", .iconSrc = { 64, 48, 16, 16 } },

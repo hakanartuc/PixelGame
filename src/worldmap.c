@@ -86,35 +86,35 @@ const MapPortal PORTALS[] = {
     // S3: Eşikçi Konağı — kuzeydoğu tepe eteği (harabe kapısı)
     { .from = MAP_WORLD, .x = T(168), .y = T(45), .radius = 80.0f,
       .to = MAP_KONAK, .tx = T(4), .ty = T(10),
-      .label = "[E] Konağa gir", .decorTex = "assets/decor/dungeon_arch.png",
+      .label = "[E] Konağa gir", .decorTex = "assets/decor/erw/dungeon_arch.png",
       .decorScale = 2.4f },
     { .from = MAP_KONAK, .x = T(3.5f), .y = T(10), .radius = 70.0f,
       .to = MAP_WORLD, .tx = T(168), .ty = T(46),
-      .label = "[E] Dışarı çık", .decorTex = "assets/decor/dungeon_stairs_up.png",
+      .label = "[E] Dışarı çık", .decorTex = "assets/decor/erw/dungeon_stairs.png",
       .decorScale = 1.8f },
 
     // Dünya (Karanlık Orman açıklığı) → Kat 1 giriş odası
     { .from = MAP_WORLD, .x = T(145), .y = T(7), .radius = 80.0f,
       .to = MAP_DUNGEON_F1, .tx = T(8), .ty = T(7),
-      .label = "[E] Eski Gecit'e in", .decorTex = "assets/decor/dungeon_arch.png",
+      .label = "[E] Eski Gecit'e in", .decorTex = "assets/decor/erw/dungeon_arch.png",
       .decorScale = 3.0f },
 
     // Kat 1 giriş odası → Dünya (kemerin önü)
     { .from = MAP_DUNGEON_F1, .x = T(6), .y = T(6), .radius = 70.0f,
       .to = MAP_WORLD, .tx = T(145), .ty = T(8),
-      .label = "[E] Yuzeye cik", .decorTex = "assets/decor/dungeon_stairs_up.png",
+      .label = "[E] Yuzeye cik", .decorTex = "assets/decor/erw/dungeon_stairs.png",
       .decorScale = 2.0f },
 
     // Kat 1 dip oda → Kat 2
     { .from = MAP_DUNGEON_F1, .x = T(36), .y = T(28), .radius = 70.0f,
       .to = MAP_DUNGEON_F2, .tx = T(7), .ty = T(7),
-      .label = "[E] Derinlige in", .decorTex = "assets/decor/stairs_down.png",
+      .label = "[E] Derinlige in", .decorTex = "assets/decor/erw/dungeon_stairs.png",
       .decorScale = 3.5f },
 
     // Kayalık Geçit mezar sahaları yanı → Lanetli Mezarlık (güney girişi)
     { .from = MAP_WORLD, .x = T(122), .y = T(83), .radius = 80.0f,
       .to = MAP_MEZARLIK, .tx = T(30), .ty = T(41),
-      .label = "[E] Mezarlığa gir", .decorTex = "assets/decor/undead/skull_door.png",
+      .label = "[E] Mezarlığa gir", .decorTex = "assets/decor/erw/mz_gate.png",
       .decorScale = 2.2f },   // görünür mezar sahasının (yuva T120,81) bitişiği
     { .from = MAP_MEZARLIK, .x = T(30), .y = T(43), .radius = 80.0f,
       .to = MAP_WORLD, .tx = T(122), .ty = T(84),
@@ -124,7 +124,7 @@ const MapPortal PORTALS[] = {
     // Kat 2 giriş → Kat 1 (merdiven başı)
     { .from = MAP_DUNGEON_F2, .x = T(5.5f), .y = T(5.5f), .radius = 70.0f,
       .to = MAP_DUNGEON_F1, .tx = T(35), .ty = T(28),
-      .label = "[E] Yukari cik", .decorTex = "assets/decor/dungeon_stairs_up.png",
+      .label = "[E] Yukari cik", .decorTex = "assets/decor/erw/dungeon_stairs.png",
       .decorScale = 2.0f },
 };
 const int PORTAL_COUNT = (int)(sizeof(PORTALS) / sizeof(PORTALS[0]));
@@ -278,7 +278,7 @@ const EchoDef ECHOES[] = {
     { ECHO_ANI, MAP_WORLD, T(20), T(8), "assets/scenes/echo_cart.txt", NULL, 0.0f },
     // Köy yolu kıyısı: eski dikilitaş — çevresel anlatı (tekrar okunabilir)
     { ECHO_YAZIT, MAP_WORLD, T(11), T(14), "assets/scenes/yazit_koy.txt",
-      "assets/decor/obelisk.png", 1.6f },
+      "assets/decor/erw/obelisk.png", 1.0f },
     // K9 Kandil (D1a): F2 nöbetçi odası — Kerem'in sonu (bir kez yaşanır)
     { ECHO_ANI, MAP_DUNGEON_F2, T(20), T(6), "assets/scenes/echo_kerem.txt",
       NULL, 0.0f },
