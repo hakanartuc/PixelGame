@@ -83,6 +83,22 @@ kıyısı) ② odun kesme düğümleri (T31,11 civarı) yeni ağaçla çalışı
 kuyu/fıçı/çit/pano köyde yerli yerinde ve ölçek göze oturuyor mu ④ pano [E]
 etkileşimi hâlâ hizalı mı ⑤ çalıya eğilince gizlenme çalışıyor mu (conceals).
 
+### Faz EPIC-6: TAŞDURAK-YENİDEN + TEST GÖLETLERİ (2026-09-20)
+- **Taşdurak 2× yerleşim** (mock doğrulamalı): cadde y=35 — Ferah T16 / han
+  T34 / konak T52; pazar (kemerli çarşı) vaha doğusu T33,41; "gölgelik"
+  sanılan kesim ŞEHİR SURU çıktı → tapınak yoluna doğu kapısı T70,36; vaha
+  palmiyesi (ds_palm); NPC durakları kapı önlerinde. DERS: dalga-4'ün "1.0
+  ölçek" regex'i SESSİZCE tutmamıştı — regex yamalarından sonra grep'le doğrula.
+- **Test göletleri** (dünya, kıyaslama): T33 vaha dili (kum halka + 8 kare
+  kıyı; boş ayraç kolonu dersi: kare sayısını doluluk haritasından doğrula) ·
+  T44 GÖL DİLİ (river seti; Hakan ONAYI: "böyle iyi") — karo 21/22, wmask
+  DIŞI. İlk deniz denemesi klifli sahil setiydi ("olmamış") — bake'e YÖN
+  OTO-DOĞRULAMA eklendi (maske-12 parçasının alt yarısı mavi mi).
+- **AÇIK KARAR**: göl dili dünya sularına yayılacak mı (shader'ın yerine /
+  üstüne)? Hakan "yay" deyince uygulanır; test göletleri o zamana dek durur.
+- VFX güvencesi (Hakan endişesi): göç efekt sistemlerine DOKUNMUYOR — fx/
+  skillfx/flame/su/ışık/bükülme/post-fx kod+shader, hepsi yerinde.
+
 ### Faz EPIC-5: SU + ÇÖL KAYASI (2026-09-20, Hakan: "çöl geçişi nerde?
 ### denizi ve göletleri de değiştir")
 Su GÖRSELİ değişmemişti çünkü suyu karo değil SHADER çiziyor; taban da statikti.
