@@ -29,6 +29,14 @@ static float sfxVol = 1.0f;   // kullanıcı SFX seviyesi (ayarlar)
 
 bool audio_init(void)
 {
+    // DEV: PIXE_NOAUDIO=1 → ses tamamen kapalı (PIXE_HIDDEN duman testleri).
+    // Gerekçe: art arda başlatılıp öldürülen test örnekleri CoreAudio'yu
+    // kilitleyebiliyor (stream başına 15 sn zaman aşımı — açılış donmuş
+    // görünür). Ses yolu testin konusu değilse hiç dokunmamak en sağlamı.
+    if (SDL_getenv("PIXE_NOAUDIO")) {
+        SDL_Log("audio: PIXE_NOAUDIO — ses kapali (dev)");
+        return false;   // audioReady false kalır; audio_play sessizce yutar
+    }
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
         SDL_Log("Ses alt sistemi acilamadi: %s", SDL_GetError());
         return false;

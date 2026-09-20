@@ -1,8 +1,166 @@
 # PROGRESS — Yapılanlar ve Kalanlar
 
-Güncelleme: 2026-08-22
+Güncelleme: 2026-09-20
 
 ## ✅ Tamamlanan fazlar
+
+### Faz EPIC-1 / kilometre taşı 1: ÇAYIR ZEMİNİ (2026-09-20) — TEST BEKLİYOR
+**BÜYÜK YÖN DEĞİŞİMİ (Hakan): oyunun asset'leri KOMPLE Epic RPG World
+Collection'a geçiyor** (Rafael Matos, satın alındı; paket
+`~/Assets/2D Pixel-Art/Epic RPG` — 13 biyom paketi, mevcut haritalarla ~1:1).
+AskUserQuestion kararları: ① VFX birikimi ÖNCE commit'lendi (`8df6565`) ②
+oyuncu LPC paper-doll KALIYOR ③ göç köy+çayırdan başlıyor. Ek Hakan notları:
+moblar 2 YÖNLÜ olacak (paket tek görünüm + flip; mob.c anims[state][facing]
+tablosunda 3 facing aynı klibe bakar — kod imzası değişmez), inisiyatif yok.
+
+**Teknik temel**: ERW karo 32×32 (Cute Fantasy 16'ydı) → TILE_SIZE 64 sabit,
+yeni sanat 2× çizilir; dünya ölçüleri DEĞİŞMEDİ. Karakter tuvalleri 160×160.
+
+Bu kilometre taşında:
+- **`scripts/bake_erw_terrain.py`** (YENİ): paketin Tiled .tsx WANGSET
+  verisinden kesim — elle koordinat YOK. Çıktılar `assets/Tiles/erw/`:
+  grass_1..4 (çim iç varyantları), path (toprak iç), path_edge_atlas +
+  grass_edge_atlas (128×128, 4×4 hücre, **HÜCRE = KÖŞE MASKESİ** m%4,m/4).
+  Wangid köşeleri: Tiled [N,NE,E,SE,S,SW,W,NW] → indeks 1,3,5,7; maske
+  bitleri dsr ile aynı (1=NW 2=NE 4=SW 8=SE). 15 maskenin 15'i de pakette
+  var (çapraz 6/9 dahil — Cute çölde yoktu).
+- **tilemap.c**: TILES[0]/[1] + grassVar → erw; eski 12 hücreli
+  grass_edges.png overlay'i EMEKLİ (edgeTex söküldü, blok yorumda işaretli);
+  yerine `erw_path_pass` (çim↔yol, toprak blob'u — saçak GÖMÜLÜ) +
+  `erw_grass_fringe_pass` (çim↔su/bataklık/diken/kum) — ikisi de
+  dsr_dual_pass modeli, LUT'suz (atlas maske-sıralı), 32px hücre.
+  grass_bleeds_onto'dan id 1 çıktı.
+- **CREDITS.md**: ERW satın alma kaydı + türetilmiş-kesim politikası
+  (ham paket repo DIŞINDA kalır, yeniden dağıtım yasak).
+- Mock doğrulama (mapgen protokolü): world.csv köy penceresi kompozit —
+  maske yönleri doğru; mock'taki beyaz kesikler mock'un alfa
+  karıştırmamasından, oyunda yok.
+
+**TEST (Hakan):** oyunu aç, köy/çayırda gez → ① çim tabanı ERW (varyant
+deseni göze batıyor mu) ② yol kenarları: toprak + gömülü çim saçağı (yön
+hatası var mı — saçak yanlış tarafta olur muydu bak) ③ su/kumsal kenarı çim
+saçağı ④ 1 karo genişlikteki yollar "yama taşı" gibi mi okunuyor (öyleyse
+mapgen'de yolları 2 karoya çıkarma kararı) ⑤ zindan/çöl/mezarlık BOZULMAMIŞ
+olmalı (onların id'lerine dokunulmadı). BİLİNEN karışık dönem: su karoları,
+çiçek/serpiştirme, dekor, binalar, NPC/mob hâlâ Cute Fantasy — sıradaki
+kilometre taşları.
+
+**SIRADAKİ (EPIC-1 devamı):** köy binaları (Premade_houses → decor) →
+köy NPC'leri (meslek + villager varyantları, 2 yönlü) → süs/serpiştirme
+(çiçek/taş) → sonra EPIC-2 moblar (orc/skeleton/spider).
+
+### Faz EPIC-1 / kilometre taşı 2: DOĞA DEKORLARI + EV İTHALİ (2026-09-20)
+**Hakan kararları bu dilimde:** ① Cute Fantasy KOMPLE çıkacak (LPC oyuncu
+hariç — hedef durum HANDOVER'da) ② evler DOĞAL ölçek (2×, 8-12 karo) +
+köy yeniden yerleşimi AYRI dilim (mapgen mock + onay akışıyla).
+
+- **DEKOR ANİMASYONU** (decor.h/c): `DecorDef.frames` — yatay kare şeridi,
+  ağaçlar rüzgarda sallanıyor (8 kare, dekor başına faz kayması; GÖLGE de
+  aynı kareyle sallanır). texW[] KARE genişliği saklar → decor_rect/blocks/
+  conceals/occluders değişmedi. Şeritte opak kutu = kare kutusu varsayımı;
+  bake union-trim bunu garantiler.
+- **`scripts/bake_erw_props.py`** (YENİ): hazır kesim sprite'lardan kopya +
+  alfa-trim; ağaç kareleri union-trim + şerit paketleme; evler
+  Premade_houses'tan kaba kutu + alfa-trim. Çıktılar `assets/decor/erw/` +
+  `assets/buildings/erw/` (house_1..3 + inn — İTHAL, yerleşim sonraki dilim).
+- **Geçen dekorlar**: ağaçlar (2 tür animasyonlu; dekor + 5 KESİLEBİLİR
+  resource düğümü) · çalılar (dekor + sualtı) · kuyu · fıçılar ×2 · çit
+  (3 segment birleşik) · ritüel taşları (ERW altar taşları) · su kenarı
+  fenerleri (lamp-post) · İLAN PANOSU (Village questboard — dünya + loca).
+- **SİLİNEN Cute dosyaları** (git rm; geçmişte duruyor): oak_big/medium,
+  bush_1/2, well, barrels, Stone_Fence_Big, ritual_stones, notice_board,
+  lantern~~, Grass middles + grass_edges + Path_Middle (kilometre taşı 1'in
+  tabanları)~~. `lantern.png` GERİ ALINDI: K9 kandili (hikaye objesi) hâlâ
+  kullanıyor — sahne dilimi ERW'leyecek.
+- **KALAN Cute (bilinçli)**: Benches + hay_bale (ERW karşılığı bu pakette
+  çıkmadı, sonraki paketlerde aranacak) · evler + Inn (KÖY-YENİDEN dilimi) ·
+  flowers/Path_Dec/Water_Dec + su karoları (scatter/su dilimi) · beds,
+  istasyonlar, zindan/çöl/mezarlık dekorları (kendi biyom dilimleri) ·
+  NPC/mob/ikon/UI (kendi fazları).
+
+**TEST (Hakan):** ① ağaçlar sallanıyor mu, gölgeleri de? (köy çevresi + göl
+kıyısı) ② odun kesme düğümleri (T31,11 civarı) yeni ağaçla çalışıyor mu ③
+kuyu/fıçı/çit/pano köyde yerli yerinde ve ölçek göze oturuyor mu ④ pano [E]
+etkileşimi hâlâ hizalı mı ⑤ çalıya eğilince gizlenme çalışıyor mu (conceals).
+
+### Faz EPIC-2: MOBLAR — 22 tür ERW (2026-09-20, "devam et sen")
+**Hakan kararları:** ① Slime ailesi → ÖRÜMCEK (Crypt Spider var1/var2 =
+yeşil/mavi; boy drawScale 2.0/1.2/0.7; bölünme = yavru örümcek — mekanik
+birebir) ② hayvanlar HEMEN değişti ③ mid-turn: "Cute Fantasy tamamen
+kaldırıyoruz" — hedef sıfır Cute.
+
+- **`scripts/bake_erw_mobs.py`** (YENİ): mob başına TEK sheet — satır=durum
+  (idle/run/atk/death), kare>12 olan durumlar EŞİT ARALIKLI 12'ye iner (GPU
+  8192 doku tavanı; rapor süre çarpanı verir), tüm kareler ortak union-trim
+  (ayak hizası sabit), feetY = idle satırının alt opak pikseli, boş grid
+  hücreleri atılır. 21 sheet: goblin(+reis)=GL16 Enemy1 · ork=orc warrior ·
+  iskelet savaşçı/lord=Crypt var1/2 · okçu=Prison Skeleton1 · büyücü=Prison
+  Mage · hortlak=Volcano elemental · kan canavarı/ölüm getiren=Big Worm 1/2 ·
+  asker(tahsildar+koruma)=GL16 Warrior · mumya=mummy · haydut=anubis ·
+  AKREP→KUM KURDU=sandworm · örümcek×2=Spider · GEYİK/ALAGEYİK=moose1/2
+  (Yaban Domuzu/Koyun) · ÖRDEK=duck (Domuz) · KURBAĞA=frog (Tavuk) ·
+  kukla=Village idman kuklası. Savaş Totemi kaldı (nests decor — ekoloji dilimi).
+- **MOBS tablosu jeneratörle yeniden yazıldı** (brace-dengeli blok değişimi):
+  texturePath + anims (ÜÇ FACING AYNI KLİP — 2 yönlü karar; flip kodda
+  zaten) + attackHitFrame (atk karesinin %55'i). SLIME_ANIMS makrolu bloklar
+  tam blokla değiştirildi. **Jeneratör dersi: birleştirmede dosya BAŞI
+  (s[:i]) unutulursa include'lar gider — ilk koşu bunu yaptı, git checkout +
+  düzeltme.** Hayvan loot'ları deri+et olduğundan item zinciri KOPMADI;
+  journal'daki "Slime gölcüğü" metni örümceğe çevrildi (gölcük adı ekolojide
+  duruyor — ekoloji dilimi yeniden adlandırır).
+- **`assets/characters/mobs/` SİLİNDİ** (git rm).
+- **PIXE_NOAUDIO=1 dev kancası** (audio/music/ambience): test örnekleri
+  CoreAudio'yu kilitliyordu (15 sn/stream zaman aşımı — açılış donuyor
+  sanıldı, örnekleme audio_init'i gösterdi). Duman kalıbı güncellendi.
+
+**TEST (Hakan, EPIC-2):** ① goblin kampı + ork devriyesi: idle/koşu/saldırı/
+ölüm akıyor mu, 2 yönlü flip doğru mu ② örümcek ailesi: boylar + bölünme +
+yeşil/mavi ayrımı ③ zindanda iskelet üçlüsü (okçu mermisi, büyücü) ④ çayırda
+geyik/alageyik/ördek/kurbağa — av hissi ⑤ mezarlık: hortlak/kan canavarı/ölüm
+getiren/kum kurdu ⑥ kukla: F10 + vuruş testi ⑦ ölüm çözünmesi (bant bant
+erime) yeni sheet'lerde düzgün mü ⑧ boyut/hız gözüne batan varsa söyle —
+drawScale tür başına tek satır. NOT: ilk açılışta ses gelmezse macOS
+CoreAudio'su benim test döngümden yorgun olabilir; bir kez yeniden başlat.
+
+### Faz EPIC-1 / kilometre taşı 3: SIKIŞMA DÜZELTMESİ + 18 NPC (2026-09-20)
+**Hakan testi 2 sorun bildirdi:** "karakter sıkışmış yürümüyor" + "NPC'ler
+hala eski".
+
+**SIKIŞMA — iki kalıcı düzeltme:**
+- **Taban oranları** (`DecorDef.baseWFrac/baseHFrac`): katı taban "alt %35 ×
+  TAM genişlik" kuralı ERW ağacında TACI da katılaştırıyordu (164px'lik ağaç
+  2.5 karo yol kapatıyordu; eski kayıt konumu tabanın içinde kalınca oyuncu
+  kilitleniyordu). Ağaç = gövde dibi (0.40×0.14), kuyu 0.85×0.30, fener
+  0.45×0.18. Çarpışma + ışık occluder'ı TEK kaynaktan (`decor_base_rect`).
+- **Sıkışma emniyeti** (main.c harita kurulum bloğu): yükleme/geçiş sonrası
+  oyuncu katı içindeyse sarmal taramayla en yakın boş noktaya alınır (24
+  halka × 16px). HANDOVER'daki "eski save konumu tuhaf düşebilir" riskinin
+  kalıcı sigortası.
+
+**18 NPC'NİN TAMAMI ERW (Cute NPC klasörü SİLİNDİ):**
+- **`scripts/bake_erw_npcs.py`** (YENİ): idle şeritleri — meslek NPC'leri
+  (vendor±kilim/blacksmith/wizard/skill master/fisherman) + GL1.6 Warrior
+  (muhafız) + KÖYLÜ KOMPOZİTLERİ (base + kıyafet alfa bindirme: cins × ten ×
+  kıyafet = 11 varyant). Izgara kaynaklar desteklenir (skill master 4×4);
+  union-trim → alt kenar = ayak; boş ızgara hücreleri atılır.
+- **npc.h/c**: `frameW/frameH/idleFrames` — dikdörtgen tek-sıra şerit düzeni;
+  çizim + tıklama + revir `def_fw/def_fh` TEK kaynaktan; NPC başına kare
+  sayısı + faz kayması (meydan senkron solumaz). Eski kare düzen yolu duruyor.
+- Eşleşme: Baran=tezgahtar · Kemal=yaşlı bilge · Mahir=demirci · Muhafız=
+  savaşçı · Nuh=balıkçı · Neriman=skill master · Ferah=kilimli tezgahtar ·
+  kalan 11'i köylü varyantları. `assets/characters/npcs/` git rm (17 dosya).
+
+**TEST (Hakan, km3):** ① yürüme düzeldi mi (eski kayıtla yükle — katıdaysan
+kenara itilmelisin, log 'oyuncu katidan cikarildi') ② köyde NPC'ler yeni mi,
+soluk alıyorlar mı, isim/E-konuş hizası doğru mu ③ NPC'ye tıklama/yankesicilik
+kutusu oturuyor mu ④ revir yatağındaki NPC görünümü ⑤ NPC'ler oyuncudan İRİ
+görünebilir (ERW 2× vs LPC) — rahatsız ediyorsa oyuncu çizim ölçeğini
+büyütürüz, söyle.
+
+**KALAN Cute envanteri (sonraki dilimler, sırayla):** ① moblar (orc/skeleton/
+spider/kurtlar — EPIC-2) ② evler+köy yerleşimi (KÖY-YENİDEN) ③ çiçek scatter
++ su karoları ④ istasyonlar (ocak/kazan/sunak) + iç mekan ⑤ zindan/çöl/
+mezarlık karo+dekorları ⑥ UI/ikonlar (70 ikon — en son).
 
 ### Faz ALEV (2026-08-22) — ⚠ COMMIT ATILMADI (aynı birikimde)
 Hakan kararı: imza uyarısı TEK shader'la esnetildi — eşikli alev (brief

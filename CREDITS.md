@@ -5,6 +5,15 @@ her satırın lisansı teyit edilmeli (TODO işaretliler özellikle).
 
 ## Sprite'lar
 
+### Epic RPG World Collection (arazi/dünya — ANA PAKET, göç sürüyor)
+- Yapımcı: Rafael Matos — https://rafaelmatos.itch.io/epic-rpg-world-collection
+- Lisans: SATIN ALINDI (Hakan, 2026-09) — ticari kullanım paket lisansına dahil,
+  varlıkların yeniden dağıtımı yasak (repo'da yalnız TÜRETİLMİŞ kesimler durur,
+  ham paket repo DIŞINDA: `~/Assets/2D Pixel-Art/Epic RPG`).
+- Dosyalar: `assets/Tiles/erw/` (bake: `scripts/bake_erw_terrain.py`).
+  Göç ilerledikçe bu liste büyüyecek (Faz EPIC — PROGRESS.md).
+- TODO: itch.io lisans metnini indirip tam maddeyi buraya işle.
+
 ### LPC / Universal LPC Spritesheet (oyuncu paper-doll)
 - Kaynak: [Universal LPC Spritesheet Generator](https://sanderfrenken.github.io/Universal-LPC-Spritesheet-Character-Generator/)
 - Dosyalar: `assets/characters/body|head|face/`, `assets/equipment/`

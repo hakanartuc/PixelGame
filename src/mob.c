@@ -154,7 +154,7 @@ const MobType MOB_TYPES[] = {
     // [0] Goblin Maceman — uniform 32×32, klasik düzen
     {
         .name = "Goblin Maceman",
-        .texturePath = "assets/characters/mobs/Goblin_Maceman.png",
+        .texturePath = "assets/characters/erw/mob_goblin.png",
         .nocturnal = true,   // E2: gece aktif, gündüz kampta uyuklar
         .level = 1,
         .maxHealth = 100.0f,
@@ -166,38 +166,30 @@ const MobType MOB_TYPES[] = {
         .attackType = ATTACK_MELEE,
         .lootTable = GOBLIN_LOOT, .lootTableCount = LOOT_COUNT(GOBLIN_LOOT),
         .goldMin = 5, .goldMax = 15,
-        .attackHitFrame = 3,
+        .attackHitFrame = 6,
         .anims = {
-            // [0] idle — aşağı, yukarı, yan (4 kare, 32×32)
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.18f, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.18f, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.18f, .feetY=30 },
-            },
-            // [1] run — aşağı, yukarı, yan (6 kare, 32×32)
-            {
-                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-            },
-            // [2] attack — aşağı, yukarı, yan (6 kare, 32×32)
-            {
-                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
-                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
-            },
-            // [3] dying — death animasyonu (üç yöne de aynı, tek yönlü ölüm)
-            {
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=23 },  // aşağı
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=23 },  // yukarı
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=23 },  // yan
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=106, .frameH=81, .frameCount=8, .frameDuration=0.14f, .feetY=62 },
+              { .x=0, .y=0, .frameW=106, .frameH=81, .frameCount=8, .frameDuration=0.14f, .feetY=62 },
+              { .x=0, .y=0, .frameW=106, .frameH=81, .frameCount=8, .frameDuration=0.14f, .feetY=62 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=81, .frameW=106, .frameH=81, .frameCount=8, .frameDuration=0.10f, .feetY=62 },
+              { .x=0, .y=81, .frameW=106, .frameH=81, .frameCount=8, .frameDuration=0.10f, .feetY=62 },
+              { .x=0, .y=81, .frameW=106, .frameH=81, .frameCount=8, .frameDuration=0.10f, .feetY=62 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=162, .frameW=106, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=62 },
+              { .x=0, .y=162, .frameW=106, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=62 },
+              { .x=0, .y=162, .frameW=106, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=62 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=243, .frameW=106, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=62 },
+              { .x=0, .y=243, .frameW=106, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=62 },
+              { .x=0, .y=243, .frameW=106, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=62 } },
         },
     },
     // [1] Orc Grunt — KARIŞIK boyut: idle/run 32×32, attack 64×64
     {
         .name = "Orc Grunt",
-        .texturePath = "assets/characters/mobs/Orc_Grunt.png",
+        .texturePath = "assets/characters/erw/mob_ork.png",
         .level = 3,
         .maxHealth = 200.0f,
         .speed = 150.0f,
@@ -208,32 +200,24 @@ const MobType MOB_TYPES[] = {
         .attackType = ATTACK_MELEE,
         .lootTable = ORC_LOOT, .lootTableCount = LOOT_COUNT(ORC_LOOT),
         .goldMin = 20, .goldMax = 50,
-        .attackHitFrame = 4,
+        .attackHitFrame = 6,
         .anims = {
-            // [0] idle — aşağı, yukarı, yan (6 kare, 32×32)
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.13, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.13, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.13, .feetY=30 },
-            },
-            // [1] run — aşağı, yukarı, yan (6 kare, 32×32)
-            {
-                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-            },
-            // [2] attack — aşağı, yukarı, yan (8 kare, 64×64 — feetY FARKLI: 46)
-            {
-                { .x=0, .y=192, .frameW=64, .frameH=64, .frameCount=8, .frameDuration=0.07f, .feetY=46 },
-                { .x=0, .y=320, .frameW=64, .frameH=64, .frameCount=8, .frameDuration=0.07f, .feetY=46 },
-                { .x=0, .y=256, .frameW=64, .frameH=64, .frameCount=8, .frameDuration=0.07f, .feetY=46 },
-            },
-            // [3] dying — death animasyonu (üç yöne de aynı, tek yönlü ölüm)
-            {
-                { .x=0, .y=384, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },  // aşağı
-                { .x=0, .y=384, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },  // yukarı
-                { .x=0, .y=384, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },  // yan
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=225, .frameH=91, .frameCount=9, .frameDuration=0.14f, .feetY=76 },
+              { .x=0, .y=0, .frameW=225, .frameH=91, .frameCount=9, .frameDuration=0.14f, .feetY=76 },
+              { .x=0, .y=0, .frameW=225, .frameH=91, .frameCount=9, .frameDuration=0.14f, .feetY=76 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=91, .frameW=225, .frameH=91, .frameCount=8, .frameDuration=0.10f, .feetY=76 },
+              { .x=0, .y=91, .frameW=225, .frameH=91, .frameCount=8, .frameDuration=0.10f, .feetY=76 },
+              { .x=0, .y=91, .frameW=225, .frameH=91, .frameCount=8, .frameDuration=0.10f, .feetY=76 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=182, .frameW=225, .frameH=91, .frameCount=12, .frameDuration=0.08f, .feetY=76 },
+              { .x=0, .y=182, .frameW=225, .frameH=91, .frameCount=12, .frameDuration=0.08f, .feetY=76 },
+              { .x=0, .y=182, .frameW=225, .frameH=91, .frameCount=12, .frameDuration=0.08f, .feetY=76 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=273, .frameW=225, .frameH=91, .frameCount=12, .frameDuration=0.08f, .feetY=76 },
+              { .x=0, .y=273, .frameW=225, .frameH=91, .frameCount=12, .frameDuration=0.08f, .feetY=76 },
+              { .x=0, .y=273, .frameW=225, .frameH=91, .frameCount=12, .frameDuration=0.08f, .feetY=76 } },
         },
     },
 
@@ -244,8 +228,8 @@ const MobType MOB_TYPES[] = {
 
     // [2] Koyun — çayır avı: kırılgan, vurulunca hızla kaçar (oyuncudan hızlı!)
     {
-        .name = "Koyun",
-        .texturePath = "assets/characters/mobs/Sheep.png",
+        .name = "Alageyik",
+        .texturePath = "assets/characters/erw/mob_alageyik.png",
         .level = 1,
         .maxHealth = 30.0f,
         .speed = 550.0f,          // kaçış: oyuncu ×1.1 — melee köşeye sıkıştırmalı
@@ -256,36 +240,32 @@ const MobType MOB_TYPES[] = {
         .attackType = ATTACK_MELEE,
         .lootTable = SHEEP_LOOT, .lootTableCount = LOOT_COUNT(SHEEP_LOOT),
         .goldMin = 0, .goldMax = 2,
-        .attackHitFrame = 99,     // asla tetiklenmez
+        .attackHitFrame = 6,     // asla tetiklenmez
         .passive = true, .dailyRespawn = true,
         .anims = {
-            { // idle (2 kare, otlama duruşu)
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
-            },
-            { // run/kaçış (8 kare zıplama)
-                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.09f, .feetY=30 },
-                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.09f, .feetY=30 },
-                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.09f, .feetY=30 },
-            },
-            { // attack — pasif, oynamaz (idle kopyası)
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
-            },
-            { // dying — yere çöküş (yatma dizisi)
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=276, .frameH=157, .frameCount=8, .frameDuration=0.14f, .feetY=104 },
+              { .x=0, .y=0, .frameW=276, .frameH=157, .frameCount=8, .frameDuration=0.14f, .feetY=104 },
+              { .x=0, .y=0, .frameW=276, .frameH=157, .frameCount=8, .frameDuration=0.14f, .feetY=104 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=157, .frameW=276, .frameH=157, .frameCount=8, .frameDuration=0.10f, .feetY=104 },
+              { .x=0, .y=157, .frameW=276, .frameH=157, .frameCount=8, .frameDuration=0.10f, .feetY=104 },
+              { .x=0, .y=157, .frameW=276, .frameH=157, .frameCount=8, .frameDuration=0.10f, .feetY=104 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=314, .frameW=276, .frameH=157, .frameCount=12, .frameDuration=0.15f, .feetY=104 },
+              { .x=0, .y=314, .frameW=276, .frameH=157, .frameCount=12, .frameDuration=0.15f, .feetY=104 },
+              { .x=0, .y=314, .frameW=276, .frameH=157, .frameCount=12, .frameDuration=0.15f, .feetY=104 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=471, .frameW=276, .frameH=157, .frameCount=12, .frameDuration=0.10f, .feetY=104 },
+              { .x=0, .y=471, .frameW=276, .frameH=157, .frameCount=12, .frameDuration=0.10f, .feetY=104 },
+              { .x=0, .y=471, .frameW=276, .frameH=157, .frameCount=12, .frameDuration=0.10f, .feetY=104 } },
         },
     },
 
     // [3] Domuz — çayır avı (koyunla aynı davranış, sheet düzeni aynı)
     {
-        .name = "Domuz",
-        .texturePath = "assets/characters/mobs/Pig.png",
+        .name = "Ördek",
+        .texturePath = "assets/characters/erw/mob_ordek.png",
         .level = 1,
         .maxHealth = 30.0f,
         .speed = 550.0f,
@@ -296,37 +276,33 @@ const MobType MOB_TYPES[] = {
         .attackType = ATTACK_MELEE,
         .lootTable = SHEEP_LOOT, .lootTableCount = LOOT_COUNT(SHEEP_LOOT),
         .goldMin = 0, .goldMax = 2,
-        .attackHitFrame = 99,
+        .attackHitFrame = 6,
         .passive = true, .dailyRespawn = true,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.09f, .feetY=30 },
-                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.09f, .feetY=30 },
-                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.09f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=28, .frameH=24, .frameCount=12, .frameDuration=0.21f, .feetY=24 },
+              { .x=0, .y=0, .frameW=28, .frameH=24, .frameCount=12, .frameDuration=0.21f, .feetY=24 },
+              { .x=0, .y=0, .frameW=28, .frameH=24, .frameCount=12, .frameDuration=0.21f, .feetY=24 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=24, .frameW=28, .frameH=24, .frameCount=8, .frameDuration=0.10f, .feetY=24 },
+              { .x=0, .y=24, .frameW=28, .frameH=24, .frameCount=8, .frameDuration=0.10f, .feetY=24 },
+              { .x=0, .y=24, .frameW=28, .frameH=24, .frameCount=8, .frameDuration=0.10f, .feetY=24 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=28, .frameH=24, .frameCount=12, .frameDuration=0.09f, .feetY=24 },
+              { .x=0, .y=0, .frameW=28, .frameH=24, .frameCount=12, .frameDuration=0.09f, .feetY=24 },
+              { .x=0, .y=0, .frameW=28, .frameH=24, .frameCount=12, .frameDuration=0.09f, .feetY=24 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=28, .frameH=24, .frameCount=1, .frameDuration=0.08f, .feetY=24 },
+              { .x=0, .y=0, .frameW=28, .frameH=24, .frameCount=1, .frameDuration=0.08f, .feetY=24 },
+              { .x=0, .y=0, .frameW=28, .frameH=24, .frameCount=1, .frameDuration=0.08f, .feetY=24 } },
         },
     },
 
     // [4] Tavuk — küçük av: tek et, deri yok. Sheet düzeni farklı:
     // satır 0 idle (2), satır 1 yürüme-aşağı (6), satır 2 yürüme-yan (8), satır 7 oturma (ölüm)
     {
-        .name = "Tavuk",
-        .texturePath = "assets/characters/mobs/Chicken.png",
+        .name = "Kurbağa",
+        .texturePath = "assets/characters/erw/mob_kurbaga.png",
         .level = 1,
         .maxHealth = 12.0f,
         .speed = 500.0f,
@@ -337,37 +313,33 @@ const MobType MOB_TYPES[] = {
         .attackType = ATTACK_MELEE,
         .lootTable = CHICKEN_LOOT, .lootTableCount = LOOT_COUNT(CHICKEN_LOOT),
         .goldMin = 0, .goldMax = 1,
-        .attackHitFrame = 99,
+        .attackHitFrame = 6,
         .passive = true, .dailyRespawn = true,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=28 },
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=28 },
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=28 },
-            },
-            {
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.09f, .feetY=28 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.09f, .feetY=28 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.08f, .feetY=28 },
-            },
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=28 },
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=28 },
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.5f, .feetY=28 },
-            },
-            {
-                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=28 },
-                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=28 },
-                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=28 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=38, .frameH=23, .frameCount=12, .frameDuration=0.21f, .feetY=23 },
+              { .x=0, .y=0, .frameW=38, .frameH=23, .frameCount=12, .frameDuration=0.21f, .feetY=23 },
+              { .x=0, .y=0, .frameW=38, .frameH=23, .frameCount=12, .frameDuration=0.21f, .feetY=23 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=23, .frameW=38, .frameH=23, .frameCount=10, .frameDuration=0.10f, .feetY=23 },
+              { .x=0, .y=23, .frameW=38, .frameH=23, .frameCount=10, .frameDuration=0.10f, .feetY=23 },
+              { .x=0, .y=23, .frameW=38, .frameH=23, .frameCount=10, .frameDuration=0.10f, .feetY=23 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=38, .frameH=23, .frameCount=12, .frameDuration=0.09f, .feetY=23 },
+              { .x=0, .y=0, .frameW=38, .frameH=23, .frameCount=12, .frameDuration=0.09f, .feetY=23 },
+              { .x=0, .y=0, .frameW=38, .frameH=23, .frameCount=12, .frameDuration=0.09f, .feetY=23 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=38, .frameH=23, .frameCount=1, .frameDuration=0.08f, .feetY=23 },
+              { .x=0, .y=0, .frameW=38, .frameH=23, .frameCount=1, .frameDuration=0.08f, .feetY=23 },
+              { .x=0, .y=0, .frameW=38, .frameH=23, .frameCount=1, .frameDuration=0.08f, .feetY=23 } },
         },
     },
 
     // [5] Yaban Domuzu — riskli av: saldırgan (goblin AI), deri ana kaynağı.
     // Saldırı animasyonu yok → hücum = hızlandırılmış koşu clip'i (attackHitFrame 4)
     {
-        .name = "Yaban Domuzu",
-        .texturePath = "assets/characters/mobs/Boar.png",
+        .name = "Geyik",
+        .texturePath = "assets/characters/erw/mob_geyik.png",
         .level = 3,
         .maxHealth = 90.0f,
         .speed = 170.0f,
@@ -378,29 +350,25 @@ const MobType MOB_TYPES[] = {
         .attackType = ATTACK_MELEE,
         .lootTable = BOAR_LOOT, .lootTableCount = LOOT_COUNT(BOAR_LOOT),
         .goldMin = 0, .goldMax = 5,
-        .attackHitFrame = 4,
+        .attackHitFrame = 6,
         .dailyRespawn = true,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.4f, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.4f, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=2, .frameDuration=0.4f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=30 },
-                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=30 },
-                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=30 },
-            },
-            { // attack: koşu clip'i hızlı (kafa atma hücumu)
-                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.06f, .feetY=30 },
-                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.06f, .feetY=30 },
-                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.06f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=276, .frameH=157, .frameCount=8, .frameDuration=0.14f, .feetY=104 },
+              { .x=0, .y=0, .frameW=276, .frameH=157, .frameCount=8, .frameDuration=0.14f, .feetY=104 },
+              { .x=0, .y=0, .frameW=276, .frameH=157, .frameCount=8, .frameDuration=0.14f, .feetY=104 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=157, .frameW=276, .frameH=157, .frameCount=8, .frameDuration=0.10f, .feetY=104 },
+              { .x=0, .y=157, .frameW=276, .frameH=157, .frameCount=8, .frameDuration=0.10f, .feetY=104 },
+              { .x=0, .y=157, .frameW=276, .frameH=157, .frameCount=8, .frameDuration=0.10f, .feetY=104 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=314, .frameW=276, .frameH=157, .frameCount=12, .frameDuration=0.15f, .feetY=104 },
+              { .x=0, .y=314, .frameW=276, .frameH=157, .frameCount=12, .frameDuration=0.15f, .feetY=104 },
+              { .x=0, .y=314, .frameW=276, .frameH=157, .frameCount=12, .frameDuration=0.15f, .feetY=104 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=471, .frameW=276, .frameH=157, .frameCount=12, .frameDuration=0.10f, .feetY=104 },
+              { .x=0, .y=471, .frameW=276, .frameH=157, .frameCount=12, .frameDuration=0.10f, .feetY=104 },
+              { .x=0, .y=471, .frameW=276, .frameH=157, .frameCount=12, .frameDuration=0.10f, .feetY=104 } },
         },
     },
     // --- Faz 7: Slime ailesi (Cute_Fantasy Enemies/Slime) ---
@@ -423,72 +391,180 @@ const MobType MOB_TYPES[] = {
 
     // [6] Yeşil Slime (Büyük) — ova kenarı: yavaş, bölünen bela
     {
-        .name = "Yeşil Slime", .texturePath = "assets/characters/mobs/Slime_Big_Green.png",
+        .name = "Yeşil Örümcek", .texturePath = "assets/characters/erw/mob_orumcek.png",
         .level = 2, .maxHealth = 120.0f, .speed = 130.0f,
         .attackRange = 70.0f, .detectRange = 260.0f, .damage = 8.0f, .defense = 0.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 4,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6,
         .goldMin = 0, .goldMax = 0,   // loot/altın YOK — zincir sonu Küçük'te
         .splitCount = 2, .splitChild = 7,
         .bodyW = 72.0f, .bodyH = 60.0f,
-        .anims = SLIME_ANIMS(64, 56),
+        .drawScale = 2.0f,
+        .anims = {
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 },
+              { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 },
+              { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 },
+              { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 },
+              { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 },
+              { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 },
+              { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 },
+              { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 },
+              { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 } },
+        },
     },
     // [7] Yeşil Slime (Orta)
     {
-        .name = "Yeşil Slime", .texturePath = "assets/characters/mobs/Slime_Medium_Green.png",
+        .name = "Yeşil Örümcek", .texturePath = "assets/characters/erw/mob_orumcek.png",
         .level = 1, .maxHealth = 50.0f, .speed = 150.0f,
         .attackRange = 45.0f, .detectRange = 240.0f, .damage = 5.0f, .defense = 0.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 4,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6,
         .goldMin = 0, .goldMax = 0,
         .splitCount = 2, .splitChild = 8,
         .bodyW = 40.0f, .bodyH = 34.0f,
-        .anims = SLIME_ANIMS(32, 28),
+        .drawScale = 1.2f,
+        .anims = {
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 },
+              { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 },
+              { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 },
+              { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 },
+              { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 },
+              { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 },
+              { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 },
+              { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 },
+              { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 } },
+        },
     },
     // [8] Yeşil Slime (Küçük) — zincir sonu: jel + altın burada
     {
-        .name = "Yeşil Slime", .texturePath = "assets/characters/mobs/Slime_Small_Green.png",
+        .name = "Yeşil Örümcek", .texturePath = "assets/characters/erw/mob_orumcek.png",
         .level = 1, .maxHealth = 20.0f, .speed = 170.0f,
         .attackRange = 30.0f, .detectRange = 220.0f, .damage = 3.0f, .defense = 0.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 4,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6,
         .lootTable = SLIME_G_LOOT, .lootTableCount = LOOT_COUNT(SLIME_G_LOOT),
         .goldMin = 2, .goldMax = 6,
         .bodyW = 22.0f, .bodyH = 18.0f,
-        .anims = SLIME_ANIMS(16, 14),
+        .drawScale = 0.7f,
+        .anims = {
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 },
+              { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 },
+              { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 },
+              { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 },
+              { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 },
+              { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 },
+              { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 },
+              { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 },
+              { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 } },
+        },
     },
     // [9] Mavi Slime (Büyük) — bataklık: dayanıklı + vuruşu zehirler
     {
-        .name = "Mavi Slime", .texturePath = "assets/characters/mobs/Slime_Big_Blue.png",
+        .name = "Mavi Örümcek", .texturePath = "assets/characters/erw/mob_orumcek2.png",
         .level = 4, .maxHealth = 160.0f, .speed = 130.0f,
         .attackRange = 70.0f, .detectRange = 280.0f, .damage = 12.0f, .defense = 5.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 4,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6,
         .goldMin = 0, .goldMax = 0,
         .splitCount = 2, .splitChild = 10,
         .bodyW = 72.0f, .bodyH = 60.0f,
         .hitPoisonDps = 2.0f, .hitPoisonTime = 3.0f,
-        .anims = SLIME_ANIMS(64, 56),
+        .drawScale = 2.0f,
+        .anims = {
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 },
+              { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 },
+              { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 },
+              { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 },
+              { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 },
+              { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 },
+              { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 },
+              { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 },
+              { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 } },
+        },
     },
     // [10] Mavi Slime (Orta)
     {
-        .name = "Mavi Slime", .texturePath = "assets/characters/mobs/Slime_Medium_Blue.png",
+        .name = "Mavi Örümcek", .texturePath = "assets/characters/erw/mob_orumcek2.png",
         .level = 2, .maxHealth = 70.0f, .speed = 150.0f,
         .attackRange = 45.0f, .detectRange = 240.0f, .damage = 8.0f, .defense = 3.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 4,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6,
         .goldMin = 0, .goldMax = 0,
         .splitCount = 2, .splitChild = 11,
         .bodyW = 40.0f, .bodyH = 34.0f,
         .hitPoisonDps = 2.0f, .hitPoisonTime = 3.0f,
-        .anims = SLIME_ANIMS(32, 28),
+        .drawScale = 1.2f,
+        .anims = {
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 },
+              { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 },
+              { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 },
+              { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 },
+              { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 },
+              { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 },
+              { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 },
+              { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 },
+              { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 } },
+        },
     },
     // [11] Mavi Slime (Küçük) — jel + Zehirli Öz şansı
     {
-        .name = "Mavi Slime", .texturePath = "assets/characters/mobs/Slime_Small_Blue.png",
+        .name = "Mavi Örümcek", .texturePath = "assets/characters/erw/mob_orumcek2.png",
         .level = 1, .maxHealth = 25.0f, .speed = 170.0f,
         .attackRange = 30.0f, .detectRange = 220.0f, .damage = 4.0f, .defense = 0.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 4,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6,
         .lootTable = SLIME_B_LOOT, .lootTableCount = LOOT_COUNT(SLIME_B_LOOT),
         .goldMin = 3, .goldMax = 8,
         .bodyW = 22.0f, .bodyH = 18.0f,
         .hitPoisonDps = 2.0f, .hitPoisonTime = 3.0f,
-        .anims = SLIME_ANIMS(16, 14),
+        .drawScale = 0.7f,
+        .anims = {
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 },
+              { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 },
+              { .x=0, .y=0, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.14f, .feetY=28 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 },
+              { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 },
+              { .x=0, .y=32, .frameW=51, .frameH=32, .frameCount=8, .frameDuration=0.10f, .feetY=28 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 },
+              { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 },
+              { .x=0, .y=64, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.06f, .feetY=28 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 },
+              { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 },
+              { .x=0, .y=96, .frameW=51, .frameH=32, .frameCount=12, .frameDuration=0.11f, .feetY=28 } },
+        },
     },
 
     // --- Faz 8: İskelet ailesi (Kayalık Geçit — gece kuralıyla undead kimliği) ---
@@ -499,33 +575,29 @@ const MobType MOB_TYPES[] = {
     {
         .name = "İskelet Savaşçı",
         .undead = true,
-        .texturePath = "assets/characters/mobs/Skeleton_Swordman.png",
+        .texturePath = "assets/characters/erw/mob_iskelet_savasci.png",
         .level = 4, .maxHealth = 140.0f, .speed = 180.0f,
         .attackRange = 65.0f, .detectRange = 300.0f, .damage = 12.0f, .defense = 8.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 2, .attackRecover = 0.8f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6, .attackRecover = 0.8f,
         .lootTable = SKEL_W_LOOT, .lootTableCount = LOOT_COUNT(SKEL_W_LOOT),
         .goldMin = 15, .goldMax = 30,
         .anims = {
-            { // idle (6 kare)
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-            },
-            { // yürüme (6 kare)
-                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-            },
-            { // saldırı — 64×64 kılıç savurması (ork deseni, feetY 46)
-                { .x=0, .y=224, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.10f, .feetY=46 },
-                { .x=0, .y=352, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.10f, .feetY=46 },
-                { .x=0, .y=288, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.10f, .feetY=46 },
-            },
-            { // ölüm: kemik yığınına çöküş (4 kare)
-                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=55, .frameH=81, .frameCount=7, .frameDuration=0.14f, .feetY=76 },
+              { .x=0, .y=0, .frameW=55, .frameH=81, .frameCount=7, .frameDuration=0.14f, .feetY=76 },
+              { .x=0, .y=0, .frameW=55, .frameH=81, .frameCount=7, .frameDuration=0.14f, .feetY=76 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=81, .frameW=55, .frameH=81, .frameCount=8, .frameDuration=0.10f, .feetY=76 },
+              { .x=0, .y=81, .frameW=55, .frameH=81, .frameCount=8, .frameDuration=0.10f, .feetY=76 },
+              { .x=0, .y=81, .frameW=55, .frameH=81, .frameCount=8, .frameDuration=0.10f, .feetY=76 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=162, .frameW=55, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=76 },
+              { .x=0, .y=162, .frameW=55, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=76 },
+              { .x=0, .y=162, .frameW=55, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=76 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=243, .frameW=55, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=76 },
+              { .x=0, .y=243, .frameW=55, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=76 },
+              { .x=0, .y=243, .frameW=55, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=76 } },
         },
     },
     // [13] İskelet Okçu — İLK menzilli düşman: ok düz hatta uçar, KAÇILABİLİR.
@@ -533,68 +605,60 @@ const MobType MOB_TYPES[] = {
     {
         .name = "İskelet Okçu",
         .undead = true,
-        .texturePath = "assets/characters/mobs/Skeleton_Bowman.png",
+        .texturePath = "assets/characters/erw/mob_iskelet_okcu.png",
         .level = 4, .maxHealth = 90.0f, .speed = 150.0f,
         .attackRange = 280.0f, .detectRange = 320.0f, .damage = 14.0f, .defense = 3.0f,
-        .attackType = ATTACK_RANGED, .attackHitFrame = 4, .attackRecover = 1.5f,
+        .attackType = ATTACK_RANGED, .attackHitFrame = 6, .attackRecover = 1.5f,
         .projSpeed = 300.0f,
         .lootTable = SKEL_B_LOOT, .lootTableCount = LOOT_COUNT(SKEL_B_LOOT),
         .goldMin = 15, .goldMax = 30,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-            },
-            { // yay çekme — ok kare 4'te çıkar (main mermi doğurur)
-                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=157, .frameH=92, .frameCount=8, .frameDuration=0.14f, .feetY=73 },
+              { .x=0, .y=0, .frameW=157, .frameH=92, .frameCount=8, .frameDuration=0.14f, .feetY=73 },
+              { .x=0, .y=0, .frameW=157, .frameH=92, .frameCount=8, .frameDuration=0.14f, .feetY=73 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=92, .frameW=157, .frameH=92, .frameCount=8, .frameDuration=0.10f, .feetY=73 },
+              { .x=0, .y=92, .frameW=157, .frameH=92, .frameCount=8, .frameDuration=0.10f, .feetY=73 },
+              { .x=0, .y=92, .frameW=157, .frameH=92, .frameCount=8, .frameDuration=0.10f, .feetY=73 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=184, .frameW=157, .frameH=92, .frameCount=12, .frameDuration=0.09f, .feetY=73 },
+              { .x=0, .y=184, .frameW=157, .frameH=92, .frameCount=12, .frameDuration=0.09f, .feetY=73 },
+              { .x=0, .y=184, .frameW=157, .frameH=92, .frameCount=12, .frameDuration=0.09f, .feetY=73 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=276, .frameW=157, .frameH=92, .frameCount=12, .frameDuration=0.09f, .feetY=73 },
+              { .x=0, .y=276, .frameW=157, .frameH=92, .frameCount=12, .frameDuration=0.09f, .feetY=73 },
+              { .x=0, .y=276, .frameW=157, .frameH=92, .frameCount=12, .frameDuration=0.09f, .feetY=73 } },
         },
     },
     // [14] İskelet Büyücü — cam top: az can, sert ve yavaş büyü mermisi
     {
         .name = "İskelet Büyücü",
         .undead = true,
-        .texturePath = "assets/characters/mobs/Skeleton_Mage.png",
+        .texturePath = "assets/characters/erw/mob_iskelet_buyucu.png",
         .level = 5, .maxHealth = 70.0f, .speed = 140.0f,
         .attackRange = 240.0f, .detectRange = 300.0f, .damage = 22.0f, .defense = 0.0f,
-        .attackType = ATTACK_MAGIC, .attackHitFrame = 5, .attackRecover = 2.0f,
+        .attackType = ATTACK_MAGIC, .attackHitFrame = 6, .attackRecover = 2.0f,
         .projSpeed = 240.0f,
         .lootTable = SKEL_M_LOOT, .lootTableCount = LOOT_COUNT(SKEL_M_LOOT),
         .goldMin = 20, .goldMax = 40,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-            },
-            { // büyü kanalize — top kare 5'te fırlar (8 kare)
-                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=8, .frameDuration=0.12f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=30 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=93, .frameH=87, .frameCount=8, .frameDuration=0.14f, .feetY=69 },
+              { .x=0, .y=0, .frameW=93, .frameH=87, .frameCount=8, .frameDuration=0.14f, .feetY=69 },
+              { .x=0, .y=0, .frameW=93, .frameH=87, .frameCount=8, .frameDuration=0.14f, .feetY=69 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=87, .frameW=93, .frameH=87, .frameCount=8, .frameDuration=0.10f, .feetY=69 },
+              { .x=0, .y=87, .frameW=93, .frameH=87, .frameCount=8, .frameDuration=0.10f, .feetY=69 },
+              { .x=0, .y=87, .frameW=93, .frameH=87, .frameCount=8, .frameDuration=0.10f, .feetY=69 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=174, .frameW=93, .frameH=87, .frameCount=12, .frameDuration=0.08f, .feetY=69 },
+              { .x=0, .y=174, .frameW=93, .frameH=87, .frameCount=12, .frameDuration=0.08f, .feetY=69 },
+              { .x=0, .y=174, .frameW=93, .frameH=87, .frameCount=12, .frameDuration=0.08f, .feetY=69 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=261, .frameW=93, .frameH=87, .frameCount=12, .frameDuration=0.09f, .feetY=69 },
+              { .x=0, .y=261, .frameW=93, .frameH=87, .frameCount=12, .frameDuration=0.09f, .feetY=69 },
+              { .x=0, .y=261, .frameW=93, .frameH=87, .frameCount=12, .frameDuration=0.09f, .feetY=69 } },
         },
     },
     // [15] İSKELET LORDU — ilk boss (Eski Geçit K2). Savaşçının büyütülmüş,
@@ -602,10 +666,10 @@ const MobType MOB_TYPES[] = {
     {
         .name = "İskelet Lordu",
         .undead = true,
-        .texturePath = "assets/characters/mobs/Skeleton_Swordman.png",
+        .texturePath = "assets/characters/erw/mob_iskelet_lord.png",
         .level = 12, .maxHealth = 900.0f, .speed = 150.0f,
         .attackRange = 85.0f, .detectRange = 420.0f, .damage = 28.0f, .defense = 20.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 2, .attackRecover = 1.1f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6, .attackRecover = 1.1f,
         .lootTable = SKEL_LORD_LOOT, .lootTableCount = LOOT_COUNT(SKEL_LORD_LOOT),
         .goldMin = 200, .goldMax = 300,
         .bodyW = 80.0f, .bodyH = 64.0f,
@@ -613,26 +677,22 @@ const MobType MOB_TYPES[] = {
         .tintR = 200, .tintG = 170, .tintB = 255,   // soluk mor — hükümdar havası
         .isBoss = true,
         .anims = {
-            { // idle (6 kare)
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-            },
-            { // yürüme (6 kare)
-                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-            },
-            { // saldırı — 64×64 kılıç savurması
-                { .x=0, .y=224, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.12f, .feetY=46 },
-                { .x=0, .y=352, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.12f, .feetY=46 },
-                { .x=0, .y=288, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.12f, .feetY=46 },
-            },
-            { // ölüm: çöküş (4 kare)
-                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.20f, .feetY=30 },
-                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.20f, .feetY=30 },
-                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.20f, .feetY=30 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=55, .frameH=81, .frameCount=7, .frameDuration=0.14f, .feetY=76 },
+              { .x=0, .y=0, .frameW=55, .frameH=81, .frameCount=7, .frameDuration=0.14f, .feetY=76 },
+              { .x=0, .y=0, .frameW=55, .frameH=81, .frameCount=7, .frameDuration=0.14f, .feetY=76 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=81, .frameW=55, .frameH=81, .frameCount=8, .frameDuration=0.10f, .feetY=76 },
+              { .x=0, .y=81, .frameW=55, .frameH=81, .frameCount=8, .frameDuration=0.10f, .feetY=76 },
+              { .x=0, .y=81, .frameW=55, .frameH=81, .frameCount=8, .frameDuration=0.10f, .feetY=76 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=162, .frameW=55, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=76 },
+              { .x=0, .y=162, .frameW=55, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=76 },
+              { .x=0, .y=162, .frameW=55, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=76 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=243, .frameW=55, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=76 },
+              { .x=0, .y=243, .frameW=55, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=76 },
+              { .x=0, .y=243, .frameW=55, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=76 } },
         },
     },
 
@@ -641,7 +701,7 @@ const MobType MOB_TYPES[] = {
     // Goblin sheet'i, iri ve kızıl tonlu; erlerden belirgin güçlü ama boss değil.
     {
         .name = "Goblin Reisi",
-        .texturePath = "assets/characters/mobs/Goblin_Maceman.png",
+        .texturePath = "assets/characters/erw/mob_goblin_reis.png",
         .nocturnal = true,   // kampıyla aynı ritim
         .level = 4,
         .maxHealth = 260.0f,
@@ -653,31 +713,27 @@ const MobType MOB_TYPES[] = {
         .attackType = ATTACK_MELEE,
         .lootTable = GOBLIN_LOOT, .lootTableCount = LOOT_COUNT(GOBLIN_LOOT),
         .goldMin = 40, .goldMax = 80,
-        .attackHitFrame = 3,
+        .attackHitFrame = 6,
         .drawScale = 2.8f,
         .tintR = 255, .tintG = 170, .tintB = 150,   // kızıl savaş boyası havası
         .bodyW = 52.0f, .bodyH = 52.0f,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.18f, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.18f, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.18f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
-                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.08f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=23 },
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=23 },
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.15f, .feetY=23 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=106, .frameH=81, .frameCount=8, .frameDuration=0.14f, .feetY=62 },
+              { .x=0, .y=0, .frameW=106, .frameH=81, .frameCount=8, .frameDuration=0.14f, .feetY=62 },
+              { .x=0, .y=0, .frameW=106, .frameH=81, .frameCount=8, .frameDuration=0.14f, .feetY=62 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=81, .frameW=106, .frameH=81, .frameCount=8, .frameDuration=0.10f, .feetY=62 },
+              { .x=0, .y=81, .frameW=106, .frameH=81, .frameCount=8, .frameDuration=0.10f, .feetY=62 },
+              { .x=0, .y=81, .frameW=106, .frameH=81, .frameCount=8, .frameDuration=0.10f, .feetY=62 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=162, .frameW=106, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=62 },
+              { .x=0, .y=162, .frameW=106, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=62 },
+              { .x=0, .y=162, .frameW=106, .frameH=81, .frameCount=12, .frameDuration=0.09f, .feetY=62 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=243, .frameW=106, .frameH=81, .frameCount=12, .frameDuration=0.08f, .feetY=62 },
+              { .x=0, .y=243, .frameW=106, .frameH=81, .frameCount=12, .frameDuration=0.08f, .feetY=62 },
+              { .x=0, .y=243, .frameW=106, .frameH=81, .frameCount=12, .frameDuration=0.08f, .feetY=62 } },
         },
     },
     // [17] Ork Savaş Totemi — YAPI: kımıldamaz, saldırmaz; yıkılınca kamp çöker.
@@ -717,69 +773,61 @@ const MobType MOB_TYPES[] = {
     {
         .name = "Hortlak Büyücü",
         .undead = true,
-        .texturePath = "assets/characters/mobs/Ghoul_Wizard.png",
+        .texturePath = "assets/characters/erw/mob_hortlak.png",
         .level = 9, .maxHealth = 260.0f, .speed = 150.0f,
         .attackRange = 260.0f, .detectRange = 340.0f, .damage = 30.0f, .defense = 6.0f,
-        .attackType = ATTACK_MAGIC, .attackHitFrame = 5, .attackRecover = 2.2f,
+        .attackType = ATTACK_MAGIC, .attackHitFrame = 6, .attackRecover = 2.2f,
         .projSpeed = 260.0f,
         .lootTable = GHOUL_LOOT, .lootTableCount = LOOT_COUNT(GHOUL_LOOT),
         .goldMin = 60, .goldMax = 100,
         .bodyW = 44.0f, .bodyH = 52.0f, .drawScale = 1.5f,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.14f, .feetY=167 },
-                { .x=0, .y=0,   .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.14f, .feetY=167 },
-                { .x=0, .y=0,   .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.14f, .feetY=167 },
-            },
-            {
-                { .x=0, .y=250, .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.11f, .feetY=167 },
-                { .x=0, .y=250, .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.11f, .feetY=167 },
-                { .x=0, .y=250, .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.11f, .feetY=167 },
-            },
-            {
-                { .x=0, .y=500, .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.11f, .feetY=167 },
-                { .x=0, .y=500, .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.11f, .feetY=167 },
-                { .x=0, .y=500, .frameW=250, .frameH=250, .frameCount=8, .frameDuration=0.11f, .feetY=167 },
-            },
-            {
-                { .x=0, .y=750, .frameW=250, .frameH=250, .frameCount=7, .frameDuration=0.13f, .feetY=167 },
-                { .x=0, .y=750, .frameW=250, .frameH=250, .frameCount=7, .frameDuration=0.13f, .feetY=167 },
-                { .x=0, .y=750, .frameW=250, .frameH=250, .frameCount=7, .frameDuration=0.13f, .feetY=167 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=87, .frameH=112, .frameCount=8, .frameDuration=0.14f, .feetY=84 },
+              { .x=0, .y=0, .frameW=87, .frameH=112, .frameCount=8, .frameDuration=0.14f, .feetY=84 },
+              { .x=0, .y=0, .frameW=87, .frameH=112, .frameCount=8, .frameDuration=0.14f, .feetY=84 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=112, .frameW=87, .frameH=112, .frameCount=8, .frameDuration=0.10f, .feetY=84 },
+              { .x=0, .y=112, .frameW=87, .frameH=112, .frameCount=8, .frameDuration=0.10f, .feetY=84 },
+              { .x=0, .y=112, .frameW=87, .frameH=112, .frameCount=8, .frameDuration=0.10f, .feetY=84 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=224, .frameW=87, .frameH=112, .frameCount=12, .frameDuration=0.10f, .feetY=84 },
+              { .x=0, .y=224, .frameW=87, .frameH=112, .frameCount=12, .frameDuration=0.10f, .feetY=84 },
+              { .x=0, .y=224, .frameW=87, .frameH=112, .frameCount=12, .frameDuration=0.10f, .feetY=84 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=336, .frameW=87, .frameH=112, .frameCount=12, .frameDuration=0.23f, .feetY=84 },
+              { .x=0, .y=336, .frameW=87, .frameH=112, .frameCount=12, .frameDuration=0.23f, .feetY=84 },
+              { .x=0, .y=336, .frameW=87, .frameH=112, .frameCount=12, .frameDuration=0.23f, .feetY=84 } },
         },
     },
     // [19] KAN CANAVARI — ölü su kıyısının hızlı eti: sürü baskısı, kısa menzil.
     // Minik gövde (100px karede ~20px) — drawScale 3.0 ile ürkütücü yumru.
     {
         .name = "Kan Canavarı",
-        .texturePath = "assets/characters/mobs/Blood_Monster.png",
+        .texturePath = "assets/characters/erw/mob_kan_canavari.png",
         .level = 8, .maxHealth = 320.0f, .speed = 210.0f,
         .attackRange = 55.0f, .detectRange = 300.0f, .damage = 18.0f, .defense = 10.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 4, .attackRecover = 0.7f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6, .attackRecover = 0.7f,
         .lootTable = BLOOD_LOOT, .lootTableCount = LOOT_COUNT(BLOOD_LOOT),
         .goldMin = 40, .goldMax = 70,
         .bodyW = 40.0f, .bodyH = 30.0f, .drawScale = 3.0f,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=58 },
-                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=58 },
-                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=58 },
-            },
-            {
-                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=58 },
-                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=58 },
-                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=58 },
-            },
-            {
-                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.09f, .feetY=58 },
-                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.09f, .feetY=58 },
-                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.09f, .feetY=58 },
-            },
-            {
-                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=58 },
-                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=58 },
-                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=58 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=102, .frameH=59, .frameCount=8, .frameDuration=0.14f, .feetY=52 },
+              { .x=0, .y=0, .frameW=102, .frameH=59, .frameCount=8, .frameDuration=0.14f, .feetY=52 },
+              { .x=0, .y=0, .frameW=102, .frameH=59, .frameCount=8, .frameDuration=0.14f, .feetY=52 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=102, .frameH=59, .frameCount=8, .frameDuration=0.10f, .feetY=52 },
+              { .x=0, .y=0, .frameW=102, .frameH=59, .frameCount=8, .frameDuration=0.10f, .feetY=52 },
+              { .x=0, .y=0, .frameW=102, .frameH=59, .frameCount=8, .frameDuration=0.10f, .feetY=52 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=59, .frameW=102, .frameH=59, .frameCount=12, .frameDuration=0.15f, .feetY=52 },
+              { .x=0, .y=59, .frameW=102, .frameH=59, .frameCount=12, .frameDuration=0.15f, .feetY=52 },
+              { .x=0, .y=59, .frameW=102, .frameH=59, .frameCount=12, .frameDuration=0.15f, .feetY=52 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=118, .frameW=102, .frameH=59, .frameCount=12, .frameDuration=0.08f, .feetY=52 },
+              { .x=0, .y=118, .frameW=102, .frameH=59, .frameCount=12, .frameDuration=0.08f, .feetY=52 },
+              { .x=0, .y=118, .frameW=102, .frameH=59, .frameCount=12, .frameDuration=0.08f, .feetY=52 } },
         },
     },
     // [20] ÖLÜM GETİREN — mezarlık boss'u (dev iskelet kalıntısının bekçisi).
@@ -788,35 +836,31 @@ const MobType MOB_TYPES[] = {
     {
         .name = "Ölüm Getiren",
         .undead = true,
-        .texturePath = "assets/characters/mobs/Bringer_of_Death.png",
+        .texturePath = "assets/characters/erw/mob_olum_getiren.png",
         .level = 16, .maxHealth = 1600.0f, .speed = 160.0f,
         .attackRange = 95.0f, .detectRange = 460.0f, .damage = 34.0f, .defense = 24.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 5, .attackRecover = 1.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6, .attackRecover = 1.0f,
         .lootTable = BRINGER_LOOT, .lootTableCount = LOOT_COUNT(BRINGER_LOOT),
         .goldMin = 400, .goldMax = 600,
         .bodyW = 90.0f, .bodyH = 60.0f, .drawScale = 2.6f,
         .isBoss = true,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=140, .frameH=93, .frameCount=8, .frameDuration=0.13f, .feetY=92 },
-                { .x=0, .y=0,   .frameW=140, .frameH=93, .frameCount=8, .frameDuration=0.13f, .feetY=92 },
-                { .x=0, .y=0,   .frameW=140, .frameH=93, .frameCount=8, .frameDuration=0.13f, .feetY=92 },
-            },
-            {
-                { .x=0, .y=93,  .frameW=140, .frameH=93, .frameCount=8, .frameDuration=0.11f, .feetY=92 },
-                { .x=0, .y=93,  .frameW=140, .frameH=93, .frameCount=8, .frameDuration=0.11f, .feetY=92 },
-                { .x=0, .y=93,  .frameW=140, .frameH=93, .frameCount=8, .frameDuration=0.11f, .feetY=92 },
-            },
-            {
-                { .x=0, .y=186, .frameW=140, .frameH=93, .frameCount=10, .frameDuration=0.09f, .feetY=92 },
-                { .x=0, .y=186, .frameW=140, .frameH=93, .frameCount=10, .frameDuration=0.09f, .feetY=92 },
-                { .x=0, .y=186, .frameW=140, .frameH=93, .frameCount=10, .frameDuration=0.09f, .feetY=92 },
-            },
-            {
-                { .x=0, .y=279, .frameW=140, .frameH=93, .frameCount=10, .frameDuration=0.13f, .feetY=92 },
-                { .x=0, .y=279, .frameW=140, .frameH=93, .frameCount=10, .frameDuration=0.13f, .feetY=92 },
-                { .x=0, .y=279, .frameW=140, .frameH=93, .frameCount=10, .frameDuration=0.13f, .feetY=92 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=102, .frameH=59, .frameCount=8, .frameDuration=0.14f, .feetY=52 },
+              { .x=0, .y=0, .frameW=102, .frameH=59, .frameCount=8, .frameDuration=0.14f, .feetY=52 },
+              { .x=0, .y=0, .frameW=102, .frameH=59, .frameCount=8, .frameDuration=0.14f, .feetY=52 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=102, .frameH=59, .frameCount=8, .frameDuration=0.10f, .feetY=52 },
+              { .x=0, .y=0, .frameW=102, .frameH=59, .frameCount=8, .frameDuration=0.10f, .feetY=52 },
+              { .x=0, .y=0, .frameW=102, .frameH=59, .frameCount=8, .frameDuration=0.10f, .feetY=52 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=59, .frameW=102, .frameH=59, .frameCount=12, .frameDuration=0.15f, .feetY=52 },
+              { .x=0, .y=59, .frameW=102, .frameH=59, .frameCount=12, .frameDuration=0.15f, .feetY=52 },
+              { .x=0, .y=59, .frameW=102, .frameH=59, .frameCount=12, .frameDuration=0.15f, .feetY=52 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=118, .frameW=102, .frameH=59, .frameCount=12, .frameDuration=0.08f, .feetY=52 },
+              { .x=0, .y=118, .frameW=102, .frameH=59, .frameCount=12, .frameDuration=0.08f, .feetY=52 },
+              { .x=0, .y=118, .frameW=102, .frameH=59, .frameCount=12, .frameDuration=0.08f, .feetY=52 } },
         },
     },
 
@@ -825,66 +869,58 @@ const MobType MOB_TYPES[] = {
     // [21] KAÇAK TAHSİLDAR: adlı hedef — kaçmaya meyilli, zayıf dövüşçü
     {
         .name = "Kaçak Tahsildar",
-        .texturePath = "assets/characters/mobs/Soldier.png",
+        .texturePath = "assets/characters/erw/mob_asker.png",
         .level = 10, .maxHealth = 300.0f, .speed = 190.0f,
         .attackRange = 60.0f, .detectRange = 260.0f, .damage = 14.0f, .defense = 8.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 3, .attackRecover = 1.1f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6, .attackRecover = 1.1f,
         .goldMin = 250, .goldMax = 350,
         .bodyW = 40.0f, .bodyH = 46.0f, .drawScale = 1.7f,
         .tintR = 235, .tintG = 210, .tintB = 160,   // altın sarısı urba (tahsildar)
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=78 },
-                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=78 },
-                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=78 },
-            },
-            {
-                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=78 },
-                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=78 },
-                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=78 },
-            },
-            {
-                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.10f, .feetY=78 },
-                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.10f, .feetY=78 },
-                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.10f, .feetY=78 },
-            },
-            {
-                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
-                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
-                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=83, .frameH=78, .frameCount=12, .frameDuration=0.19f, .feetY=72 },
+              { .x=0, .y=0, .frameW=83, .frameH=78, .frameCount=12, .frameDuration=0.19f, .feetY=72 },
+              { .x=0, .y=0, .frameW=83, .frameH=78, .frameCount=12, .frameDuration=0.19f, .feetY=72 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=78, .frameW=83, .frameH=78, .frameCount=8, .frameDuration=0.10f, .feetY=72 },
+              { .x=0, .y=78, .frameW=83, .frameH=78, .frameCount=8, .frameDuration=0.10f, .feetY=72 },
+              { .x=0, .y=78, .frameW=83, .frameH=78, .frameCount=8, .frameDuration=0.10f, .feetY=72 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=156, .frameW=83, .frameH=78, .frameCount=11, .frameDuration=0.06f, .feetY=72 },
+              { .x=0, .y=156, .frameW=83, .frameH=78, .frameCount=11, .frameDuration=0.06f, .feetY=72 },
+              { .x=0, .y=156, .frameW=83, .frameH=78, .frameCount=11, .frameDuration=0.06f, .feetY=72 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=234, .frameW=83, .frameH=78, .frameCount=12, .frameDuration=0.13f, .feetY=72 },
+              { .x=0, .y=234, .frameW=83, .frameH=78, .frameCount=12, .frameDuration=0.13f, .feetY=72 },
+              { .x=0, .y=234, .frameW=83, .frameH=78, .frameCount=12, .frameDuration=0.13f, .feetY=72 } },
         },
     },
     // [22] TAHSİLDAR KORUMASI: paralı kılıç — sert vurur, hedefine sadık
     {
         .name = "Koruma",
-        .texturePath = "assets/characters/mobs/Soldier.png",
+        .texturePath = "assets/characters/erw/mob_asker.png",
         .level = 11, .maxHealth = 420.0f, .speed = 200.0f,
         .attackRange = 65.0f, .detectRange = 320.0f, .damage = 24.0f, .defense = 14.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 3, .attackRecover = 0.9f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6, .attackRecover = 0.9f,
         .goldMin = 40, .goldMax = 80,
         .bodyW = 42.0f, .bodyH = 48.0f, .drawScale = 1.8f,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=78 },
-                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=78 },
-                { .x=0, .y=0,   .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.15f, .feetY=78 },
-            },
-            {
-                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=78 },
-                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=78 },
-                { .x=0, .y=100, .frameW=100, .frameH=100, .frameCount=8, .frameDuration=0.10f, .feetY=78 },
-            },
-            {
-                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.10f, .feetY=78 },
-                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.10f, .feetY=78 },
-                { .x=0, .y=200, .frameW=100, .frameH=100, .frameCount=6, .frameDuration=0.10f, .feetY=78 },
-            },
-            {
-                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
-                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
-                { .x=0, .y=300, .frameW=100, .frameH=100, .frameCount=4, .frameDuration=0.15f, .feetY=78 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=83, .frameH=78, .frameCount=12, .frameDuration=0.19f, .feetY=72 },
+              { .x=0, .y=0, .frameW=83, .frameH=78, .frameCount=12, .frameDuration=0.19f, .feetY=72 },
+              { .x=0, .y=0, .frameW=83, .frameH=78, .frameCount=12, .frameDuration=0.19f, .feetY=72 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=78, .frameW=83, .frameH=78, .frameCount=8, .frameDuration=0.10f, .feetY=72 },
+              { .x=0, .y=78, .frameW=83, .frameH=78, .frameCount=8, .frameDuration=0.10f, .feetY=72 },
+              { .x=0, .y=78, .frameW=83, .frameH=78, .frameCount=8, .frameDuration=0.10f, .feetY=72 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=156, .frameW=83, .frameH=78, .frameCount=11, .frameDuration=0.06f, .feetY=72 },
+              { .x=0, .y=156, .frameW=83, .frameH=78, .frameCount=11, .frameDuration=0.06f, .feetY=72 },
+              { .x=0, .y=156, .frameW=83, .frameH=78, .frameCount=11, .frameDuration=0.06f, .feetY=72 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=234, .frameW=83, .frameH=78, .frameCount=12, .frameDuration=0.13f, .feetY=72 },
+              { .x=0, .y=234, .frameW=83, .frameH=78, .frameCount=12, .frameDuration=0.13f, .feetY=72 },
+              { .x=0, .y=234, .frameW=83, .frameH=78, .frameCount=12, .frameDuration=0.13f, .feetY=72 } },
         },
     },
 
@@ -892,101 +928,89 @@ const MobType MOB_TYPES[] = {
     // [23] MUMYA: yavaş-dayanıklı undead (Kutsal ×1.6 sinerjisi) — iskelet düzeni
     {
         .name = "Mumya",
-        .texturePath = "assets/characters/mobs/Mummy.png",
+        .texturePath = "assets/characters/erw/mob_mumya.png",
         .level = 8, .maxHealth = 380.0f, .speed = 110.0f,
         .attackRange = 60.0f, .detectRange = 260.0f, .damage = 22.0f, .defense = 16.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 2, .attackRecover = 1.2f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6, .attackRecover = 1.2f,
         .lootTable = MUMMY_LOOT, .lootTableCount = LOOT_COUNT(MUMMY_LOOT),
         .goldMin = 25, .goldMax = 50,
         .undead = true,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.18f, .feetY=30 },
-                { .x=0, .y=64,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.18f, .feetY=30 },
-                { .x=0, .y=32,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.18f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=96,  .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=160, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-                { .x=0, .y=128, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.15f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=192, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=256, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-                { .x=0, .y=224, .frameW=32, .frameH=32, .frameCount=6, .frameDuration=0.12f, .feetY=30 },
-            },
-            {
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.16f, .feetY=30 },
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.16f, .feetY=30 },
-                { .x=0, .y=288, .frameW=32, .frameH=32, .frameCount=4, .frameDuration=0.16f, .feetY=30 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=127, .frameH=78, .frameCount=8, .frameDuration=0.14f, .feetY=57 },
+              { .x=0, .y=0, .frameW=127, .frameH=78, .frameCount=8, .frameDuration=0.14f, .feetY=57 },
+              { .x=0, .y=0, .frameW=127, .frameH=78, .frameCount=8, .frameDuration=0.14f, .feetY=57 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=127, .frameH=78, .frameCount=8, .frameDuration=0.10f, .feetY=57 },
+              { .x=0, .y=0, .frameW=127, .frameH=78, .frameCount=8, .frameDuration=0.10f, .feetY=57 },
+              { .x=0, .y=0, .frameW=127, .frameH=78, .frameCount=8, .frameDuration=0.10f, .feetY=57 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=78, .frameW=127, .frameH=78, .frameCount=12, .frameDuration=0.09f, .feetY=57 },
+              { .x=0, .y=78, .frameW=127, .frameH=78, .frameCount=12, .frameDuration=0.09f, .feetY=57 },
+              { .x=0, .y=78, .frameW=127, .frameH=78, .frameCount=12, .frameDuration=0.09f, .feetY=57 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=156, .frameW=127, .frameH=78, .frameCount=12, .frameDuration=0.08f, .feetY=57 },
+              { .x=0, .y=156, .frameW=127, .frameH=78, .frameCount=12, .frameDuration=0.08f, .feetY=57 },
+              { .x=0, .y=156, .frameW=127, .frameH=78, .frameCount=12, .frameDuration=0.08f, .feetY=57 } },
         },
     },
     // [24] AKREP: hızlı sürü + zehir basar (combat mob vuruşu — poison alanları
     // main'de mob→oyuncu zehri YOK; akrep zehrini vuruşta main işler)
     {
-        .name = "Akrep",
-        .texturePath = "assets/characters/mobs/Scarab.png",
+        .name = "Kum Kurdu",
+        .texturePath = "assets/characters/erw/mob_kum_kurdu.png",
         .level = 7, .maxHealth = 120.0f, .speed = 230.0f,
         .attackRange = 45.0f, .detectRange = 300.0f, .damage = 10.0f, .defense = 4.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 2, .attackRecover = 0.8f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6, .attackRecover = 0.8f,
         .lootTable = SCARAB_LOOT, .lootTableCount = LOOT_COUNT(SCARAB_LOOT),
         .goldMin = 8, .goldMax = 20,
         .bodyW = 34.0f, .bodyH = 26.0f, .drawScale = 2.0f,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.3f, .feetY=22 },
-                { .x=0, .y=0,   .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.3f, .feetY=22 },
-                { .x=0, .y=0,   .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.3f, .feetY=22 },
-            },
-            {
-                { .x=0, .y=24,  .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.12f, .feetY=22 },
-                { .x=0, .y=24,  .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.12f, .feetY=22 },
-                { .x=0, .y=24,  .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.12f, .feetY=22 },
-            },
-            {
-                { .x=0, .y=24,  .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.10f, .feetY=22 },
-                { .x=0, .y=24,  .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.10f, .feetY=22 },
-                { .x=0, .y=24,  .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.10f, .feetY=22 },
-            },
-            {
-                { .x=0, .y=0,   .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.2f, .feetY=22 },
-                { .x=0, .y=0,   .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.2f, .feetY=22 },
-                { .x=0, .y=0,   .frameW=32, .frameH=24, .frameCount=2, .frameDuration=0.2f, .feetY=22 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=109, .frameH=87, .frameCount=8, .frameDuration=0.14f, .feetY=86 },
+              { .x=0, .y=0, .frameW=109, .frameH=87, .frameCount=8, .frameDuration=0.14f, .feetY=86 },
+              { .x=0, .y=0, .frameW=109, .frameH=87, .frameCount=8, .frameDuration=0.14f, .feetY=86 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=109, .frameH=87, .frameCount=8, .frameDuration=0.10f, .feetY=86 },
+              { .x=0, .y=0, .frameW=109, .frameH=87, .frameCount=8, .frameDuration=0.10f, .feetY=86 },
+              { .x=0, .y=0, .frameW=109, .frameH=87, .frameCount=8, .frameDuration=0.10f, .feetY=86 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=87, .frameW=109, .frameH=87, .frameCount=12, .frameDuration=0.11f, .feetY=86 },
+              { .x=0, .y=87, .frameW=109, .frameH=87, .frameCount=12, .frameDuration=0.11f, .feetY=86 },
+              { .x=0, .y=87, .frameW=109, .frameH=87, .frameCount=12, .frameDuration=0.11f, .feetY=86 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=174, .frameW=109, .frameH=87, .frameCount=10, .frameDuration=0.08f, .feetY=86 },
+              { .x=0, .y=174, .frameW=109, .frameH=87, .frameCount=10, .frameDuration=0.08f, .feetY=86 },
+              { .x=0, .y=174, .frameW=109, .frameH=87, .frameCount=10, .frameDuration=0.08f, .feetY=86 } },
         },
     },
     // [25] ÇÖL HAYDUDU: kervan yolu kesen insan — 64px düzen (Desert Warrior)
     {
         .name = "Çöl Haydudu",
-        .texturePath = "assets/characters/mobs/Desert_Warrior.png",
+        .texturePath = "assets/characters/erw/mob_haydut.png",
         .level = 9, .maxHealth = 260.0f, .speed = 190.0f,
         .attackRange = 70.0f, .detectRange = 340.0f, .damage = 20.0f, .defense = 10.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 3, .attackRecover = 0.9f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 6, .attackRecover = 0.9f,
         .lootTable = BANDIT_LOOT, .lootTableCount = LOOT_COUNT(BANDIT_LOOT),
         .goldMin = 35, .goldMax = 70,
         .bodyW = 44.0f, .bodyH = 50.0f, .drawScale = 1.3f,
         .anims = {
-            {
-                { .x=0, .y=0,   .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.14f, .feetY=56 },
-                { .x=0, .y=128, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.14f, .feetY=56 },
-                { .x=0, .y=64,  .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.14f, .feetY=56 },
-            },
-            {
-                { .x=0, .y=192, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.11f, .feetY=56 },
-                { .x=0, .y=320, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.11f, .feetY=56 },
-                { .x=0, .y=256, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.11f, .feetY=56 },
-            },
-            {
-                { .x=0, .y=384, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.10f, .feetY=56 },
-                { .x=0, .y=512, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.10f, .feetY=56 },
-                { .x=0, .y=448, .frameW=64, .frameH=64, .frameCount=6, .frameDuration=0.10f, .feetY=56 },
-            },
-            {
-                { .x=0, .y=576, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.16f, .feetY=56 },
-                { .x=0, .y=576, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.16f, .feetY=56 },
-                { .x=0, .y=576, .frameW=64, .frameH=64, .frameCount=4, .frameDuration=0.16f, .feetY=56 },
-            },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=196, .frameH=140, .frameCount=8, .frameDuration=0.14f, .feetY=93 },
+              { .x=0, .y=0, .frameW=196, .frameH=140, .frameCount=8, .frameDuration=0.14f, .feetY=93 },
+              { .x=0, .y=0, .frameW=196, .frameH=140, .frameCount=8, .frameDuration=0.14f, .feetY=93 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=140, .frameW=196, .frameH=140, .frameCount=8, .frameDuration=0.10f, .feetY=93 },
+              { .x=0, .y=140, .frameW=196, .frameH=140, .frameCount=8, .frameDuration=0.10f, .feetY=93 },
+              { .x=0, .y=140, .frameW=196, .frameH=140, .frameCount=8, .frameDuration=0.10f, .feetY=93 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=280, .frameW=196, .frameH=140, .frameCount=12, .frameDuration=0.09f, .feetY=93 },
+              { .x=0, .y=280, .frameW=196, .frameH=140, .frameCount=12, .frameDuration=0.09f, .feetY=93 },
+              { .x=0, .y=280, .frameW=196, .frameH=140, .frameCount=12, .frameDuration=0.09f, .feetY=93 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=420, .frameW=196, .frameH=140, .frameCount=12, .frameDuration=0.19f, .feetY=93 },
+              { .x=0, .y=420, .frameW=196, .frameH=140, .frameCount=12, .frameDuration=0.19f, .feetY=93 },
+              { .x=0, .y=420, .frameW=196, .frameH=140, .frameCount=12, .frameDuration=0.19f, .feetY=93 } },
         },
     },
     // ── EĞİTİM KUKLASI (DEV, indeks 26). Tablonun SONUNA eklendi: save
@@ -997,10 +1021,10 @@ const MobType MOB_TYPES[] = {
     // dailyRespawn=false: dev tuşuyla (Ctrl+T) elle konur, dünyada durmaz.
     {
         .name = "Egitim Kuklasi",
-        .texturePath = "assets/characters/mobs/Desert_Warrior.png",
+        .texturePath = "assets/characters/erw/mob_kukla.png",
         .level = 1, .maxHealth = 999999.0f, .speed = 0.0f,
         .attackRange = 0.0f, .detectRange = 0.0f, .damage = 0.0f, .defense = 0.0f,
-        .attackType = ATTACK_MELEE, .attackHitFrame = 99, .attackRecover = 99.0f,
+        .attackType = ATTACK_MELEE, .attackHitFrame = 3, .attackRecover = 99.0f,
         .lootTable = NULL, .lootTableCount = 0,
         .goldMin = 0, .goldMax = 0,
         .passive = true, .dailyRespawn = false,
@@ -1008,18 +1032,22 @@ const MobType MOB_TYPES[] = {
         // anims[4][3] = 4 yön × 3 durum. Kuklanın hepsi AYNI tek kare:
         // kıpırdamaz, yön değiştirmez — sabit hedef.
         .anims = {
-            { { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
-              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
-              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 } },
-            { { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
-              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
-              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 } },
-            { { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
-              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
-              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 } },
-            { { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
-              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 },
-              { .x=0,.y=0,.frameW=64,.frameH=64,.frameCount=1,.frameDuration=1.0f,.feetY=56 } },
+            // idle (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=68, .frameH=71, .frameCount=7, .frameDuration=0.14f, .feetY=71 },
+              { .x=0, .y=0, .frameW=68, .frameH=71, .frameCount=7, .frameDuration=0.14f, .feetY=71 },
+              { .x=0, .y=0, .frameW=68, .frameH=71, .frameCount=7, .frameDuration=0.14f, .feetY=71 } },
+            // run (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=68, .frameH=71, .frameCount=7, .frameDuration=0.10f, .feetY=71 },
+              { .x=0, .y=0, .frameW=68, .frameH=71, .frameCount=7, .frameDuration=0.10f, .feetY=71 },
+              { .x=0, .y=0, .frameW=68, .frameH=71, .frameCount=7, .frameDuration=0.10f, .feetY=71 } },
+            // atk (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=68, .frameH=71, .frameCount=7, .frameDuration=0.06f, .feetY=71 },
+              { .x=0, .y=0, .frameW=68, .frameH=71, .frameCount=7, .frameDuration=0.06f, .feetY=71 },
+              { .x=0, .y=0, .frameW=68, .frameH=71, .frameCount=7, .frameDuration=0.06f, .feetY=71 } },
+            // death (ERW: 2 yönlü — üç facing aynı klip)
+            { { .x=0, .y=0, .frameW=68, .frameH=71, .frameCount=1, .frameDuration=0.08f, .feetY=71 },
+              { .x=0, .y=0, .frameW=68, .frameH=71, .frameCount=1, .frameDuration=0.08f, .feetY=71 },
+              { .x=0, .y=0, .frameW=68, .frameH=71, .frameCount=1, .frameDuration=0.08f, .feetY=71 } },
         },
     },
 };

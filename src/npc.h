@@ -50,7 +50,12 @@ typedef struct {
     // Sheet/görünüm farkları (0 = varsayılan: 64px hücre, 1.5x, NPC_MAX_HEALTH)
     int map;                  // yaşadığı harita (0 = dünya; 5 = MAP_LOCA — literal,
                               // include döngüsünden kaçınma: decor.c DM_ deseni)
-    int frameSize;            // hücre boyutu (Knights sheet'leri 48)
+    int frameSize;            // hücre boyutu (Knights sheet'leri 48) — ESKİ kare düzen
+    // ERW şerit düzeni (Faz EPIC-1): frameW > 0 ise sheet TEK SIRA yatay
+    // şerittir (bake_erw_npcs.py üretir, union-trim'li → alt kenar = ayak).
+    // idleFrames şeritteki kare sayısı. frameW=0 → eski kare düzen (frameSize).
+    int frameW, frameH;
+    int idleFrames;
     float drawScale;
     float maxHealth;
     bool isGuard;             // muhafız: rutin yerine guard.c beyni yönetir

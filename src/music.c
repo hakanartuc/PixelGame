@@ -49,6 +49,8 @@ static float userVol = 1.0f;      // kullanıcı müzik seviyesi (ayarlar)
 
 bool music_init(void)
 {
+    // DEV: PIXE_NOAUDIO — bkz. audio.c audio_init (duman testi kancası)
+    if (SDL_getenv("PIXE_NOAUDIO")) return false;
     // SDL_INIT_AUDIO audio_init'te açıldı; yine de garanti et (ref sayılır)
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
         SDL_Log("Muzik: ses alt sistemi yok: %s", SDL_GetError());

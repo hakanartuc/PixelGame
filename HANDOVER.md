@@ -42,7 +42,11 @@ Güncelleme: 2026-08-05 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumla
   ısırdı (sahne-only post-fx). Doğru desen: `r2d_target_begin`'in `savedVertCount`'u.
 - Felsefe "no hidden machinery": sihirli soyutlama yok; sprite batch, shader, parser — hepsi görünürde.
 - Oyun proje kökünden çalıştırılır: `./build/game` (asset yolları göreli).
-- Test kalıbı: `pkill -x game; (PIXE_HIDDEN=1 ./build/game &); sleep 5; kill -TERM $(pgrep -x game)` — temiz kapanış = cleanup yolu sağlıklı.
+- Test kalıbı: `pkill -x game; (PIXE_HIDDEN=1 PIXE_NOAUDIO=1 ./build/game &); sleep 5; kill -TERM $(pgrep -x game)` — temiz kapanış = cleanup yolu sağlıklı.
+  **PIXE_NOAUDIO=1 (2026-09-20)**: ses tamamen kapalı (audio/music/ambience init
+  erken döner). Şart çünkü art arda başlatılıp öldürülen test örnekleri
+  CoreAudio'yu kilitliyor — stream başına 15 sn zaman aşımı, açılış donmuş
+  görünüyor (bir kez ısırdı: mob göçü suçlandı, suçlu sesti).
   **PIXE_HIDDEN=1 (2026-07-31 Hakan isteği)**: duman testi penceresi ekranda GÖRÜNMEZ
   (SDL_WINDOW_HIDDEN; GPU yolu normal işler). `SDL_VIDEODRIVER=dummy` KULLANMA — dummy
   sürücüde SDL_GPU cihazı açılmıyor.
@@ -51,10 +55,18 @@ Güncelleme: 2026-08-05 · Dil: konuşma Türkçe, kod/dosya İngilizce, yorumla
 C + SDL3 (3.4.8 vendored) + SDL_ttf + stb_image + CMake. Top-down 2D pixel-art RPG.
 Vizyon: OFFLINE Skyrim-vari açık dünya, KO'dan ilham combat/loot. Sınıf yok — **kimlik davranıştan doğar** (use-based skill + puanlı ağaç + itibar).
 
-**Görsel kaynaklar (kullanım onaylı):** Oyuncu = LPC paper-doll (DOKUNMA). Diğer her şey =
-Cute_Fantasy paketleri (`/Users/hakanartuc/Cute Fantasy` — NPC, ev, düşman, zindan,
-çöl/volkan/mantar biyomları, UI, ikonlar) + `~/Downloads/lpc-hand-tools` + ULPC generator
-çıktıları (Hakan istek üzerine indirir) + efekt paketleri (assets/fx'e kopyalandı, CREDITS'te).
+**Görsel kaynaklar (2026-09-20'de DEĞİŞTİ):** Oyuncu = LPC paper-doll (DOKUNMA —
+Hakan kararıyla teyitli). **Dünya/karakter asset'leri KOMPLE Epic RPG World
+Collection'a göçüyor** (Rafael Matos, SATIN ALINDI, `~/Assets/2D Pixel-Art/Epic RPG`,
+13 biyom paketi; karo 32px→2× ölçek, karakterler tek görünüm+flip → moblar 2 YÖNLÜ,
+Hakan kararı). Göç fazlı: durum PROGRESS "Faz EPIC-1". Ham paket repoya GİRMEZ
+(lisans: yeniden dağıtım yasak) — yalnız bake script çıktıları girer
+(`scripts/bake_erw_terrain.py` → `assets/Tiles/erw/`; kesimler paketin Tiled
+.tsx wangset verisinden, elle koordinat yok).
+**HEDEF DURUM (Hakan, 2026-09-20): Cute Fantasy KOMPLE ÇIKACAK** — LPC oyuncu
+hariç yalnız ERW kalacak. Her göç dilimi kendi Cute dosyalarını da SİLER
+(git geçmişi sigorta; BOŞA ÇIKAN KOD kuralı asset'lere uygulanmaz — Hakan
+direktifi + Cute'un ticari lisans belirsizliği zaten CREDITS'te TODO'ydu).
 
 ## Mimari (modüller)
 - **r2d** — SDL_GPU üstünde KENDİ 2D renderer'ımız (SDL_Renderer tamamen söküldü, 2026-07-09):

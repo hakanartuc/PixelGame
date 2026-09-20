@@ -1449,7 +1449,7 @@ int main(int argc, char *argv[])
     #define BOARD_X (13.5f * TILE_SIZE)
     #define BOARD_Y (7.0f * TILE_SIZE)
     #define BOARD_RANGE 90.0f
-    R2DTexture *boardTex = load_texture(renderer, "assets/decor/notice_board.png");
+    R2DTexture *boardTex = load_texture(renderer, "assets/decor/erw/notice_board.png");
     R2DTexture *bookTex  = load_texture(renderer, "assets/ui/Book_UI.png");   // Yolculuk günlüğü
     R2DTexture *nestsTex = load_texture(renderer, "assets/decor/nests.png");   // yuva görselleri (E1)
     R2DTexture *abilityIconTex = load_texture(renderer, "assets/icons/abilities.png");  // beceri ikonları (Cila)
@@ -6136,6 +6136,36 @@ int main(int argc, char *argv[])
                 decor_set_active(to == MAP_WORLD || to == MAP_MEZARLIK ||
                                  to == MAP_LOCA || to == MAP_DOGU);
                 decor_set_map((int)to);
+
+                // SIKIŞMA EMNİYETİ (Faz EPIC-1, Hakan testi: "karakter
+                // sıkışmış yürümüyor"): dünya değişir (dekor büyür, karo
+                // katılaşır) ama kayıt konumu ESKİ dünyaya göre. Katı içinde
+                // doğan oyuncu hiç kıpırdayamaz — en yakın boş noktaya sarmal
+                // taramayla itilir. Kural HANDOVER'da yazılıydı ("eski save
+                // konumu tuhaf düşebilir"); ERW dekor tabanları bunu ilk kez
+                // gerçek bir tuzağa çevirdi.
+                {
+                    SDL_FRect pb = player.rect;
+                    if (box_hits_solid(pb) || decor_blocks(pb)) {
+                        bool freed = false;
+                        for (int ring = 1; ring <= 24 && !freed; ring++) {
+                            float rad = ring * 16.0f;
+                            for (int a = 0; a < 16 && !freed; a++) {
+                                float ang = (float)a * 0.3927f;   // 2π/16
+                                SDL_FRect cand = player.rect;
+                                cand.x = player.rect.x + SDL_cosf(ang) * rad;
+                                cand.y = player.rect.y + SDL_sinf(ang) * rad;
+                                if (!box_hits_solid(cand) && !decor_blocks(cand)) {
+                                    player.rect.x = cand.x;
+                                    player.rect.y = cand.y;
+                                    freed = true;
+                                }
+                            }
+                        }
+                        if (freed) SDL_Log("oyuncu katidan cikarildi (%.0f,%.0f)",
+                                           player.rect.x, player.rect.y);
+                    }
+                }
                 map_set_current(to);
                 // Bölgesel gündoğumu (DOGU-P2): doğu haritasında güneş erken
                 gametime_set_sun_offset(MAPS[to].sunriseOffset);
@@ -11737,8 +11767,9 @@ int main(int argc, char *argv[])
         // "ikinci tahta" olarak görünüyordu (Hakan raporu)
         if (boardTex != NULL && map_current() == MAP_WORLD)
         {
-            const float bScale = 2.0f, bw = 27.0f * bScale, bh = 40.0f * bScale;
-            SDL_FRect bsrc = { 0, 0, 27, 40 };
+            // ERW questboard (Faz EPIC-1): 59×46 kırpık — pano yatay tabela
+            const float bScale = 2.0f, bw = 59.0f * bScale, bh = 46.0f * bScale;
+            SDL_FRect bsrc = { 0, 0, 59, 46 };
             SDL_FRect bdst = world_to_screen(BOARD_X - bw / 2.0f, BOARD_Y - bh,
                                              bw, bh, &camera);
             r2d_draw_texture(renderer, boardTex, &bsrc, &bdst);

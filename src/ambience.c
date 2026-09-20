@@ -38,6 +38,8 @@ static float calmGain = 0.0f, calmWant = 0.0f;
 
 bool ambience_init(void)
 {
+    // DEV: PIXE_NOAUDIO — bkz. audio.c audio_init (duman testi kancası)
+    if (SDL_getenv("PIXE_NOAUDIO")) return false;
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) return false;
 
     for (int i = 0; i < AMB_KIND_COUNT; i++) {

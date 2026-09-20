@@ -7,8 +7,11 @@
 
 // --- Tile tablosu: gerçek tanım burada ---
 const TileType TILE_TYPES[] = {
-    [0] = { .solid = false, .r = 50,  .g = 200, .b = 50,  .texturePath = "assets/Tiles/Grass/Grass_1_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f, .conceals = true }, // çimen — eğilince içine girilir
-    [1] = { .solid = false, .r = 150, .g = 100, .b = 50,  .texturePath = "assets/Tiles/Grass/Path_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // yol
+    // EPIC RPG geçişi (Faz EPIC-1, 2026-09-20): çim+yol tabanı ERW 32px karo
+    // (scripts/bake_erw_terrain.py türetir; kaynak paket repo DIŞINDA).
+    // Cute Fantasy yolları git geçmişinde — eski görünüşe dönüş yol değişikliği.
+    [0] = { .solid = false, .r = 50,  .g = 200, .b = 50,  .texturePath = "assets/Tiles/erw/grass_1.png", .speedMultiplier = 1.0f, .damage = 0.0f, .conceals = true }, // çimen — eğilince içine girilir
+    [1] = { .solid = false, .r = 150, .g = 100, .b = 50,  .texturePath = "assets/Tiles/erw/path.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // yol
     [2] = { .solid = true,  .r = 50,  .g = 50,  .b = 200, .texturePath = "assets/Tiles/Water/Water_Middle.png", .speedMultiplier = 1.0f, .damage = 0.0f }, // su
     [3] = { .solid = true,  .r = 110, .g = 110, .b = 120, .texturePath = "assets/Tiles/terrain/stone.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // taş
     [4] = { .solid = false, .r = 90, .g = 110, .b = 70, .texturePath = "assets/Tiles/terrain/swamp.png", .speedMultiplier = 0.4f, .damage = 0.0f },  // bataklık: yavaşlatır
@@ -234,10 +237,14 @@ SDL_FRect feet_box(float rectX, float rectY, float rectW, float rectH)
 
 // --- Harita görsel yenileme: çimen varyantları + kenar kaplamaları ---
 // Çimen "taşar": çimen olmayan komşu tile'ın kenarına dalgalı çimen dili
-// çizilir (grass_edges.png atlası — 12 hücre: N,S,W,E, 4 dış köşe, 4 iç köşe).
+// çizilir. ERW GEÇİŞİ (Faz EPIC-1): eski 12 hücreli grass_edges.png overlay'i
+// (tile-merkezli, edgeTex) EMEKLİ — yerine maske-sıralı iki ERW dual-grid
+// atlası geldi (erw_path_pass / erw_grass_fringe_pass, dsr_dual_pass modeli).
+// Eski sistemin kodu git geçmişinde (bu satırın blame'i).
 // Yalnız DÜNYA tile'larına taşar (yol/su/bataklık/diken) — zindan dokunulmaz.
 static R2DTexture *grassVar[4] = {0};   // [0] ana doku (tileTextures'tan gelmez — kendi kopyası)
-static R2DTexture *edgeTex = NULL;
+static R2DTexture *pathEdgeTex = NULL;  // ERW toprak blob'u — maske-sıralı 4×4, 32px hücre
+static R2DTexture *grassEdgeTex = NULL; // ERW çim saçağı blob'u — aynı düzen
 static R2DTexture *flowerTex = NULL;    // flowers.png (160×160 — 10×10 hücre 16px)
 static R2DTexture *pathDecTex = NULL;   // Path_Decoration.png (3 hücre 16px)
 static R2DTexture *waterDecTex = NULL;  // Water_Decoration.png (3 hücre 16px)
@@ -1219,16 +1226,17 @@ static void shore_cut_pass(R2D *renderer, const Camera *camera,
 void tilemap_load_details(R2D *renderer)
 {
     extern R2DTexture *load_texture(R2D *r, const char *path);   // main yardımcısı
-    grassVar[0] = load_texture(renderer, "assets/Tiles/Grass/Grass_1_Middle.png");
-    grassVar[1] = load_texture(renderer, "assets/Tiles/Grass/Grass_2_Middle.png");
-    grassVar[2] = load_texture(renderer, "assets/Tiles/Grass/Grass_3_Middle.png");
-    grassVar[3] = load_texture(renderer, "assets/Tiles/Grass/Grass_4_Middle.png");
-    edgeTex = load_texture(renderer, "assets/Tiles/Grass/grass_edges.png");
+    grassVar[0] = load_texture(renderer, "assets/Tiles/erw/grass_1.png");
+    grassVar[1] = load_texture(renderer, "assets/Tiles/erw/grass_2.png");
+    grassVar[2] = load_texture(renderer, "assets/Tiles/erw/grass_3.png");
+    grassVar[3] = load_texture(renderer, "assets/Tiles/erw/grass_4.png");
+    pathEdgeTex  = load_texture(renderer, "assets/Tiles/erw/path_edge_atlas.png");
+    grassEdgeTex = load_texture(renderer, "assets/Tiles/erw/grass_edge_atlas.png");
     flowerTex = load_texture(renderer, "assets/decor/flowers.png");
     pathDecTex = load_texture(renderer, "assets/Tiles/Grass/Path_Decoration.png");
     waterDecTex = load_texture(renderer, "assets/Tiles/Water/Water_Decoration.png");
-    uwBushTex[0] = load_texture(renderer, "assets/decor/bush_1.png");
-    uwBushTex[1] = load_texture(renderer, "assets/decor/bush_2.png");
+    uwBushTex[0] = load_texture(renderer, "assets/decor/erw/bush_1.png");
+    uwBushTex[1] = load_texture(renderer, "assets/decor/erw/bush_2.png");
     mzGround2 = load_texture(renderer, "assets/Tiles/undead/mz_ground2.png");
     dsrWaterTex = load_texture(renderer, "assets/Tiles/desert/water_atlas.png");
     dsrCliffTex = load_texture(renderer, "assets/Tiles/desert/cliff_atlas.png");
@@ -1253,7 +1261,8 @@ void tilemap_free_details(void)
 {
     for (int i = 0; i < 4; i++)
         if (grassVar[i]) { r2d_texture_destroy(NULL, grassVar[i]); grassVar[i] = NULL; }
-    if (edgeTex) { r2d_texture_destroy(NULL, edgeTex); edgeTex = NULL; }
+    if (pathEdgeTex) { r2d_texture_destroy(NULL, pathEdgeTex); pathEdgeTex = NULL; }
+    if (grassEdgeTex) { r2d_texture_destroy(NULL, grassEdgeTex); grassEdgeTex = NULL; }
     if (flowerTex) { r2d_texture_destroy(NULL, flowerTex); flowerTex = NULL; }
     if (pathDecTex) { r2d_texture_destroy(NULL, pathDecTex); pathDecTex = NULL; }
     if (waterDecTex) { r2d_texture_destroy(NULL, waterDecTex); waterDecTex = NULL; }
@@ -1275,11 +1284,8 @@ static inline int grass_variant(int col, int row)
     return (int)(v % 4u);
 }
 
-static inline bool is_grass(int col, int row)
-{
-    if (col < 0 || col >= mapW || row < 0 || row >= mapH) return false;
-    return tilemap[row][col] == 0;
-}
+// (is_grass buradaydı — eski 12 hücreli saçak bloğuyla birlikte emekli oldu;
+// ERW pass'leri erw_tile_at kullanıyor. Git geçmişinde.)
 
 // Çimenin taşabileceği taban mı? (dünya dış mekan tile'ları — zindan HARİÇ)
 // Çim hangi karonun üstüne TAŞAR (autotile kenar sistemi, grass_edges.png).
@@ -1291,13 +1297,68 @@ static inline bool is_grass(int col, int row)
 //   kum→deniz : kıyı kesiti + dalga vuruşu
 static inline bool grass_bleeds_onto(int id)
 {
-    return id == 1 || id == 2 || id == 4 || id == 5 || id == 15;
+    // id 1 (yol) LİSTEDE DEĞİL: çim↔yol sınırını erw_path_pass çizer ve
+    // toprak blob'unun çim saçağı GÖMÜLÜ — üstüne ayrıca saçak binmesin.
+    return id == 2 || id == 4 || id == 5 || id == 15;
 }
 
-static void edge_cell_draw(R2D *renderer, int cell, const SDL_FRect *dst)
+// --- ERW MASKE-SIRALI DUAL-GRID (Faz EPIC-1) --------------------------------
+// dsr_dual_pass'in ERW hali; fark: LUT YOK. bake_erw_terrain.py atlası köşe
+// maskesi SIRASIYLA üretir → hücre = (m%4, m/4), hücre boyu 32px (ERW karo
+// sanatı 32, oyun 2× ölçekle TILE_SIZE'a basar). Maske bitleri dsr ile aynı:
+// 1=NW 2=NE 4=SW 8=SE. m=0 boş, m=15 iç (taban zaten çizdi) — ikisi atlanır.
+static inline int erw_tile_at(int col, int row)
 {
-    SDL_FRect src = { (float)(cell * 16), 0, 16, 16 };
-    r2d_draw_texture(renderer, edgeTex, &src, dst);
+    if (col < 0) col = 0; if (col >= mapW) col = mapW - 1;   // OOB = kenar hücresi
+    if (row < 0) row = 0; if (row >= mapH) row = mapH - 1;
+    return tilemap[row][col];
+}
+
+static void erw_mask_cell_draw(R2D *renderer, R2DTexture *atlas, int m,
+                               int col, int row, const Camera *camera)
+{
+    SDL_FRect src = { (float)(m % 4) * 32.0f, (float)(m / 4) * 32.0f, 32, 32 };
+    SDL_FRect dst = {
+        ((col + 0.5f) * TILE_SIZE - camera->x) * camera->zoom,
+        ((row + 0.5f) * TILE_SIZE - camera->y) * camera->zoom,
+        TILE_SIZE * camera->zoom, TILE_SIZE * camera->zoom };
+    r2d_draw_texture(renderer, atlas, &src, &dst);
+}
+
+// ÇİM↔YOL sınırı: ERW toprak blob'u. Kenar karoları toprak + GÖMÜLÜ çim
+// saçağı taşır; çim tarafı şeffaf → altta çim tabanı görünür.
+static void erw_path_pass(R2D *renderer, const Camera *camera,
+                          int colL, int rowT, int colR, int rowB)
+{
+    for (int row = rowT - 1; row < rowB; row++)
+        for (int col = colL - 1; col < colR; col++) {
+            int m = ((erw_tile_at(col, row) == 1) ? 1 : 0)
+                  | ((erw_tile_at(col + 1, row) == 1) ? 2 : 0)
+                  | ((erw_tile_at(col, row + 1) == 1) ? 4 : 0)
+                  | ((erw_tile_at(col + 1, row + 1) == 1) ? 8 : 0);
+            if (m == 0 || m == 15) continue;
+            erw_mask_cell_draw(renderer, pathEdgeTex, m, col, row, camera);
+        }
+}
+
+// ÇİM SAÇAĞI: su/bataklık/diken/kum sınırında ERW çim blob'u (çim tarafı
+// opak, saçak hedefin üstüne taşar). Yol köşesi içeren hücre ATLANIR (onu
+// path pass çizdi); hedefsiz hücre de atlanır (çim içi — taban yeter).
+static void erw_grass_fringe_pass(R2D *renderer, const Camera *camera,
+                                  int colL, int rowT, int colR, int rowB)
+{
+    for (int row = rowT - 1; row < rowB; row++)
+        for (int col = colL - 1; col < colR; col++) {
+            int t0 = erw_tile_at(col, row),     t1 = erw_tile_at(col + 1, row);
+            int t2 = erw_tile_at(col, row + 1), t3 = erw_tile_at(col + 1, row + 1);
+            int m = ((t0 == 0) ? 1 : 0) | ((t1 == 0) ? 2 : 0)
+                  | ((t2 == 0) ? 4 : 0) | ((t3 == 0) ? 8 : 0);
+            if (m == 0 || m == 15) continue;
+            if (t0 == 1 || t1 == 1 || t2 == 1 || t3 == 1) continue;
+            if (!grass_bleeds_onto(t0) && !grass_bleeds_onto(t1) &&
+                !grass_bleeds_onto(t2) && !grass_bleeds_onto(t3)) continue;
+            erw_mask_cell_draw(renderer, grassEdgeTex, m, col, row, camera);
+        }
 }
 
 // --- ÇÖL DUAL-GRID AUTOTILE (Faz MAPGEN) ---
@@ -1776,27 +1837,16 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
             }
 
             // KENAR KAPLAMALARI: çimen komşu tabana taşar (yumuşak geçiş)
-            if (edgeTex != NULL && grass_bleeds_onto(tileID))
-            {
-                bool n = is_grass(col, row - 1), s2 = is_grass(col, row + 1);
-                bool w = is_grass(col - 1, row), e = is_grass(col + 1, row);
-                if (n) edge_cell_draw(renderer, 0, &dst);
-                if (s2) edge_cell_draw(renderer, 1, &dst);
-                if (w) edge_cell_draw(renderer, 2, &dst);
-                if (e) edge_cell_draw(renderer, 3, &dst);
-                // Dış köşeler: yalnız çaprazda çimen (kenarlar boşken)
-                if (!n && !w && is_grass(col - 1, row - 1)) edge_cell_draw(renderer, 4, &dst);
-                if (!n && !e && is_grass(col + 1, row - 1)) edge_cell_draw(renderer, 5, &dst);
-                if (!s2 && !w && is_grass(col - 1, row + 1)) edge_cell_draw(renderer, 6, &dst);
-                if (!s2 && !e && is_grass(col + 1, row + 1)) edge_cell_draw(renderer, 7, &dst);
-                // İç köşeler: iki kenar birleşiyor — köşe boşluğu dolsun
-                if (n && w) edge_cell_draw(renderer, 8, &dst);
-                if (n && e) edge_cell_draw(renderer, 9, &dst);
-                if (s2 && w) edge_cell_draw(renderer, 10, &dst);
-                if (s2 && e) edge_cell_draw(renderer, 11, &dst);
-            }
+            // (ERW GEÇİŞİ: eski tile-merkezli 12 hücreli çim saçağı bloğu
+            // buradaydı — yerine aşağıdaki iki dual pass geldi.)
         }
     }
+
+    // ERW ÇİM/YOL AUTOTILE (Faz EPIC-1): taban bitti — sınır overlay'leri.
+    if (pathEdgeTex != NULL)
+        erw_path_pass(renderer, camera, colL, rowT, colR, rowB);
+    if (grassEdgeTex != NULL)
+        erw_grass_fringe_pass(renderer, camera, colL, rowT, colR, rowB);
 
     // ÇÖL AUTOTILE: taban pass'i bitti — su ve kaya sınır overlay'leri
     // (yalnız bu id'leri içeren haritada iş yapar; diğerlerinde mask hep 0)

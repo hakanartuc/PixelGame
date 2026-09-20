@@ -128,8 +128,8 @@ static void entry_text(const JournalEntry *e, char *out, size_t cap)
              ? "Orkların savaş totemini yıktım. Totem devrilince bağırışları "
                "öfkeden değil korkudandı. Bu vadiye bir daha yerleşemezler."
              : (e->param == 2)
-             ? "Slime gölcüğünü meşaleyle kuruttum. Toprak günlerdir ilk kez "
-               "nefes aldı sanki."
+             ? "Örümcek gölcüğünü meşaleyle kuruttum. Toprak günlerdir ilk kez "
+               "nefes aldı sanki."   // (EPIC-2: slime→örümcek; gölcük adı ekolojide duruyor)
              : "Lanetli mezarı mühürledim. Elimi taşa koyduğumda göğsümdeki "
                "işaret aynı ritimde attı — sanki ikisi aynı dili konuşuyor.";
         break;

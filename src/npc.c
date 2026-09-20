@@ -16,7 +16,8 @@
 #define T(n) ((n) * (float)TILE_SIZE)
 const NpcDef NPCS[] = {
     { .id = "dunya_koy_tuccar", .name = "Tüccar Baran",
-      .sheetPath = "assets/characters/npcs/Bartender_Bruno.png",
+      .sheetPath = "assets/characters/erw/npc_vendor_idle.png",
+      .frameW = 53, .frameH = 38, .idleFrames = 8, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/merchant.txt",
       .isVendor = true, .questId = "simya_masa",
       .schedule = {
@@ -24,7 +25,8 @@ const NpcDef NPCS[] = {
           { .hour = 20.0f, .x = T(10),   .y = T(4.2f), .indoors = true },  // eve girer
       }, .stopCount = 2 },
     { .id = "dunya_koy_ihtiyar", .name = "Yaşlı Kemal",
-      .sheetPath = "assets/characters/npcs/Farmer_Bob.png",
+      .sheetPath = "assets/characters/erw/npc_wizard_idle.png",
+      .frameW = 41, .frameH = 52, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/elder.txt",
       .isVendor = false, .questId = "goblin_derdi",
       .schedule = {
@@ -34,7 +36,8 @@ const NpcDef NPCS[] = {
           { .hour = 21.0f, .x = T(14),    .y = T(6.2f),  .indoors = true },
       }, .stopCount = 4 },
     { .id = "dunya_koy_koylu", .name = "Köylü Osman",
-      .sheetPath = "assets/characters/npcs/Farmer_Buba.png",
+      .sheetPath = "assets/characters/erw/npc_koylu_e11_idle.png",
+      .frameW = 28, .frameH = 50, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/villager.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
@@ -44,7 +47,8 @@ const NpcDef NPCS[] = {
           { .hour = 19.0f, .x = T(6),    .y = T(10.2f), .indoors = true },
       }, .stopCount = 4 },
     { .id = "dunya_koy_demirci", .name = "Demirci Mahir",
-      .sheetPath = "assets/characters/npcs/Miner_Mike.png",
+      .sheetPath = "assets/characters/erw/npc_blacksmith_idle.png",
+      .frameW = 48, .frameH = 47, .idleFrames = 8, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/demirci.txt",
       .isVendor = false, .questId = "demirci_ocak",
       .schedule = {
@@ -52,18 +56,20 @@ const NpcDef NPCS[] = {
           { .hour = 21.0f, .x = T(8), .y = T(6.4f), .indoors = true },   // gece kapanır
       }, .stopCount = 2 },
     { .id = "dunya_koy_muhafiz", .name = "Muhafız",
-      .sheetPath = "assets/characters/npcs/Guard_Swordman.png",
+      .sheetPath = "assets/characters/erw/npc_warrior_idle.png",
+      .frameW = 47, .frameH = 47, .idleFrames = 16, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/guard.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
           { .hour = 0.0f, .x = T(11), .y = T(9), .indoors = false },   // nöbet noktası (meydan)
       }, .stopCount = 1,
-      .frameSize = 48, .drawScale = 2.0f, .maxHealth = 120.0f, .isGuard = true },
+      .maxHealth = 120.0f, .isGuard = true },
 
     // K9 Kandil (D1a): oğlunu Eski Geçit'te kaybeden ana — gündüz köyde,
     // akşam geçit kapısına yürür (kandilin başında bekler)
     { .id = "dunya_koy_kandilci", .name = "Fatma",
-      .sheetPath = "assets/characters/npcs/Bartender_Katy.png",
+      .sheetPath = "assets/characters/erw/npc_koylu_k12_idle.png",
+      .frameW = 22, .frameH = 44, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/fatma.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
@@ -73,7 +79,8 @@ const NpcDef NPCS[] = {
 
     // K2 Son Müşteri (D1b): hancı — kervancının karısı; gece sofra kurar
     { .id = "dunya_koy_sofraci", .name = "Nazife",
-      .sheetPath = "assets/characters/npcs/Chef_Chloe.png",
+      .sheetPath = "assets/characters/erw/npc_koylu_k21_idle.png",
+      .frameW = 22, .frameH = 44, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/nazife.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
@@ -83,7 +90,8 @@ const NpcDef NPCS[] = {
 
     // S3 Sayan Adam (D1c): Nuh — gündüz sunak yolunda sayarak volta, gece köy kenarı
     { .id = "dunya_ova_sayan", .name = "Nuh",
-      .sheetPath = "assets/characters/npcs/Fisherman_Fin.png",
+      .sheetPath = "assets/characters/erw/npc_fisherman_idle.png",
+      .frameW = 52, .frameH = 48, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/nuh.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
@@ -94,104 +102,114 @@ const NpcDef NPCS[] = {
       }, .stopCount = 4 },
     // Zehra — Nuh'un torunu; köy meydanında dedesini dert eder
     { .id = "dunya_koy_torun", .name = "Zehra",
-      .sheetPath = "assets/characters/npcs/Desert_Person_2.png",
+      .sheetPath = "assets/characters/erw/npc_koylu_k11_idle.png",
+      .frameW = 22, .frameH = 47, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/zehra.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
           { .hour = 8.0f,  .x = T(12), .y = T(7.5f), .indoors = false },  // meydan
           { .hour = 20.0f, .x = T(14), .y = T(6.2f), .indoors = true },   // gece içeri
       }, .stopCount = 2,
-      .frameSize = 32, .drawScale = 2.8f },
+      .frameSize = 0 },
 
     // KÖR KUYU tanıtıcısı: gece kuyu civarında BİR KEZ belirir, anlatır, kaybolur.
     // Kim olduğu söylenmez — 'sayanlar'dan biri (yeraltı örgütü tohumu).
     { .id = "dunya_ova_yabanci", .name = "Yabancı",
-      .sheetPath = "assets/characters/npcs/Desert_Person_3.png",
+      .sheetPath = "assets/characters/erw/npc_koylu_e23_idle.png",
+      .frameW = 28, .frameH = 51, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/yabanci.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
           { .hour = 0.0f, .x = T(27), .y = T(16), .indoors = false },  // kuyu yanı
       }, .stopCount = 1,
-      .frameSize = 32, .drawScale = 2.8f },
+      .frameSize = 0 },
 
     // Dünya Olayı: Gezgin Kervan tüccarı — yalnız kervan günlerinde görünür
     { .id = "dunya_koy_kervanci", .name = "Kervancı Selim",
-      .sheetPath = "assets/characters/npcs/Desert_Trader_1.png",
+      .sheetPath = "assets/characters/erw/npc_koylu_e22_idle.png",
+      .frameW = 28, .frameH = 50, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/kervanci.txt",
       .isVendor = true, .questId = NULL,
       .schedule = {
           { .hour = 0.0f, .x = T(9), .y = T(11), .indoors = false },  // meydan güneyi
       }, .stopCount = 1,
-      .frameSize = 32, .drawScale = 2.8f },
+      .frameSize = 0 },
 
     // --- SESSİZ EL LOCASI (Suikastçi P1 — map 5 = MAP_LOCA) ---
     // Usta: az konuşur, görevleri verir. Eski saray celladı — ESO derinliği
     // diyalogda (neriman.txt).
     { .id = "loca_salon_usta", .name = "'Dilsiz' Neriman",
-      .sheetPath = "assets/characters/npcs/Pharaoh.png",
+      .sheetPath = "assets/characters/erw/npc_skillmaster_idle.png",
+      .frameW = 51, .frameH = 61, .idleFrames = 13, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/neriman.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
           { .hour = 0.0f, .x = T(28), .y = T(14), .indoors = false },  // salon başköşe
       }, .stopCount = 1,
-      .map = 5, .frameSize = 32, .drawScale = 2.8f },
+      .map = 5, .frameSize = 0 },
     { .id = "loca_tunel_gozcu", .name = "Gözcü Çelme",
-      .sheetPath = "assets/characters/npcs/Desert_Person_1.png",
+      .sheetPath = "assets/characters/erw/npc_koylu_e21_idle.png",
+      .frameW = 28, .frameH = 50, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/celme.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
           { .hour = 0.0f, .x = T(21), .y = T(12), .indoors = false },  // tünel ağzı
       }, .stopCount = 1,
-      .map = 5, .frameSize = 32, .drawScale = 2.8f },
+      .map = 5, .frameSize = 0 },
     { .id = "loca_hucre_zehirci", .name = "Zehirci İğne",
-      .sheetPath = "assets/characters/npcs/Desert_Person_4.png",
+      .sheetPath = "assets/characters/erw/npc_koylu_k22_idle.png",
+      .frameW = 22, .frameH = 44, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/igne.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
           { .hour = 0.0f, .x = T(27), .y = T(22), .indoors = false },  // zehir hücresi
       }, .stopCount = 1,
-      .map = 5, .frameSize = 32, .drawScale = 2.8f },
+      .map = 5, .frameSize = 0 },
 
     // --- TAŞDURAK (Faz DOGU — map 6 = MAP_DOGU) ---
     // Sınır kasabası: ticaret kimliği; Sultanlık'ın ucu ama kimseye tam bağlı
     // değil. Kervancı Selim'in memleketi.
     { .id = "tasdurak_dukkan_tuccar", .name = "Tüccar Ferah",
-      .sheetPath = "assets/characters/npcs/Desert_Trader_2.png",
+      .sheetPath = "assets/characters/erw/npc_vendor_hali_idle.png",
+      .frameW = 62, .frameH = 49, .idleFrames = 8, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/ferah.txt",
       .isVendor = true, .questId = NULL,
       .schedule = {
           { .hour = 0.0f, .x = T(14), .y = T(30), .indoors = false },  // dükkan önü
       }, .stopCount = 1,
-      .map = 6, .frameSize = 32, .drawScale = 2.8f },
+      .map = 6, .frameSize = 0 },
     { .id = "tasdurak_han_hanci", .name = "Hancı Duman",
-      .sheetPath = "assets/characters/npcs/Desert_Trader_3.png",
+      .sheetPath = "assets/characters/erw/npc_koylu_e12_idle.png",
+      .frameW = 28, .frameH = 50, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/duman.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
           { .hour = 0.0f, .x = T(21), .y = T(31), .indoors = false },  // han kapısı
       }, .stopCount = 1,
-      .map = 6, .frameSize = 32, .drawScale = 2.8f },
+      .map = 6, .frameSize = 0 },
     // Sultanlık Kâtibi: Doğu bloğunun ilk resmî yüzü (Kıta planı tohum).
     // Sprite Çelme'yle ortak (Desert_Person_1) — çöl halkı; ayrı sheet gelince değişir.
     { .id = "tasdurak_konak_katip", .name = "Kâtip Rüstem",
-      .sheetPath = "assets/characters/npcs/Desert_Person_1.png",
+      .sheetPath = "assets/characters/erw/npc_koylu_e13_idle.png",
+      .frameW = 28, .frameH = 50, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/rustem.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
           { .hour = 0.0f, .x = T(28), .y = T(30), .indoors = false },  // konak önü
       }, .stopCount = 1,
-      .map = 6, .frameSize = 32, .drawScale = 2.8f },
+      .map = 6, .frameSize = 0 },
 
     // ŞİFACI (Faz REVIR): revirin sahibi — yaralı köylüler ona yatar,
     // masraf ödemesi + oyuncuya paralı tedavi. Revir köy kuzeybatısında.
     { .id = "dunya_koy_sifaci", .name = "Şifacı Ela",
-      .sheetPath = "assets/characters/npcs/Healer_Witch.png",
+      .sheetPath = "assets/characters/erw/npc_koylu_k13_idle.png",
+      .frameW = 22, .frameH = 44, .idleFrames = 10, .drawScale = 2.0f,
       .dialogFile = "assets/dialogs/sifaci.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
           { .hour = 0.0f, .x = T(4.5f), .y = T(6.5f), .indoors = false },  // revir başı
       }, .stopCount = 1,
-      .frameSize = 32, .drawScale = 2.8f },
+      .frameSize = 0 },
 };
 const int NPC_COUNT = (int)(sizeof(NPCS) / sizeof(NPCS[0]));
 
@@ -218,6 +236,12 @@ int npc_index_by_id(const char *id)
 // Def'teki 0 alanlar → varsayılanlar (eski NPC girdileri dokunulmadan kaldı)
 static int def_frame(int i)     { return NPCS[i].frameSize > 0 ? NPCS[i].frameSize : NPC_FRAME; }
 static float def_scale(int i)   { return NPCS[i].drawScale > 0.0f ? NPCS[i].drawScale : NPC_DRAW_SCALE; }
+// Kare boyutları — iki düzeni tek noktadan çözer (çizim + tıklama + revir
+// AYNI ölçüyü okur; yerleşim tuzağı dersi):
+//   ERW şeridi (frameW>0): dikdörtgen kare, tek sıra, idleFrames kare
+//   eski düzen: frameSize/NPC_FRAME karesi, NPC_IDLE_ROW satırı
+static int def_fw(int i) { return NPCS[i].frameW > 0 ? NPCS[i].frameW : def_frame(i); }
+static int def_fh(int i) { return NPCS[i].frameW > 0 ? NPCS[i].frameH : def_frame(i); }
 float npc_max_health(int i)
 {
     if (i < 0 || i >= NPC_COUNT) return NPC_MAX_HEALTH;
@@ -426,9 +450,10 @@ int npc_at_point(float wx, float wy)
         float nx, ny;
         if (!npc_visible_pos(i, &nx, &ny)) continue;
         // Çizim kutusu (render ile aynı hiza: x,y = ayak noktası)
-        float drawSize = def_frame(i) * def_scale(i);
-        if (wx >= nx - drawSize / 2.0f && wx <= nx + drawSize / 2.0f &&
-            wy >= ny - drawSize + 8.0f && wy <= ny + 8.0f)
+        float drawW = def_fw(i) * def_scale(i);
+        float drawH = def_fh(i) * def_scale(i);
+        if (wx >= nx - drawW / 2.0f && wx <= nx + drawW / 2.0f &&
+            wy >= ny - drawH + 8.0f && wy <= ny + 8.0f)
             return i;
     }
     return -1;
@@ -521,18 +546,29 @@ void npc_render_all(R2D *renderer, R2DTexture **npcTextures,
         if (npcTextures[i] == NULL || npcState[i].hidden || !npcState[i].alive)
             continue;
 
-        int fs = def_frame(i);
-        SDL_FRect src = {
-            .x = (float)(frame * fs),
-            .y = (float)(NPC_IDLE_ROW * fs),
-            .w = (float)fs, .h = (float)fs,
-        };
+        SDL_FRect src;
+        if (NPCS[i].frameW > 0) {
+            // ERW şeridi: kare sayısı NPC başına değişir; i*2 faz kayması —
+            // meydandaki üç köylü aynı anda soluk almasın
+            int nf = NPCS[i].idleFrames > 0 ? NPCS[i].idleFrames : 8;
+            int fr = (int)((SDL_GetTicks() / NPC_IDLE_SPEED_MS
+                            + (Uint64)i * 2) % (Uint64)nf);
+            src = (SDL_FRect){ .x = (float)(fr * NPCS[i].frameW), .y = 0.0f,
+                               .w = (float)NPCS[i].frameW,
+                               .h = (float)NPCS[i].frameH };
+        } else {
+            int fs = def_frame(i);
+            src = (SDL_FRect){ .x = (float)(frame * fs),
+                               .y = (float)(NPC_IDLE_ROW * fs),
+                               .w = (float)fs, .h = (float)fs };
+        }
         // x,y = ayak noktası → çizim kutusu ayağa hizalanır
-        float drawSize = fs * def_scale(i);
+        float drawW = def_fw(i) * def_scale(i);
+        float drawH = def_fh(i) * def_scale(i);
         SDL_FRect dst = {
-            .x = (npcState[i].x - drawSize / 2.0f - camera->x) * zoom,
-            .y = (npcState[i].y - drawSize + 8.0f - camera->y) * zoom,
-            .w = drawSize * zoom, .h = drawSize * zoom,
+            .x = (npcState[i].x - drawW / 2.0f - camera->x) * zoom,
+            .y = (npcState[i].y - drawH + 8.0f - camera->y) * zoom,
+            .w = drawW * zoom, .h = drawH * zoom,
         };
         if (npcState[i].hitFlash > 0.0f)
             r2d_texture_set_color_mod(npcTextures[i], 255, 90, 90);   // vuruş kızarması
@@ -653,13 +689,13 @@ void npc_render_infirmary(R2D *renderer, R2DTexture **npcTextures,
     for (int i = 0; i < NPC_COUNT && i < NPC_STATE_CAP; i++) {
         if (!npcState[i].infirm || npcTextures[i] == NULL) continue;
         float bx = bedX + (float)bed * 56.0f;
-        int fr = def_frame(i);
+        int fw = def_fw(i), fh = def_fh(i);
         float sc = def_scale(i) * 0.9f;
-        SDL_FRect src = { 0, 0, (float)fr, (float)fr };   // idle ilk kare
+        SDL_FRect src = { 0, 0, (float)fw, (float)fh };   // idle ilk kare
         SDL_FRect dst = {
-            (bx - fr * sc / 2.0f - camera->x) * camera->zoom,
-            (bedY - fr * sc + 10.0f - camera->y) * camera->zoom,
-            fr * sc * camera->zoom, fr * sc * camera->zoom,
+            (bx - fw * sc / 2.0f - camera->x) * camera->zoom,
+            (bedY - fh * sc + 10.0f - camera->y) * camera->zoom,
+            fw * sc * camera->zoom, fh * sc * camera->zoom,
         };
         r2d_texture_set_alpha_mod(npcTextures[i], 150);   // baygın soluk
         r2d_draw_texture(renderer, npcTextures[i], &src, &dst);

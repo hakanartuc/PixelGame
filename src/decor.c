@@ -11,12 +11,13 @@
 const DecorDef DECORS[] = {
     // RİTÜEL TAŞLARI (YANKICI — gizli): Karanlık Orman derinliği, işaretsiz.
     // Uzaktan sıradan kaya kümesi; 3. sömürüden sonra fısıltı buraya çağırır.
-    { .texPath = "assets/decor/ritual_stones.png",
+    { .texPath = "assets/decor/erw/ritual_stones.png",
       .x = T(108), .y = T(7), .scale = 2.0f, .solidBase = false },
     // KÖR KUYU (Kirli Mal & Aklama): köy dışında, yol kıyısında unutulmuş kuyu.
     // Gece kirli malı bırak → şafakta temiz kese (kim aldığını görmezsin).
-    { .texPath = "assets/decor/well.png",
-      .x = T(26), .y = T(15), .scale = 2.0f, .solidBase = true },
+    { .texPath = "assets/decor/erw/well.png",
+      .x = T(26), .y = T(15), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.85f, .baseHFrac = 0.30f },
     { .texPath = "assets/buildings/House_1_Limestone_Base_Red.png",
       .x = T(10), .y = T(4),  .scale = 1.6f, .solidBase = true },   // Baran'ın evi (dükkanın arkası)
     { .texPath = "assets/buildings/House_2_Limestone_Base_Blue.png",
@@ -30,14 +31,14 @@ const DecorDef DECORS[] = {
 
     // KÖY DETAYLARI (harita görsel yenileme): el yerleşimi — rutin yollarının
     // dışında, meydanı çerçeveleyen küçük yaşam izleri
-    { .texPath = "assets/decor/barrels.png",
-      .x = T(9.2f), .y = T(5.8f), .scale = 1.2f, .solidBase = true },   // Baran'ın dükkan yanı
+    { .texPath = "assets/decor/erw/barrel_1.png",
+      .x = T(9.2f), .y = T(5.8f), .scale = 2.0f, .solidBase = true },   // Baran'ın dükkan yanı
     { .texPath = "assets/decor/Benches.png",
       .x = T(12.3f), .y = T(8.3f), .scale = 1.2f, .solidBase = false }, // meydan bankı
-    { .texPath = "assets/decor/barrels.png",
-      .x = T(18.6f), .y = T(11.4f), .scale = 1.1f, .solidBase = true }, // han önü fıçılar
-    { .texPath = "assets/decor/Stone_Fence_Big.png",
-      .x = T(7.5f), .y = T(8.6f), .scale = 1.2f, .solidBase = true },   // ocak arkası çit
+    { .texPath = "assets/decor/erw/barrel_2.png",
+      .x = T(18.6f), .y = T(11.4f), .scale = 2.0f, .solidBase = true }, // han önü fıçılar
+    { .texPath = "assets/decor/erw/fence.png",
+      .x = T(7.5f), .y = T(8.6f), .scale = 2.0f, .solidBase = true },   // ocak arkası çit
     // REVİR (Faz REVIR): köy KB köşesi — 3 yatak, Şifacı Ela başında
     { .texPath = "assets/decor/bed_single.png",
       .x = T(3.6f), .y = T(6.2f), .scale = 1.6f, .solidBase = false },
@@ -49,32 +50,32 @@ const DecorDef DECORS[] = {
       .x = T(14.6f), .y = T(10.8f), .scale = 1.2f, .solidBase = false },// güney yolu bankı
 
     // Ağaçlar: köy çevresi + goblin kampına giden yol (siper/LoS oyunu için)
-    { .texPath = "assets/decor/oak_big.png",    .x = T(18), .y = T(8),  .scale = 1.6f, .solidBase = true },
-    { .texPath = "assets/decor/oak_medium.png", .x = T(19), .y = T(12), .scale = 1.6f, .solidBase = true },
-    { .texPath = "assets/decor/oak_big.png",    .x = T(21), .y = T(15), .scale = 1.6f, .solidBase = true },
-    { .texPath = "assets/decor/oak_medium.png", .x = T(16), .y = T(17), .scale = 1.6f, .solidBase = true },
-    { .texPath = "assets/decor/oak_medium.png", .x = T(15), .y = T(3),  .scale = 1.6f, .solidBase = true },
-    { .texPath = "assets/decor/oak_big.png",    .x = T(27), .y = T(19), .scale = 1.6f, .solidBase = true },
+    { .texPath = "assets/decor/erw/tree1_anim.png", .frames = 8, .x = T(18), .y = T(8),  .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
+    { .texPath = "assets/decor/erw/tree2_anim.png", .frames = 8, .x = T(19), .y = T(12), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
+    { .texPath = "assets/decor/erw/tree1_anim.png", .frames = 8, .x = T(21), .y = T(15), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
+    { .texPath = "assets/decor/erw/tree2_anim.png", .frames = 8, .x = T(16), .y = T(17), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
+    { .texPath = "assets/decor/erw/tree2_anim.png", .frames = 8, .x = T(15), .y = T(3),  .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
+    { .texPath = "assets/decor/erw/tree1_anim.png", .frames = 8, .x = T(27), .y = T(19), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
 
     // Çalılar: goblin kampına sneak yaklaşma hattı (içine eğilerek girilir)
     // GÖL KUZEY KIYISI AĞAÇLARI (Faz SU 2 — Hakan: "göl kıyısında ağaç yok,
     // ekler misin"): yansıma ayaktan GÜNEYE uzandığı için ağaç suyun KUZEY
     // kıyısında durmalı ki aynası suya düşsün. Ayaklar kıyı çimeninin alt
     // kenarına yakın — yansıma su çizgisinin hemen ardından başlar.
-    { .texPath = "assets/decor/oak_big.png",    .x = T(54.5f), .y = T(22.9f), .scale = 1.6f, .solidBase = true },
-    { .texPath = "assets/decor/oak_medium.png", .x = T(59.3f), .y = T(22.85f), .scale = 1.6f, .solidBase = true },
-    { .texPath = "assets/decor/oak_big.png",    .x = T(63.8f), .y = T(22.9f), .scale = 1.6f, .solidBase = true },
-    { .texPath = "assets/decor/bush_2.png",     .x = T(66.4f), .y = T(23.8f), .scale = 4.0f, .conceals = true },
+    { .texPath = "assets/decor/erw/tree1_anim.png", .frames = 8, .x = T(54.5f), .y = T(22.9f), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
+    { .texPath = "assets/decor/erw/tree2_anim.png", .frames = 8, .x = T(59.3f), .y = T(22.85f), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
+    { .texPath = "assets/decor/erw/tree1_anim.png", .frames = 8, .x = T(63.8f), .y = T(22.9f), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
+    { .texPath = "assets/decor/erw/bush_2.png",     .x = T(66.4f), .y = T(23.8f), .scale = 2.0f, .conceals = true },
     // Gölet kuzeyine tek ağaç: yansıması sığlık rafına + koyu ortaya düşer
-    { .texPath = "assets/decor/oak_medium.png", .x = T(7.5f),  .y = T(18.9f), .scale = 1.6f, .solidBase = true },
+    { .texPath = "assets/decor/erw/tree2_anim.png", .frames = 8, .x = T(7.5f),  .y = T(18.9f), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.40f, .baseHFrac = 0.14f },
     // Su kenarı fenerleri — light.c LIGHTS[] ile AYNI koordinat (ışık orada)
-    { .texPath = "assets/decor/lantern.png", .x = T(9.6f),  .y = T(19.0f), .scale = 2.0f, .solidBase = true },
-    { .texPath = "assets/decor/lantern.png", .x = T(56.9f), .y = T(22.6f), .scale = 2.0f, .solidBase = true },
-    { .texPath = "assets/decor/bush_1.png", .x = T(22), .y = T(23), .scale = 4.0f, .conceals = true },
-    { .texPath = "assets/decor/bush_2.png", .x = T(24), .y = T(21), .scale = 4.0f, .conceals = true },
-    { .texPath = "assets/decor/bush_1.png", .x = T(21), .y = T(26), .scale = 4.0f, .conceals = true },
-    { .texPath = "assets/decor/bush_2.png", .x = T(27), .y = T(23), .scale = 4.0f, .conceals = true },
-    { .texPath = "assets/decor/bush_1.png", .x = T(23), .y = T(28), .scale = 4.0f, .conceals = true },
+    { .texPath = "assets/decor/erw/lamp_post.png", .x = T(9.6f),  .y = T(19.0f), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.45f, .baseHFrac = 0.18f },
+    { .texPath = "assets/decor/erw/lamp_post.png", .x = T(56.9f), .y = T(22.6f), .scale = 2.0f, .solidBase = true, .baseWFrac = 0.45f, .baseHFrac = 0.18f },
+    { .texPath = "assets/decor/erw/bush_1.png", .x = T(22), .y = T(23), .scale = 2.0f, .conceals = true },
+    { .texPath = "assets/decor/erw/bush_2.png", .x = T(24), .y = T(21), .scale = 2.0f, .conceals = true },
+    { .texPath = "assets/decor/erw/bush_1.png", .x = T(21), .y = T(26), .scale = 2.0f, .conceals = true },
+    { .texPath = "assets/decor/erw/bush_2.png", .x = T(27), .y = T(23), .scale = 2.0f, .conceals = true },
+    { .texPath = "assets/decor/erw/bush_1.png", .x = T(23), .y = T(28), .scale = 2.0f, .conceals = true },
 
     // Saman balyaları: Osman'ın tarlası (çiftlik gizlenmesi)
     { .texPath = "assets/decor/hay_bale.png", .x = T(6), .y = T(12),   .scale = 3.0f, .conceals = true },
@@ -108,7 +109,7 @@ const DecorDef DECORS[] = {
       .x = T(52), .y = T(9), .scale = 1.5f, .solidBase = true, .map = DM_MEZARLIK },
 
     // SESSİZ EL kontrat tahtası (loca T32,19 — salon sağ-alt, NPC'lerden uzak, [E] açar)
-    { .texPath = "assets/decor/notice_board.png",
+    { .texPath = "assets/decor/erw/notice_board.png",
       .x = T(32), .y = T(19), .scale = 1.8f, .solidBase = true, .map = DM_LOCA },
 
     // --- TAŞDURAK dekorları (Faz DOGU — map 6) ---
@@ -163,8 +164,34 @@ void decor_set_texture_sizes(R2DTexture **decorTextures)
                 DECOR_COUNT, DECOR_CAP);
     for (int i = 0; i < DECOR_COUNT && i < DECOR_CAP; i++) {
         texW[i] = texH[i] = 0.0f;
-        if (decorTextures[i] != NULL)
+        if (decorTextures[i] != NULL) {
             r2d_texture_size(decorTextures[i], &texW[i], &texH[i]);
+            // Şeritli dekor: texW KARE genişliği olarak saklanır — decor_rect,
+            // blocks, conceals, occluders hiç değişmeden doğru kalır.
+            if (DECORS[i].frames > 1) texW[i] /= (float)DECORS[i].frames;
+        }
+    }
+}
+
+// Şeridin o anki karesi — çizim ve gölge AYNI kareyi kullanır (determinist).
+// i*3 faz kayması: iki ağaç yan yana senkron sallanmasın.
+static int decor_frame(int i)
+{
+    int f = DECORS[i].frames;
+    if (f <= 1) return 0;
+    return (int)((SDL_GetTicks() / 150 + (Uint64)i * 3) % (Uint64)f);
+}
+
+// Opak sınırlar — statikte r2d taramasından, şeritte KARE-YEREL kutu (bake
+// union-trim garantisi). Dönen değerler kare uzayında; şerit içi kare kayması
+// src kurulurken frameOff ile eklenir.
+static void decor_opaque(int i, R2DTexture *tex,
+                         float *opX, float *opY, float *opW, float *opH)
+{
+    if (DECORS[i].frames > 1) {
+        *opX = 0.0f; *opY = 0.0f; *opW = texW[i]; *opH = texH[i];
+    } else {
+        r2d_texture_opaque_bounds(tex, opX, opY, opW, opH);
     }
 }
 
@@ -190,7 +217,13 @@ void decor_render_all(R2D *renderer, R2DTexture **decorTextures,
             (r.x - camera->x) * zoom, (r.y - camera->y) * zoom,
             r.w * zoom, r.h * zoom,
         };
-        r2d_draw_texture(renderer, decorTextures[i], NULL, &dst);
+        if (DECORS[i].frames > 1) {
+            SDL_FRect src = { (float)decor_frame(i) * texW[i], 0.0f,
+                              texW[i], texH[i] };
+            r2d_draw_texture(renderer, decorTextures[i], &src, &dst);
+        } else {
+            r2d_draw_texture(renderer, decorTextures[i], NULL, &dst);
+        }
     }
 }
 
@@ -212,9 +245,9 @@ void decor_render_reflections(R2D *renderer, R2DTexture **decorTextures,
         SDL_FRect r = decor_rect(i);
 
         float opX, opY, opW, opH;
-        r2d_texture_opaque_bounds(decorTextures[i], &opX, &opY, &opW, &opH);
-        float texW2 = 0.0f, texH2 = 0.0f;
-        r2d_texture_size(decorTextures[i], &texW2, &texH2);
+        decor_opaque(i, decorTextures[i], &opX, &opY, &opW, &opH);
+        float texW2 = texW[i], texH2 = texH[i];   // şeritte KARE boyutu
+        float frameOff = (float)decor_frame(i) * texW[i];   // şerit içi kayma
         if (texH2 <= 0.0f || opH <= 1.0f) continue;
 
         // Opak bölge DÜNYA koordinatlarında (gölgedeki hesabın aynısı, ekransız)
@@ -252,7 +285,7 @@ void decor_render_reflections(R2D *renderer, R2DTexture **decorTextures,
                 float fx0 = (ix0 - wx) / ww, fx1 = (ix1 - wx) / ww;
                 float fy0 = (iy0 - footY) / wh, fy1 = (iy1 - footY) / wh;
                 SDL_FRect ps = {
-                    opX + fx0 * opW,
+                    frameOff + opX + fx0 * opW,
                     opY + (1.0f - fy1) * opH,
                     (fx1 - fx0) * opW,
                     (fy1 - fy0) * opH };
@@ -293,9 +326,8 @@ void decor_render_shadows(R2D *renderer, R2DTexture **decorTextures,
         // düzeltme). Biz opak sınırları yüklemede tarıyoruz (Unity "Trim"
         // muadili) ve ayak çizgisini oradan alıyoruz.
         float opX, opY, opW, opH;
-        r2d_texture_opaque_bounds(decorTextures[i], &opX, &opY, &opW, &opH);
-        float texH2 = 0.0f, texW2 = 0.0f;
-        r2d_texture_size(decorTextures[i], &texW2, &texH2);
+        decor_opaque(i, decorTextures[i], &opX, &opY, &opW, &opH);
+        float texW2 = texW[i], texH2 = texH[i];   // şeritte KARE boyutu
         if (texH2 <= 0.0f) continue;
 
         // Opak sınırları sprite'ın ekran dikdörtgenine ölçekle
@@ -319,8 +351,10 @@ void decor_render_shadows(R2D *renderer, R2DTexture **decorTextures,
             { oL + oW,         footY        },   // BR
         };
         // UV: yalnız OPAK bölge — şeffaf kenarları gölgeye sokmak gölgeyi
-        // yanlış boyutlu ve kopuk gösteriyordu.
-        SDL_FRect srcOpaque = { opX, opY, opW, opH };
+        // yanlış boyutlu ve kopuk gösteriyordu. Şeritte o anki kare seçilir:
+        // gölge de ağaçla birlikte sallanır (çizimle AYNI kare — decor_frame).
+        SDL_FRect srcOpaque = { (float)decor_frame(i) * texW[i] + opX, opY,
+                                opW, opH };
         r2d_draw_texture_quad(renderer, decorTextures[i], &srcOpaque, c4, col);
 
         // Temas lekesi: shear öğlen sıfıra yaklaşır ve nesne zeminden kopar;
@@ -365,8 +399,11 @@ int decor_light_occluders(SDL_FRect *out, int cap, const Camera *camera,
         int i = idx[n];
         SDL_FRect r = decor_rect(i);
         // GÖVDE: alt %45 ve genişliğin ortadaki %60'ı. Ağaç için bu gövdedir
-        // (taç ışığı kesmez); ev için duvar hattı.
-        float bw = r.w * 0.60f, bh = r.h * 0.45f;
+        // (taç ışığı kesmez); ev için duvar hattı. Taban oranı verilmişse
+        // (ERW ağaçları) genişlik oradan gelir — 164px taçlı ağaçta %60 bile
+        // gövdenin dört katıydı, ışık dev blok gölge atıyordu.
+        float bw = r.w * (DECORS[i].baseWFrac > 0.0f ? DECORS[i].baseWFrac : 0.60f);
+        float bh = r.h * (DECORS[i].baseHFrac > 0.0f ? DECORS[i].baseHFrac * 2.0f : 0.45f);
         out[n].x = (r.x + (r.w - bw) * 0.5f - camera->x) * zoom;
         out[n].y = (r.y + r.h - bh - camera->y) * zoom;
         out[n].w = bw * zoom;
@@ -375,15 +412,30 @@ int decor_light_occluders(SDL_FRect *out, int cap, const Camera *camera,
     return n;
 }
 
+// Katı taban dikdörtgeni — TEK KAYNAK (çarpışma + occluder buradan okur;
+// yerleşim tuzağı dersi: aynı formül iki yerde yaşamaz).
+// Varsayılan: alt %35 × tam genişlik. DecorDef oranları verirse onlar kazanır
+// (ağaçta gövde dibi — taç katı değil, arkasından yürünür).
+static SDL_FRect decor_base_rect(int i)
+{
+    SDL_FRect r = decor_rect(i);
+    float wf = DECORS[i].baseWFrac > 0.0f ? DECORS[i].baseWFrac : 1.0f;
+    float hf = DECORS[i].baseHFrac > 0.0f ? DECORS[i].baseHFrac : 0.35f;
+    SDL_FRect base = {
+        r.x + r.w * (1.0f - wf) * 0.5f,   // yatay ortalı (taban orta çapa)
+        r.y + r.h * (1.0f - hf),
+        r.w * wf, r.h * hf,
+    };
+    return base;
+}
+
 bool decor_blocks(SDL_FRect box)
 {
     if (!decorActive) return false;
     for (int i = 0; i < DECOR_COUNT && i < DECOR_CAP; i++) {
         if (texW[i] <= 0.0f || !DECORS[i].solidBase) continue;   // çalı/saman engellemez
         if (DECORS[i].map != decorMap) continue;
-        SDL_FRect r = decor_rect(i);
-        // Katı taban: alt %35 (üst kısım çatı/yaprak — arkasından geçilebilir)
-        SDL_FRect base = { r.x, r.y + r.h * 0.65f, r.w, r.h * 0.35f };
+        SDL_FRect base = decor_base_rect(i);
         if (box.x < base.x + base.w && box.x + box.w > base.x &&
             box.y < base.y + base.h && box.y + box.h > base.y)
             return true;
