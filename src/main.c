@@ -17,6 +17,7 @@
 #include "equipment.h"
 #include "item_textures.h"
 #include "fx.h"
+#include "fxtex.h"
 #include "skill.h"
 #include "combat.h"
 #include "save.h"
@@ -1188,57 +1189,85 @@ int main(int argc, char *argv[])
     //              BLOOM gücü, bloom eşiği, bloom yarıçapı, ISI genliği, ısı hızı.
     // Isı bükülmesi bir TARZ değil DURUM efekti — çoğu preset'te 0. Asıl kullanımı
     // volkan/gayzer yakınında dinamik olarak bindirmek; "VOLKAN" preset'i test için.
-    // Bloom eşiği YÜKSEK tutuluyor (0.72+): post-fx tüm kareyi filtrelediği için
-    // eşik düşerse HUD'un beyaz yazısı da taşar. Eşiğin üstünde pratikte yalnız
-    // kandil göbeği, lav, damga efektleri ve büyü kalıyor.
+    // Bloom eşiği (2026-08-22): eskiden 0.72+ tutuluyordu çünkü post-fx tüm
+    // kareyi (HUD dahil) filtreliyordu ve beyaz HUD yazısı taşıyordu. Sahne/HUD
+    // ayrımı (r2d_postfx_flush, 2026-07-30) o gerekçeyi kaldırdı; eşikler toptan
+    // -0.10 indirildi ki kandil göbeği ve büyüler GERÇEKTEN parlasın. Kar örtüsü
+    // ve şimşek gibi sahne beyazları da artık hafifçe taşar — istenen davranış.
+    // Tarz başına ince ayar Hakan'ın F7 turunda.
     // Sıralama: önce renk grade'leri, sonra film, en sonda retro/ekran efektleri.
     static const struct { const char *name; R2DPostFX fx; } POSTFX_PRESETS[] = {
         { "POST-FX KAPALI", { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },   // fx kullanılmaz
         // Hafif sıcak dokunuş — pixel-art'ı boğmayan canlılık (varsayılan)
-        { "SICAK",        { 1.12f,  0.02f,  1.05f,  0.00f, 0.32f, 0.40f, 0, 0, 0, 0,       0, 0.30f, 0.74f, 0.0035f, 0, 0 } },
+        { "SICAK",        { 1.12f,  0.02f,  1.05f,  0.00f, 0.32f, 0.40f, 0, 0, 0, 0,       0, 0.30f, 0.64f, 0.0035f, 0, 0 } },
+
+        // ── İMZA ADAYLARI (GDD §6.1 kalıcı görsel imza kararı, 2026-08-22) ──
+        // Dördü de SICAK↔DARK FANTASY ekseninde, kanona bağlı birer iddia.
+        // Test: her adayla gündüz/alacakaranlık/gece + zindan gezilir (F8 hava,
+        // gün döngüsü); kandil/kamp ateşi başında bloom karakterine bakılır.
+        // Karar verilince kazanan varsayılan olur, kalanlar listeden düşer.
+        //
+        // OCAK — "ışık = güvenlik" (LORE §1.5). Taban hafif sıcak ama sakin;
+        // doygunluk nötr, vinyet orta. İddia: dünya kendini öne atmaz, ateş ve
+        // kandil cömert bloom'la sahnenin yıldızı olur.
+        { "IMZA: OCAK",       { 1.00f,  0.030f, 1.10f,  0.00f, 0.40f, 0.36f, 0, 0, 0, 0,   0,      0.42f, 0.58f, 0.0042f, 0, 0 } },
+        // SESSIZ GUN — kanonun yası: kül tonu, çekilmiş doygunluk, çok ince
+        // gren (havada kül). İddia: melankoli kalıcı ton olmalı; renk patlaması
+        // yalnız büyüye ve ateşe ait.
+        { "IMZA: SESSIZ GUN", { 0.88f, -0.015f, 1.12f, -0.01f, 0.44f, 0.34f, 0, 0, 0, 0,   0.025f, 0.36f, 0.60f, 0.0040f, 0, 0 } },
+        // MASAL — Cute Fantasy sanatının kendi sesi: canlı, aydınlık, geniş
+        // yumuşak ışıma, hafif vinyet. İddia: karanlığı kanon anlatsın, ekran
+        // değil; tezat (şirin dünya + sert hikaye) bilinçli imza olur.
+        { "IMZA: MASAL",      { 1.18f,  0.015f, 1.03f,  0.02f, 0.22f, 0.48f, 0, 0, 0, 0,   0,      0.34f, 0.62f, 0.0048f, 0, 0 } },
+        // DEMIRBOYUN — kanon kilidinin adı: demir grisi, soğuk, sert kontrast,
+        // ağır vinyet; bloom güçlü ki soğuk tabanda sıcak ışıklar bıçak gibi
+        // ayrışsın. İddia: dünya baskıcı, her ışık kaynağı bir vaat.
+        { "IMZA: DEMIRBOYUN", { 0.82f, -0.045f, 1.16f, -0.02f, 0.48f, 0.32f, 0, 0, 0, 0,   0.02f,  0.50f, 0.56f, 0.0045f, 0, 0 } },
+        // ── imza adayları sonu ──
+
         // Diablo/Souls havası — soluk soğuk renkler, sert kontrast, ağır vinyet
-        { "DARK FANTASY", { 0.78f, -0.04f,  1.18f, -0.03f, 0.50f, 0.30f, 0, 0, 0, 0,       0, 0.45f, 0.70f, 0.0045f, 0, 0 } },
+        { "DARK FANTASY", { 0.78f, -0.04f,  1.18f, -0.03f, 0.50f, 0.30f, 0, 0, 0, 0,       0, 0.45f, 0.60f, 0.0045f, 0, 0 } },
         // Kasvetli kuzey — mavi ton, hafif soluk (Banished/Frostpunk havası)
-        { "SOGUK",        { 0.95f, -0.035f, 1.08f, -0.01f, 0.38f, 0.38f, 0, 0, 0, 0,       0, 0.28f, 0.75f, 0.0035f, 0, 0 } },
+        { "SOGUK",        { 0.95f, -0.035f, 1.08f, -0.01f, 0.38f, 0.38f, 0, 0, 0, 0,       0, 0.28f, 0.65f, 0.0035f, 0, 0 } },
         // Soluk masal kitabı — düşük doygunluk, yumuşak kontrast, aydınlık
-        { "PASTEL",       { 0.82f,  0.01f,  0.92f,  0.04f, 0.18f, 0.50f, 0, 0, 0, 0,       0, 0.40f, 0.68f, 0.0055f, 0, 0 } },
+        { "PASTEL",       { 0.82f,  0.01f,  0.92f,  0.04f, 0.18f, 0.50f, 0, 0, 0, 0,       0, 0.40f, 0.58f, 0.0055f, 0, 0 } },
         // Arcade — yüksek doygunluk + kontrast, renkler bağırsın
-        { "CANLI",        { 1.35f,  0.00f,  1.15f,  0.00f, 0.20f, 0.45f, 0, 0, 0, 0,       0, 0.35f, 0.76f, 0.0032f, 0, 0 } },
+        { "CANLI",        { 1.35f,  0.00f,  1.15f,  0.00f, 0.20f, 0.45f, 0, 0, 0, 0,       0, 0.35f, 0.66f, 0.0032f, 0, 0 } },
         // Eski fotoğraf — griye çök + sıcak kahve tonu
-        { "SEPYA",        { 0.05f,  0.06f,  1.05f,  0.02f, 0.35f, 0.40f, 0, 0, 0, 0,       0, 0.22f, 0.76f, 0.0038f, 0, 0 } },
+        { "SEPYA",        { 0.05f,  0.06f,  1.05f,  0.02f, 0.35f, 0.40f, 0, 0, 0, 0,       0, 0.22f, 0.66f, 0.0038f, 0, 0 } },
         // Siyah-beyaz film — sert kontrast, koyu kenarlar + ince gren
-        { "NOIR",         { 0.00f,  0.00f,  1.25f, -0.02f, 0.55f, 0.30f, 0, 0, 0, 0,       0.05f, 0.30f, 0.78f, 0.0040f, 0, 0 } },
+        { "NOIR",         { 0.00f,  0.00f,  1.25f, -0.02f, 0.55f, 0.30f, 0, 0, 0, 0,       0.05f, 0.30f, 0.68f, 0.0040f, 0, 0 } },
         // Korku — renkler çekilmiş, karanlık, kumlanma + hafif renk kayması
-        { "KORKU",        { 0.55f, -0.02f,  1.20f, -0.06f, 0.60f, 0.25f, 0, 0, 0, 0.0015f, 0.10f, 0.20f, 0.80f, 0.0050f, 0.0012f, 0.7f } },
+        { "KORKU",        { 0.55f, -0.02f,  1.20f, -0.06f, 0.60f, 0.25f, 0, 0, 0, 0.0015f, 0.10f, 0.20f, 0.70f, 0.0050f, 0.0012f, 0.7f } },
         // Eski tüplü ekran — tarama çizgileri + canlı fosfor renkleri
-        { "CRT",          { 1.15f,  0.00f,  1.08f,  0.02f, 0.35f, 0.45f, 0.35f, 0, 0, 0,   0, 0.42f, 0.72f, 0.0040f, 0, 0 } },
+        { "CRT",          { 1.15f,  0.00f,  1.08f,  0.02f, 0.35f, 0.45f, 0.35f, 0, 0, 0,   0, 0.42f, 0.62f, 0.0040f, 0, 0 } },
         // VHS kaset — soluk, tarama + kromatik sapma + kumlanma
-        { "VHS",          { 0.85f,  0.01f,  0.95f,  0.03f, 0.30f, 0.45f, 0.20f, 0, 0, 0.0025f, 0.06f, 0.38f, 0.70f, 0.0050f, 0.0008f, 2.2f } },
+        { "VHS",          { 0.85f,  0.01f,  0.95f,  0.03f, 0.30f, 0.45f, 0.20f, 0, 0, 0.0025f, 0.06f, 0.38f, 0.60f, 0.0050f, 0.0008f, 2.2f } },
         // 8-bit konsol — kanal başına 6 renk kademesi, canlı
-        { "8-BIT",        { 1.25f,  0.00f,  1.10f,  0.00f, 0.15f, 0.50f, 0, 0, 6, 0,       0, 0.18f, 0.80f, 0.0028f, 0, 0 } },
+        { "8-BIT",        { 1.25f,  0.00f,  1.10f,  0.00f, 0.15f, 0.50f, 0, 0, 6, 0,       0, 0.18f, 0.70f, 0.0028f, 0, 0 } },
         // Orijinal GameBoy — 4 kademeli DMG yeşili
         { "GAMEBOY",      { 1.00f,  0.00f,  1.05f,  0.00f, 0.15f, 0.50f, 0, 1, 0, 0,       0, 0, 0, 0, 0, 0 } },
 
         // --- Ek tarzlar + kombinasyonlar (mevcutları ezmeden döngü sonuna) ---
         // Gün batımı — sıcak turuncu, canlı, yumuşak vinyet (kırsal akşam)
-        { "GUNBATIMI",    { 1.20f,  0.06f,  1.08f,  0.02f, 0.30f, 0.40f, 0, 0, 0, 0,       0, 0.48f, 0.68f, 0.0048f, 0, 0 } },
+        { "GUNBATIMI",    { 1.20f,  0.06f,  1.08f,  0.02f, 0.30f, 0.40f, 0, 0, 0, 0,       0, 0.48f, 0.58f, 0.0048f, 0, 0 } },
         // Ay ışığı — soğuk mavi, karanlık, sakin gece + çok ince gren
-        { "AY ISIGI",     { 0.80f, -0.05f,  1.05f, -0.08f, 0.45f, 0.35f, 0, 0, 0, 0,       0.03f, 0.40f, 0.66f, 0.0055f, 0, 0 } },
+        { "AY ISIGI",     { 0.80f, -0.05f,  1.05f, -0.08f, 0.45f, 0.35f, 0, 0, 0, 0,       0.03f, 0.40f, 0.56f, 0.0055f, 0, 0 } },
         // Rüya — pastel + hafif renk kayması + ince gren (yumuşak, sisli)
-        { "RUYA",         { 0.75f,  0.02f,  0.90f,  0.05f, 0.25f, 0.55f, 0, 0, 0, 0.0018f, 0.04f, 0.55f, 0.62f, 0.0070f, 0.0020f, 0.6f } },
+        { "RUYA",         { 0.75f,  0.02f,  0.90f,  0.05f, 0.25f, 0.55f, 0, 0, 0, 0.0018f, 0.04f, 0.55f, 0.52f, 0.0070f, 0.0020f, 0.6f } },
         // Çorak toprak — soluk sıcak, ağır vinyet + gren (Fallout/Mad Max)
-        { "CORAK",        { 0.60f,  0.05f,  1.15f, -0.02f, 0.55f, 0.30f, 0, 0, 0, 0,       0.07f, 0.25f, 0.78f, 0.0040f, 0.0015f, 1.4f } },
+        { "CORAK",        { 0.60f,  0.05f,  1.15f, -0.02f, 0.55f, 0.30f, 0, 0, 0, 0,       0.07f, 0.25f, 0.68f, 0.0040f, 0.0015f, 1.4f } },
         // Retro arcade — CRT tarama + posterize + canlı (dolap oyunu; kombinasyon)
-        { "RETRO ARCADE", { 1.30f,  0.00f,  1.12f,  0.02f, 0.25f, 0.45f, 0.30f, 0, 8, 0,   0, 0.35f, 0.74f, 0.0035f, 0, 0 } },
+        { "RETRO ARCADE", { 1.30f,  0.00f,  1.12f,  0.02f, 0.25f, 0.45f, 0.30f, 0, 8, 0,   0, 0.35f, 0.64f, 0.0035f, 0, 0 } },
         // Eski film makarası — sepya + tarama + gren + ağır vinyet (kombinasyon)
-        { "ESKI FILM",    { 0.10f,  0.06f,  1.10f,  0.00f, 0.55f, 0.30f, 0.15f, 0, 0, 0,   0.09f, 0.28f, 0.74f, 0.0045f, 0, 0 } },
+        { "ESKI FILM",    { 0.10f,  0.06f,  1.10f,  0.00f, 0.55f, 0.30f, 0.15f, 0, 0, 0,   0.09f, 0.28f, 0.64f, 0.0045f, 0, 0 } },
         // Sentetik dalga — yüksek doygunluk + kromatik sapma (neon/synthwave)
-        { "SYNTHWAVE",    { 1.40f,  0.02f,  1.15f,  0.02f, 0.35f, 0.40f, 0, 0, 0, 0.0022f, 0.03f, 0.60f, 0.60f, 0.0060f, 0, 0 } },
+        { "SYNTHWAVE",    { 1.40f,  0.02f,  1.15f,  0.02f, 0.35f, 0.40f, 0, 0, 0, 0.0022f, 0.03f, 0.60f, 0.50f, 0.0060f, 0, 0 } },
         // Kâbus — korku uçlara: renksiz, çok karanlık, ağır kumlanma + sapma (kombinasyon)
         // Volkan/gayzer: ısı bükülmesinin vitrini — sıcak grade + güçlü bükülme
         // + cömert bloom (lav zaten eşiğin üstünde).
-        { "VOLKAN",       { 1.10f,  0.09f,  1.10f,  0.01f, 0.40f, 0.35f, 0, 0, 0, 0.0010f, 0.03f, 0.50f, 0.66f, 0.0050f, 0.0038f, 1.8f } },
-        { "KABUS",        { 0.30f, -0.02f,  1.30f, -0.10f, 0.65f, 0.20f, 0, 0, 0, 0.0030f, 0.14f, 0.22f, 0.82f, 0.0060f, 0.0026f, 0.9f } },
+        { "VOLKAN",       { 1.10f,  0.09f,  1.10f,  0.01f, 0.40f, 0.35f, 0, 0, 0, 0.0010f, 0.03f, 0.50f, 0.56f, 0.0050f, 0.0038f, 1.8f } },
+        { "KABUS",        { 0.30f, -0.02f,  1.30f, -0.10f, 0.65f, 0.20f, 0, 0, 0, 0.0030f, 0.14f, 0.22f, 0.72f, 0.0060f, 0.0026f, 0.9f } },
     };
     const int POSTFX_COUNT = (int)(sizeof(POSTFX_PRESETS) / sizeof(POSTFX_PRESETS[0]));
     int postfxIdx = 1;   // SICAK ile başla
@@ -1379,6 +1408,10 @@ int main(int argc, char *argv[])
     // Şekil artık ışık TİPİNE bağlı (light.c FLICKER tablosu). Global değerler
     // yalnız test çarpanı: 1.0 / 0 = tipin kendi şeklini kullan.
     r2d_light_set_shape(1.0f, 0.0f);
+    // Işık eğrisi sözleşme testi (açılışta bir kez, ~1ms): CPU light_atten()
+    // ile fs_light aynı matematik mi? Ayrışma sessiz kalmasın (GDD §6.2 Karar 1).
+    if (light_curve_selftest("shaders/light.frag.hlsl") > 0)
+        SDL_Log("UYARI: ışık eğrisi CPU/GPU sözleşmesi bozuk — yukarıdaki loglara bak");
 
     // Kaynak düğümleri (cevher/bitki/ağaç) — toplama sistemi
     R2DTexture *resource_textures[MAX_RESOURCES] = {0};
@@ -1390,6 +1423,27 @@ int main(int argc, char *argv[])
     R2DTexture *station_textures[8] = {0};
     for (int i = 0; i < STATION_COUNT && i < 8; i++)
         station_textures[i] = load_texture(renderer, STATIONS[i].texPath);
+
+    // EŞİKLİ ALEV (Faz ALEV, brief ADIM 3): kamp ateşi + demirci ocağı gövde
+    // alevi. Gürültü + rampa fxtex'ten (açılışta bir kez), shader SPRITE-FX
+    // yolundan. Rampa değerleri fx.c'deki DOĞRULANMIŞ kara cisim tablosundan
+    // (ELLE DEĞER GİRMEK YASAK — GDD §6.6 Karar 10b): 1000K → 2700K.
+    // Genişlik = durak sayısı + NEAREST → rampanın kendisi pixel-art merdiveni.
+    R2DTexture *fxNoiseTex = fxtex_noise(renderer, 128, 20260822u);
+    static const float FIRE_RGB[7][3] = {
+        { 128/255.0f,  34/255.0f, 0.0f },   // ~1000K — dil ucu, sönme kızılı
+        { 173/255.0f,  56/255.0f, 0.0f },   // 1150K
+        { 189/255.0f,  72/255.0f, 0.0f },   // 1350K
+        { 255/255.0f, 108/255.0f, 0.0f },   // 1500K
+        { 255/255.0f, 132/255.0f, 0.0f },   // 1900K
+        { 255/255.0f, 155/255.0f,  61/255.0f },   // 2400K
+        { 255/255.0f, 167/255.0f,  87/255.0f },   // 2700K — çekirdek (B<90: ADD sarıya doyar, beyaza değil)
+    };
+    static const float FIRE_STOP[7] = { 0.0f, 0.14f, 0.30f, 0.48f, 0.68f, 0.86f, 1.0f };
+    R2DTexture *fireRampTex = fxtex_ramp(renderer, FIRE_RGB, FIRE_STOP, 7, 7, 0.0f);
+    int fxFlame = r2d_fx_register(renderer, "flame.frag", 1);
+    if (fxFlame == 0 || fxNoiseTex == NULL || fireRampTex == NULL)
+        SDL_Log("UYARI: esikli alev kurulamadi — istasyon alevleri partikul-only");
 
     // İlan panosu (Faz 6): köy meydanı, günlük kontratlar
     #define BOARD_X (13.5f * TILE_SIZE)
@@ -1653,6 +1707,10 @@ int main(int argc, char *argv[])
     // DEV: sınırsız mana/stamina (Ctrl+I). VFX ve skill testinde mana
     // hemen bitiyor ve efekti izlemeye vakit kalmıyordu.
     bool devInfinite = false;
+    // DEV: skill FX A/B kıyas modu. Prosedürel motor artık VARSAYILAN
+    // (2026-08-22); yol göstergesi splash'i normal oyunda gürültü olur.
+    // Ctrl+P'ye ilk basış bu bayrağı açar, gösterge ancak o zaman konuşur.
+    bool devSkillfxAB = false;
 
     static const struct { int bit; const char *name; } WATER_LAYERS[R2D_WATER_L_COUNT] = {
         { R2D_WATER_L_REFRACT, "SU: yalniz KIRILMA (sualti bukulmesi)" },
@@ -4162,10 +4220,12 @@ int main(int argc, char *argv[])
                          (event.key.mod & SDL_KMOD_CTRL) &&
                          gameState == GAME_PLAYING)
                 {
-                    // DEV A/B: PROSEDÜREL SKİLL EFEKTLERİ. Kapalı = eski sprite
-                    // sheet'leri (assets/fx/*.png), açık = kendi motorumuz.
-                    // Karşılaştırma olmadan "daha iyi mi" sorusu cevaplanamaz;
-                    // sprite yolu bu yüzden silinmiyor.
+                    // DEV A/B: PROSEDÜREL SKİLL EFEKTLERİ. Açık = kendi
+                    // motorumuz (VARSAYILAN, 2026-08-22), kapalı = eski sprite
+                    // sheet'leri (assets/fx/*.png). Karşılaştırma olmadan
+                    // "daha iyi mi" sorusu cevaplanamaz; sprite yolu bu yüzden
+                    // silinmiyor.
+                    devSkillfxAB = true;   // gösterge artık her cast'te konuşur
                     skillfx_set_procedural(!skillfx_procedural());
                     splashText = skillfx_procedural()
                         ? "SKILL FX: PROSEDUREL (kendi motorumuz)"
@@ -8090,17 +8150,21 @@ int main(int argc, char *argv[])
                                                                  : "Öz Kabuğu!", grn);
                         }
 
-                        // ── YOL GÖSTERGESİ (yalnız A/B modu açıkken).
+                        // ── YOL GÖSTERGESİ (yalnız A/B kıyas modunda).
                         // ÜÇ TUR kaybettik çünkü Hakan "alev skili" derken
                         // ATEŞ ASLANI'nı deniyordu; o büyü sprite yolundaydı ve
                         // Ctrl+P ona hiç dokunmuyordu — bense her turda
                         // prosedürel ateş topunun biçimini düzeltiyordum.
                         // Bundan sonra oyun hangi yolun çalıştığını SÖYLÜYOR.
-                        // Kapalı modda susuyor (normal oyunda gürültü olmasın).
-                        if (skillfx_procedural() && castSpell >= 0 &&
+                        // Prosedürel artık varsayılan olduğundan kapı
+                        // devSkillfxAB: Ctrl+P'ye hiç basılmadıysa susar
+                        // (normal oyunda gürültü olmasın), basıldıysa iki
+                        // yönde de konuşur.
+                        if (devSkillfxAB && castSpell >= 0 &&
                             castSpell < ABILITY_COUNT) {
                             static char pathMsg[96];
-                            bool proc = (castSpell == ABILITY_FIREBOLT ||
+                            bool proc = skillfx_procedural() &&
+                                        (castSpell == ABILITY_FIREBOLT ||
                                          castSpell == ABILITY_ICE_NOVA ||
                                          castSpell == ABILITY_LIGHTNING ||
                                          castSpell == ABILITY_SPIKES ||
@@ -11478,6 +11542,62 @@ int main(int argc, char *argv[])
         {
             resource_render_all(renderer, resource_textures, &camera, gameFont,
                                 (dialogNpc < 0 && nearestNpc < 0) ? nearestRes : -1);  // NPC önceliği
+            // EŞİKLİ ALEV GÖVDESİ (Faz ALEV): istasyon sprite'ından ÖNCE —
+            // odun yığını alevin dibini örter, alev yığının ARKASINDAN yükselir.
+            // İlk sürüm alevi sprite'ın üstüne çiziyordu ve kampı tamamen
+            // kapatıyordu (Hakan testi): çözüm üste almak değil DERİNLİK
+            // (motor kuralının aynısı). Nefes değeri emit tarafıyla AYNI
+            // fonksiyondan (fx_breath determinist — iki çağrı aynı kareyi
+            // verir), yağmur bastırması da aynı formül: alev, partikül, ısı
+            // ve ışık tek nefes.
+            if (fxFlame > 0) {
+                float fnSec = (float)SDL_GetTicks() / 1000.0f;
+                float fWet = weather_is_wet()
+                           ? (1.0f - 0.45f * weather_intensity()) : 1.0f;
+                // YALNIZ KAMP ATEŞİ. Demirci ocağı ÇIKARILDI: onun ateşi
+                // yapının içindeki küçük pencerede (furnace.png satır 23-26,
+                // gömülü animasyon) — dış gövde alevi o mimariye yanlış, ve
+                // arkaya çizilen alev opak gövdenin ardında hiç görünmez.
+                for (int i = 0; i < STATION_COUNT; i++) {
+                    if (STATIONS[i].x <= CAMPFIRE_PARKED + 1.0f) continue;  // sönük
+                    if (STATIONS[i].type != STATION_CAMPFIRE) continue;
+                    // Dünya px kutusu: odun-only yığın y-36..y'de (craft.c
+                    // campfire_wood 16×12 × ölçek 3, taban çapası y). Alev
+                    // ODUNDAN DAR (24 < 48) ve tabanı yığının ortasında (y-12):
+                    // alt ~24px kütüklerin arkasında, gövde üst kollardaki
+                    // DELİKTEN görünür, diller yığının üstünden taşar. İki tur
+                    // "ateş kampı kapatıyor" dedirten şey alevin yığından
+                    // büyük olmasıydı — oran artık ters: yığın büyük, alev dar.
+                    float fw = 24.0f, fh = 40.0f;
+                    float baseY = STATIONS[i].y - 12.0f;
+                    SDL_FRect fdst = {
+                        (STATIONS[i].x - fw * 0.5f - camera.x) * camera.zoom,
+                        (baseY - fh - camera.y) * camera.zoom,
+                        fw * camera.zoom, fh * camera.zoom,
+                    };
+                    if (fdst.x + fdst.w < 0 || fdst.x > (float)winW ||
+                        fdst.y + fdst.h < 0 || fdst.y > (float)winH) continue;
+                    float fbr = fx_breath(FIRE_HEARTH, (unsigned)i, fnSec) * fWet;
+                    float fp[R2D_FX_PARAMS] = { 0 };
+                    fp[0] = fnSec;             // zaman
+                    fp[1] = 13.0f;             // akış Hz (brief: 12-15)
+                    fp[2] = 1.6f;              // gürültü ölçek x
+                    fp[3] = 1.1f;              // gürültü ölçek y
+                    fp[4] = 0.30f;             // eşik CUT
+                    fp[5] = fbr;               // nefes (fx_breath)
+                    fp[6] = fw / ART_PX;       // sanat px sayısı w
+                    fp[7] = fh / ART_PX;       // sanat px sayısı h
+                    fp[8] = 1.6f;              // yatay daraltma
+                    fp[9] = 1.0f;              // parlaklık
+                    fp[10] = (float)i * 0.37f; // faz — her ateş farklı
+                    r2d_fx_begin(renderer, fxFlame, fp, fireRampTex, NULL);
+                    r2d_set_blend(renderer, R2D_BLEND_ADD);   // alev = emisyon (C.2 Katman 1)
+                    r2d_draw_texture(renderer, fxNoiseTex, NULL, &fdst);
+                    r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                    r2d_fx_end(renderer);
+                }
+            }
+
             station_render_all(renderer, station_textures, &camera, gameFont,
                                (dialogNpc < 0 && nearestNpc < 0 && !craftOpen) ? nearestStation : -1,
                                (craftOpen && (craftRecipe >= 0 || plusForge || enchAction > 0))
@@ -12197,7 +12317,87 @@ int main(int argc, char *argv[])
             r2d_fill_rect(renderer, &snowFull);
         }
 
-        // Hasar yazıları (mob'ların üstünde, dünya uzayında)
+        // --- HAVA GÖRSELLERİ: yağmur/kar/sis (IŞIK PASS'İNDEN ÖNCE) ---
+        // Eskiden ışıktan SONRA çiziliyordu ve gece hiç kararmıyordu: zifiri
+        // gecede sis parlak gri, kar bembeyaz kalıyordu (brief D.4 borcu).
+        // Kar örtüsüyle aynı tarafa alındı — gece karartması yağışın üstüne
+        // doğal biner, kandil yakınındaki damla ışık halkasında parlar.
+        // Şimşek flaşı BİLEREK ışıktan sonra kaldı: o bir örtü değil IŞIK.
+        if (map_current() == MAP_WORLD && weather_intensity() > 0.0f)
+        {
+            float wi = weather_intensity();
+            Weather wn = weather_current();
+            if (wn == WEATHER_RAIN || wn == WEATHER_STORM)
+            {
+                // Damlalar: hafif eğik ince çizgiler — ekran uzayında düşer
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                int drops = (int)(RAIN_DROPS * wi);
+                for (int i = 0; i < drops; i++)
+                {
+                    rainPY[i] += rainPS[i] * dt;
+                    rainPX[i] -= rainPS[i] * 0.22f * dt;   // rüzgar eğimi
+                    if (rainPY[i] > 1.0f)
+                    {
+                        rainPY[i] -= 1.0f;
+                        rainPX[i] = randf();
+                    }
+                    if (rainPX[i] < 0.0f) rainPX[i] += 1.0f;
+                    float dx = rainPX[i] * (float)winW;
+                    float dy = rainPY[i] * (float)winH;
+                    Uint8 a = (Uint8)((90.0f + 60.0f * (rainPS[i] - 1.6f)) * wi);
+                    r2d_set_color(renderer, 180, 200, 230, a);
+                    SDL_FRect d1 = { dx, dy, 2.0f, 9.0f };
+                    SDL_FRect d2 = { dx + 2.0f, dy - 7.0f, 2.0f, 8.0f };
+                    r2d_fill_rect(renderer, &d1);
+                    r2d_fill_rect(renderer, &d2);
+                }
+            }
+            if (wn == WEATHER_SNOW)
+            {
+                // Kar taneleri: ağır süzülür, rüzgarla salınır (damla dizileri
+                // yeniden kullanılır — yağmurla aynı anda asla aktif değil)
+                float tsec2 = (float)((double)SDL_GetTicks() / 1000.0);
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                int flakes = (int)(RAIN_DROPS * 0.7f * wi);
+                for (int i = 0; i < flakes; i++)
+                {
+                    rainPY[i] += rainPS[i] * 0.09f * dt;   // ağır düşüş
+                    rainPX[i] += SDL_sinf(tsec2 * 1.3f + (float)i) * 0.02f * dt;
+                    if (rainPY[i] > 1.0f)
+                    {
+                        rainPY[i] -= 1.0f;
+                        rainPX[i] = randf();
+                    }
+                    if (rainPX[i] < 0.0f) rainPX[i] += 1.0f;
+                    if (rainPX[i] > 1.0f) rainPX[i] -= 1.0f;
+                    float dx = rainPX[i] * (float)winW;
+                    float dy = rainPY[i] * (float)winH;
+                    float fs = 2.0f + (rainPS[i] - 1.6f) * 1.5f;   // öndeki iri
+                    r2d_set_color(renderer, 245, 248, 255,
+                                  (Uint8)(170.0f * wi));
+                    SDL_FRect fl = { dx, dy, fs, fs };
+                    r2d_fill_rect(renderer, &fl);
+                }
+            }
+            if (wn == WEATHER_FOG)
+            {
+                // Sis: iki katman gri örtü — yavaş nefes alır (tek renkte boğmaz)
+                float tsec = (float)((double)SDL_GetTicks() / 1000.0);
+                float breathe = 0.9f + 0.1f * SDL_sinf(tsec * 0.35f);
+                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
+                r2d_set_color(renderer, 190, 195, 205,
+                              (Uint8)(95.0f * wi * breathe));
+                SDL_FRect fogFull = { 0, 0, (float)winW, (float)winH };
+                r2d_fill_rect(renderer, &fogFull);
+                r2d_set_color(renderer, 210, 214, 222, (Uint8)(45.0f * wi));
+                SDL_FRect fogBand = { 0, (float)winH * 0.25f,
+                                      (float)winW, (float)winH * 0.5f };
+                r2d_fill_rect(renderer, &fogBand);
+            }
+        }
+
+        // Hasar yazıları (mob'ların üstünde, dünya uzayında; sisin ÜSTÜNDE
+        // kalsın diye hava görsellerinden sonra)
         floattext_render_all(floatTexts, MAX_FLOAT_TEXTS, renderer, gameFont, &camera); // ← BURAYA (present'tan önce)
 
         // GÜN/GECE aydınlatması: shader ışık pass'i — dünyanın üstüne, HUD'un
@@ -12370,79 +12570,6 @@ int main(int argc, char *argv[])
             r2d_light_pass(renderer, ambR, ambG, ambB, lights, lightN);
         }
 
-        // --- HAVA GÖRSELLERİ (dünya üstü, HUD altı) ---
-        if (map_current() == MAP_WORLD && weather_intensity() > 0.0f)
-        {
-            float wi = weather_intensity();
-            Weather wn = weather_current();
-            if (wn == WEATHER_RAIN || wn == WEATHER_STORM)
-            {
-                // Damlalar: hafif eğik ince çizgiler — ekran uzayında düşer
-                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
-                int drops = (int)(RAIN_DROPS * wi);
-                for (int i = 0; i < drops; i++)
-                {
-                    rainPY[i] += rainPS[i] * dt;
-                    rainPX[i] -= rainPS[i] * 0.22f * dt;   // rüzgar eğimi
-                    if (rainPY[i] > 1.0f)
-                    {
-                        rainPY[i] -= 1.0f;
-                        rainPX[i] = randf();
-                    }
-                    if (rainPX[i] < 0.0f) rainPX[i] += 1.0f;
-                    float dx = rainPX[i] * (float)winW;
-                    float dy = rainPY[i] * (float)winH;
-                    Uint8 a = (Uint8)((90.0f + 60.0f * (rainPS[i] - 1.6f)) * wi);
-                    r2d_set_color(renderer, 180, 200, 230, a);
-                    SDL_FRect d1 = { dx, dy, 2.0f, 9.0f };
-                    SDL_FRect d2 = { dx + 2.0f, dy - 7.0f, 2.0f, 8.0f };
-                    r2d_fill_rect(renderer, &d1);
-                    r2d_fill_rect(renderer, &d2);
-                }
-            }
-            if (wn == WEATHER_SNOW)
-            {
-                // Kar taneleri: ağır süzülür, rüzgarla salınır (damla dizileri
-                // yeniden kullanılır — yağmurla aynı anda asla aktif değil)
-                float tsec2 = (float)((double)SDL_GetTicks() / 1000.0);
-                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
-                int flakes = (int)(RAIN_DROPS * 0.7f * wi);
-                for (int i = 0; i < flakes; i++)
-                {
-                    rainPY[i] += rainPS[i] * 0.09f * dt;   // ağır düşüş
-                    rainPX[i] += SDL_sinf(tsec2 * 1.3f + (float)i) * 0.02f * dt;
-                    if (rainPY[i] > 1.0f)
-                    {
-                        rainPY[i] -= 1.0f;
-                        rainPX[i] = randf();
-                    }
-                    if (rainPX[i] < 0.0f) rainPX[i] += 1.0f;
-                    if (rainPX[i] > 1.0f) rainPX[i] -= 1.0f;
-                    float dx = rainPX[i] * (float)winW;
-                    float dy = rainPY[i] * (float)winH;
-                    float fs = 2.0f + (rainPS[i] - 1.6f) * 1.5f;   // öndeki iri
-                    r2d_set_color(renderer, 245, 248, 255,
-                                  (Uint8)(170.0f * wi));
-                    SDL_FRect fl = { dx, dy, fs, fs };
-                    r2d_fill_rect(renderer, &fl);
-                }
-            }
-            if (wn == WEATHER_FOG)
-            {
-                // Sis: iki katman gri örtü — yavaş nefes alır (tek renkte boğmaz)
-                float tsec = (float)((double)SDL_GetTicks() / 1000.0);
-                float breathe = 0.9f + 0.1f * SDL_sinf(tsec * 0.35f);
-                r2d_set_blend(renderer, R2D_BLEND_ALPHA);
-                r2d_set_color(renderer, 190, 195, 205,
-                              (Uint8)(95.0f * wi * breathe));
-                SDL_FRect fogFull = { 0, 0, (float)winW, (float)winH };
-                r2d_fill_rect(renderer, &fogFull);
-                r2d_set_color(renderer, 210, 214, 222, (Uint8)(45.0f * wi));
-                SDL_FRect fogBand = { 0, (float)winH * 0.25f,
-                                      (float)winW, (float)winH * 0.5f };
-                r2d_fill_rect(renderer, &fogBand);
-            }
-        }
         if (lightningFlash > 0.0f)
         {
             // Şimşek: tüm ekran beyaz parlar, 0.15 sn'de söner

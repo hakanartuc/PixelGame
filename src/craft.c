@@ -25,12 +25,18 @@ StationDef STATIONS[] = {
       .x = T(102), .y = T(14), .scale = 2.0f,   // Karanlık Orman sınırı — keşifle bulunur
       .permQuest = NULL, .ownerNpcId = NULL },   // sahipsiz harabe: kapı yok
     // Faz 6: kamp ateşleri — KAPISIZ (ateş kimsenin değil), yemek pişirme
+    // KAMP ATEŞİ = ODUN-ONLY TÜRETİLMİŞ ASSET (Hakan kararı 2026-08-22, Faz
+    // ALEV): alev artık shader'dan (flame.frag, main.c çizer). campfire_wood.png
+    // scripts/bake_campfire_wood.py ile campfire.png'nin odun bölümünden (satır
+    // 20-31) türetilir; içindeki gömülü alev pikselleri ŞEFFAF. Ortadaki delik
+    // ÖZELLİK: shader alevi odunların ARKASINA çizilir ve delikten görünür.
+    // Orijinal campfire.png dosyada rafta (BOŞA ÇIKAN KODU SİLME).
     { .type = STATION_CAMPFIRE, .name = "Kamp Ateşi",
-      .texPath = "assets/decor/campfire.png", .src = { 0, 0, 16, 32 }, .frames = 8,
+      .texPath = "assets/decor/campfire_wood.png", .src = { 0, 0, 16, 12 }, .frames = 8,
       .x = T(15), .y = T(7) + 20.0f, .scale = 3.0f,   // köy: pano yanı (sabit)
       .permQuest = NULL, .ownerNpcId = NULL },
     { .type = STATION_CAMPFIRE, .name = "Kamp Ateşi",   // STATION_PLAYER_FIRE_IDX (4)
-      .texPath = "assets/decor/campfire.png", .src = { 0, 0, 16, 32 }, .frames = 8,
+      .texPath = "assets/decor/campfire_wood.png", .src = { 0, 0, 16, 12 }, .frames = 8,
       .x = CAMPFIRE_PARKED, .y = CAMPFIRE_PARKED,      // sönük: park (main kurar/söndürür)
       .scale = 3.0f,
       .permQuest = NULL, .ownerNpcId = NULL },

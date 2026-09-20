@@ -21,6 +21,7 @@ struct R2DTexture {
     Uint8 modR, modG, modB, modA;   // color/alpha mod (çizimde çarpılır)
     bool isTarget;
     bool linear;                    // örnekleme: false=NEAREST (pixel-art)
+    bool repeat;                    // adresleme: false=CLAMP, true=REPEAT (kayan gürültü)
     // OPAK SINIRLAR (alpha bounding box) — yüklemede bir kez taranır.
     // Gölge ayak noktası için gerekli: sprite dikdörtgeninin alt kenarı
     // nesnenin zemine değdiği yer DEĞİL (ağaç PNG'sinde altta şeffaf boşluk
@@ -32,6 +33,10 @@ typedef struct {
     R2DTexture *tex;
     R2DBlend blend;
     int first, count;
+    // SPRITE-FX: 0 = standart yol; >0 = fxPipes indeksi. fxSlot = fxParamPool
+    // satırı (draw başına uniform payload). tex1/tex2 = ek doku slotları.
+    int fx, fxSlot;
+    R2DTexture *fxTex1, *fxTex2;
 } R2DDraw;
 
 // Tek global bağlam — R2D* parametresi geçiş kolaylığı + gelecek kapısı
@@ -136,8 +141,10 @@ typedef struct {
     float occ[R2D_MAX_OCCLUDERS][4];  // ışığı kesen dikdörtgenler (ekran px)
 } R2DLightU;
 static R2DLightU lightU;
-static SDL_GPUSampler *sampler = NULL;        // NEAREST (pixel-art)
-static SDL_GPUSampler *samplerLinear = NULL;  // LINEAR (glow vb.)
+static SDL_GPUSampler *sampler = NULL;              // NEAREST + CLAMP (pixel-art)
+static SDL_GPUSampler *samplerLinear = NULL;        // LINEAR + CLAMP (glow vb.)
+static SDL_GPUSampler *samplerRepeat = NULL;        // NEAREST + REPEAT (döşenen desen)
+static SDL_GPUSampler *samplerLinearRepeat = NULL;  // LINEAR + REPEAT (kayan gürültü)
 static SDL_GPUBuffer *vertexBuf = NULL;
 static SDL_GPUTransferBuffer *transferBuf = NULL;
 static R2DTexture *whiteTex = NULL;
@@ -148,6 +155,22 @@ static R2DDraw draws[R2D_MAX_DRAWS];
 static int drawCount = 0;
 static R2DBlend curBlend = R2D_BLEND_ALPHA;
 static SDL_Color curColor = { 255, 255, 255, 255 };
+
+// SPRITE-FX durumu — kayıtlı efekt pipeline'ları + kare içi parametre havuzu.
+// Parametreler draw struct'ına GÖMÜLMÜYOR (2048 draw × 128B = boşa 256KB);
+// yalnız efektli draw'lar havuzdan satır alır.
+typedef struct {
+    SDL_GPUGraphicsPipeline *pipes[R2D_BLEND_COUNT];        // swapchain formatı
+    SDL_GPUGraphicsPipeline *targetPipes[R2D_BLEND_COUNT];  // RGBA8 target formatı
+    int extraTex;    // 0..2 ek doku slotu (shader'ın beklediği sampler sayısı - 1)
+    bool used;
+} R2DFxPipe;
+static R2DFxPipe fxPipes[R2D_FX_MAX_PIPES];   // [0] kullanılmaz: 0 = standart yol
+static float fxParamPool[R2D_FX_MAX_ACTIVE][R2D_FX_PARAMS];
+static int fxParamCount = 0;          // begin_frame'de sıfırlanır
+static bool fxOverflowLogged = false; // kare başına bir uyarı (sessiz düşürme yasak)
+static int curFx = 0, curFxSlot = -1;
+static R2DTexture *curFxTex1 = NULL, *curFxTex2 = NULL;
 // Sonraki push yeni draw girdisi açsın (pass sınırlarında eski girdiye
 // eklenmesin — target pass'in çizimi önceki karenin girdisine karışıyordu)
 static bool forceNewDraw = false;
@@ -415,6 +438,15 @@ R2D *r2d_init(SDL_Window *window)
     sci.mag_filter = SDL_GPU_FILTER_LINEAR;
     samplerLinear = SDL_CreateGPUSampler(gpu, &sci);
 
+    // REPEAT çiftleri — kayan gürültü/desen dokuları için (uv 1'i aşınca
+    // baştan döşenir). CLAMP'te aynı shader kenar pikselini smear eder.
+    sci.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    sci.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    samplerLinearRepeat = SDL_CreateGPUSampler(gpu, &sci);
+    sci.min_filter = SDL_GPU_FILTER_NEAREST;
+    sci.mag_filter = SDL_GPU_FILTER_NEAREST;
+    samplerRepeat = SDL_CreateGPUSampler(gpu, &sci);
+
     SDL_GPUBufferCreateInfo bci = {
         .usage = SDL_GPU_BUFFERUSAGE_VERTEX, .size = sizeof(verts),
     };
@@ -455,6 +487,7 @@ R2D *r2d_init(SDL_Window *window)
     }
 
     if (sampler == NULL || samplerLinear == NULL ||
+        samplerRepeat == NULL || samplerLinearRepeat == NULL ||
         vertexBuf == NULL || transferBuf == NULL || fsQuadBuf == NULL) {
         SDL_Log("r2d: kaynaklar kurulamadi: %s", SDL_GetError());
         return NULL;
@@ -485,6 +518,18 @@ void r2d_quit(R2D *ctx)
     if (vertexBuf) SDL_ReleaseGPUBuffer(gpu, vertexBuf);
     if (sampler) SDL_ReleaseGPUSampler(gpu, sampler);
     if (samplerLinear) SDL_ReleaseGPUSampler(gpu, samplerLinear);
+    if (samplerRepeat) SDL_ReleaseGPUSampler(gpu, samplerRepeat);
+    if (samplerLinearRepeat) SDL_ReleaseGPUSampler(gpu, samplerLinearRepeat);
+    for (int f = 1; f < R2D_FX_MAX_PIPES; f++) {
+        if (!fxPipes[f].used) continue;
+        for (int b = 0; b < R2D_BLEND_COUNT; b++) {
+            if (fxPipes[f].pipes[b])
+                SDL_ReleaseGPUGraphicsPipeline(gpu, fxPipes[f].pipes[b]);
+            if (fxPipes[f].targetPipes[b])
+                SDL_ReleaseGPUGraphicsPipeline(gpu, fxPipes[f].targetPipes[b]);
+        }
+        fxPipes[f].used = false;
+    }
     for (int b = 0; b < R2D_BLEND_COUNT; b++) {
         if (pipeline[b]) SDL_ReleaseGPUGraphicsPipeline(gpu, pipeline[b]);
         if (targetPipeline[b]) SDL_ReleaseGPUGraphicsPipeline(gpu, targetPipeline[b]);
@@ -662,6 +707,113 @@ void r2d_texture_set_linear(R2DTexture *tex, bool linear)
     tex->linear = linear;
 }
 
+void r2d_texture_set_repeat(R2DTexture *tex, bool repeat)
+{
+    if (tex == NULL) return;
+    tex->repeat = repeat;
+}
+
+// Dokunun filtre+adresleme bayraklarından doğru sampler'ı seç
+static SDL_GPUSampler *pick_sampler(const R2DTexture *t)
+{
+    if (t->linear) return t->repeat ? samplerLinearRepeat : samplerLinear;
+    return t->repeat ? samplerRepeat : sampler;
+}
+
+// ---------------------------------------------------------------------------
+// SPRITE-FX — sprite başına özel fragment shader yolu (sözleşme r2d.h'de)
+// ---------------------------------------------------------------------------
+int r2d_fx_register(R2D *ctx, const char *fragName, int numExtraTex)
+{
+    (void)ctx;
+    if (gpu == NULL || fragName == NULL) return 0;
+    if (numExtraTex < 0) numExtraTex = 0;
+    if (numExtraTex > 2) numExtraTex = 2;
+
+    int id = 0;
+    for (int f = 1; f < R2D_FX_MAX_PIPES; f++)
+        if (!fxPipes[f].used) { id = f; break; }
+    if (id == 0) {
+        SDL_Log("r2d: fx kaydi dolu (%d) — %s alinamadi", R2D_FX_MAX_PIPES - 1, fragName);
+        return 0;
+    }
+
+    // Vertex shader ortak (sprite.vert) — init'te release edildiği için yeniden
+    // yüklenir; pipeline'lara bağlanınca referansımız yine gereksizleşir.
+    SDL_GPUShader *vs = load_shader(SDL_GPU_SHADERSTAGE_VERTEX, "sprite.vert", 1, 0);
+    // DİKKAT sıra: (uniform tampon, sampler) — su vakasının dersi. Sampler
+    // sayısı = sprite'ın kendisi + ek dokular; eksik bildirim = sessiz sıfır.
+    SDL_GPUShader *fs = load_shader(SDL_GPU_SHADERSTAGE_FRAGMENT, fragName,
+                                    1, 1 + numExtraTex);
+    if (vs == NULL || fs == NULL) {
+        if (vs) SDL_ReleaseGPUShader(gpu, vs);
+        if (fs) SDL_ReleaseGPUShader(gpu, fs);
+        return 0;
+    }
+
+    SDL_GPUTextureFormat swapFmt = SDL_GetGPUSwapchainTextureFormat(gpu, win);
+    R2DFxPipe *fp = &fxPipes[id];
+    bool ok = true;
+    for (int b = 0; b < R2D_BLEND_COUNT; b++) {
+        fp->pipes[b] = make_pipeline(vs, fs, (R2DBlend)b, swapFmt);
+        fp->targetPipes[b] = make_pipeline(vs, fs, (R2DBlend)b,
+                                           SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM);
+        if (fp->pipes[b] == NULL || fp->targetPipes[b] == NULL) ok = false;
+    }
+    SDL_ReleaseGPUShader(gpu, vs);
+    SDL_ReleaseGPUShader(gpu, fs);
+    if (!ok) {
+        SDL_Log("r2d: fx pipeline kurulamadi (%s): %s", fragName, SDL_GetError());
+        for (int b = 0; b < R2D_BLEND_COUNT; b++) {
+            if (fp->pipes[b]) SDL_ReleaseGPUGraphicsPipeline(gpu, fp->pipes[b]);
+            if (fp->targetPipes[b]) SDL_ReleaseGPUGraphicsPipeline(gpu, fp->targetPipes[b]);
+            fp->pipes[b] = fp->targetPipes[b] = NULL;
+        }
+        return 0;
+    }
+    fp->extraTex = numExtraTex;
+    fp->used = true;
+    SDL_Log("r2d: fx kayitli [%d] %s (+%d doku)", id, fragName, numExtraTex);
+    return id;
+}
+
+void r2d_fx_begin(R2D *ctx, int fxId, const float params[R2D_FX_PARAMS],
+                  R2DTexture *tex1, R2DTexture *tex2)
+{
+    (void)ctx;
+    if (fxId <= 0 || fxId >= R2D_FX_MAX_PIPES || !fxPipes[fxId].used) {
+        r2d_fx_end(ctx);
+        return;
+    }
+    if (fxParamCount >= R2D_FX_MAX_ACTIVE) {
+        // Tavan aşımı SESSİZ DEĞİL (analiz §4 "sessiz düşürme her yerde"):
+        // kare başına bir kez logla, çizim standart yola düşsün.
+        if (!fxOverflowLogged) {
+            SDL_Log("r2d: fx draw tavani asildi (%d) — fazlasi standart yolda",
+                    R2D_FX_MAX_ACTIVE);
+            fxOverflowLogged = true;
+        }
+        r2d_fx_end(ctx);
+        return;
+    }
+    float *slot = fxParamPool[fxParamCount];
+    if (params != NULL) memcpy(slot, params, sizeof(float) * R2D_FX_PARAMS);
+    else memset(slot, 0, sizeof(float) * R2D_FX_PARAMS);
+    curFx = fxId;
+    curFxSlot = fxParamCount++;
+    curFxTex1 = tex1;
+    curFxTex2 = tex2;
+}
+
+void r2d_fx_end(R2D *ctx)
+{
+    (void)ctx;
+    curFx = 0;
+    curFxSlot = -1;
+    curFxTex1 = NULL;
+    curFxTex2 = NULL;
+}
+
 // ---------------------------------------------------------------------------
 // Batch
 // ---------------------------------------------------------------------------
@@ -684,12 +836,18 @@ static void push_quad(R2DTexture *tex, float dx, float dy, float dw, float dh,
         return;   // kare bütçesi doldu — sessiz düşür
 
     R2DDraw *d = (drawCount > 0) ? &draws[drawCount - 1] : NULL;
-    if (d == NULL || forceNewDraw || d->tex != tex || d->blend != curBlend) {
+    if (d == NULL || forceNewDraw || d->tex != tex || d->blend != curBlend ||
+        d->fx != curFx || d->fxSlot != curFxSlot ||
+        d->fxTex1 != curFxTex1 || d->fxTex2 != curFxTex2) {
         d = &draws[drawCount++];
         d->tex = tex;
         d->blend = curBlend;
         d->first = vertCount;
         d->count = 0;
+        d->fx = curFx;
+        d->fxSlot = curFxSlot;
+        d->fxTex1 = curFxTex1;
+        d->fxTex2 = curFxTex2;
         forceNewDraw = false;
     }
 
@@ -721,12 +879,18 @@ static void push_quad_corners(R2DTexture *tex, const SDL_FPoint c4[4],
         return;
 
     R2DDraw *d = (drawCount > 0) ? &draws[drawCount - 1] : NULL;
-    if (d == NULL || forceNewDraw || d->tex != tex || d->blend != curBlend) {
+    if (d == NULL || forceNewDraw || d->tex != tex || d->blend != curBlend ||
+        d->fx != curFx || d->fxSlot != curFxSlot ||
+        d->fxTex1 != curFxTex1 || d->fxTex2 != curFxTex2) {
         d = &draws[drawCount++];
         d->tex = tex;
         d->blend = curBlend;
         d->first = vertCount;
         d->count = 0;
+        d->fx = curFx;
+        d->fxSlot = curFxSlot;
+        d->fxTex1 = curFxTex1;
+        d->fxTex2 = curFxTex2;
         forceNewDraw = false;
     }
 
@@ -977,10 +1141,14 @@ void r2d_line(R2D *ctx, float x1, float y1, float x2, float y2)
 
     if (vertCount + 6 > R2D_MAX_VERTS || drawCount >= R2D_MAX_DRAWS) return;
     R2DDraw *d = (drawCount > 0) ? &draws[drawCount - 1] : NULL;
-    if (d == NULL || forceNewDraw || d->tex != whiteTex || d->blend != curBlend) {
+    if (d == NULL || forceNewDraw || d->tex != whiteTex || d->blend != curBlend ||
+        d->fx != curFx || d->fxSlot != curFxSlot ||
+        d->fxTex1 != curFxTex1 || d->fxTex2 != curFxTex2) {
         d = &draws[drawCount++];
         d->tex = whiteTex; d->blend = curBlend;
         d->first = vertCount; d->count = 0;
+        d->fx = curFx; d->fxSlot = curFxSlot;
+        d->fxTex1 = curFxTex1; d->fxTex2 = curFxTex2;
         forceNewDraw = false;
     }
     float r = curColor.r / 255.0f, g = curColor.g / 255.0f;
@@ -1062,13 +1230,41 @@ static void flush_to(SDL_GPUCommandBuffer *cb, SDL_GPUTexture *dst,
             continue;
         }
 
+        // SPRITE-FX yolu: kayıtlı efekt pipeline'ı + draw başına uniform payload
+        // + ek doku slotları. Sampler sayısı shader bildirimiyle AYNI olmak
+        // zorunda — eksik slot sessiz sıfır örnekler (su maskesi vakası);
+        // NULL verilen slota 1x1 beyaz doku bağlanır.
+        if (draws[i].fx > 0) {
+            R2DFxPipe *fp = &fxPipes[draws[i].fx];
+            SDL_BindGPUGraphicsPipeline(pass, (pipes == pipeline)
+                                              ? fp->pipes[draws[i].blend]
+                                              : fp->targetPipes[draws[i].blend]);
+            SDL_PushGPUFragmentUniformData(cb, 0, fxParamPool[draws[i].fxSlot],
+                                           sizeof(float) * R2D_FX_PARAMS);
+            SDL_GPUTextureSamplerBinding tsb[3] = {
+                { .texture = draws[i].tex->tex, .sampler = pick_sampler(draws[i].tex) },
+            };
+            R2DTexture *extra[2] = { draws[i].fxTex1, draws[i].fxTex2 };
+            for (int s = 0; s < fp->extraTex; s++) {
+                R2DTexture *t = (extra[s] != NULL) ? extra[s] : whiteTex;
+                tsb[1 + s] = (SDL_GPUTextureSamplerBinding){
+                    .texture = t->tex, .sampler = pick_sampler(t),
+                };
+            }
+            SDL_BindGPUFragmentSamplers(pass, 0, tsb, (Uint32)(1 + fp->extraTex));
+            SDL_DrawGPUPrimitives(pass, (Uint32)draws[i].count, 1,
+                                  (Uint32)(draws[i].first - firstVert), 0);
+            boundBlend = (R2DBlend)-1;   // pipeline değişti — sonraki draw yeniden bağlasın
+            continue;
+        }
+
         if (draws[i].blend != boundBlend) {
             boundBlend = draws[i].blend;
             SDL_BindGPUGraphicsPipeline(pass, pipes[boundBlend]);
         }
         SDL_GPUTextureSamplerBinding tsb = {
             .texture = draws[i].tex->tex,
-            .sampler = draws[i].tex->linear ? samplerLinear : sampler,
+            .sampler = pick_sampler(draws[i].tex),
         };
         SDL_BindGPUFragmentSamplers(pass, 0, &tsb, 1);
         SDL_DrawGPUPrimitives(pass, (Uint32)draws[i].count, 1,
@@ -1087,6 +1283,12 @@ bool r2d_begin_frame(R2D *ctx, Uint8 clearR, Uint8 clearG, Uint8 clearB)
     drawCount = 0;
     curBlend = R2D_BLEND_ALPHA;
     waterDone = false;
+    // SPRITE-FX kare durumu: parametre havuzu boşalır, açık kalmış fx kapanır
+    // (fx_end çağrısı unutulmuş olsa bile bir sonraki kareye sızmasın).
+    fxParamCount = 0;
+    fxOverflowLogged = false;
+    curFx = 0; curFxSlot = -1;
+    curFxTex1 = NULL; curFxTex2 = NULL;
 
     cmdBuf = SDL_AcquireGPUCommandBuffer(gpu);
     if (cmdBuf == NULL) {

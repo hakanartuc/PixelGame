@@ -9,6 +9,7 @@
 
 // --- Harita boyut sabitleri ---
 #define TILE_SIZE 64      // bir tile kaç piksel
+#define ART_PX 4.0f       // 1 SANAT pikseli = kaç dünya pikseli (16px karo sanatı × 4 = TILE_SIZE)
 #define MAP_W_MAX 256     // harita tavanı (statik dizi boyutu; gerçek boyut CSV'den)
 #define MAP_H_MAX 256
 // Bölge tavanı (bounty/itibar dizileri — REGIONS sayısı bunun altında).

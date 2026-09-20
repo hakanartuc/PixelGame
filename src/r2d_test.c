@@ -6,6 +6,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include "r2d.h"
+#include "fxtex.h"
 
 int main(int argc, char *argv[])
 {
@@ -53,6 +54,23 @@ int main(int argc, char *argv[])
         }
     R2DTexture *wmask = r2d_texture_from_pixels(ctx, wm, 8, 8);
     if (wmask) r2d_texture_set_linear(wmask, true);
+
+    // SPRITE-FX ALTYAPI ÜÇLÜSÜ — REPEAT sampler + fxtex üreticisi + fx yolu
+    // (dissolve.frag) uçtan uca: gurultu REPEAT isaretli, rampa fxtex_ramp'tan,
+    // uniform payload her karede degisiyor. Kayit basarisizsa test DEVAM eder
+    // ama loglar (fx yolu opsiyonel degil, gorunur kalsin).
+    R2DTexture *noiseTex = fxtex_noise(ctx, 128, 1337u);
+    static const float RAMP_RGB[3][3] = {
+        { 1.00f, 0.95f, 0.60f },   // yanan kenarin ic ucu: sicak sari
+        { 1.00f, 0.45f, 0.10f },   // orta: turuncu
+        { 0.35f, 0.05f, 0.02f },   // dis: komur kizili
+    };
+    static const float RAMP_STOP[3] = { 0.0f, 0.45f, 1.0f };
+    R2DTexture *rampTex = fxtex_ramp(ctx, RAMP_RGB, RAMP_STOP, 3, 64, 0.0f);
+    int fxDissolve = r2d_fx_register(ctx, "dissolve.frag", 2);
+    if (fxDissolve == 0 || noiseTex == NULL || rampTex == NULL)
+        SDL_Log("uyari: sprite-fx kurulumu eksik (fx=%d noise=%p ramp=%p)",
+                fxDissolve, (void *)noiseTex, (void *)rampTex);
 
     for (int frame = 0; frame < 90; frame++) {
         SDL_Event e;
@@ -102,6 +120,33 @@ int main(int argc, char *argv[])
             r2d_draw_9grid(ctx, tex, &panelSrc, 14.0f, 1.0f, &panelDst);
         }
 
+        // SPRITE-FX testi: cozulen sprite (esik 0→1 gidip geliyor) + ayni
+        // efektin ADD blend'le kopyasi (fx yolu her iki blend pipeline'ini
+        // da surmeli). Gurultu kaydirmasi REPEAT'i, kenar rengi rampayi sinar.
+        if (fxDissolve > 0 && tex != NULL) {
+            float tt = frame / 90.0f;
+            float thr = 0.15f + 0.7f * (0.5f - 0.5f * SDL_cosf(tt * 6.2832f));
+            float params[R2D_FX_PARAMS] = { 0 };
+            params[0] = thr;            // esik
+            params[1] = 0.10f;          // kenar bandi
+            params[2] = 1.5f;           // gurultu olcegi
+            params[3] = frame / 60.0f;  // zaman
+            params[4] = 0.15f;          // kayma hizi x
+            params[5] = 0.07f;          // kayma hizi y
+            params[6] = 3.0f;           // kenar kademesi
+            params[8] = 1.0f; params[9] = 1.0f; params[10] = 1.0f;  // p[2].rgb
+            params[11] = 1.4f;          // kenar parlakligi
+            r2d_fx_begin(ctx, fxDissolve, params, noiseTex, rampTex);
+            SDL_FRect dsrc = { 10, 10, 28, 31 };
+            SDL_FRect ddst = { 560, 40, 56, 62 };
+            r2d_draw_texture(ctx, tex, &dsrc, &ddst);
+            r2d_set_blend(ctx, R2D_BLEND_ADD);
+            SDL_FRect ddst2 = { 560, 120, 56, 62 };
+            r2d_draw_texture(ctx, tex, &dsrc, &ddst2);
+            r2d_set_blend(ctx, R2D_BLEND_ALPHA);
+            r2d_fx_end(ctx);
+        }
+
         // Additive parlama testi
         r2d_set_blend(ctx, R2D_BLEND_ADD);
         for (int k = 0; k < 8; k++)
@@ -146,6 +191,9 @@ int main(int argc, char *argv[])
     }
 
     if (tex) r2d_texture_destroy(ctx, tex);
+    if (noiseTex) r2d_texture_destroy(ctx, noiseTex);
+    if (rampTex) r2d_texture_destroy(ctx, rampTex);
+    if (wmask) r2d_texture_destroy(ctx, wmask);
     r2d_quit(ctx);
     SDL_DestroyWindow(window);
     SDL_Quit();

@@ -1,0 +1,54 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct FxU
+{
+    float4 p[8];
+};
+
+struct main0_out
+{
+    float4 _entryPointOutput [[color(0)]];
+};
+
+struct main0_in
+{
+    float2 i_uv [[user(locn0)]];
+    float4 i_col [[user(locn1)]];
+};
+
+fragment main0_out main0(main0_in in [[stage_in]], constant FxU& _45 [[buffer(0)]], texture2d<float> Tex [[texture(0)]], texture2d<float> Noise [[texture(1)]], texture2d<float> Ramp [[texture(2)]], sampler Smp [[sampler(0)]], sampler NSmp [[sampler(1)]], sampler RSmp [[sampler(2)]])
+{
+    main0_out out = {};
+    float4 _322;
+    do
+    {
+        float4 _197 = Tex.sample(Smp, in.i_uv) * in.i_col;
+        float4 _236 = Noise.sample(NSmp, ((in.i_uv * _45.p[0].z) + (_45.p[1].xy * _45.p[0].w)));
+        float _238 = dot(_236, float4(0.53299999237060546875, 0.2669999897480010986328125, 0.13300000131130218505859375, 0.0670000016689300537109375));
+        if (_238 < _45.p[0].x)
+        {
+            _197.w = 0.0;
+            _322 = _197;
+            break;
+        }
+        float _258 = (_45.p[0].y > 9.9999997473787516355514526367188e-05) ? fast::clamp((_238 - _45.p[0].x) / _45.p[0].y, 0.0, 1.0) : 1.0;
+        if (_258 < 1.0)
+        {
+            float _273 = (_45.p[1].z > 0.5) ? (floor(_258 * _45.p[1].z) / _45.p[1].z) : _258;
+            float _291 = _197.w;
+            float3 _292 = ((Ramp.sample(RSmp, float2(_273, 0.5)).xyz * _45.p[2].xyz) * _45.p[2].w) * _291;
+            _197.x = _292.x;
+            _197.y = _292.y;
+            _197.z = _292.z;
+            _197.w *= (0.550000011920928955078125 + (0.449999988079071044921875 * _273));
+        }
+        _322 = _197;
+        break;
+    } while(false);
+    out._entryPointOutput = _322;
+    return out;
+}
+

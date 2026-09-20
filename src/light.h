@@ -59,6 +59,16 @@ float light_falloff_param(void);
 
 float light_atten(float d, float r);
 
+// EĞRİ SÖZLEŞME TESTİ (açılışta bir kez): light_atten() ile fs_light'ın düşüş
+// dalı AYNI matematik olmak zorunda — oyun kuralı CPU eğrisini, oyuncunun gözü
+// GPU eğrisini okuyor; ayrışırsa oyuncu aydınlık gördüğü yerde ölüyle
+// karşılaşır (bir kez oldu: görsel 210px / bastırma 141px). İki denetim:
+// (1) dört modda tarama — light_atten, shader'ın satır satır C kopyasıyla
+//     karşılaştırılır; (2) shader KAYNAĞINDA yük taşıyan ifadeler aranır
+//     (0.06 kesim, 0.65 plato, mod formülleri) — shader değişir de bu test
+//     güncellenmezse gürültülü uyarı. Dönen: bulunan sorun sayısı (0 = temiz).
+int light_curve_selftest(const char *shaderPath);
+
 // Siyah cisim renk sıcaklığı → RGB (0..1). Fiziksel ışık rengi modu için.
 void light_kelvin_rgb(float kelvin, float *r, float *g, float *b);
 

@@ -1,6 +1,7 @@
 #include "render.h"
 #include "common.h"
 #include "tilemap.h"   // map_width/map_height (kamera clamp)
+#include <math.h>      // floorf (kamera sanat-pikseli yuvarlama)
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -33,6 +34,23 @@ void camera_update(Camera *camera, float targetX, float targetY, int winW, int w
     if (camera->y < 0.0f) camera->y = 0.0f;
     if (camera->x > worldW - viewW) camera->x = worldW - viewW;
     if (camera->y > worldH - viewH) camera->y = worldH - viewH;
+
+    // Kamera TAM dünya pikseline oturur (brief B.10.4'ün düzeltilmiş hali):
+    // dünya→ekran dönüşümü hiçbir yerde yuvarlanmıyor; kamera kesirli
+    // konumdayken NEAREST örnekleme her sprite'ı farklı yöne yuvarlar ve
+    // nesneler BİRBİRİNE GÖRE kırpışır. Floor bunu keser.
+    // NEDEN ART_PX (4px) DEĞİL — DENENDİ VE GERİ ALINDI (2026-08-22):
+    // kamera 4px ızgaraya oturunca dünya sabitleniyor ama KARAKTER oturmuyor;
+    // kesirli yürüyen oyuncunun ekran konumu 0-4px testere dişi çiziyor ve
+    // "karakter yürürken titriyor" (Hakan). Sanat-ızgarası kilidi ancak
+    // SPRITE'LAR DA ızgaraya oturursa çalışır — o iş düşük çözünürlüklü
+    // hedefle birlikte (GDD §6.2 borcu), tek satırlık değil.
+    // Tam piksele yuvarlamak yeterli: dünya tutarlı tam-piksel ofsette,
+    // oyuncunun sapması <1px (görünmez). Zoom tam sayı kaldıkça (B.10.3
+    // kuralı) 1 dünya px = zoom pencere px, hizalama bozulmaz.
+    // Clamp'ten SONRA floor: kamera sınır içinde kalır (floor değeri küçültür).
+    camera->x = floorf(camera->x);
+    camera->y = floorf(camera->y);
 }
 
 // Yumusak radial glow texture'i uretir (merkez parlak, kenar saydam).

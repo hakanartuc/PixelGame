@@ -848,11 +848,6 @@ void fx_render_band(ParticleSystem *fx, R2D *renderer,
         } else if (p->fxType == WEAPON_FX_EMBER) {
             // Kor: turuncu-kızıl, ömürle koyulaşır (akkor → kızıl kor)
             cr = 255;
-            cg = (Uint8)(70.0f + p->g * t * 0.42f);
-            cb = (Uint8)(18.0f + p->b * t * 0.25f);
-        } else if (p->fxType == WEAPON_FX_EMBER) {
-            // Kor: turuncu-kızıl, ömürle koyulaşır (akkor → kızıl kor)
-            cr = 255;
             cg = (Uint8)(70.0f + (float)p->g * t * 0.42f);
             cb = (Uint8)(18.0f + (float)p->b * t * 0.25f);
         } else if (p->fxType == WEAPON_FX_SPARK) {
@@ -1026,6 +1021,11 @@ void animfx_update(AnimFx *pool, float dt)
 
 void animfx_render(AnimFx *pool, R2D *renderer, const Camera *camera)
 {
+    // Blend AÇIKÇA kuruluyor (decal_render'daki sessiz-additive dersinin
+    // aynısı): bugüne dek yalnız çağrı sırası tesadüfüyle ALPHA'ydı —
+    // fx_render_band çıkarken ALPHA bırakıyor ve hep ondan sonra çağrılıyor.
+    // Çağrı sırası değişirse sheet'ler sessizce eklemeli çizilirdi.
+    r2d_set_blend(renderer, R2D_BLEND_ALPHA);
     float zoom = camera->zoom;
     for (int i = 0; i < MAX_ANIM_FX; i++) {
         if (!pool[i].active) continue;

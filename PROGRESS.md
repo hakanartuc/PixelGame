@@ -1,8 +1,197 @@
 # PROGRESS — Yapılanlar ve Kalanlar
 
-Güncelleme: 2026-07-30
+Güncelleme: 2026-08-22
 
 ## ✅ Tamamlanan fazlar
+
+### Faz ALEV (2026-08-22) — ⚠ COMMIT ATILMADI (aynı birikimde)
+Hakan kararı: imza uyarısı TEK shader'la esnetildi — eşikli alev (brief
+ADIM 3, B.3 kanonik tarifi: Febucci + DOOM PSX) yazıldı ve ilk tüketiciye
+bağlandı: **kamp ateşi + demirci ocağı gövde alevi** (brief C.2 Katman 1'in
+"Sonra" yolu — eskiden ikisi de partikül-only'ydi, gövde alevi YOKTU).
+
+- **`shaders/flame.frag.hlsl`** (YENİ): yakıt gradyanı × yukarı kayan iki
+  oktav gürültü → eşik → rampa. Pixel-art disiplini: uv quad'ın SANAT piksel
+  ızgarasına çivili, zaman 13 Hz'e kuantalı ("akmıyor kaynıyor" tuzağı),
+  renk merdiveni rampanın kendisinden (7 texel NEAREST — ekstra kuantalama
+  kodu yok, DOOM "tek kanal ısı + 1D palet" deseni).
+- **Ateş rampası kara cisim tablosundan** (fx.c'deki doğrulanmış değerler,
+  1000K→2700K; üst kademe B=87 → ADD üst üste binmesi sarıya doyar).
+- **Nefes teki** (GDD §6.6 Karar 2 korundu): alev gövdesi `fx_breath`'in
+  AYNI değerini okur — partikül, ısı bükülmesi, ışık ve gövde tek osilatör.
+  Yağmur bastırması da emit tarafıyla aynı formül.
+- **Konum**: `main.c` station_render_all'dan hemen sonra — istasyon
+  sprite'ının üstünde, partiküllerin altında. Her ocak farklı faz alır
+  ("her ocak farklı görünür" — brief C.2). ADD blend (alev = emisyon).
+- **ASCII siluet denetimi YAPILDI** (motor kuralı): scratchpad flame_sim.py
+  shader matematiğini birebir simüle etti — geniş taban, daralan diller,
+  kopan uçlar, çekirdek altta. Üçgen/leke yok.
+
+**TUR 2 (Hakan testi: "alev kampı kapatmış, kamp olduğu belli olmuyor")**
+— üç kök sebep bulundu ve kapatıldı:
+1. **İki alev üst üste yanıyordu**: campfire.png'nin GÖMÜLÜ 8-karelik alev
+   animasyonu + shader alevi. Hakan kararı: SHADER ALEVİ (HANDOVER'daki açık
+   karar kapandı). Sprite `src` odun+köz bölümüne kırpıldı (craft.c
+   {0,26,16,6} — satır 26-31; alev sanatı dosyada rafta, src'yi geri almak
+   eski görünüşe döndürür).
+2. **Çizim sırası**: alev sprite'ın ÖNÜNE çiziliyordu ve örtüyordu. Şimdi
+   istasyondan ÖNCE çiziliyor — odun yığını alevin alt 10 pikselini örter,
+   alev yığının İÇİNDEN yükselir (motor kuralı: üste almak değil DERİNLİK).
+3. **Boyut**: 44×56 → 32×48, taban y+4 → y-8; shader'a taban köşesi
+   yuvarlama eklendi (en alt sıralar hafif daralır — düz dip çizgisi yok).
+Ayrıca **demirci ocağı alev döngüsünden ÇIKARILDI**: ateşi yapının içindeki
+pencerede (furnace.png satır 23-26 gömülü animasyon) — dış gövde alevi o
+mimariye yanlış, arkaya çizilen de opak gövdenin ardında görünmez.
+
+**TUR 3 (Hakan: "hala ateş kampı kapatıyor")** — tur 2'nin kırpığı ters
+tepti: 6 satırlık yığın çok cılızdı, 48px alev onun üstünde dev top gibi
+duruyordu. Kalıcı çözüm TÜRETİLMİŞ ASSET:
+- **`scripts/bake_campfire_wood.py`** (YENİ, bake_cave_ring.py deseni; PIL'siz
+  çalışır — gömülü PNG codec): campfire.png satır 20-31'den
+  **`assets/decor/campfire_wood.png`** üretir (128×12, 8 kare), üç gömülü alev
+  tonu (255,200,37 / 255,162,20 / 237,118,20 → kural r≥230 AND b<45)
+  şeffaflanır. **Ortada kalan delik ÖZELLİK**: alev odunların arkasından bu
+  delikte görünür — "ateş odunların arasında yanıyor".
+- Oran TERS ÇEVRİLDİ: yığın 48×36 (tam çapraz kütükler), alev 24×40 ve
+  odundan DAR; taban y-12 → alt yarısı kütüklerin arkasında, diller üstten
+  ~16px taşar.
+- Emit/ışık/ısı değişmedi; orijinal campfire.png rafta.
+
+**TEST (Hakan, tur 3):** kamp ateşine bak → çapraz kütüklü yığın TAM ve net,
+alev odunlardan dar, aralarındaki delikten + üstten görünmeli. Oran hâlâ
+oturmadıysa iki topuz tek satır: alev boyutu (main.c fw/fh 24/40) ve taban
+(baseY y-12; yukarı almak alevi büyütür). Diller/nefes/yağmur önceki listede.
+
+### Faz ALTYAPI-ÜÇLÜSÜ (2026-08-22) — ⚠ COMMIT ATILMADI (aynı birikimde)
+İmza turu karar ÇIKARMADI (Hakan: "tam beklediğim görüntüler olmadı" —
+adaylar kodda kalıyor, GDD §6.1'e kayıt düşüldü) ve Hakan'ın "devam edelim"
+kararıyla brief ADIM 2'nin tamamı geldi. Bu üçlü imza kararına bağımlı DEĞİL
+— shader serisinin tesisatı. Oyun görselleri DEĞİŞMEDİ (oyun tarafında
+tüketici yok); tek tüketici r2d_test doğrulama harness'ı.
+
+- **REPEAT sampler** (`r2d.c`): NEAREST/LINEAR × CLAMP/REPEAT dört sampler;
+  `r2d_texture_set_repeat()` + doku başına bayrak + `pick_sampler()` tek
+  seçim noktası. Kayan gürültünün ön şartı.
+- **fxtex modülü** (`src/fxtex.c/h`, YENİ): `fxtex_noise` — 128×128
+  DÖŞENEBİLİR value-noise, kanal başına bir oktav (4/8/16/32), tamsayı hash
+  (frac(sin) dersinin CPU karşılığı), REPEAT işaretli döner ·
+  `fxtex_ramp` — N duraklı renk rampası + luma-korumalı ton kaydırma
+  (tek paletten soğuk/sıcak varyant).
+- **SPRITE-FX yolu** (`r2d.h/c` — brief'in "en büyük kapı"sı):
+  `r2d_fx_register(fragName, numExtraTex)` → blend×format başına 4 pipeline;
+  `r2d_fx_begin/end` arasındaki TÜM çizimler kayıtlı shader'la gider.
+  Draw başına 8×float4 uniform payload (havuzdan, draw struct şişmedi) +
+  2 ek doku slotu. NULL slota 1×1 beyaz bağlanır (sessiz-sıfır örneklemesi
+  olmasın — su maskesi dersi). Tavan aşımı LOGLANIR, sessiz düşmez.
+  `r2d_line` kendi draw girdisini açıyordu, fx alanları oraya da bağlandı
+  (çöp değer fx yolunu rastgele tetiklerdi).
+- **dissolve.frag.hlsl** (YENİ): doğrulama shader'ı + gelecekteki çözülme
+  ölümü adayı. Eşik + kademeli yanan kenar (pixel-art: 2-3 basamak) +
+  rampadan kenar rengi + REPEAT kaydırmalı gürültü. select() yok.
+- **r2d_test genişledi**: noise+ramp üretimi, dissolve kaydı, animasyonlu
+  eşik, ALPHA ve ADD blend'de fx çizimi. `R2D TEST OK` geçti; oyun duman
+  testi temiz (boot + temiz kapanış, -Wall -Wextra sıfır uyarı).
+- **DİKKAT**: shader araçları bu makinede YOKTU — `brew install glslang
+  spirv-cross` kuruldu (CMakeLists'in dokümante gereksinimi). compile.sh
+  mevcut shader çıktılarının bir kısmını yeni araç sürümüyle yeniden üretti
+  (light/postfx/water/sprite.vert değişik görünür) — beşi de r2d_test'te
+  sürüldü, sorun yok.
+
+**TEST (Hakan):** `./build/r2d_test` — sağ tarafta iki çözülen sprite
+görünmeli (üstteki ALPHA, alttaki ADD): eşik gidip gelirken kenar sarı→
+turuncu→kızıl kademeli yanmalı, delikler gürültülü (kare değil) açılmalı.
+Oyunda görsel değişiklik BEKLENMİYOR (bu fazın tüketicisi yok) — normal tur
+atıp bozulma olmadığını doğrulamak yeter.
+
+**SONRAKİ:** eşikli alev (brief ADIM 3) — ama o SERİNİN başı ve imza
+uyarısına takılıyor. Seçenekler: (a) imza turu 2'yi Hakan'ın "beklediğim
+görüntü" tarifiyle yapmak, (b) alevi tek shader olarak yazıp imzayı sonra
+oturtmak. Karar Hakan'a sorulacak.
+
+### Faz İMZA-1 (2026-08-22) — ⚠ COMMIT ATILMADI (borç günü setiyle birlikte)
+Hakan'ın yönü: *"VFX/shader'ı geliştirip görsel yapıyı sanatsal hale
+getirmek."* AskUserQuestion kararları: **① borç günü commit'i ertelendi,
+üstüne devam ② prosedürel motor VARSAYILAN AÇIK ③ yön = görsel imza + shader
+hattı** (onaylı game-feel sırasının önüne geçti; game-feel/dünya-tepki
+paketleri sırada duruyor).
+
+- **Prosedürel motor varsayılan AÇIK** (`skillfx.c` `skillfx_init` →
+  `s_procedural=true`, GDD §6.6 Karar 4'e [ONAYLI] eki). 5 büyü, isabet
+  katmanı, hit-stop/sarsıntı, ekran darbesi, isabet zemin parçaları normal
+  oyunda canlandı. Ctrl+P A/B anahtarı olarak duruyor.
+- **Yol göstergesi kapısı değişti** (main.c): splash artık
+  `skillfx_procedural()` ile değil `devSkillfxAB` bayrağıyla açılıyor —
+  Ctrl+P'ye hiç basılmamış oturumda susar, basıldıysa İKİ yönde de konuşur
+  (sprite modunda da "SPRITE (motor disi)" der; eski koşulda kapalı mod
+  sessizdi ve `proc` hesabı motor durumunu kontrol etmiyordu — düzeltildi).
+- **4 İMZA ADAYI grade'i** F7 döngüsüne, SICAK'tan hemen sonra (main.c
+  POSTFX_PRESETS): OCAK / SESSIZ GUN / MASAL / DEMIRBOYUN. Hepsi
+  SICAK↔DARK FANTASY ekseninde, kanona bağlı birer iddia; ayrıntı GDD §6.1.
+  `postfxIdx=1` (SICAK) değişmedi — F7'nin ilk dört basışı adayları gezdirir.
+
+**TEST (Hakan):** ① F7 ile dört adayı gündüz/alacakaranlık/gece + zindanda
+gez (F8 hava, kandil/kamp ateşi başında bloom karakteri) → imza kararı ②
+normal oyunda (Ctrl+P'ye basmadan) büyü at — beş büyü prosedürel gelmeli,
+splash gürültüsü OLMAMALI ③ isabet hissi: hit-stop/sarsıntı artık varsayılan
+— rahatsız ediyorsa söyle. Borç günü testleri de duruyor (F7 bloom turu +
+gece yağmur/sis).
+
+**SONRAKİ (imza kararından sonra):** shader altyapı üçlüsü (REPEAT sampler +
+gürültü/rampa CPU üreticisi + sprite başına shader yolu) → eşikli alev
+(brief ADIM 2-3). İmza kararı olmadan shader serisi YAZILMAZ (brief E uyarısı).
+
+### Faz VFX-ANALİZ + BORÇ GÜNÜ (2026-08-22) — ⚠ COMMIT ATILMADI
+Üç paralel kod taramasıyla VFX/shader durum analizi çıkarıldı ve brief'in
+"borç günü" kalemleri kapatıldı. **Değişiklikler working tree'de duruyor;
+Hakan oyun içi test sonrası commit atacak** (yürüyüş testi ✓ tamam; F7 bloom
+turu ve gece yağmur/sis kontrolü henüz yapılmadı). Derleme -Wall -Wextra temiz,
+oyun boot ediyor, selftest geçiyor.
+
+- **Analiz dokümanı**: `docs/konsept/vfx-analiz-2026-08-22.md` — brief'in
+  durum defteri (kapanan/açık kalemler, sistemsel borçlar, 4 ekleme paketi,
+  onaylı öncelik sırası). Sonraki VFX işine başlayan ÖNCE bunu okusun.
+  **EN KRİTİK BULGU:** prosedürel skill motoru varsayılan KAPALI
+  (`skillfx.c` `s_procedural=false`, tek anahtar Ctrl+P) — 5 büyü, isabet
+  katmanı, elemana göre hit-stop/sarsıntı, ekran darbesi normal oyunda ölü
+  kod. Varsayılan kararı (Hakan testi) her yeni VFX işinin önünde.
+- **Borç günü, 6 kalem**: ① `animfx_render` blend'ini artık kendisi kuruyor
+  (sessiz-additive tuzağının 3. kopyasıydı) ② `fx.c`'deki erişilmez kopya
+  EMBER dalı silindi ③ bloom eşiği 20 preset'te −0.10 (bayat "HUD taşar"
+  gerekçesi yorumdan silindi; ince ayar F7 turunda) ④ kamera tam piksele
+  floor (aşağıda ders) ⑤ yağmur/kar/sis ışık pass'inin ÖNÜNE taşındı — gece
+  yağış da kararıyor, şimşek flaşı bilerek ışıktan sonra (o örtü değil IŞIK);
+  hasar yazıları sisin üstünde kalsın diye hava bloğundan sonra
+  ⑥ `light_curve_selftest()` (light.c/h + main.c açılış çağrısı): CPU
+  `light_atten` ↔ `fs_light` sözleşmesi artık gürültülü — 4 modda tarama +
+  shader kaynağında 5 yük taşıyan ifade denetimi.
+- **KAMERA DERSİ (brief B.10.4 düzeltmesi)**: "kamerayı ART_PX'e yuvarla"
+  tarifi DENENDİ VE GERİ ALINDI — kamera 4px ızgaraya oturunca dünya
+  sabitleniyor ama kesirli yürüyen KARAKTER 0-4px testere dişi çiziyor
+  ("karakter yürürken titriyor"). Doğrusu TAM dünya pikseline `floorf`:
+  dünya tutarlı, oyuncu sapması <1px. Gerçek sanat-ızgarası kilidi ancak
+  sprite'lar DA oturursa çalışır — o iş düşük çözünürlüklü hedef borcuyla
+  (GDD §6.2) birlikte. Gerekçe `render.c` camera_update'te yorumda.
+- `ART_PX` sabiti `common.h`'ye taşındı (4.0f); `skillfx.c`'deki yerel kopya
+  kaldırıldı. HANDOVER'a analiz dokümanı işareti eklendi.
+
+**KALAN (Hakan VSCode'dan devam ediyor):**
+1. **Commit**: F7 bloom + gece hava testi sonrası; tamamı tek commit olabilir.
+2. **macOS kısayolları** (istek geldi, KODLANMADI — envanter ve plan hazır):
+   - Ctrl kullanan 11 nokta: `main.c` 4029/4054/4068/4079/4093/4107/4137/
+     4158/4169 (Ctrl+L/V/O/B/F/G/T/Y/P) · `uieditor.c` 260 (Ctrl+U toggle) ·
+     `uieditor.c` 372 (`ctrl` değişkeni — ok tuşuyla BOYUT ve Ctrl+S kaydet).
+   - Önerilen desen: `common.h`'ye tek makro —
+     `#ifdef __APPLE__ → (SDL_KMOD_CTRL|SDL_KMOD_GUI), değilse SDL_KMOD_CTRL`
+     — ve tüm `& SDL_KMOD_CTRL` kontrolleri bu makroya geçer. Böylece macOS'ta
+     Cmd asıl düzenleyici olur, Ctrl de çalışır (dokümanlardaki Ctrl+X kas
+     hafızası bozulmaz); Windows tuşu bilerek dışarıda (OS'e ait).
+   - Çakışma denetimi YAPILDI: kullanılan harfler L V O B F G T Y P U S —
+     macOS sistem kombinasyonlarına (Cmd+Q/W/H/M) denk gelen YOK.
+   - F tuşlarına (F4/F7/F10/F11) DOKUNMA: macOS'ta Fn/sistem ayarına bağlı
+     ama Hakan zaten kullanıyor, sorun bildirilmedi.
+3. **Ctrl+P kararı**: prosedürel motor varsayılan olacak mı — görsel test.
+4. Sonraki paketler (öncelik onaylı): game-feel → dünya-tepki → shader
+   altyapısı+eşikli alev → atmosfer. Ayrıntı analiz dokümanında.
 
 ### Faz VFX — prosedürel VFX / skill motoru (2026-08-05)
 Hakan'ın çerçevesi bu fazın tamamını belirledi: *"Bunları sadece silaha, kamp

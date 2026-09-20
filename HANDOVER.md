@@ -136,6 +136,40 @@ vinyet açıkken tuşlar KİLİTLİ (yalnız 1-8 seçim, E/Space hız, ESC menü
 - **`docs/konsept/vfx-teknik-brief.md`** VFX'in tasarım kaynağı: teknikler, iki örnek
   vaka, kanona bağlı efekt listesi, uygulama sırası (0 taşınabilirlik → 1 shader'sız
   kalemler → 2 altyapı → 3 eşikli alev).
+- **`docs/konsept/vfx-analiz-2026-08-22.md`** brief'in DURUM DEFTERİ: hangi kalem
+  kapandı / hangisi açık, borç listesi, ekleme paketleri ve öncelik sırası. EN
+  KRİTİK: prosedürel skill motoru varsayılan KAPALI (`skillfx.c` `s_procedural`,
+  tek anahtar Ctrl+P) — Hakan testi + varsayılan kararı her yeni VFX işinin önünde.
+- **⚠ 2026-08-22 BORÇ GÜNÜ + İMZA-1 COMMIT'SİZ**: borç günü seti (8 dosya)
+  ÜSTÜNE İMZA-1 turu geldi (Hakan kararı: commit ertelendi, üstüne devam).
+  Hakan test edip commit atacak (kural: oyun içi test olmadan commit YOK).
+  Ne değişti + test listesi → PROGRESS.md "Faz İMZA-1" ve "Faz VFX-ANALİZ +
+  BORÇ GÜNÜ". Kamera dersi orada: ART_PX'e yuvarlama karakteri titretir,
+  TAM piksele floor doğrusu.
+- **PROSEDÜREL MOTOR ARTIK VARSAYILAN (2026-08-22, Hakan kararı)**:
+  `skillfx_init` → `s_procedural=true`. Ctrl+P A/B anahtarı duruyor; yol
+  göstergesi splash'i yalnız Ctrl+P'ye basılmış oturumda konuşur
+  (`devSkillfxAB` bayrağı, main.c). GDD §6.6 Karar 4 [ONAYLI] eki.
+- **GÖRSEL İMZA KARARI AÇIK, ADAYLAR KODDA (GDD §6.1)**: F7'de SICAK'tan
+  sonra 4 aday — OCAK / SESSIZ GUN / MASAL / DEMIRBOYUN. **İlk tur karar
+  çıkarmadı** (Hakan: "tam beklediğim görüntüler olmadı"); adaylar duruyor,
+  yeni tur Hakan'ın "beklediğim görüntü" tarifiyle yapılacak. İmza
+  seçilmeden shader SERİSİ yazılmaz (tesisat serbest — bkz. sonraki madde).
+- **SPRITE-FX ALTYAPISI KURULDU (2026-08-22, Faz ALTYAPI-ÜÇLÜSÜ)**: REPEAT
+  sampler + `fxtex` gürültü/rampa üreticisi + sprite başına shader yolu
+  (`r2d_fx_register/begin/end` — sözleşme r2d.h'de: FxU 8×float4, t1/t2 ek
+  doku, NULL slota beyaz bağlanır). İlk shader `dissolve.frag` (doğrulama +
+  çözülme ölümü adayı); tek tüketici r2d_test, OYUN GÖRSELİ DEĞİŞMEDİ.
+  Yeni efekt = bir .frag.hlsl + compile.sh + bir register çağrısı.
+  Bu makineye `brew install glslang spirv-cross` kuruldu; compile.sh eski
+  çıktıların bir kısmını yeni araç sürümüyle yeniden üretti (r2d_test'le
+  doğrulandı). Ayrıntı PROGRESS "Faz ALTYAPI-ÜÇLÜSÜ".
+- **EŞİKLİ ALEV KODDA (2026-08-22, Faz ALEV)**: `flame.frag.hlsl` — beş
+  damganın ortak temeli; ilk tüketici kamp ateşi + demirci ocağı gövde alevi
+  (main.c, station_render_all sonrası). Rampa kara cisim tablosundan, nefes
+  `fx_breath`'ten (tek osilatör kuralı korundu), uv sanat ızgarasına çivili,
+  zaman 13 Hz kuantalı. Hakan görsel testi bekliyor — ayrıntı ve test listesi
+  PROGRESS "Faz ALEV".
 
 ### KADRO FAZI (2026-08-03) — bilinmesi gerekenler
 - **Yenitaç kadrosu 23 slot, 8 doküman** (`docs/konsept/kadro-*.md`). Kod YAZILMADI;
@@ -244,7 +278,8 @@ Kalan 13 büyü sprite — ekran söylüyor.
 **TEST EDİLECEK**: Ctrl+P ile prosedürel aç → dört büyüyü dummy'ye at (F10 ile
 tomarlar) → alev dilinin siluetine bak (üçgen huni gitti mi) → yıldırım mor,
 buz camgöbeği ayrımı okunuyor mu → Ctrl+G ile silah damgası döngüsü.
-**AÇIK KARAR (Hakan)**: kamp ateşi sprite alevi kalsın mı · alev/buz rünü eşya
+**AÇIK KARAR (Hakan)**: ~~kamp ateşi sprite alevi kalsın mı~~ (KAPANDI
+2026-08-22: SHADER ALEVİ — GDD §6.6 sonu) · alev/buz rünü eşya
 olarak eklenecek mi (mekanik kodda ama HİÇBİR EŞYA damgayı vermiyor — şu an
 yalnız Ctrl+G ile erişilebilir) · kalan 14 büyü göç etsin mi.
 **YENİ MOTOR KURALLARI (bu turların bedeli)**:

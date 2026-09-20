@@ -81,6 +81,10 @@ void r2d_texture_set_alpha_mod(R2DTexture *tex, Uint8 a);
 // Örnekleme: varsayılan NEAREST (pixel-art); glow gibi yumuşak şeyler LINEAR
 void r2d_texture_set_linear(R2DTexture *tex, bool linear);
 
+// Adresleme: varsayılan CLAMP; kayan gürültü/desen dokuları REPEAT ister
+// (uv 1'i aşınca doku baştan döşenir — kaydırılabilir gürültünün şartı).
+void r2d_texture_set_repeat(R2DTexture *tex, bool repeat);
+
 // --- Render target: hedefe AYRI pass ile çiz (kare içinde/dışında çağrılabilir).
 // begin..end arası çizimler hedefe gider; end anında GPU'ya gönderilir.
 void r2d_target_begin(R2D *ctx, R2DTexture *target, bool clear,
@@ -307,6 +311,43 @@ typedef struct {
     float layers;                // katman bit maskesi; 0 = hepsi açık (bkz. R2D_WATER_L_*)
 } R2DWater;
 void r2d_water_flush(R2D *ctx, const R2DWater *w);
+
+// --- SPRITE-FX: sprite başına özel fragment shader yolu -------------------
+// Brief ADIM 2.3'ün karşılığı ve shader serisinin KAPISI: dissolve, eşikli
+// alev, outline, flow — hepsi bu yoldan geçer. Bir kez kuruldu, sonraki her
+// efekt = bir .frag.hlsl + bir register çağrısı.
+//
+// Kullanım:
+//   init'te : int fx = r2d_fx_register(ctx, "dissolve.frag", 2);
+//   çizimde : r2d_fx_begin(ctx, fx, params, noiseTex, rampTex);
+//             r2d_draw_texture(...);            // araya giren TÜM çizimler
+//             r2d_fx_end(ctx);                  // standart yola dön
+//
+// Sözleşme:
+//   · Fragment shader'ın uniform'u: cbuffer FxU : register(b0, space3)
+//     { float4 p[8]; } — params dizisi bu 8 float4'e (32 float) kopyalanır.
+//   · Doku slotları: t0/s0 = çizilen sprite'ın kendisi, t1/s1 ve t2/s2 =
+//     tex1/tex2 (register çağrısındaki numExtraTex kadarı bağlanır; NULL
+//     verilen slota 1x1 beyaz doku bağlanır — SESSİZ SIFIR örneklemesi
+//     olmasın, su maskesi vakasının dersi).
+//   · Blend curBlend'den gelir (ALPHA/ADD ikisi de çalışır), örnekleme her
+//     dokunun kendi linear/repeat bayrağından.
+//   · Kare başına efektli draw tavanı R2D_FX_MAX_ACTIVE; aşım SESSİZ DEĞİL,
+//     loglanır ve çizim standart yola düşer.
+#define R2D_FX_PARAMS     32   // efekt başına float parametre (8 float4)
+#define R2D_FX_MAX_PIPES   8   // kayıtlı efekt shader'ı tavanı (0 = standart yol)
+#define R2D_FX_MAX_ACTIVE 256  // kare başına efekt parametreli draw tavanı
+
+// fragName örn. "dissolve.frag" (assets/shaders/<fmt>/ altında derlenmiş hali
+// aranır). numExtraTex 0..2. Dönüş: fx id (>0) ya da 0 = hata (loglar).
+// Kare dışında, init'ten sonra çağrılır.
+int r2d_fx_register(R2D *ctx, const char *fragName, int numExtraTex);
+// Bu çağrıdan r2d_fx_end'e kadar TÜM çizimler efekt yoluyla gider.
+// params NULL olabilir (tüm parametreler 0). tex1/tex2 kayıttaki numExtraTex
+// sayısı kadar okunur.
+void r2d_fx_begin(R2D *ctx, int fxId, const float params[R2D_FX_PARAMS],
+                  R2DTexture *tex1, R2DTexture *tex2);
+void r2d_fx_end(R2D *ctx);
 
 // --- Sprite ---
 void r2d_draw_texture(R2D *ctx, R2DTexture *tex,

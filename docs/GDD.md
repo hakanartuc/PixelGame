@@ -648,13 +648,37 @@ Cute Fantasy ailesi (16px, 4x) + ULPC oyuncu · dual-grid autotile standardı
 · mapgen görsel iterasyon protokolü · xDeviruchi müzik (mood sistemi) ·
 15 SFX + ambiyans. Borçlar: Rüstem sprite, haydut offset, Kayalık klifleri.
 
-### 6.1 Görsel tarz / post-fx grade [AÇIK — kalıcı tarz seçilmedi]
+### 6.1 Görsel tarz / post-fx grade [AÇIK — adaylar kodda, karar Hakan testinde]
 Tam-ekran post-process filtre altyapısı kodda (bkz. §8, F7 döngüsü); 20 hazır
 ön ayar tarz denemesi için (SICAK varsayılan · DARK FANTASY · CRT · VHS · NOIR
 · GAMEBOY · SYNTHWAVE · KORKU · kombinasyonlar). Oyunun KALICI görsel imzası
 Hakan testinden sonra seçilecek — muhtemelen SICAK/DARK FANTASY ekseni. ~~Filtre
 şu an HUD dahil tüm kareye uygulanıyor (sahne-only varyantı açık soru).~~
 **ÇÖZÜLDÜ 2026-07-30:** `r2d_postfx_flush()` ile sahne/HUD ayrımı yapıldı — bkz. §6.5 Karar 1b.
+
+**İMZA ADAYLARI KODDA (2026-08-22, "sanatsal görsel yapı" turu):** F7
+döngüsünde SICAK'tan hemen sonra dört aday, hepsi SICAK↔DARK FANTASY ekseninde
+ve kanona bağlı birer iddia taşıyor:
+- **OCAK** — "ışık = güvenlik" (LORE §1.5): sakin nötr taban, ateş/kandil
+  cömert bloom'la sahnenin yıldızı.
+- **SESSIZ GUN** — kanonun yası: kül tonu, çekilmiş doygunluk, ince gren;
+  renk patlaması yalnız büyüye ve ateşe ait.
+- **MASAL** — Cute Fantasy sanatının kendi sesi: canlı ve aydınlık; karanlığı
+  ekran değil kanon anlatır (şirin dünya + sert hikaye tezatı bilinçli imza).
+- **DEMIRBOYUN** — demir grisi, soğuk, sert kontrast; güçlü bloom'la soğuk
+  tabanda her sıcak ışık bir vaat.
+Test protokolü preset yorumunda: her adayla gündüz/alacakaranlık/gece + zindan
+gezilir, kandil/kamp ateşi başında bloom karakterine bakılır. Karar verilince
+kazanan varsayılan olur, kalan adaylar listeden düşer. **Shader serisi
+(eşikli alev vb.) bu karardan sonra yazılır** — brief E bölümü uyarısı.
+
+**İLK TEST TURU (2026-08-22): KARAR ÇIKMADI.** Hakan dördünü de gezdi:
+*"neyi seçeceğimi tam bilemedim, tam beklediğim görüntüler olmadı."* Adaylar
+kodda KALIYOR (silme yok), karar AÇIK. Ders: grade tek başına "sanatsal imza"
+beklentisini taşımıyor — beklenti muhtemelen grade + ışık + shader efektlerinin
+TOPLAMI. Yeni aday turu shader altyapısı görünür sonuç verdikten sonra, Hakan'ın
+"beklediğim görüntü" tarifiyle birlikte yapılacak. O tarif alınmadan beşinci
+aday yazılmayacak.
 
 ### 6.2 Işık & gölge modeli [KODDA — varyantlar test bekliyor]
 Işık bu oyunda dekor değil **mekanik**: LORE §1.5 "eşik = ışığın bittiği yer".
@@ -913,6 +937,11 @@ durumuna göre değişemez), sahiplik (yeni büyü = dosya indirmek). Prosedüre
 BESTELİYOR — kendi çizim sistemini kurmuyor: fx partikülleri + bükülme + ışık + r2d primitifleri +
 decal kalıntı. **Ctrl+P A/B anahtarı**: karşılaştırma olmadan "daha iyi mi" sorusu cevaplanamaz;
 eski yol rafta duruyor (BOŞA ÇIKAN KODU SİLME kuralı).
+**[ONAYLI 2026-08-22] PROSEDÜREL MOTOR VARSAYILAN AÇIK** (`skillfx_init`
+`s_procedural=true`): 5 büyü, isabet katmanı, elemana göre hit-stop/sarsıntı,
+ekran darbesi ve isabet zemin parçaları artık normal oyunun parçası. Ctrl+P
+A/B anahtarı olarak kalıyor; yol göstergesi splash'i yalnız Ctrl+P'ye en az
+bir kez basılmış oturumda konuşur (normal oyunda gürültü olmasın).
 
 **Karar 5 — İSABET ELEMANA GÖRE (`skillfx_impact`, 7 eleman).** "Vurdum" hissinin çekirdeği
 YÖNDÜR: darbe her yöne saçılırsa vuruşun nereden geldiği okunmaz. Koni darbe yönünde açılır, yay
@@ -1200,7 +1229,11 @@ zorunda. Zemin seviyesindeki patlamalar `groundY == wy` geçiyor.
 **Bütçe:** havuz 512, tepe kullanım ~150 (diken 196 + patlama 14 + nova 39 + isabet 8). Dolu havuzda
 parça DÜŞER, sınırlı tarama 24 slot (fx.c'nin 2 milyon iterasyon dersi).
 
-**Açık kalan:** kamp ateşi sprite alevi kalsın mı (karar Hakan'da) · alev/buz rünü eşya olarak
+**Açık kalan:** ~~kamp ateşi sprite alevi kalsın mı~~ **KAPANDI [ONAYLI 2026-08-22]:
+SHADER ALEVİ** (flame.frag) — sprite `src` odun+köz bölümüne kırpıldı (craft.c, satır 26-31),
+gömülü alev sanatı dosyada rafta; alev odunun ARKASINDAN yükselir (ilk sürüm önüne çizip kampı
+kapatmıştı — Hakan testi). Demirci ocağına dış gövde alevi YANLIŞ: ateşi yapının içindeki
+pencerede, gömülü animasyon kalır. · alev/buz rünü eşya olarak
 eklenecek mi (mekanik kodda, hiçbir eşya damgayı vermiyor — şu an yalnız Ctrl+G ile test edilebilir)
 · kalan 13 büyünün prosedürel motora göçü (beşi onaylanırsa). Göçmemiş olanlar artık ekranda
 kendini `SPRITE (motor disi)` diye ilan ediyor — hangi büyünün sırada olduğu tahmine kalmıyor.

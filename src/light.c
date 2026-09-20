@@ -47,6 +47,97 @@ float light_atten(float d, float r)
     return (a < LIGHT_EDGE_CUT) ? 0.0f : a;
 }
 
+// ── EĞRİ SÖZLEŞME TESTİ ── fs_light'ın düşüş dalının (light.frag.hlsl,
+// fmode seçimi + kesin kenar) satır satır C kopyası. Sabitler BİLEREK literal
+// (0.65 / 0.06): light.h makroları değişir de shader değişmezse tarama
+// karşılaştırması patlasın. Shader'ın kendisi değişirse aşağıdaki kaynak-metin
+// denetimi yakalar. İkisi birden atlatılamaz olmasa da "sessizce ayrıştı"
+// sınıfının bilinen iki yolunu kapatır.
+static float fs_att_ref(int fmode, float fparam, float d, float r)
+{
+    if (d >= r) return 0.0f;   // shader: if (d >= r) continue;
+    float att;
+    if (fmode == 1) {          // Karis pencereli ters-kare
+        float u = d / fparam;
+        float w = 1.0f - powf(d / r, 4.0f);
+        if (w < 0.0f) w = 0.0f;
+        if (w > 1.0f) w = 1.0f;
+        att = (w * w) / (u * u + 1.0f);
+    } else if (fmode == 2) {   // URP 2D pow(1-t, k)
+        att = powf(1.0f - d / r, fparam);
+    } else if (fmode == 3) {   // kenar dizi (knee)
+        float b = 1.0f - d / r;
+        float a = b * b * (3.0f - 2.0f * b);
+        float w = b / 0.25f;
+        if (w > 1.0f) w = 1.0f;
+        if (w < 0.0f) w = 0.0f;
+        att = a * w * w;
+    } else {                   // iç plato + smoothstep
+        float t = (1.0f - d / r) / 0.65f;
+        if (t > 1.0f) t = 1.0f;
+        att = t * t * (3.0f - 2.0f * t);
+    }
+    return (att < 0.06f) ? 0.0f : att;
+}
+
+int light_curve_selftest(const char *shaderPath)
+{
+    int fails = 0;
+
+    // (1) Dört modda tarama: light_atten == shader kopyası.
+    int   saveMode  = s_falloffMode;
+    float saveParam = s_falloffParam;
+    static const float PARAMS[4] = { 0.0f, 41.0f, 1.6f, 0.0f };
+    static const float RADII[3]  = { 60.0f, 150.0f, 320.0f };
+    for (int mode = 0; mode < 4 && fails < 8; mode++) {
+        light_set_falloff(mode, PARAMS[mode]);
+        for (int ri = 0; ri < 3 && fails < 8; ri++) {
+            float r = RADII[ri];
+            for (float d = 0.0f; d < r; d += r / 400.0f) {
+                float cpu = light_atten(d, r);
+                float gpu = fs_att_ref(mode, PARAMS[mode], d, r);
+                if (fabsf(cpu - gpu) > 1e-5f) {
+                    SDL_Log("IŞIK EĞRİSİ AYRIŞTI: mod=%d d=%.1f r=%.0f "
+                            "cpu=%.6f shader=%.6f — light.c ile "
+                            "light.frag.hlsl senkronu bozulmuş!",
+                            mode, d, r, cpu, gpu);
+                    fails++;
+                    break;   // mod başına ilk sapma yeter, log'u boğma
+                }
+            }
+        }
+    }
+    light_set_falloff(saveMode, saveParam);
+
+    // (2) Shader kaynağı denetimi: yük taşıyan ifadeler yerinde mi? Kaynak
+    // dosya yalnız geliştirme ağacında var (oyun bytecode yüklüyor) — yoksa
+    // sessizce atlanır, bu bir hata değil.
+    if (shaderPath != NULL) {
+        size_t len = 0;
+        char *src = (char *)SDL_LoadFile(shaderPath, &len);
+        if (src != NULL) {
+            static const char *TOKENS[] = {
+                "if (att < 0.06)",           // kesin kenar (LIGHT_EDGE_CUT)
+                "(1.0 - d / r) / 0.65",      // iç plato (LIGHT_CORE_FRAC)
+                "pow(d / r, 4.0)",           // Karis penceresi
+                "pow(1.0 - d / r, fparam)",  // URP ailesi
+                "saturate(b / 0.25)",        // kenar dizi
+            };
+            for (size_t i = 0; i < sizeof(TOKENS) / sizeof(TOKENS[0]); i++) {
+                if (SDL_strstr(src, TOKENS[i]) == NULL) {
+                    SDL_Log("IŞIK SHADER'I DEĞİŞMİŞ: \"%s\" ifadesi %s "
+                            "içinde yok — light_atten() VE bu testin "
+                            "kopyası birlikte güncellenmeli!",
+                            TOKENS[i], shaderPath);
+                    fails++;
+                }
+            }
+            SDL_free(src);
+        }
+    }
+    return fails;
+}
+
 // ── KELVİN → RGB (Tanner Helland yaklaşımı; Mitchell Charity siyah cisim
 // tablosu + CIE 1964, geçerli 1000-40000K). Frostbite Tablo 4 referansları:
 // kibrit 1700-1800K · mum 1850-1930K · gündoğumu 2000-3000K · gün ışığı 6500K.

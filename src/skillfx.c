@@ -8,7 +8,7 @@
 // yine geçerli (sanat ızgarası, kuantalanmış palet, sert kenar) çünkü onlar
 // motor kuralı; görkem ÖLÇEKTEN ve SÜREDEN geliyor, bulanıklıktan değil.
 
-#define ART_PX 4.0f     // 1 sanat pikseli = 4 dünya px (TILE 64 / doku 16)
+// ART_PX artık common.h'de (kamera yuvarlaması da aynı sabiti kullanıyor)
 
 typedef struct {
     SkillFxKind kind;
@@ -481,7 +481,9 @@ void skillfx_init(void)
 {
     s_punchLife = 0.0f; s_punchMax = 0.0f; s_punchStr = 0.0f;
     for (int i = 0; i < SKILLFX_MAX_EVENT; i++) s_ev[i].active = false;
-    s_procedural = false;
+    // Hakan kararı 2026-08-22: prosedürel motor VARSAYILAN. Sprite yolu
+    // silinmedi, Ctrl+P A/B anahtarı olarak duruyor (GDD §6.6 Karar 4).
+    s_procedural = true;
 }
 
 void skillfx_set_procedural(bool on) { s_procedural = on; }
