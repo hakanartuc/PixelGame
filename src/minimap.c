@@ -3,6 +3,7 @@
 #include "tilemap.h"
 #include "npc.h"
 #include "uilayout.h"   // konum + kutu boyutu (layout.json)
+#include "worldmap.h"  // PORTALS (geçit işaretleri)
 
 #define REVEAL_RADIUS 12     // oyuncu çevresinde kaç tile açılır
 #define MINIMAP_SIZE 170.0f  // ekrandaki kenar uzunluğu (uzun kenara göre ölçek)
@@ -164,6 +165,25 @@ void minimap_render(R2D *renderer, float playerX, float playerY,
             r2d_set_color(renderer, 255, 210, 60, qa);
             SDL_FRect qdot = { x0 + qc * scale - 2, y0 + qr * scale - 2, 5, 5 };
             r2d_fill_rect(renderer, &qdot);
+        }
+    }
+
+    // GEÇİT İŞARETLERİ (Hakan: "çölü/zindanı bulamadım") — bu haritadan çıkan
+    // geçitler turkuaz elmas; SİS ŞARTI YOK (yön bulma yardımı: kervan yolu
+    // uçları zaten söylentiyle bilinir sayılır). Görev işaretçisi deseninde.
+    {
+        extern const MapPortal PORTALS[];
+        extern const int PORTAL_COUNT;
+        for (int i = 0; i < PORTAL_COUNT; i++) {
+            if (PORTALS[i].from != map_current()) continue;
+            int pc = (int)(PORTALS[i].x / TILE_SIZE);
+            int pr = (int)(PORTALS[i].y / TILE_SIZE);
+            if (pc < 0 || pc >= mw || pr < 0 || pr >= mh) continue;
+            r2d_set_color(renderer, 80, 220, 220, 235);
+            SDL_FRect p1 = { x0 + pc * scale - 2, y0 + pr * scale, 5, 1 };
+            SDL_FRect p2 = { x0 + pc * scale, y0 + pr * scale - 2, 1, 5 };
+            r2d_fill_rect(renderer, &p1);
+            r2d_fill_rect(renderer, &p2);
         }
     }
 
