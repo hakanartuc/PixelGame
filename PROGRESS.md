@@ -83,6 +83,23 @@ kıyısı) ② odun kesme düğümleri (T31,11 civarı) yeni ağaçla çalışı
 kuyu/fıçı/çit/pano köyde yerli yerinde ve ölçek göze oturuyor mu ④ pano [E]
 etkileşimi hâlâ hizalı mı ⑤ çalıya eğilince gizlenme çalışıyor mu (conceals).
 
+### Faz EPIC-5: SU + ÇÖL KAYASI (2026-09-20, Hakan: "çöl geçişi nerde?
+### denizi ve göletleri de değiştir")
+Su GÖRSELİ değişmemişti çünkü suyu karo değil SHADER çiziyor; taban da statikti.
+- **Su tabanı animasyonlu**: deniz/gölet(2) ve vaha(17) ERW 8-kare şeridinden
+  akıyor (tek faz — wld dersi); mz_water koyu statik.
+- **Su shader'ı ERW paleti**: sığ türkuaz (0.30,0.62,0.72), derin mavi
+  (0.12,0.32,0.56), quant=20 (paletli pixel-art görünümü). İnce ayar Hakan
+  turunda — üç değer tek yerde (main R2DWater).
+- **Çöl kayası ERTELEMESİ KAPANDI**: Cute klif atlası + MESA/plato/yüz
+  mimarisi emekli — ERW rocky-blob (kimlik LUT, 32px); kaya karosu kendi
+  tabanını çizer, kenarı blob anlatır. dsr_is_face silindi; Cute çöl süsleri
+  (mesa kalıntısı/çatlak) yerine scatter taşları. Vaha içi: kum + akan su +
+  kıyı atlası (eski sistemde iç su atlastan geliyordu — kimlik LUT m15
+  atladığı için taban buradan).
+- assets/Tiles/desert TAMAMEN silindi. KALAN görsel borç: yalnız Taşdurak
+  yapı ölçeği (TAŞDURAK-YENİDEN).
+
 ### Faz EPIC-4: BÜYÜK SÜPÜRME — kalan dünya asset'leri (2026-09-20,
 ### "işlerin tamamını bitir, devam bekleme")
 Dört bake dalgası (`bake_erw_wave2/biome/wave4.py`); her dalga build+smoke

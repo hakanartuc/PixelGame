@@ -30,7 +30,7 @@ const TileType TILE_TYPES[] = {
     [14] = { .solid = true,  .r = 26,  .g = 32,  .b = 46,  .texturePath = "assets/Tiles/erw/mz_water.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // ölü su
     // Doğu çölü (Taşdurak — Faz DOGU)
     [15] = { .solid = false, .r = 222, .g = 180, .b = 120, .texturePath = "assets/Tiles/erw/sand.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // kum
-    [16] = { .solid = true,  .r = 160, .g = 110, .b = 70,  .texturePath = "assets/Tiles/desert/rock.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // çöl kayası
+    [16] = { .solid = true,  .r = 160, .g = 110, .b = 70,  .texturePath = "assets/Tiles/erw/rock.png",  .speedMultiplier = 1.0f, .damage = 0.0f },  // çöl kayası
     [17] = { .solid = true,  .r = 70,  .g = 190, .b = 200, .texturePath = "assets/Tiles/erw/oasis_water.png", .speedMultiplier = 1.0f, .damage = 0.0f },  // vaha suyu
 
     // Mağara (Loca v2 — Faz MAPGEN-2): düz renk tabanlar, doku dual-grid
@@ -243,6 +243,7 @@ SDL_FRect feet_box(float rectX, float rectY, float rectW, float rectH)
 // Eski sistemin kodu git geçmişinde (bu satırın blame'i).
 // Yalnız DÜNYA tile'larına taşar (yol/su/bataklık/diken) — zindan dokunulmaz.
 static R2DTexture *grassVar[4] = {0};   // [0] ana doku (tileTextures'tan gelmez — kendi kopyası)
+static R2DTexture *waterAnimTex = NULL; // ERW su animasyonu (8 kare 32px — deniz/gölet/vaha tabanı)
 static R2DTexture *pathEdgeTex = NULL;  // ERW toprak blob'u — maske-sıralı 4×4, 32px hücre
 static R2DTexture *grassEdgeTex = NULL; // ERW çim saçağı blob'u — aynı düzen
 static R2DTexture *flowerTex = NULL;    // erw/scatter_atlas.png (10×3 hücre 32px)
@@ -1230,6 +1231,7 @@ void tilemap_load_details(R2D *renderer)
     grassVar[1] = load_texture(renderer, "assets/Tiles/erw/grass_2.png");
     grassVar[2] = load_texture(renderer, "assets/Tiles/erw/grass_3.png");
     grassVar[3] = load_texture(renderer, "assets/Tiles/erw/grass_4.png");
+    waterAnimTex = load_texture(renderer, "assets/Tiles/erw/water_anim.png");
     pathEdgeTex  = load_texture(renderer, "assets/Tiles/erw/path_edge_atlas.png");
     grassEdgeTex = load_texture(renderer, "assets/Tiles/erw/grass_edge_atlas.png");
     // ERW dalga-2: serpiştirme atlası bake_erw_wave2.py'den (hücre 32px).
@@ -1239,7 +1241,7 @@ void tilemap_load_details(R2D *renderer)
     uwBushTex[1] = load_texture(renderer, "assets/decor/erw/bush_2.png");
     mzGround2 = load_texture(renderer, "assets/Tiles/erw/mz_ground2.png");
     dsrWaterTex = load_texture(renderer, "assets/Tiles/erw/oasis_atlas.png");
-    dsrCliffTex = load_texture(renderer, "assets/Tiles/desert/cliff_atlas.png");
+    dsrCliffTex = load_texture(renderer, "assets/Tiles/erw/rocky_atlas.png");
     // Keyed varyant: koyu blokların düz arka planı şeffaf (bake_cave_ring.py) —
     // ışık bloklar dokunulmamış; loca + mezarlık AYNI atlası kullanır
     caveRingTex = load_texture(renderer, "assets/Tiles/erw/cave_ring_atlas.png");
@@ -1261,6 +1263,7 @@ void tilemap_free_details(void)
 {
     for (int i = 0; i < 4; i++)
         if (grassVar[i]) { r2d_texture_destroy(NULL, grassVar[i]); grassVar[i] = NULL; }
+    if (waterAnimTex) { r2d_texture_destroy(NULL, waterAnimTex); waterAnimTex = NULL; }
     if (pathEdgeTex) { r2d_texture_destroy(NULL, pathEdgeTex); pathEdgeTex = NULL; }
     if (grassEdgeTex) { r2d_texture_destroy(NULL, grassEdgeTex); grassEdgeTex = NULL; }
     if (flowerTex) { r2d_texture_destroy(NULL, flowerTex); flowerTex = NULL; }
@@ -1382,13 +1385,9 @@ static const DsrCell ERW_ID_LUT[16] = {
     [13]={1,3}, [14]={2,3}, [15]={255,255},
 };
 #define DSR_WATER_LUT ERW_ID_LUT
-static const DsrCell DSR_ROCK_LUT[16] = {
-    [1]={5,4}, [2]={3,4}, [4]={5,2}, [8]={3,2},
-    [3]={4,4}, [12]={4,2}, [5]={5,3}, [10]={3,3},
-    [7]={3,7}, [11]={5,7}, [13]={3,9}, [14]={5,9},
-    [6]={3,4}, [9]={3,2},
-    [15]={255,255},   // tam kaya = plato üstü: taban rock.png çizer, parça yok
-};
+// (ERW dalga-5: DSR_ROCK da kimlik tabloda — Cute klif atlası ve plato/yüz
+// mimarisi emekli; ERW rocky-blob kenarları kayalık yamayı kendisi anlatır.)
+#define DSR_ROCK_LUT ERW_ID_LUT
 
 static inline bool dsr_is(int col, int row, int id)
 {
@@ -1399,14 +1398,11 @@ static inline bool dsr_is(int col, int row, int id)
 
 // Güneyi kum olan kaya = KLİF YÜZÜ hücresi (çizgili duvar basılır).
 // Dual pass yüz hücrelerini kayadan SAYMAZ → plato dudağı yüzün üstüne oturur.
-static inline bool dsr_is_face(int col, int row)
-{
-    return dsr_is(col, row, DSR_ROCK) && !dsr_is(col, row + 1, DSR_ROCK);
-}
+// (dsr_is_face emekli — ERW dalga-5: klif yüz kavramı kalktı.)
 
 static inline bool dsr_rockish(int col, int row)
 {
-    return dsr_is(col, row, DSR_ROCK) && !dsr_is_face(col, row);
+    return dsr_is(col, row, DSR_ROCK);   // (ERW: yüz kavramı emekli)
 }
 
 static void dsr_dual_pass(R2D *renderer, R2DTexture *atlas, int id,
@@ -1775,24 +1771,30 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
                 TILE_SIZE * zoom
             };
 
-            // Çöl suyu: dual-grid overlay çizer — hücreye KUM tabanı bas
+            // VAHA (ERW dalga-5): taban kum + üstüne AKAN su animasyonu;
+            // kıyı hücrelerini maske-sıralı vaha atlası (dual pass) örter.
+            // (Eski Cute sistemde vaha içi atlas m15 hücresinden geliyordu;
+            // ERW kimlik LUT m15'i atlar — iç su tabanı buradan.)
             if (tileID == DSR_WATER && dsrWaterTex != NULL)
             {
                 tile_draw(renderer, tileTextures, 15, dst);   // 15 = kum
-            }
-            // Çöl kayası = MESA: üstü de KUM tabanı (paket stili — plato
-            // yüzeyi zeminle aynı, sınırı dudak çizer); güneye bakan sıra
-            // KLİF YÜZÜ (çizgili duvar, L/M/R uçlu)
-            else if (tileID == DSR_ROCK && dsrCliffTex != NULL)
-            {
-                tile_draw(renderer, tileTextures, 15, dst);
-                if (dsr_is_face(col, row))
-                {
-                    bool fl = dsr_is_face(col - 1, row), fr = dsr_is_face(col + 1, row);
-                    int fc = (fl && fr) ? 10 : (fr ? 9 : (fl ? 11 : 10));
-                    SDL_FRect fsrc = { fc * 16.0f, 2 * 16.0f, 16, 16 };
-                    r2d_draw_texture(renderer, dsrCliffTex, &fsrc, &dst);
+                if (waterAnimTex != NULL) {
+                    float wf = (float)((SDL_GetTicks() / 160) % 8);
+                    SDL_FRect wsrc = { wf * 32.0f, 0, 32, 32 };
+                    r2d_draw_texture(renderer, waterAnimTex, &wsrc, &dst);
                 }
+            }
+            // (ERW dalga-5: çöl kayası MESA/yüz özel dalı emekli — kaya
+            // karosu normal tabanını (erw/rock.png) çizer, kenarları rocky
+            // blob dual pass'i anlatır.)
+            // ERW SU ANİMASYONU: deniz/gölet(2) tabanı 8 karelik şeritten
+            // akar — tüm su AYNI karede (faz farkı ızgara gösterir; wld
+            // dersi). Asıl görünüm su shader'ında; taban sığlıkta okunur.
+            else if (tileID == 2 && waterAnimTex != NULL)
+            {
+                float wf = (float)((SDL_GetTicks() / 160) % 8);
+                SDL_FRect wsrc = { wf * 32.0f, 0, 32, 32 };
+                r2d_draw_texture(renderer, waterAnimTex, &wsrc, &dst);
             }
             // Mezarlık zemini: 2 varyant (aynı hash deseni)
             else if (tileID == 12 && mzGround2 != NULL && grass_variant(col, row) >= 2)
@@ -1833,7 +1835,7 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
     if (dsrWaterTex != NULL)
         dsr_dual_pass(renderer, dsrWaterTex, DSR_WATER, 32.0f, camera, colL, rowT, colR, rowB);
     if (dsrCliffTex != NULL)
-        dsr_dual_pass(renderer, dsrCliffTex, DSR_ROCK, 16.0f, camera, colL, rowT, colR, rowB);
+        dsr_dual_pass(renderer, dsrCliffTex, DSR_ROCK, 32.0f, camera, colL, rowT, colR, rowB);
     if (caveRingTex != NULL)
         cave_dual_pass(renderer, caveRingTex, CAVE_WALL, camera, colL, rowT, colR, rowB);
     if (mzRockTex != NULL)
@@ -1969,38 +1971,17 @@ void tilemap_render_scatter(R2D *renderer, const Camera *camera)
             // ÇÖL BENEKLERİ (paket örneklerindeki organik zemin yamaları):
             // grid'e HİZALI çizilir (parçalar komşu karolarla kompoze) —
             // büyük 4×3 koyu yama / küçük 2×2 açık yama / tekli çatlak izi
-            else if ((id == 15 || id == DSR_ROCK) && dsrCliffTex != NULL) {
+            // (ERW dalga-5: Cute klif atlası süsleri — 4×3 mesa kalıntısı,
+            // 2×2 kaya, çatlak izleri — emekli; atlas hücreleri artık yok.
+            // Çöl serpiştirmesi scatter_atlas taş satırından gelir.)
+            else if (id == 15 && (h % 100) < 7 && flowerTex != NULL) {
+                int fc = (int)((h >> 6) % 10);
+                SDL_FRect src = { fc * 32.0f, 2 * 32.0f, 32, 32 };   // taş satırı
                 SDL_FRect adst = {
-                    (col * TILE_SIZE - camera->x) * zoom,
-                    (row * TILE_SIZE - camera->y) * zoom,
-                    TILE_SIZE * zoom, TILE_SIZE * zoom };
-                bool sand43 = true, sand22 = true;
-                for (int dy = 0; dy < 3 && sand43; dy++)
-                    for (int dx = 0; dx < 4; dx++)
-                        if (col+dx >= mapW || row+dy >= mapH ||
-                            tilemap[row+dy][col+dx] != 15) { sand43 = false; break; }
-                for (int dy = 0; dy < 2 && sand22; dy++)
-                    for (int dx = 0; dx < 2; dx++)
-                        if (col+dx >= mapW || row+dy >= mapH ||
-                            tilemap[row+dy][col+dx] != 15) { sand22 = false; break; }
-                if (id == 15 && (h % 1000) < 6 && sand43) {
-                    SDL_FRect src = { 7 * 16.0f, 7 * 16.0f, 64, 48 };
-                    SDL_FRect pd = { adst.x, adst.y,
-                                     4 * TILE_SIZE * zoom, 3 * TILE_SIZE * zoom };
-                    r2d_draw_texture(renderer, dsrCliffTex, &src, &pd);
-                }
-                else if (id == 15 && (h % 1000) < 22 && sand22) {
-                    SDL_FRect src = { 9 * 16.0f, 5 * 16.0f, 32, 32 };
-                    SDL_FRect pd = { adst.x, adst.y,
-                                     2 * TILE_SIZE * zoom, 2 * TILE_SIZE * zoom };
-                    r2d_draw_texture(renderer, dsrCliffTex, &src, &pd);
-                }
-                else if ((h % 100) < 7 && !(id == DSR_ROCK && dsr_is_face(col, row))) {
-                    // tekli çatlak izleri: atlas (11-12, 5-7) — 6 varyant
-                    int v = (int)((h >> 6) % 6);
-                    SDL_FRect src = { (11 + v % 2) * 16.0f, (5 + v / 2) * 16.0f, 16, 16 };
-                    r2d_draw_texture(renderer, dsrCliffTex, &src, &adst);
-                }
+                    (col * TILE_SIZE + dx * (TILE_SIZE - 32) - camera->x) * zoom,
+                    (row * TILE_SIZE + dy * (TILE_SIZE - 32) - camera->y) * zoom,
+                    32.0f * zoom, 32.0f * zoom };
+                r2d_draw_texture(renderer, flowerTex, &src, &adst);
             }
         }
     }

@@ -11495,13 +11495,13 @@ int main(int argc, char *argv[])
                     // Bir sanat pikselinin ekran pikseli — kırılma ofsetinin
                     // yuvarlandığı birim. Kesirli ofset = titreme.
                     .artPx = camera.zoom * ((float)TILE_SIZE / 16.0f),
-                    .shallowR = 0.34f, .shallowG = 0.52f, .shallowB = 0.58f,
+                    .shallowR = 0.30f, .shallowG = 0.62f, .shallowB = 0.72f,   // ERW türkuaz (dalga-5)
                     .shallowCover = 0.20f,     // sığda taban NET okunur
                     // Koyu uç MORA/MAVİYE kaydırıldı (0.07,0.21,0.34 → düz
                     // koyulaştırmaydı): pixel-art hue-shift kuralı — ALttP
                     // ölçümü de aynı şeyi söylüyor (gölge tonu morlaşıyor).
                     // Referans: göletin ortası OPAK KOYU LACİVERT (gri değil).
-                    .deepR = 0.17f, .deepG = 0.27f, .deepB = 0.48f,
+                    .deepR = 0.12f, .deepG = 0.32f, .deepB = 0.56f,   // ERW koyu mavi (dalga-5)
                     .deepCover = 0.80f,        // derin ama ışık geçiren (Hakan: açık+şeffaf)
                     .waveHeight = 0.10f,       // sırt sığ, çukur derin görünür
                     .refract = 14.0f,          // EKRAN px tepe ofseti; snap sonrası 2-3 sanat px
@@ -11513,7 +11513,7 @@ int main(int argc, char *argv[])
                     // Kod duruyor: fırtına/rüzgâr efekti gerekirse geri açılır.
                     .foam = 0.0f,
                     .glint = 0.16f,       // eklemeli: kostikle toplamı 1'i geçmemeli
-                    .quant = 0.0f,             // renk kademesi kapalı
+                    .quant = 20.0f,            // ERW paletli görünüm (dalga-5; 0 = kapalı)
                     .foamSpeed = 0.9f,         // kıyıya vurup çekilme
                     .foamAmp = 0.16f,
                     // SU ÇİZGİSİ. Islak bant ve koyu hat ÇARPIMSAL (bütçe dışı),
