@@ -175,7 +175,7 @@ const NpcDef NPCS[] = {
       .dialogFile = "assets/dialogs/ferah.txt",
       .isVendor = true, .questId = NULL,
       .schedule = {
-          { .hour = 0.0f, .x = T(14), .y = T(30), .indoors = false },  // dükkan önü
+          { .hour = 0.0f, .x = T(16), .y = T(30.4f), .indoors = false },  // dükkan önü
       }, .stopCount = 1,
       .map = 6, .frameSize = 0 },
     { .id = "tasdurak_han_hanci", .name = "Hancı Duman",
@@ -184,7 +184,7 @@ const NpcDef NPCS[] = {
       .dialogFile = "assets/dialogs/duman.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
-          { .hour = 0.0f, .x = T(21), .y = T(31), .indoors = false },  // han kapısı
+          { .hour = 0.0f, .x = T(34), .y = T(30.4f), .indoors = false },  // han kapısı
       }, .stopCount = 1,
       .map = 6, .frameSize = 0 },
     // Sultanlık Kâtibi: Doğu bloğunun ilk resmî yüzü (Kıta planı tohum).
@@ -195,7 +195,7 @@ const NpcDef NPCS[] = {
       .dialogFile = "assets/dialogs/rustem.txt",
       .isVendor = false, .questId = NULL,
       .schedule = {
-          { .hour = 0.0f, .x = T(28), .y = T(30), .indoors = false },  // konak önü
+          { .hour = 0.0f, .x = T(52), .y = T(30.4f), .indoors = false },  // konak önü
       }, .stopCount = 1,
       .map = 6, .frameSize = 0 },
 

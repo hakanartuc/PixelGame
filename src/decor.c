@@ -119,33 +119,45 @@ const DecorDef DECORS[] = {
     { .texPath = "assets/decor/erw/notice_board.png",
       .x = T(32), .y = T(19), .scale = 1.8f, .solidBase = true, .map = DM_LOCA },
 
-    // --- TAŞDURAK dekorları (Faz DOGU — map 6) ---
+    // --- TAŞDURAK dekorları (Faz DOGU — TAŞDURAK-YENİDEN, 2× yerleşim) ---
+    // Cadde y=35 hattı: batı portal T(4,35) → dükkan/han/konak kuzey sırada,
+    // pazar güneyde (vahanın doğusu), ŞEHİR SURU doğu kapısı (tapınak yolu).
+    // Kapı önü = NPC durağı kuralı (npc.c ile birlikte taşınır).
     { .texPath = "assets/decor/erw/ds_house1.png",       // Tüccar Ferah'ın evi
-      .x = T(13), .y = T(27), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
+      .x = T(16), .y = T(30), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.92f, .baseHFrac = 0.28f, .map = DM_DOGU },
     { .texPath = "assets/decor/erw/ds_house2.png",       // Han (Duman)
-      .x = T(20), .y = T(28), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
+      .x = T(34), .y = T(30), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.92f, .baseHFrac = 0.28f, .map = DM_DOGU },
     { .texPath = "assets/decor/erw/ds_house3.png",       // Kâtip konağı
-      .x = T(27), .y = T(27), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
-    { .texPath = "assets/decor/erw/ds_house4.png",      // meydan gölgeliği
-      .x = T(17), .y = T(34), .scale = 1.6f, .solidBase = false, .map = DM_DOGU },
-    { .texPath = "assets/decor/erw/ds_house6.png",       // pazar sahnesi (deve+halı)
-      .x = T(24), .y = T(35), .scale = 1.6f, .solidBase = true, .map = DM_DOGU },
-    { .texPath = "assets/decor/erw/ds_acacia.png",       // vaha akasyası
-      .x = T(19), .y = T(41), .scale = 1.6f, .solidBase = true, .map = DM_DOGU },
+      .x = T(52), .y = T(30), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.92f, .baseHFrac = 0.28f, .map = DM_DOGU },
+    { .texPath = "assets/decor/erw/ds_house4.png",       // ŞEHİR SURU — doğu kapısı
+      .x = T(70), .y = T(36), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.96f, .baseHFrac = 0.45f, .map = DM_DOGU },
+    { .texPath = "assets/decor/erw/ds_house6.png",       // pazar (kemerli çarşı)
+      .x = T(33), .y = T(41), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.92f, .baseHFrac = 0.30f, .map = DM_DOGU },
+    { .texPath = "assets/decor/erw/ds_palm.png",         // vaha palmiyesi
+      .x = T(24), .y = T(39.5f), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.35f, .baseHFrac = 0.12f, .map = DM_DOGU },
     { .texPath = "assets/decor/erw/ds_cactus.png",
-      .x = T(38), .y = T(30), .scale = 2.0f, .solidBase = true, .map = DM_DOGU },
+      .x = T(44), .y = T(34), .scale = 2.0f, .solidBase = true, .map = DM_DOGU },
     { .texPath = "assets/decor/erw/ds_cactus.png",
       .x = T(52), .y = T(44), .scale = 2.0f, .solidBase = true, .map = DM_DOGU },
     { .texPath = "assets/decor/erw/ds_dead_bush.png",
-      .x = T(45), .y = T(22), .scale = 1.8f, .solidBase = false, .map = DM_DOGU },
+      .x = T(45), .y = T(22), .scale = 2.0f, .solidBase = false, .map = DM_DOGU },
     { .texPath = "assets/decor/erw/ds_dead_bush.png",
-      .x = T(66), .y = T(40), .scale = 1.8f, .solidBase = false, .map = DM_DOGU },
+      .x = T(66), .y = T(40), .scale = 2.0f, .solidBase = false, .map = DM_DOGU },
     { .texPath = "assets/decor/erw/ds_temple.png",       // TAPINAK (mumya vadisi)
-      .x = T(80), .y = T(14), .scale = 2.0f, .solidBase = true, .map = DM_DOGU },
+      .x = T(80), .y = T(14), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.92f, .baseHFrac = 0.30f, .map = DM_DOGU },
     { .texPath = "assets/decor/erw/ds_obelisk.png",
-      .x = T(75), .y = T(16), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
+      .x = T(75), .y = T(16), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.6f, .baseHFrac = 0.15f, .map = DM_DOGU },
     { .texPath = "assets/decor/erw/ds_obelisk.png",
-      .x = T(85), .y = T(16), .scale = 1.8f, .solidBase = true, .map = DM_DOGU },
+      .x = T(85), .y = T(16), .scale = 2.0f, .solidBase = true,
+      .baseWFrac = 0.6f, .baseHFrac = 0.15f, .map = DM_DOGU },
 };
 const int DECOR_COUNT = (int)(sizeof(DECORS) / sizeof(DECORS[0]));
 
