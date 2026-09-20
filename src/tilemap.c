@@ -44,6 +44,11 @@ const TileType TILE_TYPES[] = {
     // gradyanı üstüne biniyor, kostik ağı üstünde geziyor. Katı DEĞİL: sığlık,
     // içine girilir ama su ayağı ağırlaştırır.
     [20] = { .solid = false, .r = 96,  .g = 104, .b = 112, .texturePath = "assets/Tiles/erw/stone.png", .speedMultiplier = 0.72f, .damage = 0.0f },  // sualtı taban (sığlık)
+    // SAF ERW SUYU (Hakan karşılaştırma göleti, 2026-09-20): su shader'ına
+    // GİRMEZ (wmask_base default 0) — görünüm %100 paket asset'i: animasyonlu
+    // taban + vaha kıyı atlası. Karar sonrası ya kaldırılır ya da göletlerin
+    // yeni dili olur.
+    [21] = { .solid = true,  .r = 60,  .g = 140, .b = 180, .texturePath = NULL, .speedMultiplier = 1.0f, .damage = 0.0f },  // saf ERW su (test göleti)
 };
 const int TILE_TYPE_COUNT = (int)(sizeof(TILE_TYPES) / sizeof(TILE_TYPES[0]));
 
@@ -1790,7 +1795,7 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
             // ERW SU ANİMASYONU: deniz/gölet(2) tabanı 8 karelik şeritten
             // akar — tüm su AYNI karede (faz farkı ızgara gösterir; wld
             // dersi). Asıl görünüm su shader'ında; taban sığlıkta okunur.
-            else if (tileID == 2 && waterAnimTex != NULL)
+            else if ((tileID == 2 || tileID == 21) && waterAnimTex != NULL)
             {
                 float wf = (float)((SDL_GetTicks() / 160) % 8);
                 SDL_FRect wsrc = { wf * 32.0f, 0, 32, 32 };
@@ -1832,8 +1837,11 @@ void tilemap_render(R2D *renderer, R2DTexture **tileTextures, const Camera *came
 
     // ÇÖL AUTOTILE: taban pass'i bitti — su ve kaya sınır overlay'leri
     // (yalnız bu id'leri içeren haritada iş yapar; diğerlerinde mask hep 0)
-    if (dsrWaterTex != NULL)
+    if (dsrWaterTex != NULL) {
         dsr_dual_pass(renderer, dsrWaterTex, DSR_WATER, 32.0f, camera, colL, rowT, colR, rowB);
+        // saf ERW test göleti (21): aynı vaha kıyı atlası — kum halkasıyla sarılır
+        dsr_dual_pass(renderer, dsrWaterTex, 21, 32.0f, camera, colL, rowT, colR, rowB);
+    }
     if (dsrCliffTex != NULL)
         dsr_dual_pass(renderer, dsrCliffTex, DSR_ROCK, 32.0f, camera, colL, rowT, colR, rowB);
     if (caveRingTex != NULL)
